@@ -1,27 +1,12 @@
-
-import { adminDb, adminAuth } from '@/lib/firebase-admin';
+import { adminDb } from '@/lib/firebase-admin';
+import { checkAuth } from '@/lib/auth';
 import { NextResponse } from 'next/server';
 
 export async function GET(req: Request) {
     try {
-        const authHeader = req.headers.get('Authorization');
-        let token = '';
+        const user = await checkAuth(req);
 
-        if (authHeader?.startsWith('Bearer ')) {
-            token = authHeader.split(' ')[1];
-        } else {
-            const cookie = req.headers.get('cookie');
-            token = cookie?.split('__session=')[1]?.split(';')[0] || '';
-        }
-
-        if (!token) {
-            return NextResponse.json({ error: 'Sessão expirada' }, { status: 401 });
-        }
-
-        let decodedToken;
-        try {
-            decodedToken = await adminAuth.verifyIdToken(token);
-        } catch (e) {
+        if (!user) {
             return NextResponse.json({ error: 'Sessão expirada' }, { status: 401 });
         }
 
@@ -30,13 +15,9 @@ export async function GET(req: Request) {
         const startDateString = url.searchParams.get('startDate');
         const endDateString = url.searchParams.get('endDate');
 
-        // Busca o perfil do usuário no Firestore
-        const userDoc = await adminDb.collection('users').doc(decodedToken.uid).get();
-        const adminData = userDoc.data();
-
         // Security: Force congregationId to be the user's congregation for operational views
-        if (adminData?.role !== 'ADMIN' || !congregationId) {
-            congregationId = adminData?.congregationId || null;
+        if (user.role !== 'ADMIN' || !congregationId) {
+            congregationId = user.congregationId || null;
         }
 
         if (!congregationId) {

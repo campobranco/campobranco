@@ -1,35 +1,21 @@
-
-import { adminDb, adminAuth } from '@/lib/firebase-admin';
+import { adminDb } from '@/lib/firebase-admin';
+import { checkAuth } from '@/lib/auth';
 import { NextResponse } from 'next/server';
 
 export async function GET(req: Request) {
     try {
-        const authHeader = req.headers.get('Authorization');
-        let token = '';
+        const user = await checkAuth(req);
 
-        if (authHeader?.startsWith('Bearer ')) {
-            token = authHeader.split(' ')[1];
-        } else {
-            const cookie = req.headers.get('cookie');
-            token = cookie?.split('__session=')[1]?.split(';')[0] || '';
-        }
-
-        if (!token) {
+        if (!user) {
             return NextResponse.json({ error: 'Não autorizado' }, { status: 401 });
         }
-
-        const decodedToken = await adminAuth.verifyIdToken(token);
-
-        // Get user's congregation and role from profile (Firestore)
-        const userDoc = await adminDb.collection('users').doc(decodedToken.uid).get();
-        const profile = userDoc.data();
 
         const { searchParams } = new URL(req.url);
         let congregationId = searchParams.get('congregationId');
 
         // Force congregationId to be the user's congregation for non-admins
-        if (profile?.role !== 'ADMIN' || !congregationId) {
-            congregationId = profile?.congregationId || null;
+        if (user.role !== 'ADMIN' || !congregationId) {
+            congregationId = user.congregationId || null;
         }
 
         if (!congregationId) {

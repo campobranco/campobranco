@@ -22,11 +22,28 @@ const userCache = new LRUCache<string, AuthorizedUser>({
     ttl: 1000 * 60 * 10, // 10 minutos
 });
 
-// Verifica o token de autenticação presente nos cookies da requisição
-export async function checkAuth(): Promise<AuthorizedUser | null> {
+// Verifica o token de autenticação presente nos cookies ou no header Authorization
+export async function checkAuth(req?: Request): Promise<AuthorizedUser | null> {
     try {
-        const cookieStore = await cookies();
-        const token = cookieStore.get('__session')?.value;
+        let token = '';
+
+        // 1. Tenta pegar do Header (Bearer) primeiro
+        if (req) {
+            const authHeader = req.headers.get('Authorization');
+            if (authHeader?.startsWith('Bearer ')) {
+                token = authHeader.split(' ')[1];
+            }
+        }
+
+        // 2. Se não houver header, tenta pegar do Cookie
+        if (!token) {
+            try {
+                const cookieStore = await cookies();
+                token = cookieStore.get('__session')?.value || '';
+            } catch (e) {
+                // Em alguns contextos (Edge/Build) cookies() pode falhar
+            }
+        }
 
         if (!token) return null;
 
@@ -76,8 +93,8 @@ export async function checkAuth(): Promise<AuthorizedUser | null> {
 }
 
 // Exige autenticação e opcionalmente um conjunto de papéis permitidos
-export async function requireAuth(allowedRoles?: string[]): Promise<AuthorizedUser> {
-    const user = await checkAuth();
+export async function requireAuth(req: Request, allowedRoles?: string[]): Promise<AuthorizedUser> {
+    const user = await checkAuth(req);
 
     if (!user) {
         throw new Error('Unauthorized');
