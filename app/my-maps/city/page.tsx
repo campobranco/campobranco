@@ -778,21 +778,6 @@ function CityListContent() {
                 isLoading={isDeleting}
             />
 
-            {/* Confirmation Modal for Deletion */}
-            <ConfirmationModal
-                isOpen={isDeleteDialogOpen}
-                onClose={() => {
-                    setIsDeleteDialogOpen(false);
-                    setCityToDelete(null);
-                }}
-                onConfirm={confirmDeleteCity}
-                title={localTermType === 'neighborhood' ? 'Excluir Bairro' : 'Excluir Cidade'}
-                message={`Tem certeza que deseja excluir ${cityToDelete?.name}? Todos os territórios e endereços vinculados serão afetados.`}
-                confirmText="Excluir"
-                variant="danger"
-                isLoading={isDeleting}
-            />
-
             {/* Bottom Nav */}
             <BottomNav />
 

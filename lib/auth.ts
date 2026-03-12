@@ -83,12 +83,19 @@ export async function checkAuth(req?: Request): Promise<AuthorizedUser | null> {
         userCache.set(uid, user);
         return user;
     } catch (error: any) {
-        // Se o erro for token expirado, falha silenciosamente
         if (error.code === 'auth/id-token-expired') {
-            return null;
+            console.warn('[AUTH] Token expirado');
+            throw new Error('TOKEN_EXPIRED');
         }
-        console.error('[AUTH] Falha na verificação do token Firebase:', error);
-        return null;
+        
+        // Se o erro for de inicialização do Admin SDK (mock)
+        if (error.message?.includes('indisponível')) {
+            console.error('[AUTH] Configuração de Admin ausente no servidor');
+            throw error;
+        }
+
+        console.error('[AUTH] Erro na verificação do token:', error.message);
+        throw new Error('INVALID_TOKEN');
     }
 }
 
