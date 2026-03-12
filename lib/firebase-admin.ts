@@ -35,17 +35,34 @@ function initAdminApp(): App {
 
     if (rawKey && clientEmail) {
         try {
-            let privateKey = rawKey.replace(/^["']|["']$/g, '').trim();
-            privateKey = privateKey.replace(/\\n/g, '\n');
+            // Limpeza profunda da chave
+            let privateKey = rawKey
+                .replace(/^["']|["']$/g, '') // Remove aspas externas
+                .replace(/\\n/g, '\n')       // Converte \n literais
+                .trim();
             
-            // Garantir que a chave comece com o cabeçalho correto se estiver mal formatada
-            if (!privateKey.includes('-----BEGIN PRIVATE KEY-----')) {
-                console.error('❌ Firebase Admin: Chave privada mal formatada (sem header)');
+            // Se a chave veio sem novas linhas (tudo em uma linha só), tenta restaurar a estrutura
+            if (!privateKey.includes('\n') && privateKey.includes(' ')) {
+                // Algumas vezes a chave é colada com espaços em vez de newlines
+                privateKey = privateKey.replace(/ /g, '\n');
             }
 
-            console.log('🚀 Firebase Admin: Inicializando via chaves individuais');
+            // Garante que o cabeçalho e rodapé estejam presentes e corretos
+            if (!privateKey.includes('-----BEGIN PRIVATE KEY-----')) {
+                privateKey = `-----BEGIN PRIVATE KEY-----\n${privateKey}`;
+            }
+            if (!privateKey.includes('-----END PRIVATE KEY-----')) {
+                privateKey = `${privateKey}\n-----END PRIVATE KEY-----`;
+            }
+
+            console.log(`🚀 Firebase Admin: Inicializando via chaves individuais. ID: ${projectId}, Email: ${clientEmail.substring(0, 10)}...`);
+            
             return initializeApp({
-                credential: cert({ projectId, clientEmail, privateKey }),
+                credential: cert({ 
+                    projectId, 
+                    clientEmail, 
+                    privateKey 
+                }),
                 projectId
             });
         } catch (e: any) {
