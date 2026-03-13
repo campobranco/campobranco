@@ -78,10 +78,10 @@ function initAdminApp(): App {
             
             const app = initializeApp({
                 credential: cert({ 
-                    projectId: projectId, 
-                    clientEmail: clientEmail, 
-                    privateKey: privateKey 
-                }),
+                    project_id: projectId, 
+                    client_email: clientEmail, 
+                    private_key: privateKey 
+                } as any),
                 projectId
             });
 

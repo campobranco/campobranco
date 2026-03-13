@@ -12,6 +12,7 @@ import PreviewIndicator from './components/PreviewIndicator';
 import { APP_VERSION } from '@/lib/version';
 import { Toaster } from 'sonner';
 import { Analytics } from '@vercel/analytics/react';
+import { SpeedInsights } from '@vercel/speed-insights/next';
 
 
 const inter = Inter({ subsets: ['latin'] })
@@ -82,6 +83,7 @@ export default function RootLayout({
         <AuthProvider>
           <ThemeProvider>
             <Analytics />
+            <SpeedInsights />
             <PreviewIndicator />
             {/* <FCMManager /> Removed */}
             <SimulationBanner />

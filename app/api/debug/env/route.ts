@@ -1,9 +1,9 @@
-import { adminDb, getAdminInitError } from '@/lib/firebase-admin';
+import { adminAuth, getAdminInitError } from '@/lib/firebase-admin';
 import { NextResponse } from 'next/server';
 
 export async function GET() {
-    // @ts-ignore - Acessando propriedade interna para debug
-    const adminApp = (adminDb as any).app;
+    // @ts-ignore - Acessando propriedade interna para debug real
+    const adminApp = (adminAuth as any).app;
     const isMock = !adminApp || adminApp.name === '[mock]';
 
     const envs = {
