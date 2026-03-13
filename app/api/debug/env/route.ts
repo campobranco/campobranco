@@ -1,4 +1,4 @@
-import { adminDb } from '@/lib/firebase-admin';
+import { adminDb, getAdminInitError } from '@/lib/firebase-admin';
 import { NextResponse } from 'next/server';
 
 export async function GET() {
@@ -16,6 +16,7 @@ export async function GET() {
         // Efetivo no Admin SDK
         ADMIN_STATUS: isMock ? 'MOCK (CREDENCIAIS AUSENTES)' : 'REAL (INICIALIZADO)',
         ADMIN_PROJECT_ID: !isMock ? adminApp.options.projectId : 'N/A',
+        INIT_ERROR: getAdminInitError() || 'Nenhum',
         
         NODE_ENV: process.env.NODE_ENV,
         VERCEL: !!process.env.VERCEL,

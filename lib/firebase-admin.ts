@@ -8,6 +8,12 @@ import { getAuth, Auth } from 'firebase-admin/auth';
 import fs from 'fs';
 import path from 'path';
 
+
+
+// Variável global para capturar erro de inicialização para debug
+let lastInitError: string | null = null;
+export const getAdminInitError = () => lastInitError;
+
 // Inicializa o Admin SDK de forma segura, tentando múltiplas fontes de credenciais
 function initAdminApp(): App {
     const existingApps = getApps();
@@ -55,17 +61,18 @@ function initAdminApp(): App {
                 privateKey = `${privateKey}\n-----END PRIVATE KEY-----`;
             }
 
-            console.log(`🚀 Firebase Admin: Inicializando via chaves individuais. ID: ${projectId}, Email: ${clientEmail.substring(0, 10)}...`);
+            console.log(`🚀 Firebase Admin: Inicializando via chaves individuais. ID: ${projectId}`);
             
             return initializeApp({
                 credential: cert({ 
-                    projectId, 
-                    clientEmail, 
-                    privateKey 
+                    projectId: projectId, 
+                    clientEmail: clientEmail, 
+                    privateKey: privateKey 
                 }),
                 projectId
             });
         } catch (e: any) {
+            lastInitError = `Erro IndividualKeys: ${e.message}`;
             console.error('❌ Firebase Admin: Erro nas chaves individuais:', e.message);
         }
     }
