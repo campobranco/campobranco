@@ -7,10 +7,10 @@ export async function GET() {
     const isMock = !adminApp || adminApp.name === '[mock]';
 
     const envs = {
-        FB_ADMIN_PRIVATE_KEY: !!process.env.FB_ADMIN_PRIVATE_KEY,
-        FIREBASE_PRIVATE_KEY: !!process.env.FIREBASE_PRIVATE_KEY,
-        FB_ADMIN_CLIENT_EMAIL: !!process.env.FB_ADMIN_CLIENT_EMAIL,
-        FIREBASE_CLIENT_EMAIL: !!process.env.FIREBASE_CLIENT_EMAIL,
+        HAS_FB_ADMIN_KEY: !!process.env.FB_ADMIN_PRIVATE_KEY,
+        HAS_FIREBASE_KEY: !!process.env.FIREBASE_PRIVATE_KEY,
+        HAS_CLIENT_EMAIL: !!(process.env.FB_ADMIN_CLIENT_EMAIL || process.env.FIREBASE_CLIENT_EMAIL),
+        
         PROJECT_ID_ENV: process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID || 'ausente',
         
         // Efetivo no Admin SDK
@@ -20,8 +20,11 @@ export async function GET() {
         
         NODE_ENV: process.env.NODE_ENV,
         VERCEL: !!process.env.VERCEL,
-        KEY_LENGTH: process.env.FB_ADMIN_PRIVATE_KEY?.length || 0,
-        EMAIL_VAL: process.env.FB_ADMIN_CLIENT_EMAIL?.includes('@') ? 'valido' : 'invalido'
+        
+        // Comprimentos para checagem
+        KEY_LEN_1: process.env.FB_ADMIN_PRIVATE_KEY?.length || 0,
+        KEY_LEN_2: process.env.FIREBASE_PRIVATE_KEY?.length || 0,
+        EMAIL_LEN: (process.env.FB_ADMIN_CLIENT_EMAIL || process.env.FIREBASE_CLIENT_EMAIL || '').length
     };
 
     return NextResponse.json(envs);
