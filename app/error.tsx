@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect } from 'react';
-import { AlertCircle, RefreshCcw, Home, bug as BugIcon } from 'lucide-react';
+import { AlertCircle, RefreshCcw, Home, Bug as BugIcon } from 'lucide-react';
 import Link from 'next/link';
 
 export default function Error({

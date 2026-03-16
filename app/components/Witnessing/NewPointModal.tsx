@@ -1,6 +1,6 @@
 // app/components/Witnessing/NewPointModal.tsx
 // Modal para criação de novos pontos de testemunho público
-// Salva diretamente no Firestore (coleção witnessingPoints)
+// Salva diretamente no Firestore (coleção witnessing_points)
 
 "use client";
 
@@ -34,7 +34,8 @@ export default function NewPointModal({ isOpen, onClose, cityId, congregationId,
 
         setLoading(true);
         try {
-            await addDoc(collection(db, 'witnessingPoints'), {
+            // Nome correto da coleção no Firestore é 'witnessing_points' (snake_case)
+            await addDoc(collection(db, 'witnessing_points'), {
                 name: name.trim(),
                 address: address.trim(),
                 cityId,

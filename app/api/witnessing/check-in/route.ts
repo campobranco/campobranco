@@ -22,8 +22,8 @@ export async function POST(req: Request) {
             return NextResponse.json({ error: 'Dados inválidos' }, { status: 400 });
         }
 
-        // Atualiza o ponto de testemunho no Firestore
-        const pointRef = adminDb.collection('witnessingPoints').doc(id);
+        // Nome correto da coleção no Firestore é 'witnessing_points' (snake_case)
+        const pointRef = adminDb.collection('witnessing_points').doc(id);
         const pointSnap = await pointRef.get();
 
         if (!pointSnap.exists) {

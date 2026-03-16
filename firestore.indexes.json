@@ -129,7 +129,7 @@
       ]
     },
     {
-      "collectionGroup": "witnessingPoints",
+      "collectionGroup": "witnessing_points",
       "queryScope": "COLLECTION",
       "fields": [
         {

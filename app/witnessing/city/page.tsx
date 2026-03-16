@@ -124,8 +124,9 @@ function WitnessingPointListContent() {
 
         try {
             const snap = await (async () => {
+                // Nome correto da coleção no Firestore é 'witnessing_points' (snake_case)
                 const q = query(
-                    collection(db, 'witnessingPoints'),
+                    collection(db, 'witnessing_points'),
                     where('congregationId', '==', congregationId),
                     where('cityId', '==', cityId),
                     orderBy('name')
@@ -163,8 +164,9 @@ function WitnessingPointListContent() {
         fetchPoints();
 
         // onSnapshot: Firestore escuta mudanças em tempo real nos pontos de testemunho
+        // Nome correto da coleção no Firestore é 'witnessing_points' (snake_case)
         const pointsQuery = query(
-            collection(db, 'witnessingPoints'),
+            collection(db, 'witnessing_points'),
             where('congregationId', '==', congregationId),
             where('cityId', '==', cityId),
             orderBy('name')
@@ -200,7 +202,8 @@ function WitnessingPointListContent() {
                         : 'AVAILABLE';
 
                     try {
-                        await updateDoc(doc(db, 'witnessingPoints', point.id), {
+                        // Nome correto da coleção no Firestore é 'witnessing_points' (snake_case)
+                        await updateDoc(doc(db, 'witnessing_points', point.id), {
                             activeUsers: validUsers,
                             status: newStatus
                         });
@@ -233,8 +236,8 @@ function WitnessingPointListContent() {
             onConfirm: async () => {
                 setConfirmModal(prev => ({ ...prev, isOpen: false }));
                 try {
-                    // Deleta documento do Firestore
-                    await deleteDoc(doc(db, 'witnessingPoints', id));
+                    // Nome correto da coleção no Firestore é 'witnessing_points' (snake_case)
+                    await deleteDoc(doc(db, 'witnessing_points', id));
                     toast.success("Ponto excluído com sucesso.");
                 } catch (error) {
                     console.error("Error deleting point:", error);

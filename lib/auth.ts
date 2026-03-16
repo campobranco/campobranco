@@ -103,15 +103,24 @@ export async function checkAuth(req?: Request): Promise<AuthorizedUser | null> {
 }
 
 // Exige autenticação e opcionalmente um conjunto de papéis permitidos
-export async function requireAuth(req: Request, allowedRoles?: string[]): Promise<AuthorizedUser> {
+export async function requireAuth(reqOrRoles?: Request | string[], allowedRoles?: string[]): Promise<AuthorizedUser> {
+    let req: Request | undefined;
+    let roles: string[] | undefined = allowedRoles;
+
+    if (Array.isArray(reqOrRoles)) {
+        roles = reqOrRoles;
+    } else if (reqOrRoles) {
+        req = reqOrRoles as Request;
+    }
+
     const user = await checkAuth(req);
 
     if (!user) {
         throw new Error('Unauthorized');
     }
 
-    if (allowedRoles && allowedRoles.length > 0) {
-        const hasPermission = allowedRoles.includes(user.role) || user.role === 'ADMIN';
+    if (roles && roles.length > 0) {
+        const hasPermission = roles.includes(user.role) || user.role === 'ADMIN';
         if (!hasPermission) {
             throw new Error('Forbidden');
         }

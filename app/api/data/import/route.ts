@@ -174,7 +174,7 @@ export async function POST(req: Request) {
                         .where('uf', '==', uf)
                         .get();
 
-                    let existingCity = undefined;
+                    let existingCity: any = undefined;
                     // Procura case-insensitive
                     snapshot.forEach(doc => {
                         const data = doc.data();
@@ -237,7 +237,7 @@ export async function POST(req: Request) {
                     }
 
                     if (!snapshot.empty) {
-                        const existingTerr = { id: snapshot.docs[0].id, ...snapshot.docs[0].data() };
+                        const existingTerr: any = { id: snapshot.docs[0].id, ...snapshot.docs[0].data() };
                         territoryId = existingTerr.id;
 
                         if (mapDesc && existingTerr.notes !== mapDesc && !simulate) {
@@ -295,7 +295,7 @@ export async function POST(req: Request) {
                 const addrSnap = await addrsRef.where('territoryId', '==', territoryId).get();
                 const addrLegacySnap = await addrsRef.where('territory_id', '==', territoryId).get();
 
-                let existingAddr = undefined;
+                let existingAddr: any = undefined;
 
                 addrSnap.forEach(doc => {
                     if (doc.data().street && doc.data().street.toLowerCase() === street.toLowerCase()) {

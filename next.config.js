@@ -20,6 +20,20 @@ const nextConfig = {
         deviceSizes: [640, 750, 828, 1080, 1200],
         imageSizes: [16, 32, 48, 64, 96, 128, 256, 384],
         minimumCacheTTL: 86400, // 24 horas de cache para imagens otimizadas
+        remotePatterns: [
+            {
+                // Fotos de perfil do Google (login com Google)
+                protocol: 'https',
+                hostname: 'lh3.googleusercontent.com',
+                pathname: '/**',
+            },
+            {
+                // Firebase Storage (avatares personalizados)
+                protocol: 'https',
+                hostname: 'firebasestorage.googleapis.com',
+                pathname: '/**',
+            },
+        ],
     },
     compiler: {
         // Remove console logs em produção para economizar memória e melhorar a performance
@@ -30,7 +44,6 @@ const nextConfig = {
         // Define a URL base para as APIs. No GitHub, aponta para o Firebase.
         NEXT_PUBLIC_API_BASE_URL: isGithubActions ? 'https://campo-branco.web.app' : '',
     },
-    swcMinify: true, // Garante a minificação eficiente usando SWC
     turbopack: {},
 };
 
@@ -39,7 +52,6 @@ const withPWA = require("@ducanh2912/next-pwa").default({
     cacheOnFrontEndNav: true,
     aggressiveFrontEndNavCaching: true,
     reloadOnOnline: true,
-    swcMinify: true,
     disable: process.env.NODE_ENV === "development",
     skipWaiting: true,
     register: true,
@@ -48,9 +60,6 @@ const withPWA = require("@ducanh2912/next-pwa").default({
         disableDevLogs: true,
         // Evita cache de URLs externas em desenvolvimento
         cleanupOutdatedCaches: true,
-        precacheEntries: [
-            // Remove URLs do Firebase Hosting em desenvolvimento
-        ],
     },
 });
 

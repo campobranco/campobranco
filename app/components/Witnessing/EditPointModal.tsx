@@ -60,7 +60,8 @@ export default function EditPointModal({ isOpen, onClose, point, cityName, onSuc
 
         setLoading(true);
         try {
-            await updateDoc(doc(db, 'witnessingPoints', point.id), {
+            // Nome correto da coleção no Firestore é 'witnessing_points' (snake_case)
+            await updateDoc(doc(db, 'witnessing_points', point.id), {
                 name: name.trim(),
                 address: address.trim(),
                 googleMapsLink: googleMapsLink.trim() || null,

@@ -47,7 +47,6 @@
     "alwaysDeployFromSource": true
   },
   "storage": {
-    "rules": "storage.rules",
-    "bucket": "campo-branco.firebasestorage.app"
+    "rules": "storage.rules"
   }
 }

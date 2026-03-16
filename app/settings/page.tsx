@@ -513,53 +513,6 @@ export default function SettingsPage() {
                     </div>
                 </section>
 
-                {/* Legal Section */}
-                <section className="space-y-4">
-                    <h2 className="text-sm font-bold text-muted uppercase tracking-widest pl-1">Jurídico e Privacidade</h2>
-                    <div className="bg-surface p-6 rounded-lg shadow-sm border border-surface-border">
-                        <div className="space-y-4">
-                            <Link href="/legal/privacy" className="flex items-center justify-between p-3 hover:bg-background rounded-xl transition-colors group">
-                                <div className="flex items-center gap-4">
-                                    <div className="p-2 bg-emerald-50 text-emerald-600 dark:bg-emerald-900/20 dark:text-emerald-400 rounded-lg">
-                                        <Shield className="w-5 h-5" />
-                                    </div>
-                                    <div>
-                                        <h3 className="font-bold text-main">Política de Privacidade</h3>
-                                        <p className="text-xs text-muted">Como seus dados são protegidos pela LGPD.</p>
-                                    </div>
-                                </div>
-                                <ChevronDown className="w-5 h-5 text-muted group-hover:text-main -rotate-90" />
-                            </Link>
-
-                            <Link href="/legal/terms" className="flex items-center justify-between p-3 hover:bg-background rounded-xl transition-colors group">
-                                <div className="flex items-center gap-4">
-                                    <div className="p-2 bg-blue-50 text-blue-600 dark:bg-blue-900/20 dark:text-blue-400 rounded-lg">
-                                        <Scale className="w-5 h-5" />
-                                    </div>
-                                    <div>
-                                        <h3 className="font-bold text-main">Termos de Uso</h3>
-                                        <p className="text-xs text-muted">Regras para utilização do Campo Branco.</p>
-                                    </div>
-                                </div>
-                                <ChevronDown className="w-5 h-5 text-muted group-hover:text-main -rotate-90" />
-                            </Link>
-
-                            <a href="mailto:campobrancojw@gmail.com" className="flex items-center justify-between p-3 hover:bg-background rounded-xl transition-colors group">
-                                <div className="flex items-center gap-4">
-                                    <div className="p-2 bg-amber-50 text-amber-600 dark:bg-amber-900/20 dark:text-amber-400 rounded-lg">
-                                        <Mail className="w-5 h-5" />
-                                    </div>
-                                    <div>
-                                        <h3 className="font-bold text-main">Falar com o DPO</h3>
-                                        <p className="text-xs text-muted">Solicitações LGPD e proteção de dados.</p>
-                                    </div>
-                                </div>
-                                <ChevronDown className="w-5 h-5 text-muted group-hover:text-main -rotate-90" />
-                            </a>
-                        </div>
-                    </div>
-                </section>
-
 
                 {/* Edit Profile Modal */}
                 {showEditModal && (
@@ -877,15 +830,7 @@ export default function SettingsPage() {
                             </div>
                             <Eye className="w-4 h-4 text-muted group-hover:text-primary transition-colors" />
                         </Link>
-                        <Link href="/legal/privacy" className="flex items-center justify-between p-4 hover:bg-background rounded-lg transition-colors group">
-                            <div className="flex items-center gap-3">
-                                <div className="p-2 bg-gray-100 dark:bg-gray-800 rounded-lg text-gray-500">
-                                    <Shield className="w-5 h-5" />
-                                </div>
-                                <span className="font-bold text-sm text-main">Política de Privacidade</span>
-                            </div>
-                            <Eye className="w-4 h-4 text-muted group-hover:text-primary transition-colors" />
-                        </Link>
+
                         <Link href="/legal/data-usage" className="flex items-center justify-between p-4 hover:bg-background rounded-lg transition-colors group">
                             <div className="flex items-center gap-3">
                                 <div className="p-2 bg-gray-100 dark:bg-gray-800 rounded-lg text-gray-500">
@@ -904,6 +849,24 @@ export default function SettingsPage() {
                             </div>
                             <Eye className="w-4 h-4 text-muted group-hover:text-primary transition-colors" />
                         </Link>
+                        <Link href="/legal/privacy" className="flex items-center justify-between p-4 hover:bg-background rounded-lg transition-colors group">
+                            <div className="flex items-center gap-3">
+                                <div className="p-2 bg-gray-100 dark:bg-gray-800 rounded-lg text-gray-500">
+                                    <Shield className="w-5 h-5" />
+                                </div>
+                                <span className="font-bold text-sm text-main">Política de Privacidade</span>
+                            </div>
+                            <Eye className="w-4 h-4 text-muted group-hover:text-primary transition-colors" />
+                        </Link>
+                        <a href="mailto:campobrancojw@gmail.com" className="flex items-center justify-between p-4 hover:bg-background rounded-lg transition-colors group">
+                            <div className="flex items-center gap-3">
+                                <div className="p-2 bg-gray-100 dark:bg-gray-800 rounded-lg text-gray-500">
+                                    <Mail className="w-5 h-5" />
+                                </div>
+                                <span className="font-bold text-sm text-main">Falar com o DPO</span>
+                            </div>
+                            <Eye className="w-4 h-4 text-muted group-hover:text-primary transition-colors" />
+                        </a>
 
                         <hr className="border-surface-border my-2" />
 
