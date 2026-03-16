@@ -47,6 +47,18 @@ env:
       - BUILD
       - RUNTIME
   
+  - variable: NEXT_PUBLIC_FIREBASE_DATABASE_ID
+    value: "(default)"
+    availability:
+      - BUILD
+      - RUNTIME
+  
+  - variable: NEXT_PUBLIC_ENVIRONMENT
+    value: "production"
+    availability:
+      - BUILD
+      - RUNTIME
+  
   - variable: VAPID_SUBJECT
     value: "mailto:admin@campo-branco.web.app"
   - variable: FB_ADMIN_CLIENT_EMAIL
