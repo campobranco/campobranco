@@ -121,7 +121,7 @@ export default function SettingsPage() {
     // Redirect Unassigned Users
     useEffect(() => {
         if (!loading && user && !congregationId && !isAdminRoleGlobal) {
-            router.push('/unassigned');
+            router.push('/sem-congregacao');
         }
     }, [user, loading, congregationId, isAdminRoleGlobal, router]);
 

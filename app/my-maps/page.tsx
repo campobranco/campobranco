@@ -35,7 +35,7 @@ export default function CongregationListPage() {
     // Redirect Unassigned Users
     useEffect(() => {
         if (!authLoading && user && !congregationId && !isAdminRoleGlobal) {
-            router.push('/unassigned');
+            router.push('/sem-congregacao');
         }
     }, [user, authLoading, congregationId, isAdminRoleGlobal, router]);
 

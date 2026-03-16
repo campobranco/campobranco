@@ -6,13 +6,9 @@ import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useEffect } from 'react';
 
-export default function UnassignedPage() {
+export default function NoCongregationPage() {
     const { user, role, logout, loading, profileName } = useAuth();
     const router = useRouter();
-
-    useEffect(() => {
-        router.replace('/sem-congregacao');
-    }, [router]);
 
     useEffect(() => {
         if (!loading) {
@@ -33,7 +29,7 @@ export default function UnassignedPage() {
         <div className="min-h-screen bg-[#f8fafc] flex items-center justify-center p-6 font-sans">
             <div className="bg-white max-w-md w-full rounded-[2.5rem] p-8 shadow-xl shadow-primary-light/500/5 space-y-8 text-center relative overflow-hidden">
 
-                {/* Decoration */}
+                {/* Decoration - Mantido do layout unassigned */}
                 <div className="absolute top-0 left-0 w-full h-2 bg-gradient-to-r from-orange-400 to-red-500" />
 
                 <div className="w-24 h-24 bg-orange-50 rounded-full flex items-center justify-center mx-auto text-orange-500 shadow-sm border border-orange-100">
@@ -41,27 +37,26 @@ export default function UnassignedPage() {
                 </div>
 
                 <div className="space-y-4">
-                    <h1 className="text-2xl font-black text-gray-900 tracking-tight">Acesso Restrito</h1>
+                    <h1 className="text-2xl font-black text-gray-900 tracking-tight">Sem Congregação</h1>
                     <p className="text-gray-500 font-medium text-sm leading-relaxed">
-                        Olá, <strong>{profileName || 'visitante'}</strong>. Sua conta foi criada, mas você ainda não pertence a nenhuma congregação.
+                        Olá, <strong>{profileName || 'visitante'}</strong>. Sua conta foi identificada, mas você ainda não pertence a nenhuma congregação.
                     </p>
                 </div>
 
                 <div className="space-y-4 bg-gray-50 p-6 rounded-3xl border border-gray-100 text-left">
                     <h3 className="font-bold text-gray-900 text-sm uppercase tracking-wide flex items-center gap-2">
-                        <Users className="w-4 h-4 text-primary-light/500" />
+                        <Users className="w-4 h-4 text-orange-500" />
                         Como liberar meu acesso?
                     </h3>
 
                     <ul className="space-y-4 text-sm text-gray-600">
-
                         <li className="flex gap-3">
                             <div className="bg-white p-2 rounded-lg shadow-sm h-fit">
-                                <LinkIcon className="w-4 h-4 text-primary-light/500" />
+                                <LinkIcon className="w-4 h-4 text-orange-500" />
                             </div>
                             <div>
                                 <span className="font-bold text-gray-800">Peça um Convite</span>
-                                <p className="text-xs mt-1">Solicite ao ancião ou servo de territórios o <span className="font-mono bg-primary-light/50 text-primary px-1 rounded">Link de Convite</span> da congregação.</p>
+                                <p className="text-xs mt-1">Solicite ao ancião ou servo de territórios o <span className="font-mono bg-orange-100 text-orange-600 px-1 rounded">Link de Convite</span>.</p>
                             </div>
                         </li>
                         <li className="flex gap-3">
@@ -70,7 +65,7 @@ export default function UnassignedPage() {
                             </div>
                             <div>
                                 <span className="font-bold text-gray-800">Aceite um Território</span>
-                                <p className="text-xs mt-1">Se você abrir um link de território compartilhado e clicar em &quot;Aceitar&quot;, você será vinculado automaticamente.</p>
+                                <p className="text-xs mt-1">Se você aceitar um link de território compartilhado, será vinculado automaticamente.</p>
                             </div>
                         </li>
                         <li className="flex gap-3">
@@ -79,7 +74,7 @@ export default function UnassignedPage() {
                             </div>
                             <div>
                                 <span className="font-bold text-gray-800">Administrador?</span>
-                                <p className="text-xs mt-1">Se você é o responsável, pode <Link href="/solicitar-congregacao" className="text-orange-600 font-bold hover:underline">solicitar uma nova congregação</Link> para começar.</p>
+                                <p className="text-xs mt-1">Você pode <Link href="/solicitar-congregacao" className="text-orange-600 font-bold hover:underline">solicitar uma nova congregação</Link>.</p>
                             </div>
                         </li>
                     </ul>

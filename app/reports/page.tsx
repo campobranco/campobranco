@@ -41,6 +41,8 @@ export default function ReportsPage() {
         if (!authLoading && user) {
             if (isAdminRoleGlobal && !userCongregationId) {
                 router.replace('/admin/congregations');
+            } else if (!userCongregationId) {
+                router.push('/sem-congregacao');
             } else if (!isElder && !isServant) {
                 router.replace('/dashboard');
             }

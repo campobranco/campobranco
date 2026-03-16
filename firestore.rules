@@ -28,29 +28,26 @@ service cloud.firestore {
       return isAuthenticated() && request.auth.token.email == 'campobrancojw@gmail.com';
     }
 
-    // Check for admin role (Global or Database)
     function isAdmin() {
       return isAuthenticated() && (
         isMasterAdmin() ||
         request.auth.token.role == 'ADMIN' ||
-        get(/databases/$(database)/documents/users/$(request.auth.uid)).data.get('role', '') == 'ADMIN'
+        (exists(/databases/$(database)/documents/users/$(request.auth.uid)) && get(/databases/$(database)/documents/users/$(request.auth.uid)).data.get('role', '') == 'ADMIN')
       );
     }
     
     function isElder() {
-      let auth = getAuthContext();
       return isAdmin() || 
-             auth.role == 'ANCIAO' || 
-             'ANCIAO' in auth.roles ||
-             get(/databases/$(database)/documents/users/$(request.auth.uid)).data.get('role', '') == 'ANCIAO';
+             request.auth.token.role == 'ANCIAO' || 
+             'ANCIAO' in (request.auth.token.roles != null ? request.auth.token.roles : []) ||
+             (exists(/databases/$(database)/documents/users/$(request.auth.uid)) && get(/databases/$(database)/documents/users/$(request.auth.uid)).data.get('role', '') == 'ANCIAO');
     }
     
     function isServant() {
-      let auth = getAuthContext();
       return isElder() || 
-             auth.role == 'SERVO' || 
-             'SERVO' in auth.roles ||
-             get(/databases/$(database)/documents/users/$(request.auth.uid)).data.get('role', '') == 'SERVO';
+             request.auth.token.role == 'SERVO' || 
+             'SERVO' in (request.auth.token.roles != null ? request.auth.token.roles : []) ||
+             (exists(/databases/$(database)/documents/users/$(request.auth.uid)) && get(/databases/$(database)/documents/users/$(request.auth.uid)).data.get('role', '') == 'SERVO');
     }
     
     // --- Isolation Logic ---
@@ -95,13 +92,14 @@ service cloud.firestore {
       // MASTER ACCESS (Emergency / First Login)
       allow read, write: if isMasterAdmin();
 
-      // Individual document access
+      // Individual document access (Master Rule: User always reads self)
+      allow get: if isAuthenticated() && request.auth.uid == userId;
+      
+      // Admin/Congregation access
       allow get: if isAuthenticated() && (
-        request.auth.uid == userId || 
         isAdmin() ||
         (resource.data.email == request.auth.token.email && (request.auth.token.email_verified == true || request.auth.token.firebase.sign_in_provider == 'google.com')) ||
-        // Only allow reading users from SAME congregation
-        (getAuthContext().congregationId != "" && getAuthContext().congregationId == resource.data.congregationId)
+        (request.auth.token.congregationId != null && request.auth.token.congregationId != "" && request.auth.token.congregationId == resource.data.get('congregationId', ''))
       );
 
       // List access
@@ -122,12 +120,10 @@ service cloud.firestore {
         (isElder() && getAuthContext().congregationId == resource.data.congregationId)
       );
       
-      // Create: Allow standard creation, but 'role' should default to PUBLICADOR logic from client. 
-      // We allow the master email to create itself as ADMIN.
       allow create: if isAuthenticated() && (
         (request.resource.data.role == "PUBLICADOR" &&
          (!('roles' in request.resource.data) || request.resource.data.roles.size() == 0) &&
-         (!('congregationId' in request.resource.data) || request.resource.data.congregationId == "")) ||
+         (!('congregationId' in request.resource.data) || request.resource.data.congregationId == "" || request.resource.data.congregationId == null)) ||
         (request.auth.token.email == 'campobrancojw@gmail.com' && request.auth.uid == userId)
       );
       allow delete: if isAuthenticated() && (isAdmin() || request.auth.uid == userId);
@@ -196,7 +192,8 @@ service cloud.firestore {
     match /shared_lists/{id} {
         allow get: if true; // Truly public for sharing
         allow list: if isAuthenticated() && (
-            resource.data.assignedTo == request.auth.uid || 
+            resource.data.get('assignedTo', '') == request.auth.uid || 
+            resource.data.get('assigned_to', '') == request.auth.uid ||
             belongsToUserCongregation(resource.data)
         );
         match /items/{itemId} { 

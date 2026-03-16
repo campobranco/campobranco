@@ -130,7 +130,7 @@ export default function DashboardPage() {
         if (!loading && !user) {
             router.push('/login');
         } else if (!loading && user && !congregationId && role !== 'ADMIN') {
-            router.push('/unassigned');
+            router.push('/sem-congregacao');
         }
     }, [user, loading, congregationId, role, router]);
 
@@ -139,6 +139,7 @@ export default function DashboardPage() {
         if (!user) return;
 
         const fetchMyAssignments = async () => {
+            if (!user || (!congregationId && role !== 'ADMIN')) return;
             try {
                 const userId = user.uid;
 

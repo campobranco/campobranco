@@ -108,10 +108,10 @@ export default function AdminUsersPage() {
         };
         fetchCongs();
 
-        // Listeners para usuários
-        let usersQuery = query(collection(db, 'users'), orderBy('name'));
+        // Listeners para usuários - Ordenar por data de criação para ver novos primeiro
+        let usersQuery = query(collection(db, 'users'), orderBy('createdAt', 'desc'));
         if (!isAdminRoleGlobal && congregationId) {
-            usersQuery = query(collection(db, 'users'), where('congregationId', '==', congregationId), orderBy('name'));
+            usersQuery = query(collection(db, 'users'), where('congregationId', '==', congregationId), orderBy('createdAt', 'desc'));
         }
 
         const unsubscribe = onSnapshot(usersQuery, (snapshot) => {
@@ -292,10 +292,11 @@ export default function AdminUsersPage() {
         }
     };
 
-    const filteredUsers = users.filter(u =>
-    (u.name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        u.email?.toLowerCase().includes(searchTerm.toLowerCase()))
-    );
+    const filteredUsers = users.filter(u => {
+        const nameMatch = (u.name || '').toLowerCase().includes(searchTerm.toLowerCase());
+        const emailMatch = (u.email || '').toLowerCase().includes(searchTerm.toLowerCase());
+        return nameMatch || emailMatch;
+    });
 
     if (loading || (user && !isElder && !loading)) {
         return (
@@ -316,7 +317,7 @@ export default function AdminUsersPage() {
                     <div>
                         <h1 className="font-bold text-lg text-main tracking-tight leading-tight">Membros</h1>
                         <p className="text-[10px] text-muted font-bold uppercase tracking-widest">
-                            {isAdminRoleGlobal ? 'Administração Global' : 'Gestão da Congregação'}
+                            {isAdminRoleGlobal ? `Administração Global (${users.length} usuários)` : `Gestão da Congregação (${users.length} membros)`}
                         </p>
                     </div>
                 </div>

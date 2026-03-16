@@ -35,9 +35,13 @@ export default function WitnessingPage() {
             return;
         }
 
-        // Admin sem congregação vai para o painel de gestão
         if (isAdminRoleGlobal && !congregationId) {
             router.replace('/admin/congregations');
+            return;
+        }
+
+        if (!isAdminRoleGlobal && !congregationId) {
+            router.push('/sem-congregacao');
             return;
         }
 
