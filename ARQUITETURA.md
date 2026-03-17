@@ -43,9 +43,10 @@ A segurança é reforçada em duas camadas:
 2.  **`middleware.ts`**: Cabeçalhos injetados dinamicamente pelo Next.js.
 
 **Diretivas Principais:**
-*   `script-src`: Permite Google APIs, Firebase e Leaflet (`unpkg.com`).
-*   `img-src`: Permite mapas (OpenStreetMap) e Storage do Firebase.
+*   `script-src`: Permite Google APIs, Firebase e Leaflet (`unpkg.com`). Adicionado `blob:` para Service Worker.
+*   `img-src`: Permite mapas (OpenStreetMap, CartoDB), Storage do Firebase e `blob:`.
 *   `frame-src`: Necessário para o fluxo de login do Firebase.
+*   `connect-src`: Inclui analytics e recursos dinâmicos do Leaflet/CartoDB.
 
 ## 4. Banco de Dados e Autenticação
 
