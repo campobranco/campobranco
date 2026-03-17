@@ -11,8 +11,6 @@ import CookieBanner from './components/CookieBanner';
 import PreviewIndicator from './components/PreviewIndicator';
 import { APP_VERSION } from '@/lib/version';
 import { Toaster } from 'sonner';
-import { Analytics } from '@vercel/analytics/react';
-import { SpeedInsights } from '@vercel/speed-insights/next';
 
 
 const inter = Inter({ subsets: ['latin'] })
@@ -102,8 +100,6 @@ export default function RootLayout({
       <body className={`${inter.className} min-h-screen flex flex-col`} suppressHydrationWarning={true}>
         <AuthProvider>
           <ThemeProvider>
-            <Analytics />
-            <SpeedInsights />
             <PreviewIndicator />
             {/* <FCMManager /> Removed */}
             <SimulationBanner />
