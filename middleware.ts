@@ -61,8 +61,8 @@ export async function middleware(req: NextRequest) {
         }
     }
 
-    // 3. Cabeçalhos de Segurança (Adicional aos do firebase.json se necessário)
-    // Nota: O Firebase Hosting já aplica os dele, mas aqui garantimos no nível do Next.js
+    // 3. Cabeçalhos de Segurança (Garantindo no nível do Next.js para o App Hosting)
+    response.headers.set('Content-Security-Policy', "default-src 'self'; script-src 'self' 'unsafe-inline' 'unsafe-eval' https://apis.google.com https://www.gstatic.com https://unpkg.com https://*.googleapis.com; script-src-elem 'self' 'unsafe-inline' https://apis.google.com https://www.gstatic.com https://unpkg.com https://*.googleapis.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com https://unpkg.com; style-src-elem 'self' 'unsafe-inline' https://fonts.googleapis.com https://unpkg.com; img-src 'self' data: https://*.googleapis.com https://*.gstatic.com https://firebasestorage.googleapis.com https://unpkg.com https://*.tile.openstreetmap.org; font-src 'self' https://fonts.gstatic.com; connect-src 'self' https://*.googleapis.com https://*.firebaseio.com https://*.google-analytics.com https://unpkg.com https://fonts.gstatic.com; frame-src 'self' https://campo-branco.firebaseapp.com https://campo-branco.web.app; worker-src 'self' blob:;");
     response.headers.set('X-DNS-Prefetch-Control', 'on');
     response.headers.set('X-XSS-Protection', '1; mode=block');
     response.headers.set('X-Frame-Options', 'DENY');
