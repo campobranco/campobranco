@@ -63,6 +63,9 @@ A segurança é reforçada em duas camadas:
 *   `firebase deploy --only hosting`: Atualiza regras de roteamento.
 *   `gcloud run deploy cb-proxy --source .`: Atualiza o servidor de proxy (dentro da pasta `proxy-server`).
 
+### Manutenção Periódica
+- **Limpeza (Mar/2026)**: Remoção de arquivos `.bak`, `.log` e arquivos de dados temporários do root para manter o repositório limpo e organizado.
+
 ---
 > [!IMPORTANT]
 > Sempre que houver falha no deploy com erro `invoker_iam_disabled`, verifique se o Service Account `service-[PROJECT_NUMBER]@gcp-sa-firebaseapphosting.iam.gserviceaccount.com` possui a permissão `roles/run.admin`.

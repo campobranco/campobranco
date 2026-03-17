@@ -68,7 +68,7 @@ export async function middleware(req: NextRequest) {
         "script-src-elem 'self' 'unsafe-inline' https://apis.google.com https://www.gstatic.com https://unpkg.com https://*.googleapis.com",
         "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com https://unpkg.com",
         "style-src-elem 'self' 'unsafe-inline' https://fonts.googleapis.com https://unpkg.com",
-        "img-src 'self' data: blob: https://*.googleapis.com https://*.gstatic.com https://firebasestorage.googleapis.com https://unpkg.com https://*.tile.openstreetmap.org https://*.basemaps.cartocdn.com",
+        "img-src 'self' data: blob: https://*.googleapis.com https://*.gstatic.com https://firebasestorage.googleapis.com https://unpkg.com https://*.tile.openstreetmap.org https://*.basemaps.cartocdn.com https://img.shields.io",
         "font-src 'self' https://fonts.gstatic.com",
         "connect-src 'self' https://*.googleapis.com https://*.firebaseio.com https://*.google-analytics.com https://www.google-analytics.com https://unpkg.com https://fonts.gstatic.com",
         "frame-src 'self' https://campo-branco.firebaseapp.com https://campo-branco.web.app",
