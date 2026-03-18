@@ -58,7 +58,15 @@ export default function FloatingReportButton() {
                 y: window.scrollY,
                 width: window.innerWidth,
                 height: window.innerHeight,
-                ignoreElements: (element) => element.id === 'floating-report-button'
+                ignoreElements: (element) => {
+                    if (element.id === 'floating-report-button') return true;
+                    // Ignora avatares do Google para evitar erros CORS/429 durante o html2canvas
+                    if (element.tagName === 'IMG') {
+                        const img = element as HTMLImageElement;
+                        if (img.src && img.src.includes('googleusercontent.com')) return true;
+                    }
+                    return false;
+                }
             });
             setScreenshot(canvas.toDataURL('image/png'));
             setIsOpen(true);
@@ -149,7 +157,7 @@ export default function FloatingReportButton() {
                             <label className="text-xs font-bold text-muted uppercase">Captura de Tela</label>
                             {screenshot && (
                                 <div className="rounded-md overflow-hidden border border-gray-200 dark:border-slate-700 w-full h-48 bg-gray-100 dark:bg-slate-800 relative group">
-                                    <Image src={screenshot} alt="Screenshot" fill className="object-contain" />
+                                    <img src={screenshot} alt="Screenshot" className="w-full h-full object-contain" />
                                 </div>
                             )}
                         </div>

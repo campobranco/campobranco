@@ -29,6 +29,8 @@ import { getServiceYear, getServiceYearLabel, getServiceYearRange } from "@/lib/
 import { db } from "@/lib/firebase";
 import { collection, query, where, getDocs } from "firebase/firestore";
 import { useRouter } from "next/navigation";
+import { getRegistryData } from "@/lib/services/reports";
+
 
 export default function ReportsPage() {
     const router = useRouter();
@@ -91,14 +93,14 @@ export default function ReportsPage() {
             setError(null);
             setLoading(true);
             try {
-                // Fetch all data via Admin API to bypass RLS issues (consistent with registry page)
-                const res = await fetch(`/api/reports/registry/fetch?congregationId=${targetCongId}`);
-                const data = await res.json();
+                // Fetch all data via Client Service (consistent with registry page)
+                const resData = await getRegistryData(targetCongId);
 
-                if (!res.ok) throw new Error(data.error || "Erro ao buscar dados do servidor");
+                if (!resData.success) throw new Error(resData.error || "Erro ao buscar dados do servidor");
 
-                const territories = data.territories || [];
-                const history = data.sharedLists || [];
+                const territories = resData.territories || [];
+                const history = resData.sharedLists || [];
+
 
 
                 // --- CALCULATE KPIS ---

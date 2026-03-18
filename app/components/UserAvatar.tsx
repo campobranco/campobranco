@@ -42,13 +42,14 @@ export default function UserAvatar({ userId, name, className = "w-6 h-6 text-[10
 
     if (photoURL) {
         return (
-            <Image
+            <img
                 src={photoURL}
                 alt={displayName}
                 width={24}
                 height={24}
                 className={`${className} rounded-full object-cover ring-2 ring-white bg-gray-200`}
                 title={displayName}
+                referrerPolicy="no-referrer"
             />
         );
     }

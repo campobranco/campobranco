@@ -41,6 +41,7 @@
 *.pem
 *.key
 *.crt
+service-account.json
 
 # =====================
 # Misc
@@ -66,7 +67,7 @@ yarn-error.log*
 # TypeScript
 # =====================
 *.tsbuildinfo
-# next-env.d.ts  ← recomendo NÃO ignorar
+next-env.d.ts
 
 # =====================
 # Prisma
@@ -78,93 +79,7 @@ yarn-error.log*
 # =====================
 dev.db
 *.db
-
-# =====================
-# Firebase
-# =====================
-.firebase/
-firebase-debug.log*
-firestore-debug.log*
-# =====================
-# Dependencies
-# =====================
-/node_modules
-/.pnp
-.pnp.*
-.yarn/*
-!.yarn/patches
-!.yarn/plugins
-!.yarn/releases
-!.yarn/versions
-
-# =====================
-# Testing
-# =====================
-/coverage
-/test-results/
-/playwright-report/
-
-# =====================
-# Next.js
-# =====================
-/.next/
-/out/
-
-# =====================
-# Production builds
-# =====================
-/build
-
-# =====================
-# Environment variables (IMPORTANT)
-# =====================
-.env
-.env.*
-!.env.example
-
-# =====================
-# Secrets / Keys
-# =====================
-*.pem
-*.key
-*.crt
-
-# =====================
-# Misc
-# =====================
-.DS_Store
-Thumbs.db
-desktop.ini
-
-# =====================
-# Debug logs
-# =====================
-npm-debug.log*
-yarn-debug.log*
-yarn-error.log*
-.pnpm-debug.log*
-
-# =====================
-# Vercel
-# =====================
-.vercel
-
-# =====================
-# TypeScript
-# =====================
-*.tsbuildinfo
-# next-env.d.ts  ← recomendo NÃO ignorar
-
-# =====================
-# Prisma
-# =====================
-/app/generated/prisma
-
-# =====================
-# Database
-# =====================
-dev.db
-*.db
+dblist.json
 
 # =====================
 # Firebase
@@ -176,9 +91,12 @@ firestore-debug.log*
 ui-debug.log*
 
 # =====================
-# Project specific
+# Project specific & Temporary
 # =====================
 /bkp/
-service-account.json
 backups/
 firebase-sites.txt
+temp_setup_admin.js
+build_*.log
+tsc_errors*.txt
+firebase_deploy_debug.txt

@@ -16,19 +16,12 @@ service cloud.firestore {
     }
 
     function getAuthCongregationId() {
-      return request.auth.token.get('congregationId', request.auth.token.get('congregation_id', '')) != '' 
-        ? request.auth.token.get('congregationId', request.auth.token.get('congregation_id', ''))
-        : (exists(/databases/$(database)/documents/users/$(request.auth.uid)) 
-            ? get(/databases/$(database)/documents/users/$(request.auth.uid)).data.get('congregationId', get(/databases/$(database)/documents/users/$(request.auth.uid)).data.get('congregation_id', '')) 
-            : '');
+      let userDoc = get(/databases/$(database)/documents/users/$(request.auth.uid));
+      return userDoc.data.get('congregationId', userDoc.data.get('congregation_id', ''));
     }
 
     function getAuthRole() {
-      return request.auth.token.get('role', '') != ''
-        ? request.auth.token.get('role', '')
-        : (exists(/databases/$(database)/documents/users/$(request.auth.uid))
-            ? get(/databases/$(database)/documents/users/$(request.auth.uid)).data.get('role', 'PUBLICADOR')
-            : 'PUBLICADOR');
+      return get(/databases/$(database)/documents/users/$(request.auth.uid)).data.get('role', 'PUBLICADOR');
     }
 
     function isAdmin() {
@@ -44,17 +37,14 @@ service cloud.firestore {
     function isServant() {
       return isAuthenticated() && (
              isElder() || 
-             getAuthRole() == 'SERVO' || 
-             'SERVO' in request.auth.token.get('roles', []) ||
-             'ANCIAO' in request.auth.token.get('roles', [])
+             getAuthRole() == 'SERVO'
       );
     }
 
     function isPublisher() {
       return isAuthenticated() && (
              isServant() ||
-             getAuthRole() == 'PUBLICADOR' ||
-             'PUBLICADOR' in request.auth.token.get('roles', [])
+             getAuthRole() == 'PUBLICADOR'
       );
     }
 
@@ -63,13 +53,7 @@ service cloud.firestore {
        return request.auth != null && request.auth.token.email == 'campobrancojw@gmail.com';
     }
     function isAdminToken() {
-       return request.auth != null && (request.auth.token.role == 'ADMIN' || isMasterLite());
-    }
-    function isElderToken() {
-       return request.auth != null && (isAdminToken() || request.auth.token.role == 'ANCIAO');
-    }
-    function isServantToken() {
-       return request.auth != null && (isElderToken() || request.auth.token.role == 'SERVO' || 'SERVO' in request.auth.token.get('roles', []));
+       return isMasterLite(); // Admin via token removido, apenas Master ou via Doc
     }
     
     // --- Lógica de Isolamento ---
@@ -105,23 +89,25 @@ service cloud.firestore {
 
     // 2. Usuários (Acesso Estrito e Perfil)
     match /users/{userId} {
-      // LEITURA PRÓPRIA: O usuário pode SEMPRE ler seu próprio perfil (get)
-      allow get: if isAuthenticated() && request.auth.uid == userId;
+      // LEITURA PRÓPRIA: O usuário sempre pode ler/listar se o documento for dele
+      allow read: if isAuthenticated() && (request.auth.uid == userId || isMasterLite());
 
-      // ACESSO MASTER
-      allow read, write: if isMasterLite();
-
-      // Listagem: Apenas quem tem congregação ou Admin
-      allow list: if isAuthenticated() && (isAdminToken() || request.auth.token.get('congregationId', '') != '');
+      // Listagem Geral: Apenas Admin ou quem tem congregação (precisa para listar publicadores da equipe)
+      allow list: if isAuthenticated() && (isAdmin() || getAuthCongregationId() != '');
       
-      // Atualização: Próprio usuário (campos limitados) ou Ancião da mesma congregação
+      // CRIAÇÃO DO PRÓPRIO PERFIL NO PRIMEIRO LOGIN
+      // Se não existe, ele mesmo pode criar (setDoc no AuthContext no primeiro login)
+      allow create: if isAuthenticated() && (request.auth.uid == userId || isAdmin());
+
+      // Atualização: Próprio usuário (sem escalar privilégios), Admin ou Ancião da MESMA congregação
       allow update: if isAuthenticated() && (
-        isAdminToken() ||
+        isMasterLite() ||
+        isAdmin() ||
         (request.auth.uid == userId && (!('role' in request.resource.data) || request.resource.data.role == resource.data.role)) || 
-        (isElderToken() && resource.data.get('congregationId', '') == request.auth.token.get('congregationId', ''))
+        (isElder() && resource.data.get('congregationId', '') == getAuthCongregationId())
       );
       
-      allow create, delete: if isAdminToken();
+      allow delete: if isAdmin() || isMasterLite();
     }
 
     // 3. Cities
@@ -240,7 +226,15 @@ service cloud.firestore {
         }
     }
 
-    // 7. Pontos de Testemunho
+    // 7. Snapshots de Listas (Territórios e Endereços congelados na emissão)
+    match /shared_list_snapshots/{id} {
+        allow read: if true;
+        allow create: if isAuthenticated(); // Temporariamente permissivo para teste de batch
+        allow update: if isAuthenticated() || true; 
+        allow delete: if isAuthenticated() && isAdmin();
+    }
+
+    // 8. Pontos de Testemunho
     match /witnessing_points/{id} {
         allow read: if isAuthenticated() && (isAdmin() || belongsToUserCongregation(resource.data));
         allow create: if isAuthenticated() && (isAdmin() || (isServant() && belongsToUserCongregation(request.resource.data)));

@@ -30,6 +30,8 @@ import { useRouter } from 'next/navigation';
 import { toast } from 'sonner';
 import BottomNav from '@/app/components/BottomNav';
 import ConfirmationModal from '@/app/components/ConfirmationModal';
+import { getCongregations, saveCongregation, deleteCongregation, migrateCongregation } from '@/lib/services/admin';
+
 
 interface Congregation {
     id: string;
@@ -88,13 +90,10 @@ export default function CongregationsPage() {
         if (!user) return;
         try {
             setLoading(true);
-            const token = await user.getIdToken();
-            const res = await fetch('/api/admin/congregations/list', {
-                headers: { Authorization: `Bearer ${token}` }
-            });
-            const data = await res.json();
-            if (!res.ok) throw new Error(data.error || 'Erro ao carregar');
-            setCongregations(data.congregations || []);
+            const res = await getCongregations();
+            if (!res.success) throw new Error(res.error || 'Erro ao carregar');
+            setCongregations(res.congregations || []);
+
         } catch (error) {
             console.error("Error fetching congregations:", error);
             toast.error("Erro ao carregar congregações");
@@ -135,14 +134,9 @@ export default function CongregationsPage() {
                             setConfirmModal(null);
                             setLoading(true);
                             try {
-                                const response = await fetch('/api/admin/migrate-congregation', {
-                                    method: 'POST',
-                                    headers: { 'Content-Type': 'application/json' },
-                                    body: JSON.stringify({ oldId, newId })
-                                });
+                                const resMigrate = await migrateCongregation(oldId, newId);
 
-                                const result = await response.json();
-                                if (!response.ok) throw new Error(result.error);
+                                if (!resMigrate.success) throw new Error(resMigrate.error);
 
                                 toast.success("Migração concluída com sucesso!");
                                 setIsCreateModalOpen(false);
@@ -157,22 +151,17 @@ export default function CongregationsPage() {
                 }
             }
 
-            // Chamada para a API server-side que usa Firebase Admin
-            const response = await fetch('/api/admin/congregations/save', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({
-                    id: editingCongregation?.id,
-                    name: newName.trim(),
-                    city: newCity.trim() || null,
-                    category: newCategory.trim() || null,
-                    term_type: newTermType,
-                    customId: customId.trim() || null
-                })
+            // Chamada para a API client-side
+            const result = await saveCongregation({
+                id: editingCongregation?.id,
+                name: newName.trim(),
+                city: newCity.trim() || null,
+                category: newCategory.trim() || null,
+                term_type: newTermType,
+                customId: customId.trim() || null
             });
 
-            const result = await response.json();
-            if (!response.ok) {
+            if (!result.success) {
                 throw new Error(result.error || 'Erro ao salvar congregação');
             }
 
@@ -194,19 +183,13 @@ export default function CongregationsPage() {
         setConfirmModal(null);
         setLoading(true);
         try {
-            const response = await fetch('/api/admin/congregations/delete', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ id, force })
-            });
+            const resData = await deleteCongregation(id, force);
 
-            const resData = await response.json();
-
-            if (!response.ok) {
+            if (!resData.success) {
                 if (resData.code === 'HAS_RELATIONS') {
                     setConfirmModal({
                         title: 'Limpeza Total Necessária',
-                        message: resData.error,
+                        message: resData.error || '',
                         variant: 'danger',
                         onConfirm: () => handleDelete(id, true) // Chama novamente com force=true
                     });

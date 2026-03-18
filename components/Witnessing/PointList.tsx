@@ -2,7 +2,7 @@
 
 import { useState } from 'react';
 import { MapPin, Clock, MoreVertical, Edit, Trash2, ExternalLink, User, CheckCircle, AlertCircle } from 'lucide-react';
-import { updateWitnessingPointStatus, deleteWitnessingPoint } from '@/app/actions/witnessing';
+import { updateWitnessingPointStatus, deleteWitnessingPoint } from '@/lib/services/witnessing';
 import { useRouter } from 'next/navigation';
 import { toast } from 'sonner';
 import ConfirmationModal from '@/app/components/ConfirmationModal';

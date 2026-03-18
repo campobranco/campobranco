@@ -5,7 +5,7 @@
 "use client";
 import { createContext, useContext, useEffect, useState } from "react";
 import { User, onAuthStateChanged, signOut } from "firebase/auth";
-import { doc, getDoc, updateDoc, setDoc, serverTimestamp } from "firebase/firestore";
+import { doc, getDoc, updateDoc, setDoc, serverTimestamp, onSnapshot } from "firebase/firestore";
 import { auth, db } from "@/lib/firebase";
 
 // Tipagem do contexto de autenticação
@@ -77,32 +77,27 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         return () => clearTimeout(safetyTimeout);
     }, []);
 
-    // Ouve mudanças de estado de autenticação e de token do Firebase
+    // Ouve mudanças de estado de autenticação
     useEffect(() => {
         const { onIdTokenChanged } = require("firebase/auth");
         const unsubscribe = onIdTokenChanged(auth, async (firebaseUser: User | null) => {
             if (firebaseUser) {
                 setUser(firebaseUser);
-                await fetchUserProfile(firebaseUser);
-
+                
                 // Salva o token no cookie para uso nas API routes (servidor)
                 try {
-                    const token = await firebaseUser.getIdToken(true); // Force refresh
-                    // Configuração de cookie: Lax permite envio em navegação top-level vinda de outros sites.
-                    // path=/ garante que o cookie chegue em todas as APIs.
+                    const token = await firebaseUser.getIdToken(true);
                     const isSecure = window.location.protocol === 'https:';
                     document.cookie = `__session=${token}; path=/; max-age=3600; SameSite=Lax${isSecure ? '; Secure' : ''}`;
                 } catch (e) {
                     console.warn("Não foi possível salvar o token no cookie:", e);
                 }
             } else {
-                // Usuário deslogou
                 setUser(null);
                 setActualRole(null);
                 setSimulatedRole(null);
                 setCongregationId(null);
                 setProfileName(null);
-                // Limpa cookie com data de expiração fixa para garantir remoção
                 document.cookie = '__session=; path=/; expires=Thu, 01 Jan 1970 00:00:00 GMT; SameSite=Lax';
                 setLoading(false);
             }
@@ -111,66 +106,62 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         return () => unsubscribe();
     }, []);
 
-    // Busca o perfil do usuário no Firestore (role, congregação, nome, etc.)
-    const fetchUserProfile = async (currentUser: User) => {
-        try {
-            const userRef = doc(db, 'users', currentUser.uid);
-            console.log(`[DEBUG] Buscando perfil: users/${currentUser.uid} no banco: ${db.app.options.projectId}`);
-            const userSnap = await getDoc(userRef);
+    // Ouve mudanças no perfil do usuário no Firestore em TEMPO REAL
+    useEffect(() => {
+        if (!user) return;
 
-            if (userSnap.exists()) {
-                const data = userSnap.data();
-
-                // Força ADMIN para o email principal caso o banco esteja limpo
-                if (currentUser.email === 'campobrancojw@gmail.com' && data.role !== 'ADMIN') {
-                    await setDoc(userRef, {
-                        name: 'Admin',
-                        email: currentUser.email,
-                        role: 'ADMIN',
+        console.log(`[DEBUG] Iniciando listener de perfil: users/${user.uid}`);
+        const userRef = doc(db, 'users', user.uid);
+        
+        const unsubscribe = onSnapshot(userRef, async (userSnap) => {
+            try {
+                if (userSnap.exists()) {
+                    const data = userSnap.data();
+                    const masterEmail = process.env.NEXT_PUBLIC_MASTER_EMAIL || 'campobrancojw@gmail.com';
+                    
+                    if (user.email === masterEmail && data.role !== 'ADMIN') {
+                        // Força ADMIN para o email mestre
+                        await setDoc(userRef, {
+                            role: 'ADMIN',
+                            updatedAt: serverTimestamp()
+                        }, { merge: true });
+                        // O próximo snapshot disparará com os dados atualizados
+                    } else {
+                        setActualRole(data.role || 'PUBLICADOR');
+                        const resolvedCongId = data.congregationId || data.congregation_id || null;
+                        setCongregationId(resolvedCongId);
+                        setProfileName(data.name || data.display_name || user.displayName || user.email);
+                        setNotificationsEnabledInternal(data.notificationsEnabled ?? true);
+                        console.log(`[DEBUG] Perfil atualizado (Tempo Real): role=${data.role}, congregationId=${resolvedCongId}`);
+                    }
+                } else {
+                    // Novo usuário
+                    const masterEmail = process.env.NEXT_PUBLIC_MASTER_EMAIL || 'campobrancojw@gmail.com';
+                    const isMaster = user.email === masterEmail;
+                    const newUserProfile = {
+                        name: user.displayName || (isMaster ? 'Admin' : 'Membro'),
+                        email: user.email,
+                        role: (isMaster ? 'ADMIN' : 'PUBLICADOR'),
                         congregationId: null,
                         updatedAt: serverTimestamp(),
-                        createdAt: data.createdAt || serverTimestamp()
-                    }, { merge: true });
-                    setActualRole('ADMIN');
-                    setCongregationId(null);
-                    setProfileName('Admin');
-                } else {
-                    setActualRole(data.role || 'PUBLICADOR');
-                    setCongregationId(data.congregationId || null);
-                    setProfileName(data.name || currentUser.displayName || currentUser.email);
-                    console.log(`[DEBUG] Perfil carregado: role=${data.role}, congregationId=${data.congregationId}, name=${data.name}`);
+                        createdAt: serverTimestamp()
+                    };
+                    await setDoc(userRef, newUserProfile);
                 }
-
-                setNotificationsEnabledInternal(data.notificationsEnabled ?? true);
-
-                // Redireciona para aceite de termos se ainda não foi feito
-                if (!data.termsAcceptedAt &&
-                    window.location.pathname !== '/legal-consent' &&
-                    window.location.pathname !== '/login') {
-                    // window.location.href = '/legal-consent'; // Ativar após migração completa
-                }
-            } else {
-                // Primeiro login - Criar perfil no Firestore
-                const newUserProfile = {
-                    name: currentUser.displayName || (currentUser.email === 'campobrancojw@gmail.com' ? 'Admin' : 'Membro'),
-                    email: currentUser.email,
-                    role: (currentUser.email === 'campobrancojw@gmail.com' ? 'ADMIN' : 'PUBLICADOR') as any,
-                    congregationId: null,
-                    updatedAt: serverTimestamp(),
-                    createdAt: serverTimestamp()
-                };
-
-                await setDoc(userRef, newUserProfile);
-                setProfileName(newUserProfile.name);
-                setActualRole(newUserProfile.role);
-                setCongregationId(null);
+            } catch (error) {
+                console.error("Erro no listener de perfil:", error);
+            } finally {
+                setLoading(false);
             }
-        } catch (error) {
-            console.error("Erro ao buscar perfil do usuário:", error);
-        } finally {
+        }, (error) => {
+            console.error("Erro fatal no listener de perfil:", error);
             setLoading(false);
-        }
-    };
+        });
+
+        return () => unsubscribe();
+    }, [user]);
+
+
 
     // Busca configurações da congregação (tipo de termo, categoria)
     useEffect(() => {

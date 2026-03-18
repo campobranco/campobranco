@@ -149,7 +149,7 @@ const createFirestoreMock = (collectionName: string) => {
 };
 
 export const adminDb: Firestore = !isMock
-    ? getFirestore(adminApp, process.env.NEXT_PUBLIC_FIREBASE_DATABASE_ID || 'campobrancodev')
+    ? getFirestore(adminApp, process.env.NEXT_PUBLIC_FIREBASE_DATABASE_ID || '(default)')
     : {
         collection: (name: string) => createFirestoreMock(name),
         app: { name: '[mock]', options: { projectId: 'N/A' } }

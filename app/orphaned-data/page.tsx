@@ -11,6 +11,8 @@ import { ArrowLeft, Database, Trash2, Link as LinkIcon, AlertTriangle, Check, Lo
 import Link from 'next/link';
 import { toast } from 'sonner';
 import ConfirmationModal from '@/app/components/ConfirmationModal';
+import { repairOrphanData, bulkDeleteOrphans } from '@/lib/services/admin';
+
 
 interface OrphanedItem {
     id: string;
@@ -347,22 +349,13 @@ export default function OrphanedDataPage() {
                 return;
             }
 
-            // Chamada para a API administrativa para contornar restrições de RLS
-            const response = await fetch('/api/admin/repair-orphan', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({
-                    id: fixingItem.id,
-                    type: fixingItem.type,
-                    updates
-                })
-            });
+            // Chamada para o serviço client-side
+            const result = await repairOrphanData(fixingItem.id, fixingItem.type, updates);
 
-            const result = await response.json();
-
-            if (!response.ok) {
+            if (!result.success) {
                 throw new Error(result.error || 'Falha ao processar reparo');
             }
+
 
             toast.success("Dados restaurados e vinculados com sucesso!");
             setFixItem(null);
@@ -423,18 +416,14 @@ export default function OrphanedDataPage() {
                         // Mas para simplificar a exclusão em massa, vamos direto via API se possível
                         // Ou implementamos um deleteDocs util
 
-                        // NOTA: Implementar exclusão em massa via API para maior segurança e limpeza de vínculos
-                        const response = await fetch('/api/admin/repair-orphan', {
-                            method: 'DELETE',
-                            headers: { 'Content-Type': 'application/json' },
-                            body: JSON.stringify({ type: colName, ids })
-                        });
+                        // Usar função client-side
+                        const result = await bulkDeleteOrphans(ids, colName);
 
-                        if (!response.ok) {
-                            const errData = await response.json();
-                            throw new Error(errData.error || 'Falha ao excluir em massa');
+                        if (!result.success) {
+                            throw new Error(result.error || 'Falha ao excluir em massa');
                         }
                     }
+
 
                     toast.success(`${selectedIds.size} itens excluídos com sucesso.`);
                     setSelectedIds(new Set());

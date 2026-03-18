@@ -11,6 +11,7 @@ import {
     Loader2
 } from 'lucide-react';
 import { useAuth } from '@/app/context/AuthContext';
+import { getTerritoryHistory } from '@/lib/services/territories';
 
 interface TerritoryHistoryModalProps {
     territoryId: string;
@@ -43,12 +44,11 @@ export default function TerritoryHistoryModal({ territoryId, territoryName, cong
             try {
                 if (!congregationId || !territoryId) return;
 
-                const res = await fetch(`/api/territories/history?congregationId=${congregationId}&territoryId=${territoryId}`);
-                const result = await res.json();
+                const res = await getTerritoryHistory(congregationId, territoryId);
+                
+                if (!res.success) throw new Error(res.error || "Erro ao buscar histórico");
 
-                if (!res.ok) throw new Error(result.error || "Erro ao buscar histórico");
-
-                const entries: HistoryEntry[] = (result.data || []).map((item: any) => ({
+                const entries: HistoryEntry[] = (res.data || []).map((item: any) => ({
                     id: item.id,
                     created_by: item.created_by,
                     user_name: item.assigned_name || 'Usuário',

@@ -40,6 +40,9 @@ import BottomNav from '@/app/components/BottomNav';
 import MapAppSelectModal from '@/app/components/MapAppSelectModal';
 import { toast } from 'sonner';
 
+import { getSharedListWithData } from '@/lib/services/shared_lists';
+import { reportVisit, deleteVisitByAddressAndShare } from '@/lib/services/visits';
+
 interface PreviewItem {
     id: string;
     name?: string;
@@ -103,20 +106,20 @@ function SharedPreviewContent() {
         }
 
         try {
-            console.log(`Buscando detalhes do preview (${id}) via API...`);
-            // 1. Fetch Consolidated Data from Server-Side API
-            const response = await fetch(`/api/shared_lists/get?id=${shareId}`, { cache: 'no-store' });
-            const json = await response.json();
+            console.log(`Buscando detalhes do preview (${id}) via serviço...`);
+            // 1. Fetch Consolidated Data from Client Service
+            const resData = await getSharedListWithData(shareId);
 
-            if (!response.ok) {
-                if (response.status === 404) setError("Lista compartilhada não encontrada.");
-                else if (response.status === 410) setError("Link expirado.");
-                else setError(json.error || "Erro ao carregar link.");
+            const res = resData as any;
+            if (!res.success) {
+                if (res.status === 404 || res.error?.includes('not found')) setError("Lista compartilhada não encontrada.");
+                else if (res.status === 403) setError("Link expirado ou sem acesso.");
+                else setError(res.error || "Erro ao carregar link.");
                 setLoading(false);
                 return;
             }
 
-            const { list: listData, items: fetchedItems, visits: visitsData, congregationCategory } = json;
+            const { list: listData, items: fetchedItems, visits: visitsData, congregationCategory } = res;
 
             setPageCongregationId(listData.congregation_id || null);
             setCongregationType(congregationCategory as any);
@@ -247,16 +250,11 @@ function SharedPreviewContent() {
                 }
             };
 
-            // Send to Server-Side API Bridge
-            const response = await fetch('/api/visits/report', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ visitData, shareId })
-            });
+            // Send to Client-Side Service
+            const resData = await reportVisit(shareId, visitData);
 
-            if (!response.ok) {
-                const errorJson = await response.json();
-                throw new Error(errorJson.error || 'Erro ao salvar visita');
+            if (!resData.success) {
+                throw new Error(resData.error || 'Erro ao salvar visita');
             }
 
             // Refresh Local State (Optimistic + Server Fetch)
@@ -280,15 +278,10 @@ function SharedPreviewContent() {
         if (!selectedAddressForReport || !shareId) return;
 
         try {
-            const response = await fetch('/api/visits/delete', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ addressId: selectedAddressForReport.id, shareId })
-            });
+            const resData = await deleteVisitByAddressAndShare(selectedAddressForReport.id, shareId);
 
-            if (!response.ok) {
-                const errorJson = await response.json();
-                throw new Error(errorJson.error || 'Erro ao remover visita');
+            if (!resData.success) {
+                throw new Error(resData.error || 'Erro ao remover visita');
             }
 
             // Optimistic UI Update: Reset status to 'none' and clear visitNotes

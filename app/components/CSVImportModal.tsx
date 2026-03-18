@@ -9,6 +9,17 @@ import {
     Loader2, Download, ChevronDown, ChevronRight,
     MapPin, Building2, Home, Eye, AlertTriangle
 } from 'lucide-react';
+import { 
+    collection, 
+    getDocs, 
+    query, 
+    where, 
+    writeBatch, 
+    doc, 
+    serverTimestamp,
+    Timestamp
+} from 'firebase/firestore';
+import { db } from '@/lib/firebase';
 import { toast } from 'sonner';
 
 interface CSVImportModalProps {
@@ -32,6 +43,7 @@ interface ImportResults {
 // Estrutura de preview parseada no cliente
 interface PreviewAddress {
     street: string;
+    number: string;
     residentName: string;
     gender: string;
     isActive: boolean;
@@ -94,6 +106,7 @@ function buildPreview(text: string): { cities: Record<string, PreviewCity>; tota
         active: idx(['Status (is_active)', 'Status']),
         deaf: idx(['Surdo (is_deaf)', 'Surdo']),
         minor: idx(['Menor de idade (is_minor)', 'Menor de idade']),
+        number: idx(['Número', 'number', 'N°', 'Nº']),
     };
 
     const cities: Record<string, PreviewCity> = {};
@@ -126,6 +139,7 @@ function buildPreview(text: string): { cities: Record<string, PreviewCity>; tota
         if (street) {
             cities[cityKey].territories[mapNum].addresses.push({
                 street,
+                number: g(COLS.number),
                 residentName: g(COLS.name),
                 gender: g(COLS.gender),
                 isActive: !g(COLS.active) || g(COLS.active).toLowerCase() === 'true',
@@ -188,39 +202,138 @@ export default function CSVImportModal({
         });
     };
 
-    // Executa a importação real (sem simulação)
+    // Executa a importação real (no cliente)
     const handleImport = async () => {
-        if (!file) return;
+        if (!file || !preview) return;
         setLoading(true);
         try {
-            const formData = new FormData();
-            formData.append('file', file);
+            const results: ImportResults = {
+                created: { cities: 0, territories: 0, addresses: 0 },
+                updated: { territories: 0, addresses: 0 },
+                skipped: 0,
+                errors: []
+            };
 
-            const params = new URLSearchParams({ congregationId, strict: 'false' });
-            if (cityId) params.append('contextCityId', cityId);
-            if (territoryId) params.append('contextTerritoryId', territoryId);
+            // 1. Carregar dados existentes para decidir entre criar ou atualizar
+            // Para performance, buscamos tudo da congregação de uma vez
+            const citiesRef = collection(db, 'cities');
+            const territoriesRef = collection(db, 'territories');
+            const addressesRef = collection(db, 'addresses');
 
-            const token = await user?.getIdToken();
+            const [citiesSnap, terrSnap, addrSnap] = await Promise.all([
+                getDocs(query(citiesRef, where('congregationId', '==', congregationId))),
+                getDocs(query(territoriesRef, where('congregationId', '==', congregationId))),
+                getDocs(query(addressesRef, where('congregationId', '==', congregationId)))
+            ]);
 
-            const response = await fetch(`/api/data/import?${params.toString()}`, {
-                method: 'POST',
-                headers: token ? { Authorization: `Bearer ${token}` } : {},
-                body: formData
-            });
-            const data = await response.json();
+            const existingCities = new Map(citiesSnap.docs.map(d => [`${d.data().uf}:${d.data().name}`.toUpperCase(), { id: d.id, ...d.data() } as any]));
+            const existingTerritories = new Map(terrSnap.docs.map(d => [`${d.data().cityId}:${d.data().name}`.toUpperCase(), { id: d.id, ...d.data() } as any]));
+            const existingAddresses = new Map(addrSnap.docs.map(d => [`${d.data().territoryId}:${d.data().street}:${d.data().number || ''}`.toUpperCase(), { id: d.id, ...d.data() } as any]));
 
-            if (!response.ok) throw new Error(data.error || 'Erro ao importar dados');
+            const batch = writeBatch(db);
+            let batchCount = 0;
+            const commitBatch = async () => {
+                if (batchCount > 0) {
+                    await batch.commit();
+                    // Reiniciar não funciona em batch, precisa de um novo
+                    return writeBatch(db);
+                }
+                return batch;
+            };
 
-            setResults(data.results);
-            setPreview(null);
+            let currentBatch = batch;
 
-            if (data.results.errors.length === 0) {
-                toast.success("Importação concluída com sucesso!");
-                if (onSuccess) onSuccess();
-            } else {
-                toast.warning("Importação concluída com alguns erros.");
+            // 2. Iterar sobre a árvore de preview
+            for (const cityKey of Object.keys(preview.cities)) {
+                const pCity = preview.cities[cityKey];
+                let cityId = existingCities.get(cityKey)?.id;
+
+                // Criar cidade se não existir
+                if (!cityId) {
+                    const newCityRef = doc(collection(db, 'cities'));
+                    currentBatch.set(newCityRef, {
+                        name: pCity.name,
+                        uf: pCity.uf,
+                        congregationId,
+                        createdAt: serverTimestamp(),
+                        updatedAt: serverTimestamp()
+                    });
+                    cityId = newCityRef.id;
+                    results.created.cities++;
+                    batchCount++;
+                }
+
+                for (const tName of Object.keys(pCity.territories)) {
+                    const pTerr = pCity.territories[tName];
+                    const terrKey = `${cityId}:${tName}`.toUpperCase();
+                    let territoryId = existingTerritories.get(terrKey)?.id;
+
+                    if (!territoryId) {
+                        const newTerrRef = doc(collection(db, 'territories'));
+                        currentBatch.set(newTerrRef, {
+                            name: pTerr.mapNum,
+                            notes: pTerr.description,
+                            cityId,
+                            congregationId,
+                            status: 'LIVRE',
+                            createdAt: serverTimestamp(),
+                            updatedAt: serverTimestamp()
+                        });
+                        territoryId = newTerrRef.id;
+                        results.created.territories++;
+                        batchCount++;
+                    } else {
+                        // Opcional: atualizar descrição se mudou
+                        currentBatch.update(doc(db, 'territories', territoryId), {
+                            notes: pTerr.description,
+                            updatedAt: serverTimestamp()
+                        });
+                        results.updated.territories++;
+                        batchCount++;
+                    }
+
+                    if (batchCount >= 400) { currentBatch = await commitBatch(); batchCount = 0; }
+
+                    for (const addr of pTerr.addresses) {
+                        const addrKey = `${territoryId}:${addr.street}:${addr.number || ''}`.toUpperCase();
+                        const existing = existingAddresses.get(addrKey);
+
+                        if (!existing) {
+                            const newAddrRef = doc(collection(db, 'addresses'));
+                            currentBatch.set(newAddrRef, {
+                                ...addr,
+                                territoryId,
+                                cityId,
+                                congregationId,
+                                isActive: true,
+                                createdAt: serverTimestamp(),
+                                updatedAt: serverTimestamp()
+                            });
+                            results.created.addresses++;
+                            batchCount++;
+                        } else {
+                            // Atualizar
+                            currentBatch.update(doc(db, 'addresses', existing.id), {
+                                ...addr,
+                                updatedAt: serverTimestamp()
+                            });
+                            results.updated.addresses++;
+                            batchCount++;
+                        }
+
+                        if (batchCount >= 400) { currentBatch = await commitBatch(); batchCount = 0; }
+                    }
+                }
             }
+
+            if (batchCount > 0) await currentBatch.commit();
+
+            setResults(results);
+            setPreview(null);
+            toast.success("Importação concluída no dispositivo!");
+            if (onSuccess) onSuccess();
         } catch (error: any) {
+            console.error("Erro na importação client-side:", error);
             toast.error(error.message);
         } finally {
             setLoading(false);

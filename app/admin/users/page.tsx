@@ -39,6 +39,8 @@ import Link from 'next/link';
 import BottomNav from '@/app/components/BottomNav';
 import ConfirmationModal from '@/app/components/ConfirmationModal';
 import { toast } from 'sonner';
+import { updateUser, deleteUser } from '@/lib/services/admin';
+
 
 interface UserProfile {
     id: string;
@@ -168,23 +170,17 @@ export default function AdminUsersPage() {
                 editRoles.includes('ANCIAO') ? 'ANCIAO' :
                     editRoles.includes('SERVO') ? 'SERVO' : 'PUBLICADOR';
 
-            // Envia a requisição para a nova API de update (bypassa o RLS via backend)
-            const response = await fetch('/api/admin/users/update', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({
-                    userId: editingUser.id,
-                    name: editName.trim(),
-                    role: legacyRole,
-                    congregation_id: editCongId || null
-                })
+            // Envia a requisição para a nova API client-side de update
+            const result = await updateUser(editingUser.id, {
+                name: editName.trim(),
+                role: legacyRole,
+                congregation_id: editCongId || null
             });
 
-            const resData = await response.json();
-
-            if (!response.ok) {
-                throw new Error(resData.error || 'Erro ao atualizar usuário');
+            if (!result.success) {
+                throw new Error(result.error || 'Erro ao atualizar usuário');
             }
+
 
             // CORREÇÃO DO FALSO POSITIVO:
             // O estado local deve refletir exatamente o que o banco salvou.
@@ -261,17 +257,15 @@ export default function AdminUsersPage() {
         setUpdatingId(userToDelete.id);
         setIsDeleting(true);
         try {
-            const response = await fetch('/api/admin/users/delete', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ userId: userToDelete.id })
-            });
+            const result = await deleteUser(userToDelete.id);
 
-            const resData = await response.json();
-
-            if (!response.ok) {
-                throw new Error(resData.error || 'Erro ao excluir usuário');
+            if (!result.success) {
+                if (result.code === 'HAS_RELATIONS') {
+                    throw new Error(result.error);
+                }
+                throw new Error(result.error || 'Erro ao excluir usuário');
             }
+
 
             // Atualiza o estado local imediatamente
             setUsers(prev => prev.filter(u => u.id !== userToDelete.id));

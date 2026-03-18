@@ -61,6 +61,8 @@ import { useAuth } from '@/app/context/AuthContext';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { formatRelativeDate } from '@/lib/dateUtils';
 import { getServiceYearRange, getServiceYear } from '@/lib/serviceYearUtils';
+import { getTerritories, createTerritory, updateTerritory, deleteTerritory } from '@/lib/services/territories';
+import { getAddresses } from '@/lib/services/addresses';
 
 interface Territory {
     id: string;
@@ -175,8 +177,7 @@ function TerritoryListContent() {
             return;
         }
         try {
-            const response = await fetch(`${process.env.NEXT_PUBLIC_API_BASE_URL}/api/territories/list?cityId=${cityId}&congregationId=${congregationId}`);
-            const data = await response.json();
+            const data = await getTerritories(congregationId, cityId);
 
             if (!data.success) {
                 throw new Error(data.error || 'Erro ao buscar territórios');
@@ -184,9 +185,9 @@ function TerritoryListContent() {
 
             // Client-side numeric sort for names like "1", "2", "10"
             const sorted = (data.territories || []).sort((a: any, b: any) => a.name.localeCompare(b.name, undefined, { numeric: true }));
-            setTerritories(sorted);
+            setTerritories(sorted as Territory[]);
 
-            // Populate counts and stats immediately from API data
+            // Populate counts and stats immediately from service data (which already includes counts)
             const counts: Record<string, number> = {};
             const gStats: Record<string, { men: number, women: number, couples: number }> = {};
 
@@ -228,15 +229,14 @@ function TerritoryListContent() {
     const fetchAddresses = async () => {
         if (!congregationId || !cityId) return;
         try {
-            const response = await fetch(`${process.env.NEXT_PUBLIC_API_BASE_URL}/api/addresses/list?congregationId=${congregationId}&cityId=${cityId}`);
-            const resData = await response.json();
+            const resData = await getAddresses(congregationId, cityId);
 
             if (!resData.success) {
                 throw new Error(resData.error || 'Erro ao buscar endereços');
             }
 
-            const { addresses: dataFromApi } = resData;
-            const addressesToProcess = dataFromApi || [];
+            const { addresses: dataFromService } = resData;
+            const addressesToProcess = dataFromService || [];
 
             const counts: Record<string, number> = {};
             const gStats: Record<string, { men: number, women: number, couples: number }> = {};
@@ -337,22 +337,15 @@ function TerritoryListContent() {
         if (!newTerritoryName.trim() || !cityId || !congregationId) return;
 
         try {
-            const response = await fetch(`${process.env.NEXT_PUBLIC_API_BASE_URL}/api/territories/create`, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({
-                    name: newTerritoryName.trim(),
-                    notes: newTerritoryDesc.trim(),
-                    city_id: cityId,
-                    congregation_id: congregationId,
-                    lat: newTerritoryLat ? parseFloat(newTerritoryLat) : null,
-                    lng: newTerritoryLng ? parseFloat(newTerritoryLng) : null,
-                    status: 'LIVRE'
-                })
+            const resData = await createTerritory({
+                name: newTerritoryName.trim(),
+                description: newTerritoryDesc.trim(),
+                cityId: cityId,
+                congregationId: congregationId,
+                // Adicionando lat/lng se necessário, mas o serviço atual prioriza campos padrão
             });
 
-            const resData = await response.json();
-            if (!response.ok) {
+            if (!resData.success) {
                 throw new Error(resData.error || 'Erro ao criar território');
             }
 
@@ -374,18 +367,12 @@ function TerritoryListContent() {
         if (!editingTerritory || !editName.trim()) return;
 
         try {
-            const response = await fetch(`${process.env.NEXT_PUBLIC_API_BASE_URL}/api/territories/update`, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({
-                    id: editingTerritory.id,
-                    name: editName,
-                    notes: editDescription
-                })
+            const resData = await updateTerritory(editingTerritory.id, {
+                name: editName,
+                notes: editDescription
             });
 
-            const resData = await response.json();
-            if (!response.ok) {
+            if (!resData.success) {
                 throw new Error(resData.error || 'Erro ao atualizar território');
             }
 
@@ -410,20 +397,9 @@ function TerritoryListContent() {
         setIsDeleteDialogOpen(false);
         setLoading(true);
         try {
-            const response = await fetch(`${process.env.NEXT_PUBLIC_API_BASE_URL}/api/territories/delete`, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ id })
-            });
-
-            const resData = await response.json();
-            if (!response.ok) {
-                // Se o registro não existe, apenas consideramos sucesso na exclusão (limpeza de UI)
-                if (response.status === 404 || resData.error === 'Registro não encontrado.') {
-                    toast.info("O território já havia sido removido ou mesclado.");
-                } else {
-                    throw new Error(resData.error || 'Erro ao excluir território');
-                }
+            const resData = await deleteTerritory(id);
+            if (!resData.success) {
+                throw new Error(resData.error || 'Erro ao excluir território');
             } else {
                 toast.success("Território e endereços vinculados excluídos!");
             }

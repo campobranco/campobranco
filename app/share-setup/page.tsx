@@ -29,6 +29,10 @@ import {
 import { useAuth } from '@/app/context/AuthContext';
 import { toast } from 'sonner';
 
+import { getTerritoriesDetails } from '@/lib/services/territories';
+import { getCongregationUsers } from '@/lib/services/users';
+import { createSharedList } from '@/lib/services/shared_lists';
+
 function ShareSetupContent() {
     const router = useRouter();
     const searchParams = useSearchParams();
@@ -86,15 +90,14 @@ function ShareSetupContent() {
             }
 
             try {
-                console.log(`Buscando detalhes para ${ids.length} territórios via API...`);
-                const response = await fetch(`/api/territories/details?ids=${ids.join(',')}`);
-                const json = await response.json();
+                console.log(`Buscando detalhes para ${ids.length} territórios via serviço...`);
+                const resData = await getTerritoriesDetails(ids);
 
-                if (!response.ok) {
-                    throw new Error(json.error || 'Erro ao carregar territórios');
+                if (!resData.success) {
+                    throw new Error(resData.error || 'Erro ao carregar territórios');
                 }
 
-                const fetched = json.territories || [];
+                const fetched = resData.territories || [];
 
                 if (fetched.length === 0) {
                     console.warn("Nenhum território retornado pela API para os IDs:", ids);
@@ -144,12 +147,11 @@ function ShareSetupContent() {
 
             if (congregationId) {
                 try {
-                    const response = await fetch(`/api/users/list?congregationId=${congregationId}`, { cache: 'no-store' });
-                    const json = await response.json();
+                    const resData = await getCongregationUsers(congregationId);
 
-                    if (!ignore && response.ok && json.users) {
+                    if (!ignore && resData.success && resData.users) {
                         // Merge without duplicates
-                        json.users.forEach((apiUser: any) => {
+                        resData.users.forEach((apiUser: any) => {
                             if (!fetchedUsers.find(u => u.id === apiUser.id)) {
                                 fetchedUsers.push(apiUser);
                             }
@@ -196,42 +198,22 @@ function ShareSetupContent() {
                 title = `${territories.length} Territórios - ${cityName || territories[0].city || 'Vários'}`;
             }
 
-            // Create shared list using the new secure API
-            const listData = {
+            const resData = await createSharedList({
+                title: title,
                 type: 'territory',
                 items: territories.map(t => t.id),
-                createdBy: user?.uid,
                 congregationId: territories[0].congregationId || territories[0].congregation_id,
-                cityId: territories[0].cityId || territories[0].city_id,
-                expiresAt: expiresAt ? expiresAt.toISOString() : null,
-                status: 'active',
-                title: title,
-                assignedTo: selectedUser ? selectedUser.id : null,
-                assignedName: selectedUser ? selectedUser.name : null,
-                context: territories.length === 1 ? {
-                    territoryId: territories[0].id,
-                    cityId: territories[0].cityId || territories[0].city_id,
-                    territoryName: territories[0].name || '',
-                    cityName: cityName || territories[0].city || '',
-                    featuredDetails: cityName || territories[0].city || ''
-                } : {}
-            };
-
-            const response = await fetch('/api/shared_lists/create', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ listData, territories })
+                assignedTo: selectedUser ? selectedUser.id : '',
+                assignedName: selectedUser ? selectedUser.name : '',
+                expiresInHours: expiresAt ? (expiresAt.getTime() - now.getTime()) / (1000 * 60 * 60) : undefined,
+                territories: territories
             });
 
-            if (!response.ok) {
-                const errorData = await response.json();
-                throw new Error(errorData.error || 'Erro ao criar a lista compartilhada na API');
+            if (!resData.success) {
+                throw new Error(resData.error || 'Erro ao criar a lista compartilhada');
             }
 
-            const data = await response.json();
-            const shareData = data.shareData;
-
-            const link = `${window.location.origin}/share?id=${shareData.id}`;
+            const link = `${window.location.origin}/share?id=${resData.id}`;
             setGeneratedLink(link);
             return link;
         } catch (error) {

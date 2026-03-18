@@ -1,7 +1,9 @@
 "use client";
 
 import { useEffect, useState, Suspense } from 'react';
-// Supabase removido — operações agora passam pela API /api/shared_lists/return
+// Supabase removido — operações agora passam pelos serviços de cliente
+import { getSharedListWithData, processSharedListAction } from '@/lib/services/shared_lists';
+import { reportVisit, deleteVisitByAddressAndShare } from '@/lib/services/visits';
 import {
     Map as MapIcon,
     Loader2,
@@ -107,20 +109,17 @@ export default function SharedListView({ id: propId }: SharedListViewProps) {
 
             try {
                 console.log(`Buscando detalhes do link ${id} via API...`);
-                // 1. Fetch Consolidated Data from Server-Side API
-                // This bypasses RLS and handles snapshots/metadata/visits in one go
-                const response = await fetch(`${process.env.NEXT_PUBLIC_API_BASE_URL}/api/shared_lists/get?id=${id}`, { cache: 'no-store' });
-                const json = await response.json();
+                const resData = await getSharedListWithData(id);
 
-                if (!response.ok) {
-                    if (response.status === 404) setError("Link não encontrado.");
-                    else if (response.status === 410) setError("Link expirado.");
-                    else setError(json.error || "Erro ao carregar link.");
+                if (!resData.success) {
+                    if (resData.status === 404) setError("Link não encontrado.");
+                    else if (resData.status === 410) setError("Link expirado.");
+                    else setError(resData.error || "Erro ao carregar link.");
                     setLoading(false);
                     return;
                 }
 
-                const { list, items: fetchedItems, visits } = json;
+                const { list, items: fetchedItems, visits } = resData as any;
 
                 setListData({
                     ...list,
@@ -255,16 +254,10 @@ export default function SharedListView({ id: propId }: SharedListViewProps) {
                 setConfirmModal(prev => ({ ...prev, isOpen: false }));
                 setReturning(true);
                 try {
-                    // Chamada à API server-side que usa Firebase Admin para contornar regras de segurança
-                    const response = await fetch(`${process.env.NEXT_PUBLIC_API_BASE_URL}/api/shared_lists/return`, {
-                        method: 'POST',
-                        headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify({ id, action: 'return_map' })
-                    });
+                    const resData = await processSharedListAction(id, 'return_map');
 
-                    if (!response.ok) {
-                        const err = await response.json();
-                        throw new Error(err.error || 'Erro ao devolver mapa');
+                    if (!resData.success) {
+                        throw new Error(resData.error || 'Erro ao devolver mapa');
                     }
 
                     toast.success("Mapa devolvido com sucesso! O acesso será encerrado em 24 horas.");
@@ -292,15 +285,10 @@ export default function SharedListView({ id: propId }: SharedListViewProps) {
                 ));
 
                 try {
-                    const response = await fetch(`${process.env.NEXT_PUBLIC_API_BASE_URL}/api/shared_lists/return`, {
-                        method: 'POST',
-                        headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify({ id, action: 'return_territory', territoryId, undo: false })
-                    });
+                    const resData = await processSharedListAction(id as string, 'return_territory', { territoryId, undo: false });
 
-                    if (!response.ok) {
-                        const err = await response.json();
-                        throw new Error(err.error || 'Erro ao devolver território');
+                    if (!resData.success) {
+                        throw new Error(resData.error || 'Erro ao devolver território');
                     }
 
                     toast.success(`Território ${territoryName} devolvido.`);
@@ -331,14 +319,8 @@ export default function SharedListView({ id: propId }: SharedListViewProps) {
                 ));
 
                 try {
-                    const response = await fetch(`${process.env.NEXT_PUBLIC_API_BASE_URL}/api/shared_lists/return`, {
-                        method: 'POST',
-                        headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify({ id, action: 'return_territory', territoryId, undo: true })
-                    });
-
-                    const result = await response.json();
-                    if (!response.ok) throw new Error(result.error || 'Erro ao desfazer');
+                    const resData = await processSharedListAction(id as string, 'return_territory', { territoryId, undo: true });
+                    if (!resData.success) throw new Error(resData.error || 'Erro ao desfazer');
 
                     if (listData?.status === 'completed') {
                         // Atualiza o estado local após reativação da lista
@@ -368,28 +350,19 @@ export default function SharedListView({ id: propId }: SharedListViewProps) {
         if (!id) return;
         setAccepting(true);
         try {
-            // Chama API server-side para aceitar responsabilidade e vincular à congregação
-            const response = await fetch(`${process.env.NEXT_PUBLIC_API_BASE_URL}/api/shared_lists/return`, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({
-                    id,
-                    action: 'accept_responsibility',
+                const resData = await processSharedListAction(id, 'accept_responsibility', {
                     userId: user.uid,
                     userName: profileName || 'Irmão sem Nome',
-                    // Passa o ID da congregação da lista para vincular o usuário, se ele não tiver
                     userCongregationId: listData?.congregationId
-                })
-            });
+                });
 
-            const result = await response.json();
-            if (!response.ok) throw new Error(result.error || 'Erro ao aceitar responsabilidade');
+                if (!resData.success) throw new Error(resData.error || 'Erro ao aceitar responsabilidade');
 
-            // Se o servidor indicar que o usuário foi vinculado, recarrega a página
-            if (result.reloadRequired) {
-                window.location.reload();
-                return;
-            }
+                // Se o servidor indicar que o usuário foi vinculado, recarrega a página
+                if (resData.reloadRequired) {
+                    window.location.reload();
+                    return;
+                }
 
             setIsResponsibilityModalOpen(false);
             setListData(prev => prev ? {
@@ -437,16 +410,11 @@ export default function SharedListView({ id: propId }: SharedListViewProps) {
                 }
             };
 
-            // Send to Server-Side API Bridge
-            const response = await fetch(`${process.env.NEXT_PUBLIC_API_BASE_URL}/api/visits/report`, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ visitData, shareId: id })
-            });
+            // Save visit via Client Service
+            const resData = await reportVisit(id, visitData);
 
-            if (!response.ok) {
-                const errorJson = await response.json();
-                throw new Error(errorJson.error || 'Erro ao salvar visita');
+            if (!resData.success) {
+                throw new Error(resData.error || 'Erro ao salvar visita');
             }
 
             // Optional: The API could handle address updates if we wanted, 
@@ -468,15 +436,10 @@ export default function SharedListView({ id: propId }: SharedListViewProps) {
         if (!visitingItem || !id) return;
 
         try {
-            const response = await fetch(`${process.env.NEXT_PUBLIC_API_BASE_URL}/api/visits/delete`, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ addressId: visitingItem.id, shareId: id })
-            });
+            const resData = await deleteVisitByAddressAndShare(visitingItem.id, id);
 
-            if (!response.ok) {
-                const errorJson = await response.json();
-                throw new Error(errorJson.error || 'Erro ao remover visita');
+            if (!resData.success) {
+                throw new Error(resData.error || 'Erro ao remover visita');
             }
 
             // Optimistic UI Update

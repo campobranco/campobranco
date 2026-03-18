@@ -12,6 +12,10 @@ import { getServiceYear, getServiceYearLabel, getServiceYearRange } from '@/lib/
 import { format } from 'date-fns';
 import { toast } from 'sonner';
 
+import { getRegistryData } from '@/lib/services/reports';
+import { deleteDoc } from 'firebase/firestore';
+import { createSharedList } from '@/lib/services/shared_lists';
+
 interface Territory {
     id: string;
     name: string;
@@ -106,15 +110,14 @@ export default function RegistryPage() {
         try {
             const { start, end } = getServiceYearRange(currentServiceYear);
 
-            // Fetch all data via Admin API to bypass RLS issues
-            const res = await fetch(`/api/reports/registry/fetch?congregationId=${targetCongId}`);
-            const data = await res.json();
+            // Fetch all data via Client Service
+            const resData = await getRegistryData(targetCongId);
 
-            if (!res.ok) throw new Error(data.error || "Erro ao buscar dados do servidor");
+            if (!resData.success) throw new Error(resData.error || "Erro ao buscar dados do servidor");
 
-            const terrData = data.territories;
-            const cityData = data.cities;
-            const listData = data.sharedLists;
+            const terrData = resData.territories;
+            const cityData = resData.cities;
+            const listData = resData.sharedLists;
 
             const cityMap = new Map<string, string>();
             cityData?.forEach((d: any) => cityMap.set(d.id, d.name));
@@ -244,25 +247,20 @@ export default function RegistryPage() {
                 payload.expires_at = exp.toISOString();
             }
 
-            const response = await fetch('/api/shared_lists/save', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({
-                    payload,
-                    id: editingAssignment.id
-                })
-            });
-
-            const result = await response.json();
-
-            if (!response.ok) {
-                throw new Error(result.error || "Falha na resposta do servidor");
+            if (editingAssignment.id) {
+                // Update existing
+                const listRef = doc(db, 'shared_lists', editingAssignment.id);
+                await updateDoc(listRef, payload);
+            } else {
+                // Create new manual record via createSharedList equivalent parameters manually, or direct Firestore add
+                await createSharedList(payload);
             }
 
             setIsModalOpen(false);
             setEditingAssignment(null);
             fetchData();
             toast.success(editingAssignment.id ? "Registro atualizado!" : "Registro salvo!");
+
         } catch (e: any) {
             console.error("Save Assignment Error:", e);
             const msg = e.message || (typeof e === 'string' ? e : JSON.stringify(e));
@@ -298,17 +296,12 @@ export default function RegistryPage() {
             onConfirm: async () => {
                 setIsDeleting(true);
                 try {
-                    const response = await fetch('/api/shared_lists/delete', {
-                        method: 'POST',
-                        headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify({ id })
-                    });
-
-                    const result = await response.json();
-                    if (!response.ok) throw new Error(result.error || "Falha ao excluir");
+                    const listRef = doc(db, 'shared_lists', id);
+                    await deleteDoc(listRef);
 
                     toast.success("Registro removido.");
                     fetchData();
+
                 } catch (e: any) {
                     console.error(e);
                     toast.error("Erro ao excluir registro.");

@@ -3,7 +3,7 @@
 import { useEffect, useRef, useState } from 'react';
 import { Loader2, MapPin, ThumbsUp, Home, Navigation, Ban, Truck, User, Maximize2, Minimize2, Map as MapIcon, Lock, Unlock } from 'lucide-react';
 import { renderToStaticMarkup } from 'react-dom/server';
-import { geocodeAddress } from '@/app/actions/geocoding';
+import { geocodeAddress } from '@/lib/services/geocoding';
 
 // Interface defined by user requirements (adapted to match existing usage patterns)
 export interface MapItem {

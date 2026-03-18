@@ -10,6 +10,7 @@ import {
     getDocs,
     doc,
     updateDoc,
+    deleteDoc,
     limit,
     orderBy,
     serverTimestamp,
@@ -186,17 +187,8 @@ function CardsContent() {
         setConfirmModal(null);
         setLoading(true);
         try {
-            const response = await fetch('/api/cards/delete', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ ids: [id] })
-            });
-
-            const resData = await response.json();
-
-            if (!response.ok) {
-                throw new Error(resData.error || 'Erro ao excluir');
-            }
+            const listRef = doc(db, "shared_lists", id);
+            await deleteDoc(listRef);
 
             setLists(prev => prev.filter(item => item.id !== id));
             toast.success("Cartão excluído com sucesso.");
@@ -231,17 +223,12 @@ function CardsContent() {
         setConfirmModal(null);
         setLoading(true);
         try {
-            const response = await fetch('/api/cards/delete', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ ids: selectedIds })
+            const batch = writeBatch(db);
+            selectedIds.forEach(id => {
+                const listRef = doc(db, "shared_lists", id);
+                batch.delete(listRef);
             });
-
-            const resData = await response.json();
-
-            if (!response.ok) {
-                throw new Error(resData.error || 'Erro ao excluir cartões');
-            }
+            await batch.commit();
 
             setLists(prev => prev.filter(item => !selectedIds.includes(item.id)));
             toast.success(`${selectedIds.length} cartões excluídos.`);

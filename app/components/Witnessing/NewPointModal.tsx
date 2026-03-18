@@ -6,9 +6,8 @@
 
 import { useState } from 'react';
 import { X, Plus, Loader2 } from 'lucide-react';
-import { db } from '@/lib/firebase';
-import { collection, addDoc, serverTimestamp } from 'firebase/firestore';
 import { toast } from 'sonner';
+import { createWitnessingPoint } from '@/lib/services/witnessing';
 
 interface NewPointModalProps {
     isOpen: boolean;
@@ -34,21 +33,17 @@ export default function NewPointModal({ isOpen, onClose, cityId, congregationId,
 
         setLoading(true);
         try {
-            // Nome correto da coleção no Firestore é 'witnessing_points' (snake_case)
-            await addDoc(collection(db, 'witnessing_points'), {
+            const result = await createWitnessingPoint({
                 name: name.trim(),
                 address: address.trim(),
                 cityId,
                 congregationId,
-                googleMapsLink: googleMapsLink.trim() || null,
-                wazeLink: wazeLink.trim() || null,
-                schedule: schedule.trim() || null,
-                status: 'AVAILABLE',
-                currentPublishers: [],
-                activeUsers: [],
-                createdAt: serverTimestamp(),
-                updatedAt: serverTimestamp(),
+                latitude: 0, // Campos provisionais se não houver no modal
+                longitude: 0,
+                schedule: schedule.trim() || '',
             });
+
+            if (!result.success) throw new Error(result.error);
 
             toast.success("Ponto criado com sucesso!");
             setName('');

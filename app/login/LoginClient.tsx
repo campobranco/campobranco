@@ -7,7 +7,6 @@ import { useState } from 'react';
 import { auth } from '@/lib/firebase';
 import { GoogleAuthProvider, signInWithPopup } from 'firebase/auth';
 import { useRouter } from 'next/navigation';
-import Image from 'next/image';
 import { AlertCircle } from 'lucide-react';
 
 export default function LoginClient() {
@@ -47,7 +46,7 @@ export default function LoginClient() {
                 <div className="bg-white dark:bg-surface rounded-2xl p-8 shadow-2xl animate-in slide-in-from-bottom-12 fade-in duration-1000 border border-transparent dark:border-surface-border transition-colors">
                     <div className="text-center mb-8">
                         <div className="w-24 h-24 flex items-center justify-center mx-auto mb-2">
-                            <Image src="/app-icon.svg" alt="Campo Branco" width={96} height={96} className="w-full h-full object-contain" priority />
+                            <img src="/app-icon.svg" alt="Campo Branco" width={96} height={96} className="w-full h-full object-contain" />
                         </div>
                         <h1 className="text-2xl font-black text-gray-900 dark:text-white tracking-tighter mb-1">Campo Branco</h1>
                         <p className="text-primary dark:text-primary-light text-[10px] font-bold opacity-80 uppercase tracking-widest">Acesso Restrito</p>

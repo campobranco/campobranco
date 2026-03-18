@@ -372,7 +372,7 @@ export default function SettingsPage() {
                         <div className="flex items-center gap-4">
                             <div className="w-16 h-16 bg-background dark:bg-surface-highlight rounded-full flex items-center justify-center text-muted text-xl font-bold border-2 border-surface dark:border-surface shadow-sm ring-1 ring-surface-border">
                                 {user.photoURL ? (
-                                    <Image src={user.photoURL} alt="Avatar" width={64} height={64} className="rounded-full object-cover" />
+                                    <img src={user.photoURL} alt="Avatar" width={64} height={64} className="rounded-full object-cover w-16 h-16" referrerPolicy="no-referrer" />
                                 ) : (
                                     <User className="w-8 h-8" />
                                 )}
@@ -649,7 +649,7 @@ export default function SettingsPage() {
                                         <div key={member.id} className="flex items-center justify-between p-3 bg-background rounded-lg border border-surface-border">
                                             <div className="flex items-center gap-3">
                                                 <div className="w-10 h-10 bg-surface rounded-full flex items-center justify-center text-muted font-bold border border-surface-border shadow-sm">
-                                                    {member.photoURL ? <Image src={member.photoURL} alt={member.name || 'Avatar'} width={40} height={40} className="rounded-full object-cover" /> : <User className="w-5 h-5" />}
+                                                    {member.photoURL ? <img src={member.photoURL} alt={member.name || 'Avatar'} width={40} height={40} className="rounded-full object-cover w-10 h-10" referrerPolicy="no-referrer" /> : <User className="w-5 h-5" />}
                                                 </div>
                                                 <div>
                                                     <h4 className="font-bold text-sm text-main">{member.name || member.email?.split('@')[0]}</h4>
@@ -971,14 +971,11 @@ export default function SettingsPage() {
                             <span className="text-xs font-semibold">Projeto Open Source <span className="text-[10px] opacity-60 font-normal">(MIT)</span></span>
                         </div>
 
-                        <Image
+                        <img
                             src="https://img.shields.io/github/stars/campobranco/codigo-fonte?style=social"
                             alt="GitHub Repo stars"
-                            width={0}
-                            height={0}
                             style={{ width: 'auto', height: '20px' }}
                             className="grayscale group-hover:grayscale-0 transition-all duration-300"
-                            unoptimized
                         />
                     </a>
 

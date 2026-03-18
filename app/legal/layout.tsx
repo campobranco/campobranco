@@ -1,5 +1,4 @@
 import Link from 'next/link';
-import Image from 'next/image';
 import { ArrowLeft, Shield, FileText, Lock, UserCheck } from 'lucide-react';
 
 export default function LegalLayout({
@@ -17,7 +16,7 @@ export default function LegalLayout({
                         <span className="font-bold text-sm">Voltar</span>
                     </Link>
                     <div className="flex items-center gap-2">
-                        <Image src="/app-icon.png" alt="Logo Campo Branco" width={32} height={32} className="rounded-lg" />
+                        <img src="/app-icon.png" alt="Logo Campo Branco" width={32} height={32} className="rounded-lg" />
                         <span className="font-black text-lg text-gray-800 dark:text-white tracking-tight">Campo Branco</span>
                     </div>
                     <div className="w-20" /> {/* Spacer for centering */}

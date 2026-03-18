@@ -41,6 +41,7 @@ import Link from 'next/link';
 import { useAuth } from '@/app/context/AuthContext';
 import { useSearchParams, useRouter } from 'next/navigation';
 import { toast } from 'sonner';
+import { checkInWitnessingPoint, deleteWitnessingPoint } from '@/lib/services/witnessing';
 
 interface WitnessingPoint {
     id: string;
@@ -236,8 +237,8 @@ function WitnessingPointListContent() {
             onConfirm: async () => {
                 setConfirmModal(prev => ({ ...prev, isOpen: false }));
                 try {
-                    // Nome correto da coleção no Firestore é 'witnessing_points' (snake_case)
-                    await deleteDoc(doc(db, 'witnessing_points', id));
+                    const result = await deleteWitnessingPoint(id);
+                    if (!result.success) throw new Error(result.error);
                     toast.success("Ponto excluído com sucesso.");
                 } catch (error) {
                     console.error("Error deleting point:", error);
@@ -315,18 +316,11 @@ function WitnessingPointListContent() {
                 const otherStatus = (otherActive.length > 0 || otherLegacy.length > 0) ? 'OCCUPIED' : 'AVAILABLE';
 
                 try {
-                    // Checkout do ponto anterior via API (para evitar bloqueio de RLS)
-                    await fetch('/api/witnessing/check-in', {
-                        method: 'POST',
-                        headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify({
-                            id: otherPoint.id,
-                            updates: {
-                                active_users: otherActive,
-                                current_publishers: otherLegacy,
-                                status: otherStatus
-                            }
-                        })
+                    // Checkout do ponto anterior via serviço (cliente)
+                    await checkInWitnessingPoint(otherPoint.id, {
+                        activeUsers: otherActive,
+                        currentPublishers: otherLegacy,
+                        status: otherStatus
                     });
 
                     await executeCheckInOut(point, false);
@@ -367,27 +361,21 @@ function WitnessingPointListContent() {
 
         const newStatus = (newPublishers.length > 0 || newActiveUsers.length > 0) ? 'OCCUPIED' : 'AVAILABLE';
 
-        try {
-            const updates = {
-                currentPublishers: newPublishers,
-                activeUsers: newActiveUsers,
-                status: newStatus
-            };
+                try {
+                    const updates = {
+                        currentPublishers: newPublishers,
+                        activeUsers: newActiveUsers,
+                        status: newStatus
+                    };
 
-            const response = await fetch('/api/witnessing/check-in', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ id: point.id, updates })
-            });
+                    const result = await checkInWitnessingPoint(point.id, updates);
 
-            const resData = await response.json();
-
-            if (!response.ok) {
-                throw new Error(resData.error || 'Erro ao processar check-in');
-            }
-        } catch (error: any) {
-            toast.error(`Erro ao salvar: ${error.message}`);
-        }
+                    if (!result.success) {
+                        throw new Error(result.error || 'Erro ao processar check-in');
+                    }
+                } catch (error: any) {
+                    toast.error(`Erro ao salvar: ${error.message}`);
+                }
     };
 
 

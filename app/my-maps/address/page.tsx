@@ -41,7 +41,10 @@ import {
     writeBatch
 } from "firebase/firestore";
 import { db } from '@/lib/firebase';
-import { geocodeAddress } from '@/app/actions/geocoding';
+import { geocodeAddress } from '@/lib/services/geocoding';
+import { getAddresses, saveAddress, deleteAddress } from '@/lib/services/addresses';
+import { deleteVisit } from '@/lib/services/visits';
+import { getMapsContext } from '@/lib/services/territories';
 import Link from 'next/link';
 import { useAuth } from '@/app/context/AuthContext';
 import { getServiceYear, getServiceYearRange } from '@/lib/serviceYearUtils';
@@ -253,9 +256,7 @@ function AddressListContent() {
         const fetchData = async () => {
             setLoading(true);
             try {
-                // Fetch context over bypass RLS API to avoid 404 block for cities and territories selection
-                const response = await fetch(`/api/maps/context?congregationId=${congregationId}&cityId=${cityId}&territoryId=${territoryId}`);
-                const resData = await response.json();
+                const resData = await getMapsContext(congregationId, cityId, territoryId);
 
                 if (!resData.success) {
                     throw new Error(resData.error || 'Erro ao buscar contexto superior');
@@ -268,27 +269,27 @@ function AddressListContent() {
                 // Concatenando o numero com descricao para exibir no cabeçalho
                 let territoryDisplayName = 'Não encontrada';
                 if (terrResData) {
-                    territoryDisplayName = terrResData.name;
-                    if (terrResData.notes) {
-                        territoryDisplayName += ` - ${terrResData.notes}`;
+                    territoryDisplayName = (terrResData as any).name;
+                    if ((terrResData as any).notes) {
+                        territoryDisplayName += ` - ${(terrResData as any).notes}`;
                     }
                 }
 
                 setContextNames({
-                    congregation: congResData?.name || 'Não encontrada',
-                    city: cityResData?.name || 'Não encontrada',
+                    congregation: (congResData as any)?.name || 'Não encontrada',
+                    city: (cityResData as any)?.name || 'Não encontrada',
                     territory: territoryDisplayName
                 });
 
                 if (congResData) {
-                    setLocalTermType(congResData.term_type as any || 'city');
-                    const cat = (congResData.category || '').toLowerCase();
+                    setLocalTermType((congResData as any).term_type as any || 'city');
+                    const cat = ((congResData as any).category || '').toLowerCase();
                     if (cat.includes('sinais') || cat.includes('sign')) setLocalCongregationType('SIGN_LANGUAGE');
                     else if (cat.includes('estrangeir') || cat.includes('foreign')) setLocalCongregationType('FOREIGN_LANGUAGE');
                     else setLocalCongregationType('TRADITIONAL');
                 }
                 if (cityResData) {
-                    setParentCity(cityResData.parent_city || null);
+                    setParentCity((cityResData as any).parent_city || null);
                 }
 
             } catch (error) {
@@ -307,36 +308,29 @@ function AddressListContent() {
         if (!congregationId || !territoryId) return;
 
         try {
-            const response = await fetch(`/api/addresses/list?congregationId=${congregationId}&cityId=${cityId}&territoryId=${territoryId}`, {
-                cache: 'no-store'
-            });
-            const resData = await response.json();
+            const resData = await getAddresses(congregationId, cityId, territoryId);
             console.log("[Debug] Endereços recebidos:", resData);
 
-            if (!response.ok) {
+            if (!resData.success) {
                 throw new Error(resData.error || 'Erro ao buscar endereços');
             }
 
-            const data = resData.addresses.map((addr: any) => ({
+            const data = (resData.addresses || []).map((addr: any) => ({
                 ...addr,
                 residentsCount: addr.residentsCount || addr.residents_count || addr.people_count || 1
             }));
 
-            const sorted = (data || []).sort((a: any, b: any) => {
+            const sorted = data.sort((a: any, b: any) => {
                 const orderA = a.sortOrder ?? 999999;
                 const orderB = b.sortOrder ?? 999999;
                 if (orderA !== orderB) return orderA - orderB;
                 return a.street.localeCompare(b.street);
             });
 
-            setAddresses(sorted);
+            setAddresses(sorted as Address[]);
         } catch (error: any) {
             console.error("Error fetching addresses:", error);
-            if (error.message?.includes('index')) {
-                toast.error("O banco de dados ainda está preparando os índices. Aguarde um momento...");
-            } else {
-                toast.error("Erro ao carregar endereços.");
-            }
+            toast.error(error.message || "Erro ao carregar endereços.");
         } finally {
             setLoading(false);
         }
@@ -449,7 +443,6 @@ function AddressListContent() {
 
         try {
             const addressData = {
-                id: editingId || undefined,
                 street: combinedAddress.trim(),
                 territoryId: selectedTerritoryId,
                 congregationId: selectedCongregationId,
@@ -461,7 +454,7 @@ function AddressListContent() {
                 wazeLink: wazeLink,
                 residentName: residentName,
                 residentsCount: residentsCount ? parseInt(residentsCount) : 1,
-                gender: gender || null,
+                gender: (gender as any) || null,
                 isDeaf: isDeaf,
                 isMinor: isMinor,
                 isStudent: isStudent,
@@ -469,32 +462,18 @@ function AddressListContent() {
                 observations
             };
 
-            console.log("[Debug] Salvando endereço:", addressData);
-            console.log("[Debug] IDs individuais:", {
-                territoryId: selectedTerritoryId,
-                congregationId: selectedCongregationId,
-                cityId: selectedCityId
-            });
+            const resData = await saveAddress(editingId || null, addressData);
 
-            const response = await fetch('/api/addresses/save', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify(addressData)
-            });
-
-            const resData = await response.json();
-            if (!response.ok) {
-                throw new Error(resData.error || 'Erro ao salvar via API');
+            if (!resData.success) {
+                throw new Error(resData.error || 'Erro ao salvar endereço');
             }
 
             toast.success(editingId ? "Endereço atualizado com sucesso!" : "Endereço cadastrado com sucesso!");
-
             fetchAddresses();
-
             resetForm();
-        } catch (error) {
+        } catch (error: any) {
             console.error("Error saving address:", error);
-            toast.error("Erro ao salvar endereço.");
+            toast.error(error.message || "Erro ao salvar endereço.");
         }
     };
 
@@ -549,16 +528,17 @@ function AddressListContent() {
         if (!addressToDelete) return;
         setIsDeleting(true);
         try {
-            const addrRef = doc(db, 'addresses', addressToDelete);
-            await deleteDoc(addrRef);
+            const resData = await deleteAddress(addressToDelete);
+            if (!resData.success) throw new Error(resData.error);
+            
             toast.success("Endereço excluído com sucesso!");
             fetchAddresses();
             setIsDeleteDialogOpen(false);
             setAddressToDelete(null);
             setOpenMenuId(null);
-        } catch (error) {
+        } catch (error: any) {
             console.error("Error deleting address:", error);
-            toast.error("Erro ao excluir endereço.");
+            toast.error(error.message || "Erro ao excluir endereço.");
         } finally {
             setIsDeleting(false);
         }
@@ -662,24 +642,19 @@ function AddressListContent() {
     const handleApproveDNV = async (addr: Address) => {
         try {
             const addressData = {
-                ...addr,
-                is_active: false,
-                inactivated_at: new Date().toISOString()
+                id: addr.id,
+                isActive: false,
+                inactivatedAt: new Date().toISOString()
             };
 
-            const response = await fetch('/api/addresses/save', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify(addressData)
-            });
-
-            if (!response.ok) throw new Error("Erro ao desativar endereço");
+            const resData = await saveAddress(addr.id, addressData as any);
+            if (!resData.success) throw new Error(resData.error);
 
             toast.success("Endereço desativado com sucesso!");
             fetchAddresses();
-        } catch (error) {
+        } catch (error: any) {
             console.error(error);
-            toast.error("Erro ao aprovar solicitação.");
+            toast.error(error.message || "Erro ao aprovar solicitação.");
         }
     };
 
@@ -698,19 +673,14 @@ function AddressListContent() {
 
             if (!latestVisit) throw new Error("Não foi possível encontrar a visita relacionada.");
 
-            const response = await fetch('/api/visits/delete', {
-                method: 'DELETE',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ visitId: latestVisit.id })
-            });
-
-            if (!response.ok) throw new Error("Erro ao remover marcação");
+            const resData = await deleteVisit(latestVisit.id);
+            if (!resData.success) throw new Error(resData.error);
 
             toast.success("Marcação removida com sucesso!");
             fetchAddresses();
-        } catch (error) {
+        } catch (error: any) {
             console.error(error);
-            toast.error("Erro ao remover marcação.");
+            toast.error(error.message || "Erro ao remover marcação.");
         }
     };
 
@@ -718,41 +688,19 @@ function AddressListContent() {
         try {
             const currentActive = addr.isActive ?? addr.is_active ?? true;
 
-            // Cria um objeto limpo para salvar, evitando dados desnecessários ou conflitantes
             const addressData = {
-                id: addr.id,
-                street: addr.street,
-                territoryId: addr.territoryId || addr.territory_id,
-                congregationId: addr.congregationId || addr.congregation_id,
-                cityId: addr.cityId || addr.city_id,
-                lat: addr.lat,
-                lng: addr.lng,
                 isActive: !currentActive,
-                inactivatedAt: !currentActive ? new Date().toISOString() : null,
-                googleMapsLink: addr.googleMapsLink || addr.google_maps_link,
-                wazeLink: addr.wazeLink || addr.waze_link,
-                residentName: addr.residentName || addr.resident_name,
-                gender: addr.gender,
-                isDeaf: addr.isDeaf || addr.is_deaf,
-                isMinor: addr.isMinor || addr.is_minor,
-                isStudent: addr.isStudent || addr.is_student,
-                isNeurodivergent: addr.isNeurodivergent || addr.is_neurodivergent,
-                observations: addr.observations
+                inactivatedAt: !currentActive ? new Date().toISOString() : null
             };
 
-            const response = await fetch(`${process.env.NEXT_PUBLIC_API_BASE_URL}/api/addresses/save`, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify(addressData)
-            });
+            const resData = await saveAddress(addr.id, addressData as any);
+            if (!resData.success) throw new Error(resData.error);
 
-            if (!response.ok) throw new Error("Erro ao atualizar status");
-
-            toast.success(`Endereço ${!addr.is_active ? 'inativado' : 'reativado'} com sucesso!`);
+            toast.success(`Endereço ${!currentActive ? 'inativado' : 'reativado'} com sucesso!`);
             fetchAddresses();
-        } catch (error) {
+        } catch (error: any) {
             console.error(error);
-            toast.error("Erro ao atualizar status.");
+            toast.error(error.message || "Erro ao atualizar status.");
         }
     };
 

@@ -4,16 +4,19 @@ import { useState, useEffect } from 'react';
 import { 
     Plus, 
     Upload, 
-    Share2,
-    Download,
-    FileSpreadsheet,
     ChevronDown,
     ExternalLink,
     Copy,
+    Share2,
+    Download,
+    FileSpreadsheet
 } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import { toast } from 'sonner';
 import CSVImportModal from './CSVImportModal';
+import { exportDataToCSV } from '@/lib/services/export';
+
+
 
 interface AddressActionsMenuProps {
     congregationId: string;
@@ -88,14 +91,19 @@ export default function AddressActionsMenu({
     };
 
     const handleExport = async () => {
-        const params = new URLSearchParams({ congregationId });
-        if (cityId) params.append('cityId', cityId);
-        if (territoryId) params.append('territoryId', territoryId);
-
-        window.location.href = `/api/data/export?${params.toString()}`;
-        toast.success("Exportação iniciada...");
         setIsCSVMenuOpen(false);
+        const toastId = toast.loading("Gerando arquivo de exportação...");
+        try {
+            const result = await exportDataToCSV(congregationId, cityId, territoryId);
+            if (!result.success) {
+                throw new Error(result.error || "Erro exportação");
+            }
+            toast.success("Download iniciado!", { id: toastId });
+        } catch (e: any) {
+            toast.error("Erro ao gerar exportação: " + e.message, { id: toastId });
+        }
     };
+
 
     const downloadTemplate = () => {
         const header = "Cidade;UF;Número do Mapa;Descrição;Endereço;Quantidade de residentes;Nome;Link do Maps;Link do Waze;Status;Surdo;Menor de idade;Estudante;Neurodivergente;Gênero;Observações;Resultado da ultima visita;Ordem na listagem";

@@ -5,7 +5,7 @@ const isGithubActions = process.env.GITHUB_ACTIONS === 'true';
 
 /** @type {import('next').NextConfig} */
 const nextConfig = {
-    output: isGithubActions ? 'export' : undefined,
+    output: 'export',
     trailingSlash: false, // Desativado para evitar problemas com APIs no Firebase
     // Se o seu domínio for campobranco.github.io/campobranco, descomente a linha abaixo:
     // basePath: isGithubActions ? '/campobranco' : '',
@@ -14,8 +14,8 @@ const nextConfig = {
         ignoreBuildErrors: false,
     },
     images: {
-        // Habilitado para permitir o redimensionamento e otimização automática do Next.js
-        unoptimized: false,
+        // Obrigatório usar unoptimized: true para Static Exports no Next.js
+        unoptimized: true,
         formats: ['image/webp', 'image/avif'],
         deviceSizes: [640, 750, 828, 1080, 1200],
         imageSizes: [16, 32, 48, 64, 96, 128, 256, 384],
@@ -77,4 +77,30 @@ const withPWA = require("@ducanh2912/next-pwa").default({
     },
 });
 
-module.exports = withPWA(nextConfig);
+// Adiciona suporte a cabeçalhos HTTP customizados.
+// COOP: same-origin-allow-popups permite que o popup do Google Auth
+// (signInWithPopup) se comunique com a janela pai sem ser bloqueado.
+// Isso é necessário porque o Next.js 15 envia "same-origin" por padrão.
+// Nota: headers() não tem efeito em static export (output: 'export'),
+// mas funciona corretamente no servidor de desenvolvimento (npm run dev).
+const withHeaders = (config) => {
+    const originalHeaders = config.headers;
+    config.headers = async () => {
+        const existing = originalHeaders ? await originalHeaders() : [];
+        return [
+            ...existing,
+            {
+                source: '/(.*)',
+                headers: [
+                    {
+                        key: 'Cross-Origin-Opener-Policy',
+                        value: 'same-origin-allow-popups',
+                    },
+                ],
+            },
+        ];
+    };
+    return config;
+};
+
+module.exports = withHeaders(withPWA(nextConfig));
