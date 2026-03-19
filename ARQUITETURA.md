@@ -133,7 +133,27 @@ Para facilitar deploys Open Source e novas instâncias do Campo Branco:
   - Otimização do histórico de mapas para territórios compartilhados, movendo a ordenação e filtragem para o lado do cliente para evitar a necessidade de índices compostos complexos no Firestore.
   - Correção de erro de sintaxe crítico no carregamento de endereços que impedia a visualização correta de cartões individuais.
 - v0.7.41-beta: Correção definitiva do Histórico de Território no `SharedListView.tsx`, garantindo que mapas ativos (em aberto) apareçam no histórico com status "Em andamento". Padronização de acesso a campos `assignedName`/`assigned_name` e suporte a objetos `Timestamp` do Firebase para resiliência na exibição de datas.
+- v0.7.42-beta: Acesso Público total para links compartilhados. Ajustadas as `firestore.rules` para permitir leitura anônima de congregações, listas e visitas, além da criação (reporte) de visitas sem necessidade de login. O `SharedListView.tsx` foi adaptado para não exigir autenticação nas visualizações e permitir reportes anônimos.
+- v0.7.43-beta: Redesenho do `gerenciar.bat` com interface visual (ANSI) e novas automações de build/deploy.
+- v0.7.49-beta: Automação de `npm run build` antes de cada deploy no Gerenciador Web, garantindo que as variáveis de ambiente sejam aplicadas corretamente.
+- v0.7.50-beta: Deploy dinâmico via `.env`. Removido Project ID fixo.
+- v0.7.51-beta: Interface de Produção simplificada e remoção do `.firebaserc`.
+- v0.7.52-beta: Reforço de estabilidade no servidor (Heartbeat e timeouts).
+- v0.8.0-beta (O Grande Salto): Projeto transformado em Open Source e 100% Universal. Removidas todas as dependências de arquivos fixos (`.env.local`, `service-account.json`). Identidade Visual, IDs de Projeto e URLs agora são 100% dinâmicos via `.env.production` e `.env.development`. Limpeza profunda do repositório.
 
+## 🛠️ Gerenciador de Projeto (Instalador Visual Web)
+
+Para facilitar o desenvolvimento e deploy, o projeto agora conta com uma interface web de gerenciamento.
+
+### Como Usar:
+1. Localize o arquivo `gerenciar.bat` na raiz.
+2. Dê um duplo clique para iniciar.
+3. O navegador abrirá automaticamente em `http://localhost:4000`.
+4. Use a interface visual para:
+   - **Instalar Dependências**: Executa `npm install`.
+   - **Iniciar Servidor Dev**: Sobe o ambiente local.
+   - **Build & Deploy**: Realiza o build e o deploy para PROD ou DEV.
+   - **Sincronizar Regras**: Atualiza apenas as regras do Firebase.
 
 ---
 > [!IMPORTANT]

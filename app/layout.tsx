@@ -16,8 +16,8 @@ import { Toaster } from 'sonner';
 const inter = Inter({ subsets: ['latin'] })
 
 export const metadata: Metadata = {
-  title: 'Campo Branco',
-  description: 'Gestão de Territórios para Testemunhas de Jeová',
+  title: process.env.NEXT_PUBLIC_APP_NAME || 'Campo Branco',
+  description: process.env.NEXT_PUBLIC_APP_DESCRIPTION || 'Gestão de Territórios para Testemunhas de Jeová',
   manifest: '/manifest.json',
   icons: {
     icon: '/app-icon.svg',
@@ -27,7 +27,7 @@ export const metadata: Metadata = {
   appleWebApp: {
     capable: true,
     statusBarStyle: 'black-translucent',
-    title: 'Campo Branco',
+    title: process.env.NEXT_PUBLIC_APP_NAME || 'Campo Branco',
     startupImage: [
       {
         url: '/icon-512x512.png',
@@ -38,12 +38,12 @@ export const metadata: Metadata = {
   formatDetection: {
     telephone: false,
   },
-  applicationName: 'Campo Branco',
+  applicationName: process.env.NEXT_PUBLIC_APP_NAME || 'Campo Branco',
   other: {
     'mobile-web-app-capable': 'yes',
     'apple-mobile-web-app-capable': 'yes',
     'apple-mobile-web-app-status-bar-style': 'black-translucent',
-    'apple-mobile-web-app-title': 'Campo Branco',
+    'apple-mobile-web-app-title': process.env.NEXT_PUBLIC_APP_NAME || 'Campo Branco',
   }
 }
 
@@ -65,9 +65,11 @@ export default function RootLayout({
       <head>
         <script dangerouslySetInnerHTML={{
           __html: `
-          // Redirecionamento de legado do GitHub Pages
-          if (typeof window !== 'undefined' && window.location.hostname === 'campobranco.github.io') {
-            window.location.replace('https://campo-branco.web.app' + window.location.pathname + window.location.search + window.location.hash);
+          // Redirecionamento de legado opcional
+          const legacyHost = "${process.env.NEXT_PUBLIC_LEGACY_HOST || ''}";
+          const targetUrl = "${process.env.NEXT_PUBLIC_APP_URL || ''}";
+          if (legacyHost && targetUrl && typeof window !== 'undefined' && window.location.hostname === legacyHost) {
+            window.location.replace(targetUrl + window.location.pathname + window.location.search + window.location.hash);
           }
 
           // Injetando versão do app para o script

@@ -1,0 +1,281 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Campo Branco - Instalador Visual</title>
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600;800&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --primary: #2563eb;
+            --primary-dark: #1d4ed8;
+            --primary-light: #dbeafe;
+            --surface: rgba(255, 255, 255, 0.85);
+            --bg: #f8fafc;
+            --text-main: #0f172a;
+            --text-muted: #64748b;
+            --success: #16a34a;
+            --warning: #d97706;
+            --error: #dc2626;
+        }
+
+        @media (prefers-color-scheme: dark) {
+            :root {
+                --primary: #3b82f6;
+                --primary-light: rgba(59, 130, 246, 0.1);
+                --surface: rgba(15, 23, 42, 0.9);
+                --bg: #020617;
+                --text-main: #f8fafc;
+                --text-muted: #94a3b8;
+            }
+        }
+
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { font-family: 'Outfit', sans-serif; background: var(--bg); color: var(--text-main); min-height: 100vh; overflow-x: hidden; }
+
+        .app-container { max-width: 900px; margin: 40px auto; padding: 20px; }
+
+        header { text-align: center; margin-bottom: 40px; animation: fadeInDown 0.8s ease; }
+        .logo-box { background: var(--primary); color: white; width: 64px; height: 64px; border-radius: 16px; display: flex; align-items: center; justify-content: center; margin: 0 auto 16px; box-shadow: 0 10px 25px -5px rgba(37, 99, 235, 0.4); }
+        h1 { font-weight: 800; font-size: 2rem; letter-spacing: -0.025em; margin-bottom: 8px; }
+        p.subtitle { color: var(--text-muted); font-size: 1rem; }
+
+        .dashboard-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 20px; margin-bottom: 30px; }
+
+        .card { background: var(--surface); backdrop-filter: blur(12px); border: 1px solid rgba(255,255,255,0.1); border-radius: 24px; padding: 24px; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.1), 0 2px 4px -2px rgba(0,0,0,0.1); transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1); }
+        .card:hover { transform: translateY(-4px); box-shadow: 0 20px 25px -5px rgba(0,0,0,0.1), 0 8px 10px -6px rgba(0,0,0,0.1); border-color: var(--primary) !important; }
+
+        .env-card { cursor: pointer; text-align: center; border: 2px solid transparent !important; }
+
+        .section-title { display: flex; align-items: center; gap: 12px; margin-bottom: 20px; color: var(--text-muted); text-transform: uppercase; font-size: 0.75rem; font-weight: 800; letter-spacing: 0.1em; }
+
+        .btn-group { display: flex; flex-direction: column; gap: 12px; }
+        .btn { display: flex; align-items: center; justify-content: space-between; padding: 14px 20px; border-radius: 14px; border: none; font-family: inherit; font-weight: 600; cursor: pointer; transition: all 0.2s; background: var(--primary-light); color: var(--primary); text-align: left; }
+        .btn:hover:not(:disabled) { background: var(--primary); color: white; }
+        .btn:disabled { opacity: 0.5; cursor: not-allowed; }
+        .btn i { width: 18px; height: 18px; }
+
+        .terminal-container { background: #0f172a; border-radius: 24px; padding: 20px; margin-top: 20px; border: 1px solid rgba(255,255,255,0.05); box-shadow: inset 0 2px 4px 0 rgba(0,0,0,0.06); }
+        .terminal-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; }
+        .dots { display: flex; gap: 6px; }
+        .dot { width: 10px; height: 10px; border-radius: 50%; }
+        .dot-red { background: #ef4444; } .dot-yellow { background: #f59e0b; } .dot-green { background: #10b981; }
+        .terminal-body { height: 300px; overflow-y: auto; font-family: 'JetBrains Mono', 'Menlo', 'Monaco', 'Courier New', monospace; font-size: 0.85rem; line-height: 1.6; color: #cbd5e1; white-space: pre-wrap; padding-right: 10px; }
+        .terminal-body::-webkit-scrollbar { width: 6px; }
+        .terminal-body::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.1); border-radius: 10px; }
+        
+        .log-stdout { color: #f8fafc; }
+        .log-stderr { color: #fca5a5; }
+        .log-status { color: #3b82f6; font-weight: bold; }
+        .log-error { color: #ef4444; font-weight: bold; }
+
+        @keyframes fadeInDown {
+            from { opacity: 0; transform: translateY(-20px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .status-badge { display: inline-flex; align-items: center; gap: 6px; padding: 4px 12px; border-radius: 9999px; font-size: 0.75rem; font-weight: 700; background: var(--primary-light); color: var(--primary); transition: all 0.5s; }
+        .status-idle { width: 8px; height: 8px; border-radius: 50%; background: var(--primary); }
+        .status-working { width: 8px; height: 8px; border-radius: 50%; background: var(--warning); animation: pulse 1s infinite; }
+
+        @keyframes pulse { 0% { opacity: 1; } 50% { opacity: 0.4; } 100% { opacity: 1; } }
+    </style>
+</head>
+<body>
+    <div class="app-container">
+        <header>
+            <div class="logo-box"><i data-lucide="rocket"></i></div>
+            <h1>Campo Branco</h1>
+            <p class="subtitle">Instalador Visual & Gerenciador de Projeto</p>
+        </header>
+
+        <!-- Tela de Seleção Inicial -->
+        <div id="setup-view" style="animation: fadeIn 0.5s ease;">
+            <div class="section-title" style="justify-content: center; margin-bottom: 30px;">O que você deseja fazer hoje?</div>
+            <div class="dashboard-grid" style="grid-template-columns: repeat(2, 1fr);">
+                <div class="card env-card" onclick="selectEnv('prod')">
+                    <div class="logo-box" style="background: var(--primary); margin-bottom: 20px;"><i data-lucide="globe"></i></div>
+                    <h3 style="margin-bottom: 8px;">Produção</h3>
+                    <p style="font-size: 0.85rem; color: var(--text-muted);">Trabalhar no servidor oficial configurado</p>
+                </div>
+                <div class="card env-card" onclick="selectEnv('dev')">
+                    <div class="logo-box" style="background: var(--primary); margin-bottom: 20px;"><i data-lucide="flask-conical"></i></div>
+                    <h3 style="margin-bottom: 8px;">Desenvolvimento</h3>
+                    <p style="font-size: 0.85rem; color: var(--text-muted);">Testes e homologação local</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- Painel de Controle (Escondido initially) -->
+        <div id="main-view" style="display: none; animation: fadeIn 0.5s ease;">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
+                <div class="status-badge" style="background: var(--primary-light); color: var(--primary); font-size: 0.85rem;">
+                    <i data-lucide="layers" style="width: 14px; height: 14px;"></i>
+                    Modo: <span id="env-label" style="text-transform: uppercase; margin-left: 4px;">DESCONHECIDO</span>
+                </div>
+                <button onclick="location.reload()" style="background: none; border: none; color: var(--text-muted); cursor: pointer; display: flex; align-items: center; gap: 4px; font-size: 0.85rem; font-weight: 600;">
+                    <i data-lucide="refresh-ccw" style="width: 14px; height: 14px;"></i> Alterar Ambiente
+                </button>
+            </div>
+
+            <div class="dashboard-grid">
+                <!-- Coluna 1: Desenvolvimento (Escondida em PROD) -->
+                <div class="card" id="dev-card">
+                    <div class="section-title"><i data-lucide="code-2"></i> Desenvolvimento</div>
+                    <div class="btn-group">
+                        <button class="btn" onclick="runCommand('install')" id="btn-install">
+                            <span>Instalar Dependências</span>
+                            <i data-lucide="download"></i>
+                        </button>
+                        <button class="btn" onclick="runCommand('dev')" id="btn-dev">
+                            <span>Iniciar Servidor Dev</span>
+                            <i data-lucide="play"></i>
+                        </button>
+                        <button class="btn" onclick="runCommand('build')" id="btn-build">
+                            <span>Build do Projeto</span>
+                            <i data-lucide="package"></i>
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Coluna 2: Firebase / Deploy (Contextual) -->
+                <div class="card">
+                    <div class="section-title"><i data-lucide="cloud-upload"></i> Deploy & Regras</div>
+                    <div class="btn-group" id="context-actions">
+                        <!-- Botões injetados via JS -->
+                    </div>
+                </div>
+            </div>
+
+            <!-- Terminal de Logs -->
+            <div class="terminal-container">
+                <div class="terminal-header">
+                    <div class="dots">
+                        <div class="dot dot-red"></div>
+                        <div class="dot dot-yellow"></div>
+                        <div class="dot dot-green"></div>
+                    </div>
+                    <div class="status-badge">
+                        <div id="status-indicator" class="status-idle"></div>
+                        <span id="status-text">PRONTO</span>
+                    </div>
+                </div>
+                <div class="terminal-body" id="terminal-output">Aguardando comando...</div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        lucide.createIcons();
+
+        let eventSource = null;
+        let selectedEnv = null;
+        const terminal = document.getElementById('terminal-output');
+        const statusText = document.getElementById('status-text');
+        const statusIndicator = document.getElementById('status-indicator');
+
+        function selectEnv(env) {
+            selectedEnv = env;
+            document.getElementById('setup-view').style.display = 'none';
+            document.getElementById('main-view').style.display = 'block';
+            
+            const label = document.getElementById('env-label');
+            label.textContent = env === 'prod' ? 'Produção' : 'Desenvolvimento';
+            
+            // Visibilidade do card de desenvolvimento
+            const devCard = document.getElementById('dev-card');
+            devCard.style.display = env === 'prod' ? 'none' : 'block';
+            
+            // Ajuste na grid para centralizar se sobrar apenas um card
+            const grid = document.querySelector('.dashboard-grid');
+            grid.style.gridTemplateColumns = env === 'prod' ? '1fr' : 'repeat(auto-fit, minmax(280px, 1fr))';
+            if (env === 'prod') grid.style.maxWidth = "500px";
+            if (env === 'prod') grid.style.margin = "0 auto 30px";
+
+            renderActions();
+            lucide.createIcons();
+        }
+
+        function renderActions() {
+            const container = document.getElementById('context-actions');
+            
+            container.innerHTML = `
+                <button class="btn" onclick="runCommand('deploy-${selectedEnv}')">
+                    <span>Fazer Deploy Completo</span>
+                    <i data-lucide="rocket"></i>
+                </button>
+                <button class="btn" onclick="runCommand('sync-rules-${selectedEnv}')">
+                    <span>Sincronizar Apenas Regras</span>
+                    <i data-lucide="shield-check"></i>
+                </button>
+            `;
+        }
+
+
+        function appendLog(type, text) {
+            const div = document.createElement('div');
+            div.className = `log-${type}`;
+            div.textContent = text;
+            terminal.appendChild(div);
+            terminal.scrollTop = terminal.scrollHeight;
+        }
+
+        function setWorking(isWorking) {
+            const btns = document.querySelectorAll('.btn');
+            btns.forEach(b => b.disabled = isWorking);
+            
+            if (isWorking) {
+                statusText.textContent = "EXECUTANDO...";
+                statusIndicator.className = "status-working";
+            } else {
+                statusText.textContent = "CONCLUÍDO";
+                statusIndicator.className = "status-idle";
+            }
+        }
+
+        function runCommand(cmd) {
+            if (eventSource) eventSource.close();
+            
+            terminal.innerHTML = "";
+            setWorking(true);
+            
+            eventSource = new EventSource(`/logs?cmd=${cmd}`);
+
+            eventSource.onmessage = (event) => {
+                const data = JSON.parse(event.data);
+                
+                if (data.type === 'done') {
+                    // Sinal de conclusão recebido: fechar deliberadamente
+                    const currentSource = eventSource;
+                    eventSource = null;
+                    currentSource.close();
+                    setWorking(false);
+                    return;
+                }
+
+                appendLog(data.type, data.data);
+            };
+
+            eventSource.onerror = (err) => {
+                // Se o status já for CONCLUÍDO ou se já limpamos o eventSource, ignoramos
+                if (statusText.textContent === "CONCLUÍDO" || eventSource === null) {
+                    if (eventSource) {
+                        eventSource.close();
+                        eventSource = null;
+                    }
+                    return;
+                }
+                
+                appendLog('error', 'Conexão encerrada ou erro no servidor.');
+                if (eventSource) {
+                    eventSource.close();
+                    eventSource = null;
+                }
+                setWorking(false);
+            };
+        }
+    </script>
+
+</body>
+</html>

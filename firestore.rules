@@ -52,7 +52,7 @@ service cloud.firestore {
 
     // 1. Congregações
     match /congregations/{congregationId} {
-      allow read: if isAuthenticated();
+      allow read: if true; // Permitir leitura pública para exibir nome da congregação em listas compartilhadas
       allow create, delete: if isAdmin();
       allow update: if isAuthenticated() && (isAdmin() || (isServant() && (congregationId == getCongId(get(/databases/$(database)/documents/users/$(request.auth.uid)).data))));
     }
@@ -102,14 +102,14 @@ service cloud.firestore {
 
     // 5. Visitas (Histórico Individual)
     match /visits/{id} {
-      allow read: if isAuthenticated();
-      allow create: if isAuthenticated();
+      allow read: if true; // Permitir leitura pública para histórico em listas compartilhadas
+      allow create: if true; // Permitir que visitantes registrem visitas via link público
       allow update, delete: if isAuthenticated();
     }
 
     // 6. Listas Compartilhadas (Cartões)
     match /shared_lists/{id} {
-      allow read: if isAuthenticated(); // Qualquer autenticado pode ler uma lista compartilhada
+      allow read: if true; // Permitir leitura pública via link direto (GUID)
       allow create: if isAuthenticated();
       allow update: if isAuthenticated() && (
         isAdmin() || 

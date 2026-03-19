@@ -133,9 +133,9 @@ export default function SharedListView({ id: propId }: SharedListViewProps) {
                     expiresAt: list.expires_at
                 } as any);
 
-                // Show responsibility modal if no one is assigned and list is active
+                // Show responsibility modal if no one is assigned, list is active, and user IS logged in
                 const hasResponsible = list.assigned_to || list.assignedTo || list.assigned_name || list.assignedName;
-                if (!hasResponsible && list.status !== 'completed') {
+                if (!hasResponsible && list.status !== 'completed' && user) {
                     setIsResponsibilityModalOpen(true);
                 }
 
@@ -358,7 +358,8 @@ export default function SharedListView({ id: propId }: SharedListViewProps) {
             const visitData = {
                 address_id: savedItem.id,
                 territory_id: savedItem.territory_id || listData?.territoryId,
-                user_id: user?.uid,
+                user_id: user?.uid || 'anonymous',
+                user_name: profileName || 'Visitante',
                 status: data.status,
                 notes: data.observations || '',
                 visit_date: visit_date,
@@ -561,19 +562,6 @@ export default function SharedListView({ id: propId }: SharedListViewProps) {
                                     <div
                                         onClick={() => {
                                             if (listData?.type === 'address') {
-                                                if (!user) {
-                                                    setConfirmModal({
-                                                        isOpen: true,
-                                                        title: "Login Necessário",
-                                                        message: "Você precisa estar logado para registrar uma visita. Deseja entrar agora?",
-                                                        variant: 'info',
-                                                        onConfirm: () => {
-                                                            setConfirmModal(prev => ({ ...prev, isOpen: false }));
-                                                            router.push(`/login?redirect=/share?id=${id}`);
-                                                        }
-                                                    });
-                                                    return;
-                                                }
                                                 setVisitingItem(item);
                                             } else if (href !== '#') router.push(href);
                                         }}

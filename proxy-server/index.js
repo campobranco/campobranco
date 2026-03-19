@@ -3,8 +3,8 @@ const { createProxyMiddleware } = require('http-proxy-middleware');
 
 const app = express();
 
-// URL detectada do backend App Hosting
-const TARGET_URL = 'https://campo-branco-pquzzmaroa-uc.a.run.app'; 
+// URL detectada do backend App Hosting (ou configuração de ambiente)
+const TARGET_URL = process.env.TARGET_URL || 'http://localhost:3000'; 
 
 app.use('/', createProxyMiddleware({
     target: TARGET_URL,

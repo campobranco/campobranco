@@ -117,9 +117,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
             try {
                 if (userSnap.exists()) {
                     const data = userSnap.data();
-                    const masterEmail = process.env.NEXT_PUBLIC_MASTER_EMAIL || 'campobrancojw@gmail.com';
+                    const masterEmail = process.env.NEXT_PUBLIC_MASTER_EMAIL;
                     
-                    if (user.email === masterEmail && data.role !== 'ADMIN') {
+                    if (masterEmail && user.email === masterEmail && data.role !== 'ADMIN') {
                         // Força ADMIN para o email mestre
                         await setDoc(userRef, {
                             role: 'ADMIN',
@@ -136,8 +136,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
                     }
                 } else {
                     // Novo usuário
-                    const masterEmail = process.env.NEXT_PUBLIC_MASTER_EMAIL || 'campobrancojw@gmail.com';
-                    const isMaster = user.email === masterEmail;
+                    const masterEmail = process.env.NEXT_PUBLIC_MASTER_EMAIL;
+                    const isMaster = masterEmail && user.email === masterEmail;
                     const newUserProfile = {
                         name: user.displayName || (isMaster ? 'Admin' : 'Membro'),
                         email: user.email,

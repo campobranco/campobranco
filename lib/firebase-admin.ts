@@ -24,7 +24,7 @@ function initAdminApp(): App {
     const projectId = (
         process.env.FIREBASE_PROJECT_ID || 
         process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID ||
-        'campo-branco' // Fallback para o ID conhecido
+        ''
     ).replace(/^["']|["']$/g, '').trim();
 
     console.log(`🔧 Firebase Admin: Iniciando para projeto [${projectId}]`);
@@ -103,21 +103,6 @@ function initAdminApp(): App {
             });
         } catch (e: any) {
             console.warn('⚠️ Firebase Admin: ADC falhou:', e.message);
-        }
-    }
-
-    // Prioridade 3: service-account.json local (dev)
-    const saPath = path.join(process.cwd(), 'service-account.json');
-    if (fs.existsSync(saPath)) {
-        try {
-            const serviceAccount = JSON.parse(fs.readFileSync(saPath, 'utf8'));
-            console.log('✅ Firebase Admin: Inicializado via arquivo local');
-            return initializeApp({
-                credential: cert(serviceAccount),
-                projectId: serviceAccount.project_id || projectId
-            });
-        } catch (e) {
-            console.error('❌ Firebase Admin: Erro no arquivo local:', e);
         }
     }
 

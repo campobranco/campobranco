@@ -41,8 +41,8 @@ const nextConfig = {
     },
     env: {
         NEXT_PUBLIC_APP_VERSION: pkg.version,
-        // Define a URL base para as APIs. No GitHub, aponta para o Firebase.
-        NEXT_PUBLIC_API_BASE_URL: isGithubActions ? 'https://campo-branco.web.app' : '',
+        // Define a URL base para as APIs.
+        NEXT_PUBLIC_API_BASE_URL: process.env.NEXT_PUBLIC_APP_URL || '',
     },
     turbopack: {},
 };

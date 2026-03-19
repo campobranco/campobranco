@@ -3,8 +3,8 @@ import { defineConfig, devices } from '@playwright/test';
 import dotenv from 'dotenv';
 import path from 'path';
 
-// Load env from .env.local
-dotenv.config({ path: path.resolve(__dirname, '.env.local') });
+// Load env from .env.development
+dotenv.config({ path: path.resolve(__dirname, '.env.development') });
 
 export default defineConfig({
     testDir: './e2e',

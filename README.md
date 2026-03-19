@@ -61,13 +61,12 @@ npm install
 ```
 
 ### 3. Configuração de Ambiente
-Crie um arquivo `.env.local` na raiz do projeto:
+Crie um arquivo `.env.development` na raiz do projeto (use o `env.example` como base):
 
 ```env
-# Supabase Configuration
-NEXT_PUBLIC_SUPABASE_URL=https://seu-projeto.supabase.co
-NEXT_PUBLIC_SUPABASE_ANON_KEY=sua-chave-anon-publica
-SUPABASE_SERVICE_ROLE_KEY=sua-chave-service-role-privada
+# Configuração de Desenvolvimento
+NEXT_PUBLIC_APP_NAME="Campo Branco (Dev)"
+# ... veja mais variáveis no env.example
 ```
 
 ### 4. Rodando o Projeto

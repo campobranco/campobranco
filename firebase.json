@@ -1,6 +1,5 @@
 {
   "hosting": {
-    "site": "campo-branco",
     "public": "out",
     "ignore": [
       "firebase.json",

@@ -2,13 +2,14 @@
 // Cliente Firebase para uso em componentes do lado do cliente (browser)
 // As credenciais são lidas exclusivamente das variáveis de ambiente NEXT_PUBLIC_*
 // Configure o projeto certo em .env.local (dev) e .env.production (prod)
+// Configure o projeto certo em .env.development (dev) e .env.production (prod)
 
 import { initializeApp, getApps, getApp, FirebaseApp } from 'firebase/app';
 import { getAuth, Auth, setPersistence, browserLocalPersistence } from 'firebase/auth';
 import { getFirestore, Firestore } from 'firebase/firestore';
 
 // Configuração do Firebase lida das variáveis de ambiente
-// .env.local é automaticamente carregado em dev pelo Next.js
+// .env.development é automaticamente carregado em dev pelo Next.js
 // .env.production é usado no build de produção
 const firebaseConfig = {
     apiKey: process.env.NEXT_PUBLIC_FIREBASE_API_KEY,
