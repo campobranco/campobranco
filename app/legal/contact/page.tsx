@@ -9,18 +9,18 @@ export default function ContactPage() {
                 </div>
                 <div>
                     <h1 className="text-2xl font-black text-gray-900 dark:text-white m-0 leading-tight">Contato e Suporte</h1>
-                    <p className="text-sm text-gray-500 dark:text-gray-400 m-0">Canal direto para reports técnicos e sugestões.</p>
+                    <p className="text-sm text-gray-500 dark:text-gray-400 m-0">Canal direto para reports técnicos e sugestões do {process.env.NEXT_PUBLIC_APP_NAME || 'Campo Branco'}.</p>
                 </div>
             </div>
 
             <section className="space-y-8 text-gray-600 dark:text-gray-300">
 
                 <div className="bg-surface dark:bg-slate-800 p-8 rounded-3xl shadow-sm border border-surface-border dark:border-slate-700 text-center space-y-2">
-                    <h2 className="text-xs font-bold text-muted dark:text-gray-400 uppercase tracking-widest">Contato Técnico / Desenvolvedor</h2>
-                    <a href="mailto:campobrancojw@gmail.com" className="text-2xl md:text-3xl font-bold text-primary dark:text-primary-light hover:text-primary-dark dark:hover:text-primary transition-colors block break-all">
-                        campobrancojw@gmail.com
+                    <h2 className="text-xs font-bold text-muted dark:text-gray-400 uppercase tracking-widest">Contato Técnico / Suporte</h2>
+                    <a href={`mailto:${process.env.NEXT_PUBLIC_MASTER_EMAIL || 'suporte@campobranco.com'}`} className="text-2xl md:text-3xl font-bold text-primary dark:text-primary-light hover:text-primary-dark dark:hover:text-primary transition-colors block break-all">
+                        {process.env.NEXT_PUBLIC_MASTER_EMAIL || 'suporte@campobranco.com'}
                     </a>
-                    <p className="text-sm text-muted dark:text-gray-400">Paulo Jacomelli</p>
+                    <p className="text-sm text-muted dark:text-gray-400">Administrador do Sistema</p>
                 </div>
 
                 <div className="grid md:grid-cols-2 gap-6 not-prose">
@@ -43,7 +43,7 @@ export default function ContactPage() {
                             <h3 className="font-bold text-emerald-900 dark:text-emerald-100 m-0">Sugestões</h3>
                         </div>
                         <p className="text-sm text-emerald-800 dark:text-emerald-200 m-0 leading-relaxed">
-                            Tem ideias para melhorar o Campo Branco? Adoraríamos ouvir. Sua experiência prática é a melhor fonte de melhorias.
+                            Tem ideias para melhorar o {process.env.NEXT_PUBLIC_APP_NAME || 'Campo Branco'}? Adoraríamos ouvir. Sua experiência prática é a melhor fonte de melhorias.
                         </p>
                     </div>
                 </div>
