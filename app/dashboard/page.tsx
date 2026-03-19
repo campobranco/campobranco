@@ -300,7 +300,7 @@ export default function DashboardPage() {
         } finally {
             setHistoryLoading(false);
         }
-    }, [congregationId, role, isElder, isServant, user]);
+    }, [congregationId, role, isElder, isServant, user, profileName]);
 
     // Safety Timeout for Dashboard
     useEffect(() => {

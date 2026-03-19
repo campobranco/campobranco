@@ -25,8 +25,8 @@ export default function RequestCongregationPage() {
                     </p>
                     <div className="bg-white p-4 rounded-xl border border-gray-200 shadow-sm">
                         <p className="text-xs text-gray-400 font-bold uppercase tracking-wider mb-1">E-mail para contato</p>
-                        <a href="mailto:campobrancojw@gmail.com" className="text-blue-600 font-bold text-lg hover:underline break-all">
-                            campobrancojw@gmail.com
+                        <a href={`mailto:${process.env.NEXT_PUBLIC_SUPPORT_EMAIL || process.env.NEXT_PUBLIC_MASTER_EMAIL}`} className="text-blue-600 font-bold text-lg hover:underline break-all">
+                            {process.env.NEXT_PUBLIC_SUPPORT_EMAIL || process.env.NEXT_PUBLIC_MASTER_EMAIL}
                         </a>
                     </div>
                 </div>

@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useEffect, Suspense } from 'react';
+import React, { useState, useEffect, Suspense, useCallback } from 'react';
 import { toast } from 'sonner';
 import {
     Search, MapPin, Navigation, Pencil, Trash2,
@@ -153,7 +153,7 @@ function AddressListContent() {
         else if (!authLoading && user && !isServant && !territoryId) {
             router.replace('/dashboard');
         }
-    }, [user, authLoading, isServant, territoryId, router]);
+    }, [user, authLoading, isServant, territoryId, router, congregationId, loading]);
 
     // Form State
     const [combinedAddress, setCombinedAddress] = useState(''); // Single input for "Street, Number"
@@ -311,7 +311,7 @@ function AddressListContent() {
 
 
     // Fetch Addresses
-    const fetchAddresses = async () => {
+    const fetchAddresses = useCallback(async () => {
         if (!congregationId || !territoryId) return;
 
         try {
@@ -341,7 +341,7 @@ function AddressListContent() {
         } finally {
             setLoading(false);
         }
-    };
+    }, [congregationId, cityId, territoryId]);
 
     useEffect(() => {
         fetchAddresses();
@@ -369,7 +369,7 @@ function AddressListContent() {
 
             return () => unsubscribe();
         }
-    }, [congregationId, territoryId]);
+    }, [congregationId, territoryId, fetchAddresses]);
 
     // Fetch Available Options for Edit Modal
     useEffect(() => {
@@ -436,7 +436,7 @@ function AddressListContent() {
                 router.replace(url.pathname + url.search, { scroll: false });
             }
         }
-    }, [editAddressId, addresses]);
+    }, [editAddressId, addresses, fetchAddresses, router, searchParams]);
 
 
 

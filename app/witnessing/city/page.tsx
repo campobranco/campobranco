@@ -181,7 +181,7 @@ function WitnessingPointListContent() {
         });
 
         return () => { unsubscribe(); };
-    }, [congregationId, cityId, fetchPoints, authLoading]);
+    }, [congregationId, cityId, fetchPoints, authLoading, userCongregationId, router]);
 
     // Limpeza de check-ins expirados (máximo 5 horas)
     useEffect(() => {

@@ -111,7 +111,6 @@ export default function AdminReportsPage() {
                                     {/* Screenshot Preview */}
                                     <div className="md:w-1/3 shrink-0">
                                         <div className="aspect-video bg-zinc-950 rounded-2xl overflow-hidden border border-surface-border relative group shadow-inner">
-                                            {/* eslint-disable-next-line @next/next/no-img-element */}
                                             <img src={report.screenshot} alt="Screenshot" className="w-full h-full object-contain" />
                                             <a
                                                 href={report.screenshot}

@@ -42,7 +42,20 @@ export async function getTerritories(congregationId: string, cityId?: string | n
             );
         }
 
-        const teSnap = await getDocs(q);
+        let teSnap = await getDocs(q);
+        
+        // Retrocompatibilidade: busca por city_id/congregation_id se a consulta principal falhar
+        if (teSnap.empty && cityId) {
+            console.log('[TERRITORIES] Consulta principal vazia, tentando campos legados...');
+            const qLegacy = query(
+                collection(db, TABLE),
+                where('city_id', '==', cityId),
+                where('congregation_id', '==', congregationId),
+                orderBy('name')
+            );
+            teSnap = await getDocs(qLegacy);
+        }
+        
         const territories = teSnap.docs.map(doc => ({ id: doc.id, ...doc.data() } as any));
 
         if (territories.length === 0) return { success: true, territories: [] };
@@ -63,17 +76,29 @@ export async function getTerritories(congregationId: string, cityId?: string | n
                 where('territoryId', 'in', chunk),
                 where('isActive', '==', true)
             );
-            const addrSnap = await getDocs(addrQ);
+            let addrSnap = await getDocs(addrQ);
+            
+            // Retrocompatibilidade: busca por territory_id se a consulta principal falhar
+            if (addrSnap.empty) {
+                console.log('[TERRITORIES] Consulta de endereços vazia, tentando campos legados...');
+                const addrQLegacy = query(
+                    collection(db, 'addresses'),
+                    where('territory_id', 'in', chunk),
+                    where('isActive', '==', true)
+                );
+                addrSnap = await getDocs(addrQLegacy);
+            }
 
             addrSnap.docs.forEach(doc => {
                 const addr = doc.data();
-                if (!statsMap[addr.territoryId]) {
-                    statsMap[addr.territoryId] = { count: 0, men: 0, women: 0, couples: 0 };
+                const territoryId = addr.territoryId || addr.territory_id;
+                if (!statsMap[territoryId]) {
+                    statsMap[territoryId] = { count: 0, men: 0, women: 0, couples: 0 };
                 }
-                statsMap[addr.territoryId].count++;
-                if (addr.gender === 'HOMEM') statsMap[addr.territoryId].men++;
-                else if (addr.gender === 'MULHER') statsMap[addr.territoryId].women++;
-                else if (addr.gender === 'CASAL') statsMap[addr.territoryId].couples++;
+                statsMap[territoryId].count++;
+                if (addr.gender === 'HOMEM') statsMap[territoryId].men++;
+                else if (addr.gender === 'MULHER') statsMap[territoryId].women++;
+                else if (addr.gender === 'CASAL') statsMap[territoryId].couples++;
             });
         }
 

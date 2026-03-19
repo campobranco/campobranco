@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, Suspense, Fragment } from 'react';
+import { useState, useEffect, Suspense, Fragment, useCallback } from 'react';
 import {
     Plus,
     Link as LinkIcon,
@@ -142,8 +142,16 @@ function TerritoryListContent() {
         return () => window.removeEventListener('click', handleClickOutside);
     }, [activeMenu]);
 
+    // Redirect unauthenticated users before any Firestore reads
+    useEffect(() => {
+        if (!authLoading && !user) {
+            router.replace('/login');
+        }
+    }, [authLoading, user, router]);
+
     // Fetch City Name
     useEffect(() => {
+        if (authLoading || !user) return;
         if (!cityId) return;
         const fetchCity = async () => {
             const cityRef = doc(db, 'cities', cityId);
@@ -154,10 +162,11 @@ function TerritoryListContent() {
             }
         };
         fetchCity();
-    }, [cityId]);
+    }, [authLoading, user, cityId]);
 
     // Fetch Congregation Settings
     useEffect(() => {
+        if (authLoading || !user) return;
         if (!congregationId) return;
         const fetchSettings = async () => {
             const congRef = doc(db, 'congregations', congregationId);
@@ -168,14 +177,19 @@ function TerritoryListContent() {
             }
         };
         fetchSettings();
-    }, [congregationId]);
+    }, [authLoading, user, congregationId]);
 
     // Fetch Territories
-    const fetchTerritories = async () => {
+    const fetchTerritories = useCallback(async () => {
+        if (authLoading || !user) {
+            setLoading(false);
+            return;
+        }
         if (!congregationId || !cityId) {
             setLoading(false);
             return;
         }
+        setError(null);
         try {
             const data = await getTerritories(congregationId, cityId);
 
@@ -208,25 +222,40 @@ function TerritoryListContent() {
         } finally {
             setLoading(false);
         }
-    };
+    }, [authLoading, user, congregationId, cityId]);
 
     useEffect(() => {
+        if (authLoading) return;
+        if (!user) {
+            setLoading(false);
+            return;
+        }
         fetchTerritories();
 
         if (congregationId && cityId) {
             const territoriesRef = collection(db, 'territories');
-            const q = query(territoriesRef, where('cityId', '==', cityId));
+            const q = query(
+                territoriesRef, 
+                where('cityId', '==', cityId),
+                where('congregationId', '==', congregationId)
+            );
 
             const unsubscribe = onSnapshot(q, () => {
                 fetchTerritories();
+            }, (err: any) => {
+                console.error("Territory listener error:", err);
+                if (err.code === 'permission-denied') {
+                    setError("Permissão negada ao monitorar territórios. Verifique seu vínculo com a congregação.");
+                }
             });
 
             return () => unsubscribe();
         }
-    }, [congregationId, cityId]);
+    }, [congregationId, cityId, fetchTerritories, authLoading, user]);
 
     // Fetch Addresses (for counts and search)
-    const fetchAddresses = async () => {
+    const fetchAddresses = useCallback(async () => {
+        if (authLoading || !user) return;
         if (!congregationId || !cityId) return;
         try {
             const resData = await getAddresses(congregationId, cityId);
@@ -249,12 +278,14 @@ function TerritoryListContent() {
                     const searchString = `${addr.street || ''} ${addr.resident_name || ''} ${addr.observations || ''}`.toLowerCase();
                     searchIndex[addr.territory_id] = (searchIndex[addr.territory_id] || '') + ' ' + searchString;
 
-                    if (!gStats[addr.territory_id]) gStats[addr.territory_id] = { men: 0, women: 0, couples: 0 };
-
-                    const g = addr.gender;
-                    if (g === 'HOMEM') gStats[addr.territory_id].men++;
-                    else if (g === 'MULHER') gStats[addr.territory_id].women++;
-                    else if (g === 'CASAL') gStats[addr.territory_id].couples++;
+                    if (addr.resident_gender || addr.gender) {
+                        const genderId = addr.territory_id;
+                        if (!gStats[genderId]) gStats[genderId] = { men: 0, women: 0, couples: 0 };
+                        const g = (addr.resident_gender || addr.gender).toUpperCase();
+                        if (g === 'HOMEM' || g === 'MALE' || g === 'M') gStats[genderId].men++;
+                        else if (g === 'MULHER' || g === 'FEMALE' || g === 'F') gStats[genderId].women++;
+                        else if (g === 'CASAL' || g === 'COUPLE' || g === 'C') gStats[genderId].couples++;
+                    }
                 }
             });
 
@@ -265,14 +296,15 @@ function TerritoryListContent() {
         } catch (error) {
             console.error("Error fetching addresses:", error);
         }
-    };
+    }, [authLoading, user, congregationId, cityId]);
 
     useEffect(() => {
+        if (authLoading || !user) return;
         // Fetch addresses if searchInItems is used OR if we are in table view
         if ((searchInItems && searchTerm) || currentView === 'table') {
             fetchAddresses();
         }
-    }, [congregationId, cityId, searchInItems, searchTerm, currentView]);
+    }, [authLoading, user, congregationId, cityId, searchInItems, searchTerm, currentView, fetchTerritories, fetchAddresses]);
 
     // Sincronizar currentView com os parâmetros da URL
     useEffect(() => {
@@ -280,10 +312,11 @@ function TerritoryListContent() {
         if (viewFromUrl !== currentView) {
             setCurrentView(viewFromUrl);
         }
-    }, [searchParams]);
+    }, [searchParams, currentView]);
 
     // Fetch Shared Lists (Assignments)
     useEffect(() => {
+        if (authLoading || !user) return;
         if (!congregationId) return;
 
         const fetchSharedLists = async () => {
@@ -329,7 +362,7 @@ function TerritoryListContent() {
         };
 
         fetchSharedLists();
-    }, [congregationId]);
+    }, [authLoading, user, congregationId]);
 
 
     const handleCreateTerritory = async (e: React.FormEvent) => {
@@ -449,6 +482,10 @@ function TerritoryListContent() {
     });
 
     if (authLoading || loading) return <div className="min-h-screen flex items-center justify-center bg-background"><Loader2 className="w-10 h-10 text-primary animate-spin" /></div>;
+
+    if (!user) {
+        return null;
+    }
 
     // Role Guard: Only Servants, Elders and Admins can see this page
     if (user && !isServant) {

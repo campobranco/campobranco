@@ -61,11 +61,11 @@ export default function VisitsHistory({ scope = 'all', showViewAll = true }: { s
         setLoading(true);
         try {
             const visitsRef = collection(db, 'visits');
-            let q = query(visitsRef, orderBy('visit_date', 'desc'), limit(showViewAll ? 20 : 100));
+            let q = query(visitsRef, orderBy('visitDate', 'desc'), limit(showViewAll ? 20 : 100));
 
             if (role !== 'ADMIN') {
                 if (congregationId) {
-                    q = query(visitsRef, where('congregationId', '==', congregationId), orderBy('visit_date', 'desc'), limit(showViewAll ? 20 : 100));
+                    q = query(visitsRef, where('congregationId', '==', congregationId), orderBy('visitDate', 'desc'), limit(showViewAll ? 20 : 100));
                 } else {
                     setVisits([]);
                     setLoading(false);
@@ -164,7 +164,7 @@ export default function VisitsHistory({ scope = 'all', showViewAll = true }: { s
         } finally {
             setLoading(false);
         }
-    }, [congregationId, isElder, isServant, role, user?.uid, scope, showViewAll]);
+    }, [congregationId, isElder, isServant, role, user?.uid, profileName, scope, showViewAll]);
 
     // Timeout for safety
     useEffect(() => {

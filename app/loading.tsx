@@ -25,7 +25,7 @@ export default function Loading() {
 
             <div className="absolute bottom-10 left-1/2 -translate-x-1/2 opacity-20 flex flex-col items-center gap-1">
                 <p className="text-[10px] font-mono tracking-[0.3em] uppercase">Sincronizando Dados</p>
-                <p className="text-[8px] font-mono uppercase">Campo Branco</p>
+                <p className="text-[8px] font-mono uppercase">{process.env.NEXT_PUBLIC_APP_NAME || "Campo Branco"}</p>
             </div>
         </div>
     );

@@ -95,7 +95,7 @@ function WitnessingCityListContent() {
             clearTimeout(timer);
             unsubscribe();
         };
-    }, [congregationId, authLoading]);
+    }, [congregationId, authLoading, userCongregationId, router, loading]);
 
     const filteredCities = cities.filter(city =>
         city.name.toLowerCase().includes(searchTerm.toLowerCase())

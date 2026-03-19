@@ -15,13 +15,13 @@ export default function TermsPage() {
 
             <section className="space-y-6 text-gray-600 dark:text-gray-300">
                 <p>
-                    Bem-vindo ao <strong>Campo Branco</strong>.
+                    Bem-vindo ao <strong>{process.env.NEXT_PUBLIC_APP_NAME || "Campo Branco"}</strong>.
                     Ao acessar, cadastrar-se ou utilizar este aplicativo, você declara que <strong>leu, compreendeu e concorda integralmente</strong> com estes Termos de Uso. Caso não concorde com qualquer condição aqui descrita, <strong>não utilize o aplicativo</strong>.
                 </p>
 
                 <h3>1. DEFINIÇÃO DO SERVIÇO</h3>
                 <p>
-                    O <strong>Campo Branco</strong> é uma ferramenta digital destinada <strong>exclusivamente</strong> ao apoio da <strong>organização e gestão de territórios, endereços e visitas religiosas/pastorais</strong> realizadas por congregações locais e seus membros, no contexto das atividades das Testemunhas de Jeová.
+                    O <strong>{process.env.NEXT_PUBLIC_APP_NAME || "Campo Branco"}</strong> é uma ferramenta digital destinada <strong>exclusivamente</strong> ao apoio da <strong>organização e gestão de territórios, endereços e visitas religiosas/pastorais</strong> realizadas por congregações locais e seus membros, no contexto das atividades das Testemunhas de Jeová.
                 </p>
                 <p>
                     O aplicativo não é operado, administrado, endossado nem representa oficialmente a organização religiosa das Testemunhas de Jeová, sendo utilizado de forma independente por congregações e usuários locais.
@@ -84,20 +84,20 @@ export default function TermsPage() {
 
                 <p><strong>8.3. A licença open source NÃO se aplica:</strong></p>
                 <ul className="list-disc pl-5 space-y-2 marker:text-blue-500">
-                    <li>ao banco de dados oficial do Campo Branco</li>
+                    <li>ao banco de dados oficial do {process.env.NEXT_PUBLIC_APP_NAME || "Campo Branco"}</li>
                     <li>à infraestrutura de produção</li>
                     <li>aos dados armazenados por usuários ou organizações</li>
                     <li>aos ambientes operacionais mantidos pelos desenvolvedores</li>
                 </ul>
                 <p>Esses elementos são privados, fechados e protegidos.</p>
 
-                <p>8.4. Qualquer instalação própria, bifurcação (fork), cópia ou auto-hospedagem do software deverá operar com banco de dados próprio e independente, não terá acesso, integração ou sincronização com o banco de dados oficial do Campo Branco e será de inteira responsabilidade de quem a operar.</p>
+                <p>8.4. Qualquer instalação própria, bifurcação (fork), cópia ou auto-hospedagem do software deverá operar com banco de dados próprio e independente, não terá acesso, integração ou sincronização com o banco de dados oficial do {process.env.NEXT_PUBLIC_APP_NAME || "Campo Branco"} e será de inteira responsabilidade de quem a operar.</p>
                 <p>8.5. Este Termo de Uso não substitui nem invalida a Licença MIT, mas regula especificamente o uso da aplicação oficial em produção, o acesso à infraestrutura e as responsabilidades dos usuários finais.</p>
-                <p>8.6. O nome Campo Branco, sua identidade visual e documentação não estão cobertos pela Licença MIT, salvo indicação expressa.</p>
+                <p>8.6. O nome {process.env.NEXT_PUBLIC_APP_NAME || "Campo Branco"}, sua identidade visual e documentação não estão cobertos pela Licença MIT, salvo indicação expressa.</p>
 
                 <h3>9. LIMITAÇÃO DE RESPONSABILIDADE</h3>
                 <p>
-                    O Campo Branco não garante resultados específicos, não se responsabiliza por uso indevido do aplicativo e não responde por informações inseridas pelos usuários.
+                    O {process.env.NEXT_PUBLIC_APP_NAME || "Campo Branco"} não garante resultados específicos, não se responsabiliza por uso indevido do aplicativo e não responde por informações inseridas pelos usuários.
                     A responsabilidade pelo conteúdo cadastrado é <strong>exclusivamente do usuário e da organização controladora</strong>.
                 </p>
 
@@ -114,7 +114,7 @@ export default function TermsPage() {
 
                 <h3>12. CONTATO</h3>
                 <p>
-                    Para dúvidas, solicitações ou comunicações relacionadas a estes Termos, utilize o canal de suporte dentro do aplicativo ou o e-mail administrativo informado na plataforma.
+                    Para dúvidas, solicitações ou comunicações relacionadas a estes Termos, utilize o canal de suporte dentro do aplicativo ou o e-mail administrativo informado na plataforma: <strong>{process.env.NEXT_PUBLIC_SUPPORT_EMAIL || process.env.NEXT_PUBLIC_MASTER_EMAIL}</strong>.
                 </p>
 
                 <h3>13. DISPOSIÇÕES FINAIS</h3>

@@ -229,7 +229,7 @@ export default function SharedListView({ id: propId }: SharedListViewProps) {
         };
 
         if (id) fetchList();
-    }, [id]);
+    }, [id, user]);
 
     const handleReturnMap = async () => {
         if (!id) return;
