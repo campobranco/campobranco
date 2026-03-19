@@ -220,13 +220,12 @@ export async function getTerritoryHistory(congregationId: string, territoryId: s
                 ...doc.data()
             } as any))
             .filter(item => 
-                (item.congregationId === congregationId || item.congregation_id === congregationId) &&
-                (item.status === 'completed' || item.returnedAt || item.returned_at) // Apenas histórico (concluídos ou devolvidos)
+                (item.congregationId === congregationId || item.congregation_id === congregationId)
             )
             .sort((a, b) => {
-                const dateA = a.created_at || a.createdAt || 0;
+                const dateA = a.created_at || a.createdAt || a.assignedAt || 0;
                 const d1 = dateA.toDate ? dateA.toDate().getTime() : new Date(dateA).getTime();
-                const dateB = b.created_at || b.createdAt || 0;
+                const dateB = b.created_at || b.createdAt || b.assignedAt || 0;
                 const d2 = dateB.toDate ? dateB.toDate().getTime() : new Date(dateB).getTime();
                 return d2 - d1;
             });

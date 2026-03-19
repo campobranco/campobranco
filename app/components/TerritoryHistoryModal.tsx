@@ -50,10 +50,10 @@ export default function TerritoryHistoryModal({ territoryId, territoryName, cong
 
                 const entries: HistoryEntry[] = (res.data || []).map((item: any) => ({
                     id: item.id,
-                    created_by: item.created_by,
-                    user_name: item.assigned_name || 'Usuário',
-                    created_at: item.created_at,
-                    returned_at: item.returned_at,
+                    created_by: item.created_by || item.createdBy,
+                    user_name: item.assigned_name || item.assignedName || 'Usuário',
+                    created_at: item.created_at || item.createdAt || item.assignedAt,
+                    returned_at: item.returned_at || item.returnedAt,
                     status: item.status || 'active'
                 }));
 
@@ -68,9 +68,11 @@ export default function TerritoryHistoryModal({ territoryId, territoryName, cong
         fetchHistory();
     }, [territoryId, congregationId]);
 
-    const formatDate = (dateStr: string | null) => {
-        if (!dateStr) return 'N/A';
-        return new Date(dateStr).toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit', year: 'numeric' });
+    const formatDate = (date: any) => {
+        if (!date) return 'N/A';
+        const d = date.toDate ? date.toDate() : new Date(date);
+        if (isNaN(d.getTime())) return 'N/A';
+        return d.toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit', year: 'numeric' });
     };
 
     if (!isMounted) return null;
