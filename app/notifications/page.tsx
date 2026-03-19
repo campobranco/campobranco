@@ -9,7 +9,8 @@ import {
     getDocs,
     doc,
     getDoc,
-    limit
+    limit,
+    or
 } from "firebase/firestore";
 import { db } from "@/lib/firebase";
 import { ArrowLeft } from "lucide-react";
@@ -34,7 +35,10 @@ export default function NotificationsPage() {
                 const listsRef = collection(db, 'shared_lists');
                 const q = query(
                     listsRef,
-                    where('assignedTo', '==', user.uid)
+                    or(
+                        where('assignedTo', '==', user.uid),
+                        where('assigned_to', '==', user.uid)
+                    )
                 );
 
                 const querySnapshot = await getDocs(q);
@@ -76,7 +80,10 @@ export default function NotificationsPage() {
             try {
                 // Fetch Territories - restricted to congregation
                 const terrRef = collection(db, 'territories');
-                const qTerr = query(terrRef, where('congregationId', '==', congregationId));
+                const qTerr = query(terrRef, or(
+                    where('congregationId', '==', congregationId),
+                    where('congregation_id', '==', congregationId)
+                ));
                 const terrSnap = await getDocs(qTerr);
                 const territories = terrSnap.docs.map(doc => ({ id: doc.id, ...doc.data() }));
 
@@ -85,7 +92,10 @@ export default function NotificationsPage() {
                 if (mapsCount > 0) {
                     // 1. Get ALL shared lists history - restricted to congregation
                     const listsRef = collection(db, 'shared_lists');
-                    const qLists = query(listsRef, where('congregationId', '==', congregationId));
+                    const qLists = query(listsRef, or(
+                        where('congregationId', '==', congregationId),
+                        where('congregation_id', '==', congregationId)
+                    ));
                     const listsSnap = await getDocs(qLists);
                     const history = listsSnap.docs.map(doc => ({ id: doc.id, ...doc.data() as any }));
 
@@ -131,7 +141,10 @@ export default function NotificationsPage() {
 
                     // Fetch Cities for names - restricted to congregation
                     const citiesRef = collection(db, 'cities');
-                    const qCities = query(citiesRef, where('congregationId', '==', congregationId));
+                    const qCities = query(citiesRef, or(
+                        where('congregationId', '==', congregationId),
+                        where('congregation_id', '==', congregationId)
+                    ));
                     const citiesSnap = await getDocs(qCities);
 
                     const cityMap: Record<string, string> = {};

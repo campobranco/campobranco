@@ -38,7 +38,9 @@ import {
     onSnapshot,
     orderBy,
     limit,
-    writeBatch
+    writeBatch,
+    or,
+    and
 } from "firebase/firestore";
 import { db } from '@/lib/firebase';
 import { geocodeAddress } from '@/lib/services/geocoding';
@@ -126,8 +128,13 @@ function AddressListContent() {
                     const listsRef = collection(db, 'shared_lists');
                     const q = query(
                         listsRef,
-                        where('territoryId', '==', territoryId),
-                        where('assignedTo', '==', user.uid),
+                        and(
+                            where('territoryId', '==', territoryId),
+                            or(
+                                where('assignedTo', '==', user.uid),
+                                where('assigned_to', '==', user.uid)
+                            )
+                        ),
                         limit(1)
                     );
                     const qSnap = await getDocs(q);

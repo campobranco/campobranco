@@ -127,6 +127,11 @@ Para facilitar deploys Open Source e novas instâncias do Campo Branco:
     - [Mar/2026] Autonomia de Conta (v0.7.9-beta):
       - **Exclusão de Conta pelo Usuário**: Atualizada a regra de exclusão da coleção `users` para permitir que o dono do próprio perfil realize a deleção. Isso habilita a funcionalidade de "Excluir Minha Conta" nas configurações para usuários sem privilégios administrativos.
       - **Estabilização de Check-in (v0.7.8-beta)**: Simplificação de regras em `witnessing_points` para garantir funcionamento do check-in.
+- v0.7.39-beta: Resolução do problema de "notificações fantasmas" através da padronização de consultas Firestore para suportar campos `camelCase` e `snake_case` (ex: `assignedTo` e `assigned_to`) simultaneamente usando o operador `or()`.
+- v0.7.40-beta: 
+  - Implementação do `MapSelectionModal` no `SharedListView.tsx`, permitindo que o usuário escolha entre Google Maps e Waze quando ambos os links estiverem disponíveis.
+  - Otimização do histórico de mapas para territórios compartilhados, movendo a ordenação e filtragem para o lado do cliente para evitar a necessidade de índices compostos complexos no Firestore.
+  - Correção de erro de sintaxe crítico no carregamento de endereços que impedia a visualização correta de cartões individuais.
 
 ---
 > [!IMPORTANT]

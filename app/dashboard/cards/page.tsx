@@ -14,7 +14,8 @@ import {
     limit,
     orderBy,
     serverTimestamp,
-    writeBatch
+    writeBatch,
+    or
 } from "firebase/firestore";
 import { db } from "@/lib/firebase";
 import Link from 'next/link';
@@ -78,12 +79,18 @@ function CardsContent() {
 
             // SCOPE: MINE
             if (scope === 'mine') {
-                q = query(listsRef, where("assigned_to", "==", user.uid));
+                q = query(listsRef, or(
+                    where("assigned_to", "==", user.uid),
+                    where("assignedTo", "==", user.uid)
+                ));
             }
             // SCOPE: MANAGED (Sent/All)
             else if (scope === 'managed') {
                 if (role !== 'ADMIN' && congregationId) {
-                    q = query(listsRef, where("congregationId", "==", congregationId));
+                    q = query(listsRef, or(
+                        where("congregationId", "==", congregationId),
+                        where("congregation_id", "==", congregationId)
+                    ));
                 } else if (role !== 'ADMIN') {
                     setLists([]);
                     setLoading(false);

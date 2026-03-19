@@ -209,21 +209,27 @@ export async function getTerritoryHistory(congregationId: string, territoryId: s
         const listsRef = collection(db, 'shared_lists');
         const listsQuery = query(
             listsRef,
-            and(
-                where('items', 'array-contains', territoryId),
-                or(
-                    where('congregation_id', '==', congregationId),
-                    where('congregationId', '==', congregationId)
-                )
-            ),
-            orderBy('created_at', 'desc')
+            where('items', 'array-contains', territoryId)
         );
 
         const snapshot = await getDocs(listsQuery);
-        const data = snapshot.docs.map(doc => ({
-            id: doc.id,
-            ...doc.data()
-        }));
+        // Filtragem de congregação e ordenação no cliente para máxima compatibilidade e evitar necessidade de índices compostos manuais
+        const data = snapshot.docs
+            .map(doc => ({
+                id: doc.id,
+                ...doc.data()
+            } as any))
+            .filter(item => 
+                (item.congregationId === congregationId || item.congregation_id === congregationId) &&
+                (item.status === 'completed' || item.returnedAt || item.returned_at) // Apenas histórico (concluídos ou devolvidos)
+            )
+            .sort((a, b) => {
+                const dateA = a.created_at || a.createdAt || 0;
+                const d1 = dateA.toDate ? dateA.toDate().getTime() : new Date(dateA).getTime();
+                const dateB = b.created_at || b.createdAt || 0;
+                const d2 = dateB.toDate ? dateB.toDate().getTime() : new Date(dateB).getTime();
+                return d2 - d1;
+            });
 
         return { success: true, data };
     } catch (error: any) {
