@@ -886,7 +886,7 @@ export default function SettingsPage() {
                             </div>
                             <Eye className="w-4 h-4 text-muted group-hover:text-primary transition-colors" />
                         </Link>
-                        <a href="mailto:campobrancojw@gmail.com" className="flex items-center justify-between p-4 hover:bg-background rounded-lg transition-colors group">
+                        <a href={`mailto:${process.env.NEXT_PUBLIC_MASTER_EMAIL || 'suporte@campobranco.com'}`} className="flex items-center justify-between p-4 hover:bg-background rounded-lg transition-colors group">
                             <div className="flex items-center gap-3">
                                 <div className="p-2 bg-gray-100 dark:bg-gray-800 rounded-lg text-gray-500">
                                     <Mail className="w-5 h-5" />

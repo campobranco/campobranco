@@ -1,8 +1,8 @@
-// lib/firebase.ts
-// Cliente Firebase para uso em componentes do lado do cliente (browser)
-// As credenciais são lidas exclusivamente das variáveis de ambiente NEXT_PUBLIC_*
-// Configure o projeto certo em .env.local (dev) e .env.production (prod)
-// Configure o projeto certo em .env.development (dev) e .env.production (prod)
+/**
+ * CONFIGURAÇÃO FIREBASE - CAMPO BRANCO
+ * Centraliza a inicialização do Firebase e persistência de dados.
+ * O projeto é configurado via variáveis de ambiente (.env.production / .env.development).
+ */
 
 import { initializeApp, getApps, getApp, FirebaseApp } from 'firebase/app';
 import { getAuth, Auth, setPersistence, browserLocalPersistence } from 'firebase/auth';

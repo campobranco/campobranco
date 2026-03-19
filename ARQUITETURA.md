@@ -6,35 +6,19 @@ Este documento detalha a infraestrutura e a arquitetura técnica do projeto Camp
 
 O sistema utiliza uma arquitetura híbrida baseada no **Google Cloud Platform (GCP)** e no **Firebase**, otimizada para performance (SSR), baixo custo e facilidade de deploy.
 
-### 🌐 Fluxo de Requisição (Proxy Bridge)
-
-Devido às limitações de URL personalizada do Firebase App Hosting, implementamos um proxy intermediário para manter a URL gratuita `.web.app` invisível para o usuário.
-
 ```mermaid
 graph TD
-    User([Usuário]) --> FH["Firebase Hosting (campo-branco.web.app)"]
-    FH -- Rewrite --> CR["Cloud Run (cb-proxy)"]
-    CR -- Forward --> AH["Firebase App Hosting (Next.js App)"]
-    AH --> DB[(Firestore Database)]
-    AH --> Auth[Firebase Authentication]
+    User([Usuário]) --> FH["Firebase Hosting"]
+    FH --> DB[(Firestore Database)]
+    FH --> Auth[Firebase Authentication]
 ```
 
 ## 2. Componentes da Solução
 
-### 2.1 Firebase Hosting (Frontend Roteador)
-*   **Papel:** Porta de entrada e gestão de domínios.
-*   **Configuração (`firebase.json`):** Contém regras de `rewrites` que direcionam todo o tráfego (`**`) para o serviço `cb-proxy`.
-*   **CSP:** Define políticas de segurança rígidas para mitigar ataques XSS.
-
-### 2.2 Cloud Run Proxy (`proxy-server`)
-*   **Tecnologia:** Node.js + Express + `http-proxy-middleware`.
-*   **Função:** Recebe requisições do Hosting e as encaminha para a URL interna do App Hosting.
-*   **Importante:** Repassa cabeçalhos como `x-forwarded-host` para garantir que o Next.js reconheça o domínio original para fins de SEO e Autenticação.
-
-### 2.3 Firebase App Hosting (Backend Next.js)
-*   **Função:** Executa o aplicativo Next.js com suporte a Server-Side Rendering (SSR).
-*   **Deploy:** Automatizado via integração com o GitHub (`campobranco/campobranco`).
-*   **Configuração (`apphosting.yaml`):** Gerencia variáveis de ambiente e segredos (API Keys, Private Keys).
+### 2.1 Firebase Hosting
+*   **Papel:** Porta de entrada e hospedagem de arquivos estáticos.
+*   **Configuração (`firebase.json`):** Contém as regras de headers, CSP e redirecionamentos.
+*   **Deploy:** Realizado via Firebase CLI (`firebase deploy`).
 
 ## 3. Segurança (CSP)
 
@@ -60,15 +44,15 @@ A segurança é reforçada em duas camadas:
 *   **Landing Page (Estático):** `https://github.com/campobranco/campobranco.github.io.git` (Arquivos HTML antigos movidos para cá).
 
 ### Comandos Úteis
-*   `firebase deploy --only hosting`: Atualiza regras de roteamento.
-*   `gcloud run deploy cb-proxy --source .`: Atualiza o servidor de proxy (dentro da pasta `proxy-server`).
+*   `firebase deploy`: Realiza o deploy completo (Hosting + Rules).
+*   `npm run build`: Gera a versão estática do app.
 
 ### Manutenção Periódica
 - **Limpeza (Mar/2026)**: Remoção de arquivos `.bak`, `.log` e arquivos de dados temporários do root para manter o repositório limpo e organizado.
 
 ---
 > [!IMPORTANT]
-> Sempre que houver falha no deploy com erro `invoker_iam_disabled`, verifique se o Service Account `service-[PROJECT_NUMBER]@gcp-sa-firebaseapphosting.iam.gserviceaccount.com` possui a permissão `roles/run.admin`.
+> O projeto é 100% configurável via variáveis de ambiente. Verifique o arquivo `env.example` para as chaves necessárias.
 
 ## 6. Migração para Plano Spark (Mar/2026)
 
@@ -94,7 +78,7 @@ Para eliminar custos e dependência de cartão de crédito, o sistema foi migrad
 Para facilitar deploys Open Source e novas instâncias do Campo Branco:
 *   **Master Admin**: O primeiro acesso administrativo é definido pela variável `NEXT_PUBLIC_MASTER_EMAIL`.
 *   **Promoção Automática**: Se o usuário logado corresponder a este e-mail, o `AuthContext` cria ou atualiza o perfil Firestore com o papel `ADMIN` automaticamente.
-*   **Isolamento de Ambiente**: As credenciais de desenvolvimento (`campobrancodev`) e produção (`campo-branco`) são isoladas via arquivos `.env`, garantindo que testes locais não afetem dados reais.
+*   **Isolamento de Ambiente**: As credenciais de desenvolvimento e produção são isoladas via arquivos `.env.development` e `.env.production`.
 
 ---
 ### 📝 Registro de Melhorias:
@@ -110,7 +94,7 @@ Para facilitar deploys Open Source e novas instâncias do Campo Branco:
 - v0.7.11-beta: Corrigido erro de permissão para Publicadores em Listas Compartilhadas e Snapshots (Firestore rules).
 - v0.7.12-beta: Refinada regra de atualização de Listas Compartilhadas para maior robustez com campos opcionais.
 - v0.7.13-beta: Corrigida potencial recursão nas regras do Firestore e melhorada a performance de leitura do perfil.
-- v0.7.14-beta: Padronização de campos (`assigned_to`) e correção da configuração de banco de dados no `.env.local`.
+- v0.7.14-beta: Padronização de campos (`assigned_to`) e configuração de banco de dados via variáveis de ambiente.
 - v0.7.15-beta: Reversão do ID do banco de dados para `default` e simplificação das regras de permissão para aceitação de listas.
 - v0.7.36-beta: Versão consolidada após atualizações manuais e sincronização com o GitHub.
 - v0.7.37-beta: Correção do histórico do território (suporte a `congregationId` e `congregation_id` via `or()`).
@@ -139,7 +123,8 @@ Para facilitar deploys Open Source e novas instâncias do Campo Branco:
 - v0.7.50-beta: Deploy dinâmico via `.env`. Removido Project ID fixo.
 - v0.7.51-beta: Interface de Produção simplificada e remoção do `.firebaserc`.
 - v0.7.52-beta: Reforço de estabilidade no servidor (Heartbeat e timeouts).
-- v0.8.0-beta (O Grande Salto): Projeto transformado em Open Source e 100% Universal. Removidas todas as dependências de arquivos fixos (`.env.local`, `service-account.json`). Identidade Visual, IDs de Projeto e URLs agora são 100% dinâmicos via `.env.production` e `.env.development`. Limpeza profunda do repositório.
+- v0.8.0-beta (O Grande Salto): Projeto transformado em Open Source e 100% Universal. Removidas todas as dependências de arquivos fixos e segredos do repositório. Identidade Visual, IDs de Projeto e URLs agora são 100% dinâmicos via `.env.production` e `.env.development`.
+- v0.8.1-beta: Universalização de Elite. Dinamização completa de páginas legais e remoção de referências residuais a ambientes locais.
 
 ## 🛠️ Gerenciador de Projeto (Instalador Visual Web)
 
@@ -157,5 +142,5 @@ Para facilitar o desenvolvimento e deploy, o projeto agora conta com uma interfa
 
 ---
 > [!IMPORTANT]
-> A partir da v0.6.183-beta, os arquivos `middleware.ts`, `apphosting.yaml` e a pasta `proxy-server/` tornaram-se obsoletos e devem ser removidos após validação.
+> As pastas `proxy-server/` e `docs/` tornaram-se obsoletas e foram removidas para manter a simplicidade do projeto Spark.
 

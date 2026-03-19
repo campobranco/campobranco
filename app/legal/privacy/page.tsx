@@ -15,10 +15,10 @@ export default function PrivacyPage() {
 
             <section className="space-y-6 text-gray-600 dark:text-gray-300">
                 <p>
-                    A sua privacidade é uma prioridade. Esta Política de Privacidade explica, de forma clara e transparente, como o <strong>Campo Branco</strong> coleta, utiliza, armazena e protege dados pessoais, em conformidade com a Lei Geral de Proteção de Dados (Lei nº 13.709/2018 – LGPD).
+                    A sua privacidade é uma prioridade. Esta Política de Privacidade explica, de forma clara e transparente, como o <strong>{process.env.NEXT_PUBLIC_APP_NAME || 'Campo Branco'}</strong> coleta, utiliza, armazena e protege dados pessoais, em conformidade com a Lei Geral de Proteção de Dados (Lei nº 13.709/2018 – LGPD).
                 </p>
                 <p>
-                    O Campo Branco é uma ferramenta digital destinada ao apoio das atividades religiosas, pastorais e organizacionais realizadas por congregações das Testemunhas de Jeová e por seus membros.
+                    O {process.env.NEXT_PUBLIC_APP_NAME || 'Campo Branco'} é uma ferramenta digital destinada ao apoio das atividades religiosas, pastorais e organizacionais realizadas por congregações das Testemunhas de Jeová e por seus membros.
                 </p>
                 <p>
                     O aplicativo não é operado, administrado, mantido nem endossado oficialmente pela organização religiosa das Testemunhas de Jeová. Sua utilização ocorre de forma independente, sob responsabilidade das congregações locais e dos usuários que o operam.
@@ -28,8 +28,8 @@ export default function PrivacyPage() {
                 <p><strong>Controlador dos Dados:</strong> A congregação local que utiliza o aplicativo e/ou os usuários administradores por ela designados, responsáveis pelo cadastro, definição de finalidade, manutenção, acesso e exclusão das informações inseridas no sistema.</p>
                 <p>A organização religiosa das Testemunhas de Jeová, em âmbito institucional, não atua como controladora, não define as finalidades do tratamento e não possui acesso direto aos dados armazenados no aplicativo.</p>
 
-                <p><strong>Operador dos Dados:</strong> O Campo Branco, que fornece a plataforma tecnológica e executa o tratamento de dados pessoais exclusivamente conforme as instruções do controlador.</p>
-                <p>O Campo Branco não decide a finalidade do uso dos dados, limitando-se a disponibilizar os meios técnicos para sua organização e uso interno.</p>
+                <p><strong>Operador dos Dados:</strong> O {process.env.NEXT_PUBLIC_APP_NAME || 'Campo Branco'}, que fornece a plataforma tecnológica e executa o tratamento de dados pessoais exclusivamente conforme as instruções do controlador.</p>
+                <p>O {process.env.NEXT_PUBLIC_APP_NAME || 'Campo Branco'} não decide a finalidade do uso dos dados, limitando-se a disponibilizar os meios técnicos para sua organização e uso interno.</p>
 
                 <h3>2. CATEGORIAS DE DADOS COLETADOS</h3>
                 <p>Para o funcionamento da ferramenta de gestão pastoral e organizacional, podem ser coletados e armazenados os seguintes dados:</p>
@@ -80,14 +80,14 @@ export default function PrivacyPage() {
                     <li>incentivar boas práticas, como buscar autorização dos responsáveis</li>
                     <li>evitar contatos inadequados</li>
                 </ul>
-                <p>O Campo Branco não realiza perfilamento de menores nem coleta dados excessivos ou desnecessários.</p>
+                <p>O {process.env.NEXT_PUBLIC_APP_NAME || 'Campo Branco'} não realiza perfilamento de menores nem coleta dados excessivos ou desnecessários.</p>
 
                 <h3>5. ARMAZENAMENTO, INFRAESTRUTURA E OPEN SOURCE</h3>
                 <h4>5.1. Banco de Dados</h4>
                 <p>O banco de dados oficial do Campo Branco é fechado, privado e protegido, sendo acessível apenas a usuários autorizados dentro da mesma congregação.</p>
 
                 <h4>5.2. Software Open Source</h4>
-                <p>Embora o software Campo Branco seja disponibilizado como código aberto (Licença MIT), isso não se aplica:</p>
+                <p>Embora o software {process.env.NEXT_PUBLIC_APP_NAME || 'Campo Branco'} seja disponibilizado como código aberto (Licença MIT), isso não se aplica:</p>
                 <ul className="list-disc pl-5 space-y-2 marker:text-emerald-500">
                     <li>ao banco de dados oficial</li>
                     <li>à infraestrutura de produção</li>
@@ -154,7 +154,7 @@ export default function PrivacyPage() {
                     <li>Atuar como canal de comunicação com a ANPD</li>
                 </ul>
                 <p>
-                    <strong>Contato do DPO:</strong> <a href="mailto:campobrancojw@gmail.com" className="text-emerald-600 dark:text-emerald-400 no-underline hover:underline">campobrancojw@gmail.com</a>
+                    <strong>Contato Suporte:</strong> <a href={`mailto:${process.env.NEXT_PUBLIC_MASTER_EMAIL || 'suporte@campobranco.com'}`} className="text-emerald-600 dark:text-emerald-400 no-underline hover:underline">{process.env.NEXT_PUBLIC_MASTER_EMAIL || 'suporte@campobranco.com'}</a>
                 </p>
 
                 <h4>11.2. CANAIS DE SOLICITAÇÃO LGPD</h4>
@@ -162,9 +162,7 @@ export default function PrivacyPage() {
                     Os titulares podem exercer seus direitos através de:
                 </p>
                 <ul className="list-disc pl-5 space-y-2 marker:text-emerald-500">
-                    <li><strong>Solicitações:</strong> <a href="mailto:lgpd@campobranco.com" className="text-emerald-600 dark:text-emerald-400 no-underline hover:underline">lgpd@campobranco.com</a></li>
-                    <li><strong>Privacidade:</strong> <a href="mailto:privacy@campobranco.com" className="text-emerald-600 dark:text-emerald-400 no-underline hover:underline">privacy@campobranco.com</a></li>
-                    <li><strong>Incidentes de Segurança:</strong> <a href="mailto:security@campobranco.com" className="text-emerald-600 dark:text-emerald-400 no-underline hover:underline">security@campobranco.com</a></li>
+                    <li><strong>Solicitações:</strong> <a href={`mailto:${process.env.NEXT_PUBLIC_MASTER_EMAIL || 'suporte@campobranco.com'}`} className="text-emerald-600 dark:text-emerald-400 no-underline hover:underline">{process.env.NEXT_PUBLIC_MASTER_EMAIL || 'suporte@campobranco.com'}</a></li>
                 </ul>
             </section>
         </article>
