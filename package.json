@@ -1,6 +1,6 @@
 {
   "name": "campobranco",
-  "version": "0.7.36-beta",
+  "version": "0.7.37-beta",
   "private": true,
   "scripts": {
     "dev": "next dev",
@@ -12,8 +12,8 @@
     "test:int": "jest __tests__/integration",
     "test:e2e": "playwright test",
     "test:all": "npm run lint && npm run test:unit && npm run test:int && npm run test:e2e",
-    "rules:dev": "firebase deploy --only firestore:rules --project development",
-    "rules:prod": "firebase deploy --only firestore:rules --project production",
+    "rules:dev": "firebase deploy --only firestore:rules --project dev",
+    "rules:prod": "firebase deploy --only firestore:rules --project default",
     "rules:deploy": "npm run rules:dev && npm run rules:prod"
   },
   "dependencies": {

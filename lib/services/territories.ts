@@ -12,6 +12,8 @@ import {
     deleteDoc, 
     query, 
     where, 
+    or,
+    and,
     orderBy,
     serverTimestamp,
     limit 
@@ -207,8 +209,13 @@ export async function getTerritoryHistory(congregationId: string, territoryId: s
         const listsRef = collection(db, 'shared_lists');
         const listsQuery = query(
             listsRef,
-            where('congregation_id', '==', congregationId),
-            where('items', 'array-contains', territoryId),
+            and(
+                where('items', 'array-contains', territoryId),
+                or(
+                    where('congregation_id', '==', congregationId),
+                    where('congregationId', '==', congregationId)
+                )
+            ),
             orderBy('created_at', 'desc')
         );
 
