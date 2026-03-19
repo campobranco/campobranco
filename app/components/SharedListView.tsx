@@ -35,6 +35,7 @@ import {
 } from 'lucide-react';
 import VisitReportModal from '@/app/components/VisitReportModal';
 import VisitHistoryModal from '@/app/components/VisitHistoryModal';
+import TerritoryHistoryModal from '@/app/components/TerritoryHistoryModal';
 import ConfirmationModal from '@/app/components/ConfirmationModal';
 import { toast } from 'sonner';
 import Link from 'next/link';
@@ -685,8 +686,31 @@ export default function SharedListView({ id: propId }: SharedListViewProps) {
                 </div>
             </main>
 
-            {visitingItem && <VisitReportModal address={visitingItem} onClose={() => setVisitingItem(null)} onSave={handleSaveVisit} onDelete={handleDeleteVisit} onViewHistory={() => { setViewingHistoryItem(visitingItem); setVisitingItem(null); }} />}
-            {viewingHistoryItem && <VisitHistoryModal onClose={() => setViewingHistoryItem(null)} addressId={viewingHistoryItem.id} address={viewingHistoryItem.street} />}
+            {visitingItem && (
+                <VisitReportModal 
+                    address={visitingItem} 
+                    onClose={() => setVisitingItem(null)} 
+                    onSave={handleSaveVisit} 
+                    onDelete={handleDeleteVisit} 
+                    onViewHistory={() => { setViewingHistoryItem(visitingItem); setVisitingItem(null); }} 
+                />
+            )}
+            {viewingHistoryItem && (
+                listData?.type === 'city' ? (
+                    <TerritoryHistoryModal 
+                        territoryId={viewingHistoryItem.id} 
+                        territoryName={viewingHistoryItem.name} 
+                        congregationId={listData?.congregationId || null} 
+                        onClose={() => setViewingHistoryItem(null)} 
+                    />
+                ) : (
+                    <VisitHistoryModal 
+                        onClose={() => setViewingHistoryItem(null)} 
+                        addressId={viewingHistoryItem.id} 
+                        address={viewingHistoryItem.street || viewingHistoryItem.name} 
+                    />
+                )
+            )}
             {isResponsibilityModalOpen && (
                 <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center bg-black/50 backdrop-blur-sm p-4">
                     <div className="bg-surface w-full max-w-sm rounded-[2rem] p-6 space-y-6 animate-in slide-in-from-bottom-5">

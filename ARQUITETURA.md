@@ -132,6 +132,8 @@ Para facilitar deploys Open Source e novas instâncias do Campo Branco:
   - Implementação do `MapSelectionModal` no `SharedListView.tsx`, permitindo que o usuário escolha entre Google Maps e Waze quando ambos os links estiverem disponíveis.
   - Otimização do histórico de mapas para territórios compartilhados, movendo a ordenação e filtragem para o lado do cliente para evitar a necessidade de índices compostos complexos no Firestore.
   - Correção de erro de sintaxe crítico no carregamento de endereços que impedia a visualização correta de cartões individuais.
+- v0.7.41-beta: Correção definitiva do Histórico de Território no `SharedListView.tsx`, garantindo que mapas ativos (em aberto) apareçam no histórico com status "Em andamento". Padronização de acesso a campos `assignedName`/`assigned_name` e suporte a objetos `Timestamp` do Firebase para resiliência na exibição de datas.
+
 
 ---
 > [!IMPORTANT]
