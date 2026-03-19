@@ -17,8 +17,8 @@ export default function ContactPage() {
 
                 <div className="bg-surface dark:bg-slate-800 p-8 rounded-3xl shadow-sm border border-surface-border dark:border-slate-700 text-center space-y-2">
                     <h2 className="text-xs font-bold text-muted dark:text-gray-400 uppercase tracking-widest">Contato Técnico / Suporte</h2>
-                    <a href={`mailto:${process.env.NEXT_PUBLIC_MASTER_EMAIL || 'suporte@campobranco.com'}`} className="text-2xl md:text-3xl font-bold text-primary dark:text-primary-light hover:text-primary-dark dark:hover:text-primary transition-colors block break-all">
-                        {process.env.NEXT_PUBLIC_MASTER_EMAIL || 'suporte@campobranco.com'}
+                    <a href={`mailto:${process.env.NEXT_PUBLIC_SUPPORT_EMAIL || process.env.NEXT_PUBLIC_MASTER_EMAIL}`} className="text-2xl md:text-3xl font-bold text-primary dark:text-primary-light hover:text-primary-dark dark:hover:text-primary transition-colors block break-all">
+                        {process.env.NEXT_PUBLIC_SUPPORT_EMAIL || process.env.NEXT_PUBLIC_MASTER_EMAIL}
                     </a>
                     <p className="text-sm text-muted dark:text-gray-400">Administrador do Sistema</p>
                 </div>

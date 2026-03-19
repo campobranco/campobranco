@@ -13,9 +13,23 @@ graph TD
     FH --> Auth[Firebase Authentication]
 ```
 
-## 2. Componentes da Solução
+## 2. Estratégia de Ambientes e CI/CD
 
-### 2.1 Firebase Hosting
+O sistema utiliza **GitHub Actions** para automação de deploy, segregando as instâncias por branch:
+
+| Ambiente | Branch | URL Hosting | Projeto Firebase | Banco (Firestore) |
+| :--- | :--- | :--- | :--- | :--- |
+| **Local** | N/A | `localhost:3000` | `campobrancodev` | `campobrancodev` (Test) |
+| **Staging** | `dev` | `campobrancodev.web.app` | `campobrancodev` | `campo-branco` (Prod) |
+| **Produção** | `main` | `campo-branco.web.app` | `campo-branco` | `campo-branco` (Prod) |
+
+### 2.1 Workflows
+*   `staging.yml`: Disparado ao fazer push na branch `dev`. Realiza build com chaves de produção e deploy no ambiente de teste.
+*   `production.yml`: Disparado ao fazer push na branch `main`. Realiza build e deploy completos em produção.
+
+## 3. Componentes da Solução
+
+### 3.1 Firebase Hosting
 *   **Papel:** Porta de entrada e hospedagem de arquivos estáticos.
 *   **Configuração (`firebase.json`):** Contém as regras de headers, CSP e redirecionamentos.
 *   **Deploy:** Realizado via Firebase CLI (`firebase deploy`).
@@ -125,6 +139,35 @@ Para facilitar deploys Open Source e novas instâncias do Campo Branco:
 - v0.7.52-beta: Reforço de estabilidade no servidor (Heartbeat e timeouts).
 - v0.8.0-beta (O Grande Salto): Projeto transformado em Open Source e 100% Universal. Removidas todas as dependências de arquivos fixos e segredos do repositório. Identidade Visual, IDs de Projeto e URLs agora são 100% dinâmicos via `.env.production` e `.env.development`.
 - v0.8.1-beta: Universalização de Elite. Dinamização completa de páginas legais e remoção de referências residuais a ambientes locais.
+- v0.8.2-beta: Universalização Completa.
+  - **Fim do Google Maps**: O componente `PointMap.tsx` foi migrado para **Leaflet**, removendo a última dependência de chaves pagas do Google. O projeto agora é 100% gratuito e open-source em geolocalização.
+  - **Dinamismo de Marca**: O nome da marca (`NEXT_PUBLIC_APP_NAME`) e o e-mail de suporte (`NEXT_PUBLIC_SUPPORT_EMAIL`) agora são 100% dinâmicos em todas as páginas (Termos, Loading, Suporte).
+  - **Limpeza de ENV**: Removidas referências obsoletas ao `.env.local` e `TARGET_URL` (Proxy). Unificação da `API_BASE_URL` diretamente no `next.config.js` para simplificar a manutenção.
+  - **Padronização**: Arquivos `.env.development` e `.env.production` padronizados com a mesma estrutura e comentários.
+  - **Segurança (COOP)**: Cabeçalho `Cross-Origin-Opener-Policy` migrado do `next.config.js` para o `firebase.json` para suportar Google Auth em exportações estáticas e eliminar alertas de build.
+- v0.8.3-beta: Limpeza de Build e Estabilização de Hooks.
+  - **Correção de Lint**: Resolvidos todos os avisos de `react-hooks/exhaustive-deps` em múltiplos arquivos (`Dashboard`, `Reports`, `Witnessing`, `MyMaps`).
+  - **Uso de `useCallback`**: Funções de busca de dados foram estabilizadas para garantir reatividade correta e evitar loops de renderização infinitos ou avisos de build.
+  - **Build 100% Limpo**: O processo de build agora é concluído com zero avisos de lint, garantindo maior qualidade de código e conformidade com as melhores práticas de Next.js/React.
+- v0.8.4-beta: Ajuste de Segurança e Imagens.
+  - **Correção de CSP**: Adicionado `lh3.googleusercontent.com` e `*.googleusercontent.com` à diretiva `img-src` no `firebase.json`. Isso resolve o bloqueio de exibição de fotos de perfil de usuários que fazem login via Google.
+- v0.8.5-beta: Performance e Índices do Dashboard.
+  - **Correção de Timeout**: Padronização dos campos de consulta de visitas de `visit_date` para `visitDate`, alinhando com a estrutura do banco e índices existentes.
+  - **Novos Índices**: Adicionado índice composto para a coleção `shared_lists` (`congregationId` ASC, `createdAt` DESC), eliminando falhas de carregamento no histórico da congregação.
+  - **Otimização de Hooks**: Revisão de dependências em `VisitsHistory` e `Dashboard` para evitar re-renderizações cíclicas que impactam a performance.
+- v0.8.6-beta: Permissões e Resiliência de Dados.
+  - **Correção de Permissões**: Adicionado filtro de `congregationId` ao listener de territórios para garantir sincronia com as regras de segurança do Firestore.
+  - **Índice de Endereços**: Adicionado índice composto para `addresses` (`territoryId` ASC, `isActive` ASC) para suportar a contagem de endereços no carregamento de territórios.
+  - **Resiliência**: Incluído tratamento de erro nos `onSnapshot` de territórios para evitar exceções não tratadas e melhorar o feedback ao usuário em caso de falha de permissão.
+- v0.8.7-beta: Robustez e Compatibilidade Legada.
+  - **Guarda de Autenticação**: Implementada verificação rigorosa de estado de autenticação em `territory/page.tsx` antes de qualquer leitura no Firestore, evitando erros de permissão no carregamento inicial.
+  - **Índices Legados**: Expansão massiva de `firestore.indexes.json` para suportar queries em campos com nomenclatura antiga (ex: `congregation_id`) e nova (`congregationId`), garantindo funcionamento híbrido durante a transição.
+  - **Limpeza de Projeto**: Remoção das pastas obsoletas `proxy-server/` e `docs/` para simplificar a estrutura do repositório Spark.
+  - **Configuração de Domínio**: Reversão para `campo-branco.web.app` como domínio principal, mantendo `campobranco.web.app` como legado.
+- v0.8.8-beta: Automação CI/CD e Ambientes Múltiplos.
+  - **Múltiplos Ambientes**: Estabelecida regra de segregação onde `dev` atua como Staging (App Teste + Banco Prod).
+  - **GitHub Actions**: Implementação de `staging.yml` e `production.yml` para deploys automatizados baseados em branches.
+  - **Scripts de Deploy**: Adicionados comandos `deploy:staging` e `deploy:production` ao `package.json`.
 
 ## 🛠️ Gerenciador de Projeto (Instalador Visual Web)
 

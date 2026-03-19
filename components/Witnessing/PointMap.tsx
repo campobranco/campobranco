@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { Loader2 } from 'lucide-react';
 
 interface WitnessingPoint {
@@ -16,64 +16,111 @@ interface PointMapProps {
 }
 
 export default function PointMap({ points }: PointMapProps) {
-    const mapRef = useRef<HTMLDivElement>(null);
-    const googleMapRef = useRef<google.maps.Map | null>(null);
+    const mapContainerRef = useRef<HTMLDivElement>(null);
+    const mapInstanceRef = useRef<any>(null);
+    const markersRef = useRef<any[]>([]);
+    const [isMapReady, setIsMapReady] = useState(false);
 
     useEffect(() => {
+        // Inicialização do Leaflet (Mesma lógica do MapView principal)
         const initMap = async () => {
-            const loader = new (window as any).google.maps.plugins.loader.Loader({
-                apiKey: process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY,
-                version: "weekly",
-            });
+            if (typeof window === 'undefined' || !mapContainerRef.current) return;
 
-            await loader.load();
-            const { Map } = await (window as any).google.maps.importLibrary("maps");
-            const { AdvancedMarkerElement, PinElement } = await (window as any).google.maps.importLibrary("marker");
+            // Esperar o Leaflet estar disponível globalmente (carregado via layout.tsx)
+            const checkForLeaflet = setInterval(() => {
+                if ((window as any).L && mapContainerRef.current && !mapInstanceRef.current) {
+                    clearInterval(checkForLeaflet);
+                    const L = (window as any).L;
 
-            if (mapRef.current && !googleMapRef.current) {
-                // Determine center (average or first point)
-                const center = points.length > 0
-                    ? { lat: points[0].latitude, lng: points[0].longitude }
-                    : { lat: -23.5505, lng: -46.6333 }; // Default SP
+                    const center = points.length > 0
+                        ? [points[0].latitude, points[0].longitude]
+                        : [-23.5505, -46.6333];
 
-                googleMapRef.current = new Map(mapRef.current, {
-                    center,
-                    zoom: 14,
-                    mapId: "DEMO_MAP_ID", // Required for AdvancedMarkerElement
-                    disableDefaultUI: true,
-                });
-            }
+                    const map = L.map(mapContainerRef.current, {
+                        zoomControl: false,
+                        attributionControl: false
+                    }).setView(center, 14);
 
-            // Add Markers
-            if (googleMapRef.current) {
-                points.forEach(point => {
-                    const isOccupied = point.status === 'OCCUPIED';
+                    L.tileLayer('https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png', {
+                        subdomains: 'abcd',
+                        maxZoom: 20
+                    }).addTo(map);
 
-                    const pin = new PinElement({
-                        background: isOccupied ? "#fbbf24" : "#34d399", // Amber or Emerald
-                        borderColor: isOccupied ? "#d97706" : "#059669",
-                        glyphColor: "#ffffff",
-                    });
+                    mapInstanceRef.current = map;
+                    setIsMapReady(true);
+                }
+            }, 200);
 
-                    new AdvancedMarkerElement({
-                        map: googleMapRef.current,
-                        position: { lat: point.latitude, lng: point.longitude },
-                        title: point.name,
-                        content: pin.element
-                    });
-                });
-            }
+            return () => clearInterval(checkForLeaflet);
         };
 
-        if ((window as any).google) {
-            initMap();
-        }
+        initMap();
+
+        return () => {
+            if (mapInstanceRef.current) {
+                mapInstanceRef.current.remove();
+                mapInstanceRef.current = null;
+            }
+        };
     }, [points]);
 
+    // Atualizar marcadores quando os pontos mudarem
+    useEffect(() => {
+        if (!isMapReady || !mapInstanceRef.current) return;
+
+        const L = (window as any).L;
+        const map = mapInstanceRef.current;
+
+        // Limpar marcadores antigos
+        markersRef.current.forEach(m => m.remove());
+        markersRef.current = [];
+
+        const bounds = L.latLngBounds([]);
+        
+        points.forEach(point => {
+            const isOccupied = point.status === 'OCCUPIED';
+            const color = isOccupied ? "#fbbf24" : "#34d399";
+            const borderColor = isOccupied ? "#d97706" : "#059669";
+
+            const iconHtml = `
+                <div style="
+                    width: 14px; 
+                    height: 14px; 
+                    background-color: ${color}; 
+                    border: 2px solid #ffffff; 
+                    border-radius: 50%; 
+                    box-shadow: 0 0 10px ${borderColor}66;
+                "></div>
+            `;
+
+            const icon = L.divIcon({
+                html: iconHtml,
+                className: 'witnessing-dot',
+                iconSize: [14, 14],
+                iconAnchor: [7, 7]
+            });
+
+            const marker = L.marker([point.latitude, point.longitude], { icon })
+                .bindPopup(`<b style="font-family: sans-serif; font-size: 12px;">${point.name}</b>`)
+                .addTo(map);
+
+            markersRef.current.push(marker);
+            bounds.extend([point.latitude, point.longitude]);
+        });
+
+        if (points.length > 0) {
+            map.fitBounds(bounds, { padding: [30, 30], maxZoom: 16 });
+        }
+    }, [points, isMapReady]);
+
     return (
-        <div className="w-full h-full rounded-3xl overflow-hidden shadow-inner relative bg-gray-100">
-            <div ref={mapRef} className="w-full h-full" />
-            {/* Overlay for "Google Maps" attribution if needed, though Maps API handles it */}
+        <div className="w-full h-full rounded-3xl overflow-hidden shadow-inner relative bg-gray-100 border border-gray-100">
+            <div ref={mapContainerRef} className="w-full h-full z-0" />
+            {!isMapReady && (
+                <div className="absolute inset-0 flex items-center justify-center bg-gray-50/80 backdrop-blur-sm z-10">
+                    <Loader2 className="w-6 h-6 animate-spin text-gray-400" />
+                </div>
+            )}
         </div>
     );
 }

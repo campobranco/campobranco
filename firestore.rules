@@ -80,7 +80,7 @@ service cloud.firestore {
 
     // 4. Territórios e Endereços
     match /territories/{id} {
-      allow read: if isAuthenticated() && (isAdmin() || isServant() || getAuthRole() == 'PUBLICADOR' || getAuthRole() == 'PUBLICADOR_SEM_ACESSO');
+      allow read, list: if isAuthenticated() && (isAdmin() || isServant() || getAuthRole() == 'PUBLICADOR' || getAuthRole() == 'PUBLICADOR_SEM_ACESSO');
       allow create, update, delete: if isAdmin() || isServant();
     }
 
@@ -103,7 +103,7 @@ service cloud.firestore {
     // 5. Visitas (Histórico Individual)
     match /visits/{id} {
       allow read: if true; // Permitir leitura pública para histórico em listas compartilhadas
-      allow create: if true; // Permitir que visitantes registrem visitas via link público
+      allow create: if isAuthenticated(); // Escrita apenas para usuários autenticados
       allow update, delete: if isAuthenticated();
     }
 
@@ -127,10 +127,17 @@ service cloud.firestore {
       allow delete: if isAdmin() || isServant() || resource.data.get('createdBy', null) == request.auth.uid;
 
       // Subcoleções de Listas
-      match /items/{itemId} { allow read, write: if true; }
-      match /territory_addresses/{addrId} { allow read, write: if true; }
+      match /items/{itemId} {
+        allow read: if true;
+        allow write: if isAuthenticated();
+      }
+      match /territory_addresses/{addrId} {
+        allow read: if true;
+        allow write: if isAuthenticated();
+      }
       match /results/{resultId} {
-        allow read, write: if true;
+        allow read: if true;
+        allow write: if isAuthenticated();
       }
     }
 

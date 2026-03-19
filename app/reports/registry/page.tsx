@@ -78,7 +78,7 @@ export default function RegistryPage() {
         if (!loading && congregationId && !selectedCongregationId) {
             setSelectedCongregationId(congregationId);
         }
-    }, [congregationId, loading]);
+    }, [congregationId, loading, selectedCongregationId]);
 
 
 

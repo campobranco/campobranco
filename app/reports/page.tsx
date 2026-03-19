@@ -78,7 +78,7 @@ export default function ReportsPage() {
         if (!authLoading && userCongregationId && !selectedCongregationId) {
             setSelectedCongregationId(userCongregationId);
         }
-    }, [userCongregationId, authLoading]);
+    }, [userCongregationId, authLoading, selectedCongregationId]);
 
 
 

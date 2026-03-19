@@ -33,7 +33,7 @@ if (typeof window !== 'undefined') {
     });
 }
 
-// O DATABASE_ID vem da variável de ambiente (.env.local em dev, .env.production em prod).
+// O DATABASE_ID vem da variável de ambiente (.env.development em dev, .env.production em prod).
 // Se não especificado na env, cai para '(default)' que é o padrão da maioria dos projetos Firebase
 const databaseId = process.env.NEXT_PUBLIC_FIREBASE_DATABASE_ID || '(default)';
 
