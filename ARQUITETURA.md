@@ -168,6 +168,10 @@ Para facilitar deploys Open Source e novas instâncias do Campo Branco:
   - **Múltiplos Ambientes**: Estabelecida regra de segregação onde `dev` atua como Staging (App Teste + Banco Prod).
   - **GitHub Actions**: Implementação de `staging.yml` e `production.yml` para deploys automatizados baseados em branches.
   - **Scripts de Deploy**: Adicionados comandos `deploy:staging` e `deploy:production` ao `package.json`.
+- v0.8.9-beta: Estabilização de CI/CD e Login.
+  - **Correção de Auth Handler**: Ajuste no `authDomain` para `firebaseapp.com` para evitar erro de protocolo duplicado (`https://https//`).
+  - **Oauth 2.0 Redirect**: Documentada necessidade de autorizar `https://campo-branco.web.app/__/auth/handler` no Google Cloud Console para evitar `redirect_uri_mismatch`.
+  - **Limpeza de Workflows**: Remoção definitiva do workflow automático do GitHub Pages (`nextjs.yml`).
 
 ## 🛠️ Gerenciador de Projeto (Instalador Visual Web)
 
