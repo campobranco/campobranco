@@ -255,19 +255,49 @@ const server = http.createServer(async (req, res) => {
                 if (!['prod', 'dev'].includes(type)) throw new Error('Tipo inválido');
 
                 const fileName = type === 'prod' ? '.env.production' : '.env.development';
-                let content = '# Campo Branco - Configuracao Gerada\n';
-                content += `NEXT_PUBLIC_ENVIRONMENT="${type === 'prod' ? 'production' : 'development'}"\n\n`;
+                const envPath = join(ROOT_DIR, fileName);
                 
-                Object.entries(config).forEach(([key, value]) => {
-                    content += `${key}="${value}"\n`;
-                });
+                let pkgVersion = "0.8.52-beta";
+                try {
+                    const pkg = JSON.parse(await readFile(join(ROOT_DIR, 'package.json'), 'utf-8'));
+                    pkgVersion = pkg.version;
+                } catch(e){}
 
-                await writeFile(join(ROOT_DIR, fileName), content);
-                
+                const envContent = `
+# =====================
+# Configurações do App
+# =====================
+NEXT_PUBLIC_APP_NAME="Campo Branco"
+NEXT_PUBLIC_APP_DESCRIPTION="Gestão de Territórios para Testemunhas de Jeová"
+NEXT_PUBLIC_APP_VERSION="${pkgVersion}"
+NEXT_PUBLIC_APP_URL="${config.NEXT_PUBLIC_APP_URL || ''}"
+NEXT_PUBLIC_SUPPORT_EMAIL="${config.NEXT_PUBLIC_MASTER_EMAIL || ''}"
+NEXT_PUBLIC_MASTER_EMAIL="${config.NEXT_PUBLIC_MASTER_EMAIL || ''}"
+NEXT_PUBLIC_LEGACY_HOST=""
+
+# =====================
+# Firebase Client SDK (Público) - ${type === 'prod' ? 'Produção' : 'Desenvolvimento'}
+# =====================
+NEXT_PUBLIC_FIREBASE_PROJECT_ID="${config.NEXT_PUBLIC_FIREBASE_PROJECT_ID || ''}"
+NEXT_PUBLIC_FIREBASE_API_KEY="${config.NEXT_PUBLIC_FIREBASE_API_KEY || ''}"
+NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN="${config.NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN || ''}"
+NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET="${config.NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET || ''}"
+NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID="${config.NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID || ''}"
+NEXT_PUBLIC_FIREBASE_APP_ID="${config.NEXT_PUBLIC_FIREBASE_APP_ID || ''}"
+NEXT_PUBLIC_FIREBASE_DATABASE_ID="default"
+
+# =====================
+# Firebase Admin SDK (Privado)
+# =====================
+FIREBASE_CLIENT_EMAIL=""
+FIREBASE_PRIVATE_KEY=""
+`.trim();
+
+                await writeFile(envPath, envContent);
                 res.writeHead(200, { 'Content-Type': 'application/json' });
                 res.end(JSON.stringify({ success: true, message: `${fileName} salvo com sucesso!` }));
             } catch (err) {
-                res.writeHead(400, { 'Content-Type': 'application/json' });
+                res.writeHead(500, { 'Content-Type': 'application/json' });
                 res.end(JSON.stringify({ success: false, error: err.message }));
             }
         });
