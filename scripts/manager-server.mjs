@@ -9,6 +9,7 @@ const PORT = 4000;
 const ROOT_DIR = join(__dirname, '..');
 
 let currentProcess = null;
+let devProcess = null;
 
 const server = http.createServer(async (req, res) => {
     // CORS
@@ -95,8 +96,16 @@ const server = http.createServer(async (req, res) => {
             return;
         }
 
-        if (currentProcess) {
-            sendLog('error', 'Já existe um processo em execução.');
+        if (currentProcess && command !== 'dev') {
+            sendLog('error', 'Já existe uma tarefa (não-dev) em execução.');
+            res.end();
+            clearInterval(heartbeat);
+            return;
+        }
+
+        // Se tentar rodar 'dev' e já estiver rodando, avisar
+        if (command === 'dev' && devProcess) {
+            sendLog('error', 'O servidor de testes já está em execução.');
             res.end();
             clearInterval(heartbeat);
             return;
@@ -111,7 +120,11 @@ const server = http.createServer(async (req, res) => {
                     shell: isWin 
                 });
                 
-                currentProcess = proc;
+                if (command === 'dev') {
+                    devProcess = proc;
+                } else {
+                    currentProcess = proc;
+                }
                 sendLog('status', `Iniciando: ${cmd} ${args.join(' ')}...`);
 
                 proc.stdout.on('data', (data) => {
@@ -136,7 +149,8 @@ const server = http.createServer(async (req, res) => {
 
                 proc.on('error', (err) => {
                     sendLog('error', `Falha ao iniciar processo: ${err.message}`);
-                    currentProcess = null;
+                    if (command === 'dev') devProcess = null;
+                    else currentProcess = null;
                     if (!res.writableEnded) res.end();
                     clearInterval(heartbeat);
                 });
@@ -144,7 +158,8 @@ const server = http.createServer(async (req, res) => {
                 proc.on('close', (code) => {
                     if (code !== 0) {
                         sendLog('error', `Processo ${cmd} finalizado com erro (código ${code})`);
-                        currentProcess = null;
+                        if (command === 'dev') devProcess = null;
+                        else currentProcess = null;
                         if (!res.writableEnded) res.end();
                         clearInterval(heartbeat);
                         return;
@@ -162,7 +177,8 @@ const server = http.createServer(async (req, res) => {
             if (tasks.length === 0) {
                 sendLog('status', `Todos os processos finalizados com sucesso.`);
                 sendLog('done', `Comando concluído`);
-                currentProcess = null;
+                if (command === 'dev') devProcess = null;
+                else currentProcess = null;
                 clearInterval(heartbeat);
                 setTimeout(() => { if (!res.writableEnded) res.end(); }, 1000);
                 return;
@@ -282,21 +298,22 @@ const server = http.createServer(async (req, res) => {
         return;
     }
 
-    // Endpoint para Interromper Comando
+    // Endpoint para Interromper Comando (especificamente o dev)
     if (url.pathname === '/stop-command' && req.method === 'POST') {
-        if (currentProcess) {
+        const procToKill = devProcess || currentProcess;
+        if (procToKill) {
             sendLog('status', 'Interrompendo processo...');
-            const pid = currentProcess.pid;
+            const pid = procToKill.pid;
             const isWin = process.platform === 'win32';
             
             if (isWin) {
-                // No Windows, matamos a arvore de processos
                 spawn('taskkill', ['/F', '/T', '/PID', pid]);
             } else {
-                currentProcess.kill('SIGTERM');
+                procToKill.kill('SIGTERM');
             }
             
-            currentProcess = null;
+            if (procToKill === devProcess) devProcess = null;
+            else currentProcess = null;
             res.writeHead(200, { 'Content-Type': 'application/json' });
             res.end(JSON.stringify({ success: true }));
         } else {

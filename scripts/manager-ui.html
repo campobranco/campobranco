@@ -338,20 +338,18 @@
 
         function setWorking(working) {
             isWorking = working;
-            const btns = document.querySelectorAll('.btn');
             const stopBtn = document.getElementById('stop-btn');
-            
-            btns.forEach(b => b.disabled = working);
             
             if (working) {
                 statusText.textContent = "EXECUTANDO...";
                 statusIndicator.className = "status-working";
-                stopBtn.style.display = "flex";
             } else {
                 statusText.textContent = "PRONTO";
                 statusIndicator.className = "status-idle";
-                stopBtn.style.display = "none";
             }
+            
+            // Controle de visibilidade do botão stop baseado no comando atual
+            // (Melhoria: o servidor envia logs que controlam isso)
         }
 
         async function stopCommand() {
@@ -384,7 +382,14 @@
                     eventSource = null;
                     currentSource.close();
                     setWorking(false);
+                    
+                    // Se o comando que terminou era o dev, esconde o botão de stop
+                    if (cmd === 'dev') document.getElementById('stop-btn').style.display = 'none';
                     return;
+                }
+
+                if (data.type === 'status' && data.data.includes('Iniciando: dev')) {
+                    document.getElementById('stop-btn').style.display = 'flex';
                 }
 
                 appendLog(data.type, data.data);
