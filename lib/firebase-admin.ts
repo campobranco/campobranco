@@ -74,13 +74,19 @@ function initAdminApp(): App {
                 privateKey = `${privateKey}\n-----END PRIVATE KEY-----`;
             }
 
+            const serviceAccount = {
+                projectId: projectId,
+                clientEmail: clientEmail,
+                privateKey: privateKey 
+            };
+
             console.log(`🚀 Firebase Admin: Inicializando via chaves individuais. ID: [${projectId}]`);
             
             const app = initializeApp({
                 credential: cert({ 
-                    project_id: projectId, 
-                    client_email: clientEmail, 
-                    private_key: privateKey 
+                    project_id: serviceAccount.projectId, 
+                    client_email: serviceAccount.clientEmail, 
+                    private_key: serviceAccount.privateKey 
                 } as any),
                 projectId
             });
@@ -146,4 +152,3 @@ export const adminAuth: Auth = !isMock
     : {
         verifyIdToken: async () => { throw new Error('Autenticação indisponível: Credenciais de administrador ausentes no servidor.'); }
     } as any;
-

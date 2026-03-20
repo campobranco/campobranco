@@ -25,14 +25,6 @@ export async function getCityStats(congregationId: string, cityId?: string, star
         );
         let territoriesSnapshot = await getDocs(territoriesQuery);
 
-        if (territoriesSnapshot.empty) {
-            territoriesQuery = query(
-                collection(db, 'territories'),
-                where('congregation_id', '==', congregationId)
-            );
-            territoriesSnapshot = await getDocs(territoriesQuery);
-        }
-
         const territories = territoriesSnapshot.docs.map(doc => ({
             id: doc.id,
             ...doc.data()
@@ -45,14 +37,6 @@ export async function getCityStats(congregationId: string, cityId?: string, star
         );
         let assignmentsSnapshot = await getDocs(assignmentsQuery);
 
-        if (assignmentsSnapshot.empty) {
-            assignmentsQuery = query(
-                collection(db, 'shared_lists'),
-                where('congregation_id', '==', congregationId)
-            );
-            assignmentsSnapshot = await getDocs(assignmentsQuery);
-        }
-
         let history = assignmentsSnapshot.docs
             .map(doc => ({ id: doc.id, ...doc.data() } as any))
             .filter((item: any) => item.status === 'completed');
@@ -60,7 +44,7 @@ export async function getCityStats(congregationId: string, cityId?: string, star
         // Filter by date
         if (startDate || endDate) {
             history = history.filter((item: any) => {
-                const dateRaw = item.returnedAt || item.returned_at;
+                const dateRaw = item.returnedAt;
                 if (!dateRaw) return false;
                 const date = dateRaw.toDate ? dateRaw.toDate() : new Date(dateRaw);
                 if (isNaN(date.getTime())) return false;
@@ -77,14 +61,6 @@ export async function getCityStats(congregationId: string, cityId?: string, star
         );
         let addressesSnapshot = await getDocs(addressesQuery);
 
-        if (addressesSnapshot.empty) {
-            addressesQuery = query(
-                collection(db, 'addresses'),
-                where('congregation_id', '==', congregationId)
-            );
-            addressesSnapshot = await getDocs(addressesQuery);
-        }
-
         let addresses = addressesSnapshot.docs.map(doc => ({
             id: doc.id,
             ...doc.data()
@@ -92,7 +68,7 @@ export async function getCityStats(congregationId: string, cityId?: string, star
 
         if (startDate || endDate) {
             addresses = addresses.filter((item: any) => {
-                const dateRaw = item.lastVisitedAt || item.last_visited_at;
+                const dateRaw = item.lastVisitedAt;
                 if (!dateRaw) return false;
                 const date = dateRaw.toDate ? dateRaw.toDate() : new Date(dateRaw);
                 if (isNaN(date.getTime())) return false;

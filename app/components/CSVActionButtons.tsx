@@ -10,6 +10,7 @@ import {
     ChevronDown
 } from 'lucide-react';
 import CSVImportModal from './CSVImportModal';
+import DropDownItem from './DropDownItem';
 import { toast } from 'sonner';
 import { getAddresses } from '@/lib/services/addresses';
 import { getTerritories } from '@/lib/services/territories';
@@ -73,8 +74,8 @@ export default function CSVActionButtons({
 
             // 3. Formatar linhas
             const rows = addresses.map((addr: any) => {
-                const city = cityMap.get(addr.cityId || addr.city_id) || { name: '', uf: '' };
-                const territory = territoryMap.get(addr.territoryId || addr.territory_id) || { name: '', notes: '' };
+                const city = cityMap.get(addr.cityId) || { name: '', uf: '' };
+                const territory = territoryMap.get(addr.territoryId) || { name: '', notes: '' };
 
                 return [
                     city.name || '',
@@ -82,19 +83,19 @@ export default function CSVActionButtons({
                     territory.name || '',
                     territory.notes || territory.description || '',
                     addr.street || '',
-                    addr.residentsCount || addr.residents_count || 1,
-                    addr.residentName || addr.resident_name || '',
-                    addr.googleMapsLink || addr.google_maps_link || '',
-                    addr.wazeLink || addr.waze_link || '',
-                    (addr.isActive ?? addr.is_active) !== false ? 'true' : 'false',
-                    (addr.isDeaf ?? addr.is_deaf) ? 'true' : 'false',
-                    (addr.isMinor ?? addr.is_minor) ? 'true' : 'false',
-                    (addr.isStudent ?? addr.is_student) ? 'true' : 'false',
-                    (addr.isNeurodivergent ?? addr.is_neurodivergent) ? 'true' : 'false',
+                    addr.residentsCount || 1,
+                    addr.residentName || '',
+                    addr.googleMapsLink || '',
+                    addr.wazeLink || '',
+                    (addr.isActive ?? true) ? 'true' : 'false',
+                    addr.isDeaf ? 'true' : 'false',
+                    addr.isMinor ? 'true' : 'false',
+                    addr.isStudent ? 'true' : 'false',
+                    addr.isNeurodivergent ? 'true' : 'false',
                     addr.gender || '',
                     addr.observations || '',
-                    addr.visitStatus || addr.visit_status || 'not_contacted',
-                    addr.sortOrder ?? addr.sort_order ?? 0
+                    addr.visitStatus || 'notContacted',
+                    addr.sortOrder ?? 0
                 ];
             });
 
@@ -131,7 +132,7 @@ export default function CSVActionButtons({
 
     const downloadTemplate = () => {
         const header = "Cidade;UF;Número do Mapa;Descrição;Endereço;Quantidade de residentes;Nome;Link do Maps;Link do Waze;Status;Surdo;Menor de idade;Estudante;Neurodivergente;Gênero;Observações;Resultado da ultima visita;Ordem na listagem";
-        const example = "Catanduva;SP;01;Centro;Rua Álamo, 225;1;João Silva;https://maps.google.com/...;https://waze.com/...;true;false;false;false;false;Homem;Exemplo de observação;not_contacted;0";
+        const example = "Catanduva;SP;01;Centro;Rua Álamo, 225;1;João Silva;https://maps.google.com/...;https://waze.com/...;true;false;false;false;false;Homem;Exemplo de observação;notContacted;0";
         const csvContent = "\ufeff" + [header, example].join('\n');
 
         const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
@@ -160,42 +161,39 @@ export default function CSVActionButtons({
                     className="absolute right-0 top-full mt-2 w-52 bg-surface border border-surface-border rounded-2xl shadow-2xl py-2 z-50 animate-in fade-in zoom-in-95 duration-150 origin-top-right"
                     onClick={(e) => e.stopPropagation()}
                 >
-                    <div className="px-4 py-2 border-b border-surface-border mb-1">
-                        <p className="text-[10px] font-black text-muted uppercase tracking-widest">Manutenção CSV</p>
+                    <div className="px-4 py-2">
+                        <p className="text-[10px] font-black text-muted uppercase tracking-widest opacity-50">Manutenção CSV</p>
                     </div>
 
-                    <button
+                    <DropDownItem 
+                        icon={Upload} 
+                        label="Importar Dados" 
+                        variant="primary" 
                         onClick={() => {
                             setIsImportModalOpen(true);
                             setIsMenuOpen(false);
-                        }}
-                        className="w-full px-4 py-2.5 text-left text-xs font-bold text-main hover:bg-primary/5 hover:text-primary flex items-center gap-3 transition-colors"
-                    >
-                        <Upload className="w-4 h-4" />
-                        Importar Dados
-                    </button>
+                        }} 
+                    />
 
-                    <button
+                    <DropDownItem 
+                        icon={Download} 
+                        label="Exportar Dados" 
+                        variant="indigo" 
                         onClick={() => {
                             handleExport();
                             setIsMenuOpen(false);
-                        }}
-                        className="w-full px-4 py-2.5 text-left text-xs font-bold text-main hover:bg-primary/5 hover:text-primary flex items-center gap-3 transition-colors"
-                    >
-                        <Download className="w-4 h-4" />
-                        Exportar Dados
-                    </button>
+                        }} 
+                    />
 
-                    <button
+                    <DropDownItem 
+                        icon={FileSpreadsheet} 
+                        label="Baixar Template" 
+                        variant="success" 
                         onClick={() => {
                             downloadTemplate();
                             setIsMenuOpen(false);
-                        }}
-                        className="w-full px-4 py-2.5 text-left text-xs font-bold text-main hover:bg-emerald-50 hover:text-emerald-600 flex items-center gap-3 transition-colors"
-                    >
-                        <FileSpreadsheet className="w-4 h-4" />
-                        Baixar Template
-                    </button>
+                        }} 
+                    />
                 </div>
             )}
 

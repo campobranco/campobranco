@@ -16,17 +16,14 @@ interface MapAppSelectModalProps {
         number?: string;
         googleMapsLink?: string;
         wazeLink?: string;
-        // Suporte para nomes de campos do banco de dados (my-maps)
-        google_maps_link?: string;
-        waze_link?: string;
     };
 }
 
 export default function MapAppSelectModal({ isOpen, onClose, address }: MapAppSelectModalProps) {
     if (!isOpen) return null;
 
-    const googleLink = address.googleMapsLink || address.google_maps_link;
-    const wazeLink = address.wazeLink || address.waze_link;
+    const googleLink = address.googleMapsLink;
+    const wazeLink = address.wazeLink;
 
     return (
         <div

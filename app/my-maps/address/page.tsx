@@ -53,46 +53,33 @@ import { getServiceYear, getServiceYearRange } from '@/lib/serviceYearUtils';
 import { useRouter, useSearchParams } from 'next/navigation';
 import CSVActionButtons from '@/app/components/CSVActionButtons';
 import AddressActionsMenu from '@/app/components/AddressActionsMenu';
+import DropDownItem from '@/app/components/DropDownItem';
 
 interface Address {
     id: string;
     street: string;
     territoryId?: string;
-    territory_id?: string;
     congregationId?: string;
-    congregation_id?: string;
     cityId?: string;
-    city_id?: string;
     completed?: boolean;
-    visited_at?: string;
+    visitedAt?: string;
     lat?: number;
     lng?: number;
     isActive?: boolean;
-    is_active?: boolean;
     googleMapsLink?: string;
-    google_maps_link?: string;
     wazeLink?: string;
-    waze_link?: string;
     residentName?: string;
-    resident_name?: string;
     isDeaf?: boolean;
-    is_deaf?: boolean;
     isMinor?: boolean;
-    is_minor?: boolean;
     isStudent?: boolean;
-    is_student?: boolean;
     observations?: string;
     gender?: 'HOMEM' | 'MULHER' | 'CASAL';
     isNeurodivergent?: boolean;
-    is_neurodivergent?: boolean;
-    visit_status?: 'contacted' | 'not_contacted' | 'moved' | 'do_not_visit' | 'none';
-    last_visited_at?: string;
+    visitStatus?: 'contacted' | 'notContacted' | 'moved' | 'doNotVisit' | 'none';
+    lastVisitedAt?: string;
     sortOrder?: number;
-    inactivated_at?: string;
     inactivatedAt?: string;
     residentsCount?: number;
-    residents_count?: number;
-    people_count?: number;
 }
 
 function AddressListContent() {
@@ -101,7 +88,7 @@ function AddressListContent() {
     const congregationId = searchParams.get('congregationId') || '';
     const cityId = searchParams.get('cityId') || '';
     const territoryId = searchParams.get('territoryId') || '';
-        const editAddressId = searchParams.get('edit');
+    const editAddressId = searchParams.get('edit');
 
     const { user, isAdmin, isAdminRoleGlobal, isElder, isServant, loading: authLoading, congregationType: authCongregationType, termType } = useAuth();
     const [localCongregationType, setLocalCongregationType] = useState<'TRADITIONAL' | 'SIGN_LANGUAGE' | 'FOREIGN_LANGUAGE' | null>(null);
@@ -130,10 +117,7 @@ function AddressListContent() {
                         listsRef,
                         and(
                             where('territoryId', '==', territoryId),
-                            or(
-                                where('assignedTo', '==', user.uid),
-                                where('assigned_to', '==', user.uid)
-                            )
+                            where('assignedTo', '==', user.uid)
                         ),
                         limit(1)
                     );
@@ -289,14 +273,14 @@ function AddressListContent() {
                 });
 
                 if (congResData) {
-                    setLocalTermType((congResData as any).term_type as any || 'city');
+                    setLocalTermType((congResData as any).termType as any || 'city');
                     const cat = ((congResData as any).category || '').toLowerCase();
                     if (cat.includes('sinais') || cat.includes('sign')) setLocalCongregationType('SIGN_LANGUAGE');
                     else if (cat.includes('estrangeir') || cat.includes('foreign')) setLocalCongregationType('FOREIGN_LANGUAGE');
                     else setLocalCongregationType('TRADITIONAL');
                 }
                 if (cityResData) {
-                    setParentCity((cityResData as any).parent_city || null);
+                    setParentCity((cityResData as any).parentCity || null);
                 }
 
             } catch (error) {
@@ -324,7 +308,7 @@ function AddressListContent() {
 
             const data = (resData.addresses || []).map((addr: any) => ({
                 ...addr,
-                residentsCount: addr.residentsCount || addr.residents_count || addr.people_count || 1
+                residentsCount: addr.residentsCount || 1
             }));
 
             const sorted = data.sort((a: any, b: any) => {
@@ -504,25 +488,6 @@ function AddressListContent() {
     };
 
     const handleEditAddress = (addr: Address) => {
-        setEditingId(addr.id);
-        // Preenche o campo unificado com o endereço completo já salvo
-        setCombinedAddress(addr.street);
-        setLat(addr.lat?.toString() || '');
-        setLng(addr.lng?.toString() || '');
-        setSelectedCongregationId(addr.congregationId || '');
-        setSelectedCityId(addr.cityId || '');
-        setSelectedTerritoryId(addr.territoryId || '');
-        setIsActive(addr.isActive ?? true);
-        setGoogleMapsLink(addr.googleMapsLink || '');
-        setWazeLink(addr.wazeLink || '');
-        setResidentName(addr.residentName || '');
-        setGender(addr.gender || '');
-        setIsDeaf(addr.isDeaf || false);
-        setIsMinor(addr.isMinor || false);
-        setIsStudent(addr.isStudent || false);
-        setIsNeurodivergent(addr.isNeurodivergent || addr.is_neurodivergent || false);
-        setObservations(addr.observations || '');
-        setResidentsCount(addr.residentsCount?.toString() || addr.residents_count?.toString() || addr.people_count?.toString() || '1');
         setIsCreateModalOpen(true);
     };
 
@@ -537,7 +502,7 @@ function AddressListContent() {
         try {
             const resData = await deleteAddress(addressToDelete);
             if (!resData.success) throw new Error(resData.error);
-            
+
             toast.success("Endereço excluído com sucesso!");
             fetchAddresses();
             setIsDeleteDialogOpen(false);
@@ -619,8 +584,8 @@ function AddressListContent() {
     };
 
     const handleOpenMap = (item: any) => {
-        const googleLink = item.googleMapsLink || item.google_maps_link;
-        const wazeLink = item.wazeLink || item.waze_link;
+        const googleLink = item.googleMapsLink;
+        const wazeLink = item.wazeLink;
 
         if (googleLink && wazeLink) {
             setMapAppSelect({ isOpen: true, address: item });
@@ -671,7 +636,7 @@ function AddressListContent() {
             const visitsRef = collection(db, 'visits');
             const q = query(
                 visitsRef,
-                where('address_id', '==', addr.id),
+                where('addressId', '==', addr.id),
                 orderBy('createdAt', 'desc'),
                 limit(1)
             );
@@ -686,11 +651,11 @@ function AddressListContent() {
             // Also reset the address document in Firestore
             try {
                 await updateDoc(doc(db, 'addresses', addr.id), {
-                    visit_status: null,
-                    last_visited_at: null,
-                    last_visited_by: null
+                    visitStatus: null,
+                    lastVisitedAt: null,
+                    lastVisitedBy: null
                 });
-            } catch(e) { console.warn(e); }
+            } catch (e) { console.warn(e); }
 
             toast.success("Marcação removida com sucesso!");
             fetchAddresses();
@@ -702,7 +667,7 @@ function AddressListContent() {
 
     const handleToggleActive = async (addr: Address) => {
         try {
-            const currentActive = addr.isActive ?? addr.is_active ?? true;
+            const currentActive = addr.isActive ?? true;
 
             const addressData = {
                 isActive: !currentActive,
@@ -738,8 +703,8 @@ function AddressListContent() {
                 onDragOver={(e) => handleDragOver(e, addr.id)}
                 onDragEnd={handleDragEnd}
                 className={`group bg-surface rounded-md p-4 border shadow-md hover:shadow-md transition-all 
-                    ${(addr.visit_status === 'moved' || (addr as any).visitStatus === 'moved') ? 'border-2 border-blue-500 bg-blue-50/50 dark:bg-blue-900/20' : 
-                      (addr.visit_status === 'do_not_visit' || (addr as any).visitStatus === 'do_not_visit') ? 'border-2 border-red-500 bg-red-50/50 dark:bg-red-900/20' : 'border-surface-border'}
+                    ${(addr.visitStatus === 'moved') ? 'border-2 border-blue-500 bg-blue-50/50 dark:bg-blue-900/20' :
+                        (addr.visitStatus === 'doNotVisit') ? 'border-2 border-red-500 bg-red-50/50 dark:bg-red-900/20' : 'border-surface-border'}
                     ${draggedId === addr.id ? 'opacity-20 transition-none scale-95' : ''} 
                     ${openMenuId === addr.id ? 'relative z-20 ring-1 ring-primary-100 dark:ring-primary-900' : ''}`}
             >
@@ -767,13 +732,13 @@ function AddressListContent() {
                         {/* Gender/Number Badge */}
                         {(() => {
                             let lastVisitFormatted = "Sem visitas este ano";
-                            if (addr.last_visited_at) {
-                                const lvDate = new Date(addr.last_visited_at);
+                            if (addr.lastVisitedAt) {
+                                const lvDate = new Date(addr.lastVisitedAt);
                                 lastVisitFormatted = `Última visita: ${lvDate.toLocaleDateString()}`;
                             }
 
                             // Mudou-se Highlight - Blue Home Icon
-                            if (addr.visit_status === 'moved' || (addr as any).visitStatus === 'moved') {
+                            if (addr.visitStatus === 'moved') {
                                 return (
                                     <div
                                         title="Morador Mudou-se"
@@ -828,14 +793,14 @@ function AddressListContent() {
                             </h3>
 
                             <div className="flex flex-wrap items-center gap-2 mt-1 text-xs text-muted">
-                                {!isTraditional && addr.resident_name && <span className="font-semibold text-gray-700 dark:text-gray-300">{addr.resident_name}</span>}
+                                {!isTraditional && addr.residentName && <span className="font-semibold text-gray-700 dark:text-gray-300">{addr.residentName}</span>}
 
                                 {!isTraditional && (
                                     <>
                                         {/* Resident Count Badge */}
-                                        {(addr.residentsCount || addr.residents_count || addr.people_count) && (
+                                        {addr.residentsCount && (
                                             <span className="flex items-center gap-1 bg-indigo-50 dark:bg-indigo-900/20 text-indigo-600 dark:text-indigo-400 px-1.5 py-0.5 rounded-md font-bold text-[10px] uppercase border border-indigo-100 dark:border-indigo-900/30">
-                                                <Users className="w-3 h-3 text-indigo-500" /> {addr.residentsCount || addr.residents_count || addr.people_count}
+                                                <Users className="w-3 h-3 text-indigo-500" /> {addr.residentsCount}
                                             </span>
                                         )}
 
@@ -855,40 +820,40 @@ function AddressListContent() {
                                                 {addr.gender === 'HOMEM' ? 'Homem' : addr.gender === 'MULHER' ? 'Mulher' : 'Casal'}
                                             </span>
                                         )}
-                                        {addr.is_deaf && (
+                                        {addr.isDeaf && (
                                             <span className="flex items-center gap-1 bg-yellow-100 dark:bg-yellow-900/30 text-yellow-800 dark:text-yellow-400 px-1.5 py-0.5 rounded-md font-bold text-[10px] uppercase">
                                                 <Ear className="w-3 h-3" /> Surdo
                                             </span>
                                         )}
-                                        {addr.is_minor || (addr as any).isMinor ? (
+                                        {addr.isMinor ? (
                                             <span className="flex items-center gap-1 bg-primary-light/50 dark:bg-primary-dark/30 text-primary-dark dark:text-primary-light px-1.5 py-0.5 rounded-md font-bold text-[10px] uppercase">
                                                 <Baby className="w-3 h-3" /> Menor
                                             </span>
                                         ) : null}
-                                        {(addr.is_student || (addr as any).isStudent) && (
+                                        {addr.isStudent && (
                                             <span className="flex items-center gap-1 bg-purple-100 dark:bg-purple-900/30 text-purple-800 dark:text-purple-400 px-1.5 py-0.5 rounded-md font-bold text-[10px] uppercase">
                                                 <GraduationCap className="w-3 h-3" /> Estudante
                                             </span>
                                         )}
-                                        {(addr.is_neurodivergent || (addr as any).isNeurodivergent) && (
+                                        {addr.isNeurodivergent && (
                                             <span className="flex items-center gap-1 bg-teal-100 dark:bg-teal-900/30 text-teal-800 dark:text-teal-400 px-1.5 py-0.5 rounded-md font-bold text-[10px] uppercase">
                                                 <Brain className="w-3 h-3" /> Neurodivergente
                                             </span>
                                         )}
                                     </>
                                 )}
-                                {(addr.visit_status === 'moved' || (addr as any).visitStatus === 'moved') && (
+                                {addr.visitStatus === 'moved' && (
                                     <span className="flex items-center gap-1 bg-sky-100 dark:bg-sky-900/30 text-sky-800 dark:text-sky-400 px-1.5 py-0.5 rounded-md font-bold text-[10px] uppercase">
                                         <Truck className="w-3 h-3" /> Mudou-se
                                     </span>
                                 )}
                                 {/* Deactivation Date for all inactive items */}
-                                {addr.is_active === false && (addr as any).inactivated_at && (
+                                {addr.isActive === false && addr.inactivatedAt && (
                                     <span className="flex items-center gap-1 bg-red-50 dark:bg-red-900/20 text-red-600 dark:text-red-400 px-1.5 py-0.5 rounded-md font-bold text-[10px] uppercase border border-red-100 dark:border-red-900/30">
-                                        <Calendar className="w-3 h-3" /> Desativado em: {new Date((addr as any).inactivated_at).toLocaleDateString('pt-BR')}
+                                        <Calendar className="w-3 h-3" /> Desativado em: {new Date(addr.inactivatedAt).toLocaleDateString('pt-BR')}
                                     </span>
                                 )}
-                                {active !== false && addr.visit_status === 'do_not_visit' && (
+                                {active !== false && addr.visitStatus === 'doNotVisit' && (
                                     <span className="flex items-center gap-1 bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-400 px-1.5 py-0.5 rounded-md font-bold text-[10px] uppercase animate-pulse border border-red-200 dark:border-red-800">
                                         <Hand className="w-3 h-3" /> Pediu para não ser visitado
                                     </span>
@@ -905,7 +870,7 @@ function AddressListContent() {
                     </div>
 
                     <div className="relative flex items-center gap-2">
-                        {addr.is_active !== false && addr.visit_status === 'do_not_visit' && (isElder || isServant) && (
+                        {addr.isActive !== false && addr.visitStatus === 'doNotVisit' && (isElder || isServant) && (
                             <button
                                 onClick={(e) => {
                                     e.stopPropagation();
@@ -954,104 +919,71 @@ function AddressListContent() {
                         )}
 
                         {openMenuId === addr.id && (
-                            <div className="absolute right-0 top-10 bg-white dark:bg-slate-900 rounded-2xl shadow-2xl border border-surface-border dark:border-slate-800 p-1.5 z-20 min-w-[180px] animate-in fade-in zoom-in-95 slide-in-from-top-2 duration-200 overflow-hidden">
-                                <button
-                                    onClick={(e) => {
-                                        e.stopPropagation();
-                                        handleOpenMap(addr);
-                                        setOpenMenuId(null);
-                                    }}
-                                    className="flex items-center gap-3 px-3 py-2 text-sm font-bold text-gray-700 dark:text-gray-300 hover:bg-blue-50 dark:hover:bg-blue-900/30 hover:text-blue-600 dark:hover:text-blue-400 rounded-xl transition-all w-full text-left group"
-                                >
-                                    <div className="p-1 px-1.5 bg-blue-100 dark:bg-blue-900/40 rounded-lg group-hover:scale-110 transition-transform">
-                                        <Navigation className="w-3.5 h-3.5" />
-                                    </div>
-                                    Abrir no Mapa
-                                </button>
+                            <>
+                                <div className="fixed inset-0 z-40" onClick={() => setOpenMenuId(null)} />
+                                <div className="absolute right-0 top-10 bg-surface rounded-2xl shadow-2xl border border-surface-border p-1.5 z-50 min-w-[200px] animate-in fade-in zoom-in-95 slide-in-from-top-2 duration-200 overflow-hidden">
+                                    <DropDownItem 
+                                        icon={Navigation} 
+                                        label="Abrir no Mapa" 
+                                        variant="primary" 
+                                        onClick={(e) => { e.stopPropagation(); handleOpenMap(addr); setOpenMenuId(null); }} 
+                                    />
 
-                                <button
-                                    onClick={() => {
-                                        setHistoryAddressId(addr.id);
-                                        setOpenMenuId(null);
-                                    }}
-                                    className="flex items-center gap-3 px-3 py-2 text-sm font-bold text-gray-700 dark:text-gray-300 hover:bg-purple-50 dark:hover:bg-purple-900/30 hover:text-purple-600 dark:hover:text-purple-400 rounded-xl transition-all w-full text-left group"
-                                >
-                                    <div className="p-1 px-1.5 bg-purple-100 dark:bg-purple-900/40 rounded-lg group-hover:scale-110 transition-transform">
-                                        <HistoryIcon className="w-3.5 h-3.5" />
-                                    </div>
-                                    Abrir Histórico
-                                </button>
+                                    <DropDownItem 
+                                        icon={HistoryIcon} 
+                                        label="Abrir Histórico" 
+                                        variant="indigo" 
+                                        onClick={() => { setHistoryAddressId(addr.id); setOpenMenuId(null); }} 
+                                    />
 
-                                {isServant && (
-                                    <button
-                                        onClick={() => {
-                                            handleEditAddress(addr);
-                                            setOpenMenuId(null);
-                                        }}
-                                        className="flex items-center gap-3 px-3 py-2 text-sm font-bold text-gray-700 dark:text-gray-300 hover:bg-amber-50 dark:hover:bg-amber-900/30 hover:text-amber-600 dark:hover:text-amber-400 rounded-xl transition-all w-full text-left group"
-                                    >
-                                        <div className="p-1 px-1.5 bg-amber-100 dark:bg-amber-900/40 rounded-lg group-hover:scale-110 transition-transform">
-                                            <Pencil className="w-3.5 h-3.5" />
-                                        </div>
-                                        Editar Dados
-                                    </button>
-                                )}
+                                    {isServant && (
+                                        <DropDownItem 
+                                            icon={Pencil} 
+                                            label="Editar Dados" 
+                                            variant="neutral" 
+                                            onClick={() => { handleEditAddress(addr); setOpenMenuId(null); }} 
+                                        />
+                                    )}
 
-                                {(isElder || isServant) && (
-                                    <button
-                                        onClick={() => {
-                                            setConfirmModal({
-                                                isOpen: true,
-                                                title: addr.is_active === false ? "Reativar Endereço" : "Desativar Endereço",
-                                                message: addr.is_active === false
-                                                    ? "Deseja reativar este endereço para que ele volte a aparecer nos links?"
-                                                    : "Deseja desativar este endereço temporariamente?",
-                                                variant: addr.is_active === false ? 'info' : 'danger',
-                                                confirmText: addr.is_active === false ? "Reativar" : "Desativar",
-                                                cancelText: "Cancelar",
-                                                onConfirm: () => {
-                                                    setConfirmModal(prev => ({ ...prev, isOpen: false }));
-                                                    handleToggleActive(addr);
-                                                },
-                                                onCancel: undefined
-                                            });
-                                            setOpenMenuId(null);
-                                        }}
-                                        className={`flex items-center gap-3 px-3 py-2 text-sm font-bold rounded-xl transition-all w-full text-left group ${
-                                            addr.is_active === false 
-                                                ? 'text-green-600 hover:bg-green-50 dark:hover:bg-green-900/30' 
-                                                : 'text-orange-600 hover:bg-orange-50 dark:hover:bg-orange-900/30'
-                                        }`}
-                                    >
-                                        <div className={`p-1 px-1.5 rounded-lg group-hover:scale-110 transition-transform ${
-                                            addr.is_active === false 
-                                                ? 'bg-green-100 dark:bg-green-900/40' 
-                                                : 'bg-orange-100 dark:bg-orange-900/40'
-                                        }`}>
-                                            {addr.is_active === false ? <CheckCircle className="w-3.5 h-3.5" /> : <X className="w-3.5 h-3.5" />}
-                                        </div>
-                                        {addr.is_active === false ? 'Ativar Cartão' : 'Desativar Cartão'}
-                                    </button>
-                                )}
+                                    {(isElder || isServant) && (
+                                        <DropDownItem 
+                                            icon={addr.isActive === false ? CheckCircle : X} 
+                                            label={addr.isActive === false ? 'Ativar Cartão' : 'Desativar Cartão'} 
+                                            variant={addr.isActive === false ? 'success' : 'orange'} 
+                                            onClick={() => {
+                                                setConfirmModal({
+                                                    isOpen: true,
+                                                    title: addr.isActive === false ? "Reativar Endereço" : "Desativar Endereço",
+                                                    message: addr.isActive === false
+                                                        ? "Deseja reativar este endereço para que ele volte a aparecer nos links?"
+                                                        : "Deseja desativar este endereço temporariamente?",
+                                                    variant: addr.isActive === false ? 'info' : 'danger',
+                                                    confirmText: addr.isActive === false ? "Reativar" : "Desativar",
+                                                    cancelText: "Cancelar",
+                                                    onConfirm: () => {
+                                                        setConfirmModal(prev => ({ ...prev, isOpen: false }));
+                                                        handleToggleActive(addr);
+                                                    },
+                                                    onCancel: undefined
+                                                });
+                                                setOpenMenuId(null);
+                                            }} 
+                                        />
+                                    )}
 
-                                {(isElder || isServant) && (
-                                    <>
-                                        <div className="h-px bg-gray-100 dark:bg-gray-800/50 mx-2 my-1" />
-                                        <button
+                                    {(isElder || isServant) && (
+                                        <DropDownItem 
+                                            icon={Trash2} 
+                                            label="Excluir Definitivo" 
+                                            variant="danger" 
                                             onClick={() => {
                                                 handleDeleteAddress(addr.id);
                                                 setOpenMenuId(null);
-                                            }}
-                                            className="flex items-center gap-3 px-3 py-2 text-sm font-bold text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/30 rounded-xl transition-all w-full text-left group"
-                                        >
-                                            <div className="p-1 px-1.5 bg-red-100 dark:bg-red-900/40 rounded-lg group-hover:scale-110 transition-transform text-red-600">
-                                                <Trash2 className="w-3.5 h-3.5" />
-                                            </div>
-                                            Excluir Definitivo
-                                        </button>
-                                    </>
-                                )}
-                            </div>
+                                            }} 
+                                        />
+                                    )}
+                                </div>
+                            </>
                         )}
                     </div>
                 </div>
@@ -1175,17 +1107,17 @@ function AddressListContent() {
                                 subtitle: a.observations || '',
                                 variant: 'numbered' as const,
                                 index: idx + 1,
-                                residentName: a.resident_name,
+                                residentName: a.residentName,
                                 gender: a.gender,
-                                status: ((a as any).visit_status === 'contacted' ? 'OCUPADO' :
-                                    (a as any).visit_status === 'do_not_visit' ? 'NAO_VISITAR' :
-                                        (a as any).visit_status === 'moved' ? 'MUDOU' :
-                                            (a as any).visit_status === 'not_contacted' ? 'NAO_CONTATADO' : 'LIVRE') as MapItem['status'],
-                                lastVisit: a.last_visited_at && new Date(a.last_visited_at).toLocaleDateString(),
-                                isDeaf: a.is_deaf,
-                                isMinor: a.is_minor,
-                                isStudent: a.is_student,
-                                isNeurodivergent: a.is_neurodivergent
+                                status: (a.visitStatus === 'contacted' ? 'OCUPADO' :
+                                    a.visitStatus === 'doNotVisit' ? 'NAO_VISITAR' :
+                                        a.visitStatus === 'moved' ? 'MUDOU' :
+                                            a.visitStatus === 'notContacted' ? 'NAO_CONTATADO' : 'LIVRE') as MapItem['status'],
+                                lastVisit: a.lastVisitedAt && new Date(a.lastVisitedAt).toLocaleDateString(),
+                                isDeaf: a.isDeaf,
+                                isMinor: a.isMinor,
+                                isStudent: a.isStudent,
+                                isNeurodivergent: a.isNeurodivergent
                             })),
                             ...(isInactiveExpanded ? inactiveAddresses.map((a, idx) => ({
                                 id: a.id,
@@ -1196,17 +1128,17 @@ function AddressListContent() {
                                 subtitle: a.observations || '',
                                 variant: 'numbered' as const,
                                 index: activeAddresses.length + idx + 1,
-                                residentName: a.resident_name,
+                                residentName: a.residentName,
                                 gender: a.gender,
-                                status: ((a as any).visit_status === 'contacted' ? 'OCUPADO' :
-                                    (a as any).visit_status === 'do_not_visit' ? 'NAO_VISITAR' :
-                                        (a as any).visit_status === 'moved' ? 'MUDOU' :
-                                            (a as any).visit_status === 'not_contacted' ? 'NAO_CONTATADO' : 'LIVRE') as MapItem['status'],
-                                lastVisit: a.last_visited_at && new Date(a.last_visited_at).toLocaleDateString(),
-                                isDeaf: a.is_deaf,
-                                isMinor: a.is_minor,
-                                isStudent: a.is_student,
-                                isNeurodivergent: a.is_neurodivergent
+                                status: (a.visitStatus === 'contacted' ? 'OCUPADO' :
+                                    a.visitStatus === 'doNotVisit' ? 'NAO_VISITAR' :
+                                        a.visitStatus === 'moved' ? 'MUDOU' :
+                                            a.visitStatus === 'notContacted' ? 'NAO_CONTATADO' : 'LIVRE') as MapItem['status'],
+                                lastVisit: a.lastVisitedAt && new Date(a.lastVisitedAt).toLocaleDateString(),
+                                isDeaf: a.isDeaf,
+                                isMinor: a.isMinor,
+                                isStudent: a.isStudent,
+                                isNeurodivergent: a.isNeurodivergent
                             })) : [])
                         ]}
                         showLegend={false}

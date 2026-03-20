@@ -42,6 +42,7 @@ import ConfirmationModal from '@/app/components/ConfirmationModal';
 const TerritoryHistoryModal = dynamic(() => import('@/app/components/TerritoryHistoryModal'));
 const TerritoryAssignmentsModal = dynamic(() => import('@/app/components/TerritoryAssignmentsModal'));
 import AssignedUserBadge from '@/app/components/AssignedUserBadge';
+import DropDownItem from '@/app/components/DropDownItem';
 import {
     doc,
     getDoc,
@@ -68,9 +69,9 @@ interface Territory {
     id: string;
     name: string;
     notes?: string;
-    city_id: string;
-    congregation_id: string;
-    created_at?: string;
+    cityId: string;
+    congregationId: string;
+    createdAt?: string;
     lat?: number;
     lng?: number;
     status?: 'LIVRE' | 'OCUPADO';
@@ -173,7 +174,7 @@ function TerritoryListContent() {
             const congSnap = await getDoc(congRef);
             if (congSnap.exists()) {
                 const data = congSnap.data();
-                setLocalTermType((data.termType || data.term_type) as any || 'city');
+                setLocalTermType(data.termType as any || 'city');
             }
         };
         fetchSettings();
@@ -235,7 +236,7 @@ function TerritoryListContent() {
         if (congregationId && cityId) {
             const territoriesRef = collection(db, 'territories');
             const q = query(
-                territoriesRef, 
+                territoriesRef,
                 where('cityId', '==', cityId),
                 where('congregationId', '==', congregationId)
             );
@@ -272,16 +273,16 @@ function TerritoryListContent() {
             const searchIndex: Record<string, string> = {};
 
             addressesToProcess.forEach((addr: any) => {
-                if (addr.territory_id && addr.is_active !== false) {
-                    counts[addr.territory_id] = (counts[addr.territory_id] || 0) + 1;
+                if (addr.territoryId && addr.isActive !== false) {
+                    counts[addr.territoryId] = (counts[addr.territoryId] || 0) + 1;
 
-                    const searchString = `${addr.street || ''} ${addr.resident_name || ''} ${addr.observations || ''}`.toLowerCase();
-                    searchIndex[addr.territory_id] = (searchIndex[addr.territory_id] || '') + ' ' + searchString;
+                    const searchString = `${addr.street || ''} ${addr.residentName || ''} ${addr.observations || ''}`.toLowerCase();
+                    searchIndex[addr.territoryId] = (searchIndex[addr.territoryId] || '') + ' ' + searchString;
 
-                    if (addr.resident_gender || addr.gender) {
-                        const genderId = addr.territory_id;
+                    if (addr.residentGender || addr.gender) {
+                        const genderId = addr.territoryId;
                         if (!gStats[genderId]) gStats[genderId] = { men: 0, women: 0, couples: 0 };
-                        const g = (addr.resident_gender || addr.gender).toUpperCase();
+                        const g = (addr.residentGender || addr.gender).toUpperCase();
                         if (g === 'HOMEM' || g === 'MALE' || g === 'M') gStats[genderId].men++;
                         else if (g === 'MULHER' || g === 'FEMALE' || g === 'F') gStats[genderId].women++;
                         else if (g === 'CASAL' || g === 'COUPLE' || g === 'C') gStats[genderId].couples++;
@@ -319,7 +320,7 @@ function TerritoryListContent() {
         if (authLoading || !user) return;
         if (!congregationId) return;
 
-        const fetchSharedLists = async () => {
+        const fetchshared_lists = async () => {
             try {
                 const listsRef = collection(db, 'shared_lists');
                 const q = query(listsRef, where('congregationId', '==', congregationId));
@@ -337,8 +338,8 @@ function TerritoryListContent() {
                         if (list.status !== 'completed' && list.status !== 'archived') {
                             list.items.forEach((tId: string) => {
                                 sharedMap[tId] = true;
-                                const assignedName = list.assignedName || list.assigned_name;
-                                const assignedTo = list.assignedTo || list.assigned_to;
+                                const assignedName = list.assignedName;
+                                const assignedTo = list.assignedTo;
                                 if (assignedName && assignedTo) {
                                     if (!assignmentsMap[tId]) assignmentsMap[tId] = [];
                                     assignmentsMap[tId].push({
@@ -346,7 +347,7 @@ function TerritoryListContent() {
                                         listTitle: list.title,
                                         assignedName,
                                         assignedTo,
-                                        assignedAt: list.assignedAt || list.assigned_at
+                                        assignedAt: list.assignedAt
                                     });
                                 }
                             });
@@ -361,7 +362,7 @@ function TerritoryListContent() {
             }
         };
 
-        fetchSharedLists();
+        fetchshared_lists();
     }, [authLoading, user, congregationId]);
 
 
@@ -611,7 +612,7 @@ function TerritoryListContent() {
                                 <tbody className="divide-y divide-surface-border">
                                     {filteredTerritories.map(t => {
                                         const assignments = territoryAssignments[t.id] || [];
-                                        const territoryAddresses = allAddresses.filter(a => (a.territory_id === t.id) || (a.territoryId === t.id));
+                                        const territory_addresses = allAddresses.filter(a => a.territoryId === t.id);
                                         return (
                                             <Fragment key={t.id}>
                                                 <tr className="hover:bg-surface-highlight/50 transition-colors group bg-surface">
@@ -635,10 +636,10 @@ function TerritoryListContent() {
                                                             <div className="flex flex-col items-start min-w-0">
                                                                 <div className="font-bold text-main text-lg">{t.name}</div>
                                                                 <div className="text-xs text-muted font-medium">
-                                                                    {territoryAddresses.length > 0 ? (
+                                                                    {territory_addresses.length > 0 ? (
                                                                         <span className="flex items-center gap-1">
                                                                             <MapPin className="w-3 h-3" />
-                                                                            {territoryAddresses.length} endereço{territoryAddresses.length !== 1 ? 's' : ''}
+                                                                            {territory_addresses.length} endereço{territory_addresses.length !== 1 ? 's' : ''}
                                                                         </span>
                                                                     ) : (
                                                                         <span className="text-muted/50">Sem endereços</span>
@@ -668,13 +669,13 @@ function TerritoryListContent() {
                                                         </div>
                                                     </td>
                                                 </tr>
-                                                {territoryAddresses.length > 0 && (
+                                                {territory_addresses.length > 0 && (
                                                     <tr>
                                                         <td colSpan={3} className="p-0 border-b border-surface-border/50">
                                                             <div className="w-full">
                                                                 <table className="w-full text-xs bg-surface border-x border-b border-surface-border/50 shadow-sm first:border-t-0">
                                                                     <tbody className="divide-y divide-surface-border/50">
-                                                                        {territoryAddresses.map(addr => (
+                                                                        {territory_addresses.map(addr => (
                                                                             <tr key={addr.id} className="hover:bg-surface-highlight/30 transition-colors group/addr">
                                                                                 <td className="px-6 py-3 w-[50px]">
                                                                                     <input
@@ -689,20 +690,19 @@ function TerritoryListContent() {
                                                                                         <div className="flex items-center gap-2 min-w-0">
                                                                                             {/* Gender Mode - igual à tela de endereços */}
                                                                                             {addr.gender && (addr.gender === 'male' || addr.gender === 'HOMEM' || addr.gender === 'female' || addr.gender === 'MULHER' || addr.gender === 'CASAL') ? (
-                                                                                                <div className={`w-6 h-6 rounded-lg flex items-center justify-center shrink-0 shadow-sm border transition-colors ${
-                                                                                                    addr.gender === 'HOMEM' || addr.gender === 'male' ? 'bg-blue-100 text-blue-600 border-blue-200' :
-                                                                                                    addr.gender === 'MULHER' || addr.gender === 'female' ? 'bg-pink-100 text-pink-600 border-pink-200' :
-                                                                                                    addr.gender === 'CASAL' ? 'bg-purple-100 text-purple-600 border-purple-200' :
-                                                                                                    'bg-gray-100 text-gray-600 border-gray-200'
-                                                                                                }`}>
+                                                                                                <div className={`w-6 h-6 rounded-lg flex items-center justify-center shrink-0 shadow-sm border transition-colors ${addr.gender === 'HOMEM' || addr.gender === 'male' ? 'bg-blue-100 text-blue-600 border-blue-200' :
+                                                                                                        addr.gender === 'MULHER' || addr.gender === 'female' ? 'bg-pink-100 text-pink-600 border-pink-200' :
+                                                                                                            addr.gender === 'CASAL' ? 'bg-purple-100 text-purple-600 border-purple-200' :
+                                                                                                                'bg-gray-100 text-gray-600 border-gray-200'
+                                                                                                    }`}>
                                                                                                     {addr.gender === 'CASAL' ? (
                                                                                                         <div className="flex -space-x-1.5">
                                                                                                             <User className="w-3 h-3 fill-current" />
                                                                                                             <User className="w-3 h-3 fill-current" />
                                                                                                         </div>
-                                    ) : (
-                                        <User className="w-4 h-4 fill-current" />
-                                    )}
+                                                                                                    ) : (
+                                                                                                        <User className="w-4 h-4 fill-current" />
+                                                                                                    )}
                                                                                                 </div>
                                                                                             ) : (
                                                                                                 <div className="w-6 h-6 bg-surface-highlight rounded flex items-center justify-center shrink-0">
@@ -716,7 +716,7 @@ function TerritoryListContent() {
                                                                                                 {addr.number && <div className="text-muted text-xs">Nº {addr.number}</div>}
                                                                                                 {addr.complement && <div className="text-muted text-xs">{addr.complement}</div>}
                                                                                                 {addr.neighborhood && <div className="text-muted text-xs">{addr.neighborhood}</div>}
-                                                                                                
+
                                                                                                 {/* Tags/Labels alinhadas com o endereço - igual à tela de endereços */}
                                                                                                 <div className="flex gap-1 flex-wrap pt-1">
                                                                                                     {addr.isDeaf && (
@@ -765,67 +765,65 @@ function TerritoryListContent() {
                                                                                                             <MoreVertical className="w-3 h-3" />
                                                                                                         </button>
                                                                                                         {activeMenu === `addr-${addr.id}` && (
-                                                                                                            <div className="absolute right-0 top-full mt-1 bg-white dark:bg-slate-900 rounded-xl shadow-xl border border-surface-border dark:border-slate-700 p-1 z-[9999] min-w-[140px] animate-in fade-in zoom-in-95 duration-200" style={{ minWidth: '140px' }}>
-                                                                                                                {addr.googleMapsLink && (
-                                                                                                                    <a
-                                                                                                                        href={addr.googleMapsLink}
-                                                                                                                        target="_blank"
-                                                                                                                        rel="noopener noreferrer"
-                                                                                                                        onClick={() => setActiveMenu(null)}
-                                                                                                                        className="flex items-center gap-2 px-3 py-2 text-sm font-bold text-gray-600 dark:text-gray-300 hover:bg-primary-50 dark:hover:bg-primary-900/30 hover:text-primary-600 dark:hover:text-primary-400 rounded-lg transition-colors w-full text-left"
-                                                                                                                    >
-                                                                                                                        <MapIcon className="w-3 h-3" />
-                                                                                                                        Google Maps
-                                                                                                                    </a>
-                                                                                                                )}
-                                                                                                                {addr.wazeLink && (
-                                                                                                                    <a
-                                                                                                                        href={addr.wazeLink}
-                                                                                                                        target="_blank"
-                                                                                                                        rel="noopener noreferrer"
-                                                                                                                        onClick={() => setActiveMenu(null)}
-                                                                                                                        className="flex items-center gap-2 px-3 py-2 text-sm font-bold text-gray-600 dark:text-gray-300 hover:bg-primary-50 dark:hover:bg-primary-900/30 hover:text-primary-600 dark:hover:text-primary-400 rounded-lg transition-colors w-full text-left"
-                                                                                                                    >
-                                                                                                                        <Navigation className="w-3 h-3" />
-                                                                                                                        Waze
-                                                                                                                    </a>
-                                                                                                                )}
-                                                                                                                <button
-                                                                                                                    onClick={() => {
-                                                                                                                        setActiveMenu(null);
-                                                                                                                        // Abrir histórico do endereço (implementar se necessário)
-                                                                                                                        toast.info("Histórico do endereço em desenvolvimento");
-                                                                                                                    }}
-                                                                                                                    className="flex items-center gap-2 px-3 py-2 text-sm font-bold text-gray-600 dark:text-gray-300 hover:bg-purple-50 dark:hover:bg-purple-900/30 hover:text-purple-600 dark:hover:text-purple-400 rounded-lg transition-colors w-full text-left"
-                                                                                                                >
-                                                                                                                    <History className="w-3 h-3" />
-                                                                                                                    Histórico
-                                                                                                                </button>
-                                                                                                                {isServant && (
-                                                                                                                    <a
-                                                                                                                        href={`/my-maps/address?congregationId=${congregationId}&cityId=${cityId}&territoryId=${t.id}&edit=${addr.id}`}
-                                                                                                                        onClick={() => setActiveMenu(null)}
-                                                                                                                        className="flex items-center gap-2 px-3 py-2 text-sm font-bold text-gray-600 dark:text-gray-300 hover:bg-primary-50 dark:hover:bg-primary-900/30 hover:text-primary-600 dark:hover:text-primary-400 rounded-lg transition-colors w-full text-left"
-                                                                                                                    >
-                                                                                                                        <Pencil className="w-3 h-3" />
-                                                                                                                        Editar
-                                                                                                                    </a>
-                                                                                                                )}
-                                                                                                                {(isElder || isServant) && (
-                                                                                                                    <button
-                                                                                                                        onClick={() => {
-                                                                                                                            setActiveMenu(null);
-                                                                                                                            // Implementar exclusão/inativação do endereço
-                                                                                                                            toast.info("Exclusão de endereço em desenvolvimento");
-                                                                                                                        }}
-                                                                                                                        className="flex items-center gap-2 px-3 py-2 text-sm font-bold text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20 transition-colors w-full text-left"
-                                                                                                                    >
-                                                                                                                        <Trash2 className="w-3 h-3" />
-                                                                                                                        Excluir
-                                                                                                                    </button>
-                                                                                                                )}
-                                                                                                            </div>
-                                                                                                        )}
+                                                                            <>
+                                                                                <div className="fixed inset-0 z-40" onClick={() => setActiveMenu(null)} />
+                                                                                <div className="absolute right-0 top-full mt-2 w-48 bg-surface rounded-xl shadow-2xl border border-surface-border p-1 z-50 animate-in fade-in zoom-in-95 duration-200 origin-top-right">
+                                                                                    {addr.googleMapsLink && (
+                                                                                        <DropDownItem
+                                                                                            icon={MapIcon}
+                                                                                            label="Google Maps"
+                                                                                            variant="primary"
+                                                                                            onClick={() => {
+                                                                                                window.open(addr.googleMapsLink, '_blank');
+                                                                                                setActiveMenu(null);
+                                                                                            }}
+                                                                                        />
+                                                                                    )}
+                                                                                    {addr.wazeLink && (
+                                                                                        <DropDownItem
+                                                                                            icon={Navigation}
+                                                                                            label="Waze"
+                                                                                            variant="warning"
+                                                                                            onClick={() => {
+                                                                                                window.open(addr.wazeLink, '_blank');
+                                                                                                setActiveMenu(null);
+                                                                                            }}
+                                                                                        />
+                                                                                    )}
+                                                                                    <DropDownItem
+                                                                                        icon={History}
+                                                                                        label="Histórico"
+                                                                                        variant="indigo"
+                                                                                        onClick={() => {
+                                                                                            setActiveMenu(null);
+                                                                                            toast.info("Histórico do endereço em desenvolvimento");
+                                                                                        }}
+                                                                                    />
+                                                                                    {isServant && (
+                                                                                        <DropDownItem
+                                                                                            icon={Pencil}
+                                                                                            label="Editar"
+                                                                                            variant="neutral"
+                                                                                            onClick={() => {
+                                                                                                setActiveMenu(null);
+                                                                                                router.push(`/my-maps/address?congregationId=${congregationId}&cityId=${cityId}&territoryId=${t.id}&edit=${addr.id}`);
+                                                                                            }}
+                                                                                        />
+                                                                                    )}
+                                                                                    {(isElder || isServant) && (
+                                                                                        <DropDownItem
+                                                                                            icon={Trash2}
+                                                                                            label="Excluir"
+                                                                                            variant="danger"
+                                                                                            onClick={() => {
+                                                                                                setActiveMenu(null);
+                                                                                                toast.info("Exclusão de endereço em desenvolvimento");
+                                                                                            }}
+                                                                                        />
+                                                                                    )}
+                                                                                </div>
+                                                                            </>
+                                                                        )}
                                                                                                     </>
                                                                                                 ) : (
                                                                                                     // Para publicadores, apenas ícones simples
@@ -951,33 +949,45 @@ function TerritoryListContent() {
                                                         <MoreVertical className="w-4.5 h-4.5" />
                                                     </button>
                                                     {activeMenu === t.id && (
-                                                        <div className="absolute right-0 mt-2 w-48 bg-surface rounded-lg shadow-xl border border-surface-border z-50 py-2 animate-in fade-in zoom-in-95 duration-200">
-                                                            <Link href={`/my-maps/address?congregationId=${congregationId}&cityId=${cityId}&territoryId=${t.id}`} className="flex items-center gap-3 px-4 py-3 text-sm font-bold text-gray-700 dark:text-gray-300 hover:bg-primary-50 dark:hover:bg-primary-900/20 hover:text-primary-600 dark:hover:text-primary-400 transition-colors w-full text-left">
-                                                                <ArrowRight className="w-4 h-4" /> Abrir
-                                                            </Link>
-                                                            <button onClick={() => { setSelectedTerritoryForHistory({ id: t.id, name: t.name }); setActiveMenu(null); }} className="flex items-center gap-3 px-4 py-3 text-sm font-bold text-gray-700 dark:text-gray-300 hover:bg-primary-50 dark:hover:bg-primary-900/20 hover:text-primary-600 dark:hover:text-primary-400 transition-colors w-full text-left">
-                                                                <History className="w-4 h-4" /> Histórico
-                                                            </button>
-                                                            {(isAdmin || isServant) && (
-                                                                <button onClick={() => {
-                                                                    setEditingTerritory(t);
-                                                                    setEditName(t.name);
-                                                                    setEditDescription(t.notes || '');
-                                                                    setIsEditModalOpen(true);
-                                                                    setActiveMenu(null);
-                                                                }} className="flex items-center gap-3 px-4 py-3 text-sm font-bold text-gray-700 dark:text-gray-300 hover:bg-primary-50 dark:hover:bg-primary-900/20 hover:text-primary-600 dark:hover:text-primary-400 transition-colors w-full text-left">
-                                                                    <List className="w-4 h-4" /> Editar
-                                                                </button>
-                                                            )}
-                                                            {(isElder || isServant) && (
-                                                                <>
-                                                                    <div className="h-px bg-gray-100 dark:bg-gray-800 mx-2 my-1" />
-                                                                    <button onClick={() => { handleDeleteTerritory(t.id, t.name); setActiveMenu(null); }} className="flex items-center gap-3 px-4 py-3 text-sm font-bold text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20 transition-colors w-full text-left">
-                                                                        <Trash2 className="w-4 h-4" /> Excluir
-                                                                    </button>
-                                                                </>
-                                                            )}
-                                                        </div>
+                                                        <>
+                                                            <div className="fixed inset-0 z-40" onClick={() => setActiveMenu(null)} />
+                                                            <div className="absolute right-0 mt-2 w-52 bg-surface rounded-xl shadow-2xl border border-surface-border p-1 z-50 animate-in fade-in zoom-in-95 duration-200">
+                                                                <DropDownItem 
+                                                                    icon={ArrowRight} 
+                                                                    label="Abrir Território" 
+                                                                    variant="primary" 
+                                                                    onClick={() => router.push(`/my-maps/address?congregationId=${congregationId}&cityId=${cityId}&territoryId=${t.id}`)} 
+                                                                />
+                                                                <DropDownItem 
+                                                                    icon={History} 
+                                                                    label="Ver Histórico" 
+                                                                    variant="indigo" 
+                                                                    onClick={() => { setSelectedTerritoryForHistory({ id: t.id, name: t.name }); setActiveMenu(null); }} 
+                                                                />
+                                                                {(isAdmin || isServant) && (
+                                                                    <DropDownItem 
+                                                                        icon={Pencil} 
+                                                                        label="Editar Configurações" 
+                                                                        variant="neutral" 
+                                                                        onClick={() => {
+                                                                            setEditingTerritory(t);
+                                                                            setEditName(t.name);
+                                                                            setEditDescription(t.notes || '');
+                                                                            setIsEditModalOpen(true);
+                                                                            setActiveMenu(null);
+                                                                        }} 
+                                                                    />
+                                                                )}
+                                                                {(isElder || isServant) && (
+                                                                    <DropDownItem 
+                                                                        icon={Trash2} 
+                                                                        label="Excluir Território" 
+                                                                        variant="danger" 
+                                                                        onClick={() => { handleDeleteTerritory(t.id, t.name); setActiveMenu(null); }} 
+                                                                    />
+                                                                )}
+                                                            </div>
+                                                        </>
                                                     )}
                                                 </div>
                                             )}

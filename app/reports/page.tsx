@@ -99,9 +99,25 @@ export default function ReportsPage() {
                 if (!resData.success) throw new Error(resData.error || "Erro ao buscar dados do servidor");
 
                 const territories = resData.territories || [];
-                const history = resData.sharedLists || [];
+                const history = resData.shared_lists || [];
 
 
+
+                // --- AUXILIAR PARSE DATE ---
+                const parseDate = (d: any) => {
+                    if (!d) return null;
+                    try {
+                        // Handle Firestore Timestamp
+                        if (d && typeof d.toDate === 'function') return d.toDate();
+                        // Handle Seconds/Nanoseconds object
+                        if (d && typeof d.seconds === 'number') return new Date(d.seconds * 1000);
+                        // Handle String/Number
+                        const date = new Date(d);
+                        return isNaN(date.getTime()) ? null : date;
+                    } catch (e) {
+                        return null;
+                    }
+                };
 
                 // --- CALCULATE KPIS ---
 
@@ -114,22 +130,20 @@ export default function ReportsPage() {
 
                 // 1. From History
                 history.forEach((h: any) => {
-                    let d = h.returned_at ? new Date(h.returned_at) : null;
+                    let d = parseDate(h.returnedAt);
                     if (!d && h.status === 'completed') {
-                        d = new Date();
+                        d = new Date(); // Fallback to now if completed but no date recorded
                     }
                     if (d && d >= start && d <= end) {
-                        if (h.territory_id) workedMapIds.add(h.territory_id);
+                        if (h.territoryId) workedMapIds.add(h.territoryId);
                     }
                 });
 
                 // 2. From Manual Dates (Territories)
                 territories.forEach((t: any) => {
-                    if (t.manual_last_completed_date) {
-                        const d = new Date(t.manual_last_completed_date);
-                        if (d >= start && d <= end) {
-                            workedMapIds.add(t.id);
-                        }
+                    const d = parseDate(t.manualLastCompletedDate);
+                    if (d && d >= start && d <= end) {
+                        workedMapIds.add(t.id);
                     }
                 });
 
@@ -139,16 +153,19 @@ export default function ReportsPage() {
                 let totalDays = 0;
                 let completedCount = 0;
                 history.forEach((h: any) => {
-                    if (h.created_at && h.returned_at) {
-                        const start = new Date(h.created_at);
-                        const end = new Date(h.returned_at);
-                        const diffTime = Math.abs(end.getTime() - start.getTime());
-                        const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
-                        totalDays += diffDays;
-                        completedCount++;
+                    if (h.createdAt && h.returnedAt) {
+                        const start = parseDate(h.createdAt);
+                        const end = parseDate(h.returnedAt);
+                        
+                        if (start && end) {
+                            const diffTime = Math.abs(end.getTime() - start.getTime());
+                            const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+                            totalDays += diffDays;
+                            completedCount++;
+                        }
                     }
                 });
-                const avgRotationDays = completedCount > 0 ? Math.round(totalDays / completedCount) : 0;
+                const avgRotationDays = completedCount > 0 ? Math.round(totalDays / completedCount) : null;
 
                 // --- CHARTS (Monthly History) ---
                 const months = ['Jan', 'Fev', 'Mar', 'Abr', 'Mai', 'Jun', 'Jul', 'Ago', 'Set', 'Out', 'Nov', 'Dez'];
@@ -168,9 +185,9 @@ export default function ReportsPage() {
                 }
 
                 history.forEach((h: any) => {
-                    if (h.returned_at) {
-                        const date = new Date(h.returned_at);
-                        if (date >= syStart && date <= (current > now ? now : syEnd)) {
+                    if (h.returnedAt) {
+                        const date = parseDate(h.returnedAt);
+                        if (date && date >= syStart && date <= (current > now ? now : syEnd)) {
                             const key = months[date.getMonth()];
                             if (monthCounts[key] !== undefined) {
                                 monthCounts[key]++;
@@ -192,25 +209,28 @@ export default function ReportsPage() {
 
                 territories.forEach((t: any) => {
                     // 1. Get last completion date (manual or history)
-                    let lastTouch = t.manual_last_completed_date ? new Date(t.manual_last_completed_date) : new Date(0);
+                    let lastTouch = parseDate(t.manualLastCompletedDate) || new Date(0);
 
                     // 2. Find relevant history for this territory
-                    const tHistory = history.filter((h: any) => h.territory_id === t.id || (h.items && h.items.includes(t.id)));
+                    const tHistory = history.filter((h: any) => h.territoryId === t.id || (h.items && h.items.includes(t.id)));
 
                     let activeAssign: any = null;
                     tHistory.forEach((h: any) => {
-                        const d = h.returned_at ? new Date(h.returned_at) : null;
+                        const d = parseDate(h.returnedAt);
                         if (d && d > lastTouch) lastTouch = d;
 
                         if (h.status !== 'completed' && h.status !== 'expired') {
-                            if (!activeAssign || new Date(h.created_at) > new Date(activeAssign.created_at)) {
+                            const hCreateDate = parseDate(h.createdAt);
+                            const activeCreateDate = activeAssign ? parseDate(activeAssign.createdAt) : null;
+                            
+                            if (!activeAssign || (hCreateDate && activeCreateDate && hCreateDate > activeCreateDate)) {
                                 activeAssign = h;
                             }
                         }
                     });
 
                     // The reference date is the assignment date if it's out, or the last completion if it's in
-                    const referenceDate = activeAssign ? new Date(activeAssign.created_at) : lastTouch;
+                    const referenceDate = activeAssign ? (parseDate(activeAssign.createdAt) || lastTouch) : lastTouch;
                     const diffTime = Math.abs(new Date().getTime() - referenceDate.getTime());
                     const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
 
@@ -219,7 +239,7 @@ export default function ReportsPage() {
                             name: t.name,
                             description: t.notes || '',
                             days: diffDays,
-                            assignee: activeAssign ? (activeAssign.assigned_name || 'Publicador') : 'Disponível'
+                            assignee: activeAssign ? (activeAssign.assignedName || 'Publicador') : 'Disponível'
                         });
                     }
                 });
@@ -254,8 +274,8 @@ export default function ReportsPage() {
                 const visitsQuery = query(
                     visitsRef,
                     where('congregationId', '==', targetCongId),
-                    where('date', '>=', syStart.toISOString()),
-                    where('date', '<=', syEnd.toISOString())
+                    where('visitDate', '>=', syStart.toISOString()),
+                    where('visitDate', '<=', syEnd.toISOString())
                 );
 
                 const visitsSnap = await getDocs(visitsQuery);
@@ -266,7 +286,7 @@ export default function ReportsPage() {
                 let nightArr = { total: 0, found: 0 };
 
                 visits.forEach((v: any) => {
-                    const date = new Date(v.date);
+                    const date = new Date(v.visitDate);
                     const hour = date.getHours();
                     const minute = date.getMinutes();
                     const totalMinutes = hour * 60 + minute;
@@ -421,8 +441,10 @@ export default function ReportsPage() {
                                     <Clock className="w-5 h-5" />
                                     {kpis.avgRotationDays > 120 && <AlertTriangle className="w-4 h-4" />}
                                 </div>
-                                <p className={`text-xl sm:text-3xl font-black mb-1 ${kpis.avgRotationDays > 120 ? 'text-red-900 dark:text-red-100' : 'text-main'}`}>{kpis.avgRotationDays}</p>
-                                <p className={`text-[8px] sm:text-[10px] font-bold uppercase tracking-widest text-center ${kpis.avgRotationDays > 120 ? 'text-red-400 dark:text-red-300' : 'text-muted'}`}>Giro (Dias)</p>
+                                <p className={`text-xl sm:text-3xl font-black mb-1 ${kpis.avgRotationDays && kpis.avgRotationDays > 120 ? 'text-red-900 dark:text-red-100' : 'text-main'}`}>
+                                    {kpis.avgRotationDays === null ? '-' : kpis.avgRotationDays}
+                                </p>
+                                <p className={`text-[8px] sm:text-[10px] font-bold uppercase tracking-widest text-center ${kpis.avgRotationDays && kpis.avgRotationDays > 120 ? 'text-red-400 dark:text-red-300' : 'text-muted'}`}>Giro (Dias)</p>
                             </div>
                         </div>
 

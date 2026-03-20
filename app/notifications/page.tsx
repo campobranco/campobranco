@@ -35,10 +35,7 @@ export default function NotificationsPage() {
                 const listsRef = collection(db, 'shared_lists');
                 const q = query(
                     listsRef,
-                    or(
-                        where('assignedTo', '==', user.uid),
-                        where('assigned_to', '==', user.uid)
-                    )
+                    where('assignedTo', '==', user.uid)
                 );
 
                 const querySnapshot = await getDocs(q);
@@ -49,14 +46,14 @@ export default function NotificationsPage() {
                 setPendingMapsCount(lists.length);
 
                 const expiring = lists.filter((l: any) => {
-                    if (!l.expiresAt && !l.expires_at) return false;
-                    const expires = new Date(l.expiresAt || l.expires_at);
+                    if (!l.expiresAt) return false;
+                    const expires = new Date(l.expiresAt);
                     const now = new Date();
                     const diffMs = expires.getTime() - now.getTime();
                     const diffDays = Math.ceil(diffMs / (1000 * 60 * 60 * 24));
                     return diffDays > 0 && diffDays <= 10;
                 }).map((l: any) => {
-                    const expires = new Date(l.expiresAt || l.expires_at);
+                    const expires = new Date(l.expiresAt);
                     const now = new Date();
                     const diffMs = expires.getTime() - now.getTime();
                     const diffDays = Math.ceil(diffMs / (1000 * 60 * 60 * 24));
@@ -80,10 +77,7 @@ export default function NotificationsPage() {
             try {
                 // Fetch Territories - restricted to congregation
                 const terrRef = collection(db, 'territories');
-                const qTerr = query(terrRef, or(
-                    where('congregationId', '==', congregationId),
-                    where('congregation_id', '==', congregationId)
-                ));
+                const qTerr = query(terrRef, where('congregationId', '==', congregationId));
                 const terrSnap = await getDocs(qTerr);
                 const territories = terrSnap.docs.map(doc => ({ id: doc.id, ...doc.data() }));
 
@@ -92,10 +86,7 @@ export default function NotificationsPage() {
                 if (mapsCount > 0) {
                     // 1. Get ALL shared lists history - restricted to congregation
                     const listsRef = collection(db, 'shared_lists');
-                    const qLists = query(listsRef, or(
-                        where('congregationId', '==', congregationId),
-                        where('congregation_id', '==', congregationId)
-                    ));
+                    const qLists = query(listsRef, where('congregationId', '==', congregationId));
                     const listsSnap = await getDocs(qLists);
                     const history = listsSnap.docs.map(doc => ({ id: doc.id, ...doc.data() as any }));
 
@@ -105,8 +96,8 @@ export default function NotificationsPage() {
 
                     history?.forEach(item => {
                         const datesToCheck: number[] = [];
-                        const createdAt = item.createdAt || item.created_at;
-                        const returnedAt = item.returnedAt || item.returned_at;
+                        const createdAt = item.createdAt;
+                        const returnedAt = item.returnedAt;
 
                         if (createdAt) {
                             const d = createdAt.toDate ? createdAt.toDate().getTime() : new Date(createdAt).getTime();
@@ -125,7 +116,7 @@ export default function NotificationsPage() {
                         };
 
                         // Support both single territory and collections (items array)
-                        const tId = item.territoryId || item.territory_id;
+                        const tId = item.territoryId;
                         if (tId) updateMap(tId);
                         if (item.items && Array.isArray(item.items)) {
                             item.items.forEach((id: string) => updateMap(id));
@@ -141,10 +132,7 @@ export default function NotificationsPage() {
 
                     // Fetch Cities for names - restricted to congregation
                     const citiesRef = collection(db, 'cities');
-                    const qCities = query(citiesRef, or(
-                        where('congregationId', '==', congregationId),
-                        where('congregation_id', '==', congregationId)
-                    ));
+                    const qCities = query(citiesRef, where('congregationId', '==', congregationId));
                     const citiesSnap = await getDocs(qCities);
 
                     const cityMap: Record<string, string> = {};
@@ -164,7 +152,7 @@ export default function NotificationsPage() {
 
                         const historyActivity = latestActivityMap.get(t.id) || 0;
                         const lastActivityDate = historyActivity > 0 ? new Date(historyActivity) : null;
-                        const cityName = cityMap[t.cityId || t.city_id] || t.city || 'Cidade Desconhecida';
+                        const cityName = cityMap[t.cityId] || t.city || 'Cidade Desconhecida';
 
                         if (!lastActivityDate) {
                             idleList.push({
@@ -172,8 +160,8 @@ export default function NotificationsPage() {
                                 name: t.name || 'Sem Nome',
                                 description: t.notes || '',
                                 city: cityName,
-                                cityId: t.cityId || t.city_id,
-                                congregationId: t.congregationId || t.congregation_id,
+                                cityId: t.cityId,
+                                congregationId: t.congregationId,
                                 lastVisit: null,
                                 variant: 'danger'
                             });
@@ -183,8 +171,8 @@ export default function NotificationsPage() {
                                 name: t.name || 'Sem Nome',
                                 description: t.notes || '',
                                 city: cityName,
-                                cityId: t.cityId || t.city_id,
-                                congregationId: t.congregationId || t.congregation_id,
+                                cityId: t.cityId,
+                                congregationId: t.congregationId,
                                 lastVisit: lastActivityDate,
                                 variant: 'warning'
                             });

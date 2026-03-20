@@ -9,11 +9,15 @@ import {
     Copy,
     Share2,
     Download,
-    FileSpreadsheet
+    FileSpreadsheet,
+    UserMinus,
+    History as HistoryIcon,
+    Trash2
 } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import { toast } from 'sonner';
 import CSVImportModal from './CSVImportModal';
+import DropDownItem from './DropDownItem';
 import { exportDataToCSV } from '@/lib/services/export';
 
 
@@ -107,7 +111,7 @@ export default function AddressActionsMenu({
 
     const downloadTemplate = () => {
         const header = "Cidade;UF;Número do Mapa;Descrição;Endereço;Quantidade de residentes;Nome;Link do Maps;Link do Waze;Status;Surdo;Menor de idade;Estudante;Neurodivergente;Gênero;Observações;Resultado da ultima visita;Ordem na listagem";
-        const example = "Catanduva;SP;01;Centro;Rua Álamo, 225;1;João Silva;https://maps.google.com/...;https://waze.com/...;true;false;false;false;false;Homem;Exemplo de observação;not_contacted;0";
+        const example = "Catanduva;SP;01;Centro;Rua Álamo, 225;1;João Silva;https://maps.google.com/...;https://waze.com/...;true;false;false;false;false;Homem;Exemplo de observação;notContacted;0";
         const csvContent = "\ufeff" + [header, example].join('\n');
 
         const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
@@ -149,35 +153,24 @@ export default function AddressActionsMenu({
                              <p className="text-[10px] font-black text-muted uppercase tracking-[0.15em] opacity-50">Distribuição</p>
                         </div>
 
-                        <button
-                            onClick={handleOpenShareSetup}
-                            className="flex items-center gap-3 px-3 py-2.5 text-sm font-bold text-gray-700 dark:text-gray-300 hover:bg-green-50 dark:hover:bg-green-900/20 hover:text-green-600 dark:hover:text-green-400 transition-all w-full text-left rounded-xl group"
-                        >
-                            <div className="p-1.5 bg-green-100 dark:bg-green-900/30 rounded-lg group-hover:scale-110 transition-transform">
-                                <ExternalLink className="w-4 h-4" />
-                            </div>
-                            Abrir
-                        </button>
-
-                        <button
-                            onClick={handleCopyLink}
-                            className="flex items-center gap-3 px-3 py-2.5 text-sm font-bold text-gray-700 dark:text-gray-300 hover:bg-blue-50 dark:hover:bg-blue-900/20 hover:text-blue-600 dark:hover:text-blue-400 transition-all w-full text-left rounded-xl group"
-                        >
-                            <div className="p-1.5 bg-blue-100 dark:bg-blue-900/30 rounded-lg group-hover:scale-110 transition-transform">
-                                <Copy className="w-4 h-4" />
-                            </div>
-                            Copiar
-                        </button>
-
-                        <button
-                            onClick={handleNativeShare}
-                            className="flex items-center gap-3 px-3 py-2.5 text-sm font-bold text-gray-700 dark:text-gray-300 hover:bg-emerald-50 dark:hover:bg-emerald-900/20 hover:text-emerald-600 dark:hover:text-emerald-400 transition-all w-full text-left rounded-xl group"
-                        >
-                            <div className="p-1.5 bg-emerald-100 dark:bg-emerald-900/30 rounded-lg group-hover:scale-110 transition-transform">
-                                <Share2 className="w-4 h-4" />
-                            </div>
-                            Compartilhar
-                        </button>
+                        <DropDownItem 
+                            icon={ExternalLink} 
+                            label="Abrir" 
+                            variant="success" 
+                            onClick={handleOpenShareSetup} 
+                        />
+                        <DropDownItem 
+                            icon={Copy} 
+                            label="Copiar Link" 
+                            variant="primary" 
+                            onClick={handleCopyLink} 
+                        />
+                        <DropDownItem 
+                            icon={Share2} 
+                            label="Compartilhar" 
+                            variant="success" 
+                            onClick={handleNativeShare} 
+                        />
                     </div>
                 )}
             </div>
@@ -210,38 +203,27 @@ export default function AddressActionsMenu({
                              <p className="text-[10px] font-black text-muted uppercase tracking-[0.15em] opacity-50">Dados & CSV</p>
                         </div>
 
-                        <button
+                        <DropDownItem 
+                            icon={Upload} 
+                            label="Importar CSV" 
+                            variant="primary" 
                             onClick={() => {
                                 setIsImportModalOpen(true);
                                 setIsCSVMenuOpen(false);
-                            }}
-                            className="flex items-center gap-3 px-3 py-2.5 text-sm font-bold text-gray-700 dark:text-gray-300 hover:bg-blue-50 dark:hover:bg-blue-900/20 hover:text-blue-600 dark:hover:text-blue-400 transition-all w-full text-left rounded-xl group"
-                        >
-                            <div className="p-1.5 bg-blue-100 dark:bg-blue-900/30 rounded-lg group-hover:scale-110 transition-transform">
-                                <Upload className="w-4 h-4" />
-                            </div>
-                            Importar CSV
-                        </button>
-
-                        <button
-                            onClick={handleExport}
-                            className="flex items-center gap-3 px-3 py-2.5 text-sm font-bold text-gray-700 dark:text-gray-300 hover:bg-purple-50 dark:hover:bg-purple-900/20 hover:text-purple-600 dark:hover:text-purple-400 transition-all w-full text-left rounded-xl group"
-                        >
-                            <div className="p-1.5 bg-purple-100 dark:bg-purple-900/30 rounded-lg group-hover:scale-110 transition-transform">
-                                <Download className="w-4 h-4" />
-                            </div>
-                            Exportar para CSV
-                        </button>
-
-                        <button
-                            onClick={downloadTemplate}
-                            className="flex items-center gap-3 px-3 py-2.5 text-sm font-bold text-gray-700 dark:text-gray-300 hover:bg-emerald-50 dark:hover:bg-emerald-900/20 hover:text-emerald-600 dark:hover:text-emerald-400 transition-all w-full text-left rounded-xl group"
-                        >
-                            <div className="p-1.5 bg-emerald-100 dark:bg-emerald-900/30 rounded-lg group-hover:scale-110 transition-transform">
-                                <FileSpreadsheet className="w-4 h-4" />
-                            </div>
-                            Planilha Modelo
-                        </button>
+                            }} 
+                        />
+                        <DropDownItem 
+                            icon={Download} 
+                            label="Exportar para CSV" 
+                            variant="indigo" 
+                            onClick={handleExport} 
+                        />
+                        <DropDownItem 
+                            icon={FileSpreadsheet} 
+                            label="Planilha Modelo" 
+                            variant="success" 
+                            onClick={downloadTemplate} 
+                        />
                     </div>
                 )}
             </div>

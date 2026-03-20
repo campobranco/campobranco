@@ -18,8 +18,8 @@ export async function exportDataToCSV(congregationId: string, cityId?: string | 
         const addrSnap = await getDocs(addrQuery);
         const addresses = addrSnap.docs.map(doc => ({ id: doc.id, ...doc.data() }));
 
-        const territoryIds = Array.from(new Set(addresses.map((a: any) => a.territoryId || a.territory_id).filter(Boolean)));
-        const cityIds = Array.from(new Set(addresses.map((a: any) => a.cityId || a.city_id).filter(Boolean)));
+        const territoryIds = Array.from(new Set(addresses.map((a: any) => a.territoryId).filter(Boolean)));
+        const cityIds = Array.from(new Set(addresses.map((a: any) => a.cityId).filter(Boolean)));
 
         const territoryMap: Record<string, any> = {};
         const cityMap: Record<string, any> = {};
@@ -43,8 +43,8 @@ export async function exportDataToCSV(congregationId: string, cityId?: string | 
         ];
 
         const rows = addresses.map((addr: any) => {
-            const city = cityMap[addr.cityId || addr.city_id] || { name: '', uf: '' };
-            const territory = territoryMap[addr.territoryId || addr.territory_id] || { name: '', notes: '' };
+            const city = cityMap[addr.cityId] || { name: '', uf: '' };
+            const territory = territoryMap[addr.territoryId] || { name: '', notes: '' };
 
             return [
                 city.name || '',
@@ -52,19 +52,19 @@ export async function exportDataToCSV(congregationId: string, cityId?: string | 
                 territory.name || '',
                 territory.notes || '',
                 addr.street || '',
-                addr.residentsCount || addr.residents_count || 1,
-                addr.residentName || addr.resident_name || '',
-                addr.googleMapsLink || addr.google_maps_link || '',
-                addr.wazeLink || addr.waze_link || '',
-                (addr.isActive ?? addr.is_active) !== false ? 'true' : 'false',
-                (addr.isDeaf ?? addr.is_deaf) ? 'true' : 'false',
-                (addr.isMinor ?? addr.is_minor) ? 'true' : 'false',
-                (addr.isStudent ?? addr.is_student) ? 'true' : 'false',
+                addr.residentsCount || 1,
+                addr.residentName || '',
+                addr.googleMapsLink || '',
+                addr.wazeLink || '',
+                (addr.isActive ?? true) ? 'true' : 'false',
+                addr.isDeaf ? 'true' : 'false',
+                addr.isMinor ? 'true' : 'false',
+                addr.isStudent ? 'true' : 'false',
                 addr.isNeurodivergent ? 'true' : 'false',
                 addr.gender || '',
                 addr.observations || addr.notes || '',
-                addr.lastVisitResult || addr.last_visit_result || '',
-                addr.sortOrder || addr.sort_order || 0
+                addr.lastVisitResult || '',
+                addr.sortOrder || 0
             ];
         });
 

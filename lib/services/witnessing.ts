@@ -12,10 +12,9 @@ import {
     deleteDoc, 
     query, 
     where, 
-    serverTimestamp,
-    orderBy 
+    serverTimestamp
 } from 'firebase/firestore';
-import { db, auth } from '@/lib/firebase';
+import { db } from '@/lib/firebase';
 
 const TABLE = 'witnessing_points';
 
@@ -29,16 +28,7 @@ export async function getWitnessingPoints(cityId: string) {
             where('cityId', '==', cityId)
         );
 
-        let snapshot = await getDocs(q);
-
-        if (snapshot.empty) {
-            // Retrocompatibilidade: busca por city_id se cityId falhar
-            const qLegacy = query(
-                collection(db, TABLE),
-                where('city_id', '==', cityId)
-            );
-            snapshot = await getDocs(qLegacy);
-        }
+        const snapshot = await getDocs(q);
 
         const data = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
 
@@ -130,24 +120,6 @@ export async function updateWitnessingPointDetails(id: string, data: {
     } catch (error: any) {
         console.error('Error updating point details:', error);
         return { success: false, error: error.message || 'Failed to update point' };
-    }
-}
-
-/**
- * Atualiza status (ocupado/vago) e publicadores no carrinho
- */
-export async function updateWitnessingPointStatus(id: string, status: string, publishersAsString: string | null) {
-    try {
-        await updateDoc(doc(db, TABLE, id), {
-            status,
-            currentPublishers: publishersAsString ? [publishersAsString] : [],
-            updatedAt: serverTimestamp()
-        });
-
-        return { success: true };
-    } catch (error: any) {
-        console.error('Error updating witnessing point status:', error);
-        return { success: false, error: error.message || 'Failed to update status' };
     }
 }
 

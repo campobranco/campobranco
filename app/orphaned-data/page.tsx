@@ -89,9 +89,9 @@ export default function OrphanedDataPage() {
                 validAddressIds.add(id);
 
                 const missing = [];
-                const cId = data.congregationId || data.congregation_id;
-                const cityId = data.cityId || data.city_id;
-                const tId = data.territoryId || data.territory_id;
+                const cId = data.congregationId;
+                const cityId = data.cityId;
+                const tId = data.territoryId;
 
                 if (!cId) missing.push('Congregação');
                 else if (!validCongIds.has(cId)) missing.push('Congregação Inválida');
@@ -119,8 +119,8 @@ export default function OrphanedDataPage() {
                 const data = docSnap.data();
                 const id = docSnap.id;
                 const missing = [];
-                const cityId = data.cityId || data.city_id;
-                const cId = data.congregationId || data.congregation_id;
+                const cityId = data.cityId;
+                const cId = data.congregationId;
 
                 if (!cityId) missing.push('Cidade');
                 else if (!validCityIds.has(cityId)) missing.push('Cidade Inválida');
@@ -145,8 +145,8 @@ export default function OrphanedDataPage() {
                 const data = docSnap.data();
                 const id = docSnap.id;
                 const missing = [];
-                const cId = data.congregationId || data.congregation_id;
-                const cityId = data.cityId || data.city_id;
+                const cId = data.congregationId;
+                const cityId = data.cityId;
 
                 if (!cId) missing.push('Congregação');
                 else if (!validCongIds.has(cId)) missing.push('Congregação Inválida');
@@ -171,7 +171,7 @@ export default function OrphanedDataPage() {
                 const data = docSnap.data();
                 const id = docSnap.id;
                 const missing = [];
-                const cId = data.congregationId || data.congregation_id;
+                const cId = data.congregationId;
 
                 if (!cId) missing.push('Congregação');
                 else if (!validCongIds.has(cId)) missing.push('Congregação Inválida');
@@ -194,8 +194,8 @@ export default function OrphanedDataPage() {
                 const data = docSnap.data();
                 const id = docSnap.id;
                 const missing = [];
-                const cId = data.congregationId || data.congregation_id;
-                const aId = data.addressId || data.address_id;
+                const cId = data.congregationId;
+                const aId = data.addressId;
 
                 if (cId && !validCongIds.has(cId)) {
                     missing.push('Congregação Inválida');
@@ -208,7 +208,7 @@ export default function OrphanedDataPage() {
                     newOrphans.push({
                         id,
                         type: 'visit',
-                        name: 'Visita de ' + (data.userName || data.user_name || 'Desconhecido'),
+                        name: 'Visita de ' + (data.userName || 'Desconhecido'),
                         details: data.date ? (data.date.toDate ? data.date.toDate().toLocaleDateString() : new Date(data.date).toLocaleDateString()) : 'Sem Data',
                         missing,
                         data
@@ -241,9 +241,9 @@ export default function OrphanedDataPage() {
             const isCityInvalid = fixingItem.missing.some(m => m.includes('Cidade'));
             const isTerrInvalid = fixingItem.missing.some(m => m.includes('Território'));
 
-            setSelCong(isCongInvalid ? '' : (fixingItem.data.congregationId || fixingItem.data.congregation_id || ''));
-            setSelCity(isCityInvalid ? '' : (fixingItem.data.cityId || fixingItem.data.city_id || ''));
-            setSelTerr(isTerrInvalid ? '' : (fixingItem.data.territoryId || fixingItem.data.territory_id || ''));
+            setSelCong(isCongInvalid ? '' : (fixingItem.data.congregationId || ''));
+            setSelCity(isCityInvalid ? '' : (fixingItem.data.cityId || ''));
+            setSelTerr(isTerrInvalid ? '' : (fixingItem.data.territoryId || ''));
 
             setEditName(fixingItem.name || '');
             setEditDetails(fixingItem.details || '');

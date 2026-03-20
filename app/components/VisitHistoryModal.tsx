@@ -62,23 +62,10 @@ export default function VisitHistoryModal({ addressId, onClose, address, isShare
                     ...d.data()
                 }));
 
-                // Fallback para campos snake_case legado
-                if (rawVisits.length === 0) {
-                    const qLegacy = query(
-                        visitsRef,
-                        where('address_id', '==', addressId)
-                    );
-                    const snapshotLegacy = await getDocs(qLegacy);
-                    rawVisits = snapshotLegacy.docs.map(d => ({
-                        id: d.id,
-                        ...d.data()
-                    }));
-                }
-
                 // Ordenação local descente por data da visita
                 rawVisits.sort((a: any, b: any) => {
-                    const dateA = new Date(a.visitDate || a.visit_date || 0).getTime();
-                    const dateB = new Date(b.visitDate || b.visit_date || 0).getTime();
+                    const dateA = new Date(a.visitDate || 0).getTime();
+                    const dateB = new Date(b.visitDate || 0).getTime();
                     return dateB - dateA;
                 });
 
@@ -86,7 +73,7 @@ export default function VisitHistoryModal({ addressId, onClose, address, isShare
                 rawVisits = rawVisits.slice(0, 50);
 
                 // Busca nomes reais para os usuários de forma otimizada
-                const userIds = Array.from(new Set(rawVisits.map((v: any) => v.userId || v.user_id).filter(id => id)));
+                const userIds = Array.from(new Set(rawVisits.map((v: any) => v.userId).filter(id => id)));
                 const userNamesMap = new Map<string, string>();
 
                 if (userIds.length > 0) {
@@ -103,9 +90,9 @@ export default function VisitHistoryModal({ addressId, onClose, address, isShare
 
                 const mergedVisits = rawVisits.map((v: any) => ({
                     ...v,
-                    displayName: userNamesMap.get(v.userId || v.user_id) || v.publisherName || v.publisher_name || 'Publicador',
-                    visitDate: v.visitDate || v.visit_date,
-                    tagsSnapshot: v.tagsSnapshot || v.tags_snapshot
+                    displayName: userNamesMap.get(v.userId) || v.publisherName || 'Publicador',
+                    visitDate: v.visitDate,
+                    tagsSnapshot: v.tagsSnapshot
                 }));
 
                 setVisits(mergedVisits);
@@ -122,9 +109,9 @@ export default function VisitHistoryModal({ addressId, onClose, address, isShare
     const getStatusIcon = (status: string) => {
         switch (status) {
             case 'contacted': return <ThumbsUp className="w-4 h-4 text-green-600" />;
-            case 'not_contacted': return <ThumbsDown className="w-4 h-4 text-red-600" />;
+            case 'notContacted': return <ThumbsDown className="w-4 h-4 text-red-600" />;
             case 'moved': return <Home className="w-4 h-4 text-blue-600" />;
-            case 'do_not_visit': return <Hand className="w-4 h-4 text-red-600" />;
+            case 'doNotVisit': return <Hand className="w-4 h-4 text-red-600" />;
             default: return <div className="w-4 h-4 bg-gray-200 rounded-full" />;
         }
     };
@@ -132,9 +119,9 @@ export default function VisitHistoryModal({ addressId, onClose, address, isShare
     const getStatusLabel = (status: string) => {
         switch (status) {
             case 'contacted': return 'Contatado';
-            case 'not_contacted': return 'Não Contatado';
+            case 'notContacted': return 'Não Contatado';
             case 'moved': return 'Mudou-se';
-            case 'do_not_visit': return 'Não Visitar';
+            case 'doNotVisit': return 'Não Visitar';
             default: return status;
         }
     };
@@ -174,13 +161,13 @@ export default function VisitHistoryModal({ addressId, onClose, address, isShare
                                             <p className="font-bold text-gray-900 dark:text-white text-sm">{getStatusLabel(visit.status)}</p>
                                             <div className="flex flex-wrap gap-1 mt-0.5">
                                                 <p className="text-xs text-gray-500 dark:text-gray-400 mr-2">
-                                                    {visit.visit_date ? new Date(visit.visit_date).toLocaleDateString() : 'Data desconhecida'}
+                                                    {visit.visitDate ? new Date(visit.visitDate).toLocaleDateString() : 'Data desconhecida'}
                                                 </p>
                                                 {/* Tags Snapshot Display */}
-                                                {visit.tags_snapshot?.isDeaf && <span title="Surdo"><Ear className="w-3 h-3 text-yellow-600 dark:text-yellow-400" /></span>}
-                                                {visit.tags_snapshot?.isMinor && <span title="Menor"><Baby className="w-3 h-3 text-primary dark:text-blue-400" /></span>}
-                                                {visit.tags_snapshot?.isStudent && <span title="Estudante"><GraduationCap className="w-3 h-3 text-purple-600 dark:text-purple-400" /></span>}
-                                                {visit.tags_snapshot?.isNeurodivergent && <span title="Neurodivergente"><Brain className="w-3 h-3 text-teal-600 dark:text-teal-400" /></span>}
+                                                {visit.tagsSnapshot?.isDeaf && <span title="Surdo"><Ear className="w-3 h-3 text-yellow-600 dark:text-yellow-400" /></span>}
+                                                {visit.tagsSnapshot?.isMinor && <span title="Menor"><Baby className="w-3 h-3 text-primary dark:text-blue-400" /></span>}
+                                                {visit.tagsSnapshot?.isStudent && <span title="Estudante"><GraduationCap className="w-3 h-3 text-purple-600 dark:text-purple-400" /></span>}
+                                                {visit.tagsSnapshot?.isNeurodivergent && <span title="Neurodivergente"><Brain className="w-3 h-3 text-teal-600 dark:text-teal-400" /></span>}
                                             </div>
                                         </div>
                                     </div>

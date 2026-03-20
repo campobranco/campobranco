@@ -9,7 +9,7 @@ import SimulationBanner from './components/SimulationBanner';
 import FloatingReportButton from './components/FloatingReportButton';
 import CookieBanner from './components/CookieBanner';
 import PreviewIndicator from './components/PreviewIndicator';
-import { APP_VERSION } from '@/lib/version';
+import { appVersion } from '@/lib/version';
 import { Toaster } from 'sonner';
 
 
@@ -63,21 +63,15 @@ export default function RootLayout({
   return (
     <html lang="pt-BR" suppressHydrationWarning={true}>
       <head>
+        <meta charSet="utf-8" />
         <script dangerouslySetInnerHTML={{
           __html: `
-          // Redirecionamento de legado opcional
-          const legacyHost = "${process.env.NEXT_PUBLIC_LEGACY_HOST || ''}";
-          const targetUrl = "${process.env.NEXT_PUBLIC_APP_URL || ''}";
-          if (legacyHost && targetUrl && typeof window !== 'undefined' && window.location.hostname === legacyHost) {
-            window.location.replace(targetUrl + window.location.pathname + window.location.search + window.location.hash);
-          }
-
           // Injetando versão do app para o script
-          const CURRENT_VERSION = "${APP_VERSION}";
+          const CURRENT_VERSION = "${appVersion}";
           
           // Cache Buster Agressivo (v2) - Força atualização se a versão mudar
           try {
-            const lastVersion = localStorage.getItem('app_version');
+            const lastVersion = localStorage.getItem('appVersion');
             
             if (lastVersion !== CURRENT_VERSION) {
               console.log('Versão alterada detectada (' + lastVersion + ' -> ' + CURRENT_VERSION + '). Limpando caches...');
@@ -103,7 +97,7 @@ export default function RootLayout({
               }
 
               // 3. Salva a nova versão e força um reload total ignorando o cache (v3)
-              localStorage.setItem('app_version', CURRENT_VERSION);
+              localStorage.setItem('appVersion', CURRENT_VERSION);
               
               // Pequeno delay para garantir que as limpezas acima comecem
               setTimeout(() => {
@@ -138,7 +132,7 @@ export default function RootLayout({
             </main>
             <footer className="py-4 text-center print:hidden">
               <p className="text-[10px] text-gray-400 font-mono opacity-60">
-                v{APP_VERSION}
+                v{appVersion}
               </p>
             </footer>
           </ThemeProvider>

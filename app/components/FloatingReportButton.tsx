@@ -101,11 +101,9 @@ export default function FloatingReportButton() {
             // Inserção no Firestore
             await addDoc(collection(db, 'bug_reports'), {
                 userId: user?.uid || null,
-                user_id: user?.uid || null, // Legado
                 title: `Relato via Botão Flutuante - ${new Date().toLocaleDateString('pt-BR')}`,
                 description: description,
                 deviceInfo: deviceInfo,
-                device_info: deviceInfo, // Legado
                 status: 'NEW',
                 createdAt: serverTimestamp(),
                 updatedAt: serverTimestamp()

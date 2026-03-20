@@ -17,14 +17,10 @@ interface Report {
     description: string;
     screenshot: string;
     userId: string;
-    user_id?: string; // Legado
     userName: string;
-    user_name?: string; // Legado
     url: string;
     userAgent: string;
-    user_agent?: string; // Legado
     createdAt: any;
-    created_at?: any; // Legado
     status: 'open' | 'resolved';
 }
 
@@ -104,7 +100,7 @@ export default function AdminReportsPage() {
             ) : (
                 <div className="grid grid-cols-1 gap-6 pb-20">
                     {reports.map((report) => {
-                        const date = report.createdAt?.toDate ? report.createdAt.toDate() : (report.created_at ? new Date(report.created_at) : new Date());
+                        const date = report.createdAt?.toDate ? report.createdAt.toDate() : (report.createdAt ? new Date(report.createdAt) : new Date());
                         return (
                             <div key={report.id} className={`bg-surface rounded-3xl border transition-all duration-300 ${report.status === 'resolved' ? 'border-emerald-100 dark:border-emerald-900/10 opacity-60 grayscale-[0.5]' : 'border-red-50 dark:border-red-900/10 shadow-lg shadow-black/5 hover:shadow-xl'}`}>
                                 <div className="p-6 md:p-8 flex flex-col md:flex-row gap-8">
@@ -156,12 +152,12 @@ export default function AdminReportsPage() {
                                             </div>
                                             <div className="flex items-center gap-2.5">
                                                 <Monitor className="w-4 h-4 text-primary opacity-60" />
-                                                <span className="truncate max-w-md" title={report.userAgent || report.user_agent}>{report.userAgent || report.user_agent}</span>
+                                                <span className="truncate max-w-md" title={report.userAgent}>{report.userAgent}</span>
                                             </div>
                                             <div className="flex items-center gap-2.5 border-t border-surface-border pt-3 mt-3">
                                                 <span className="font-bold text-main px-2 py-0.5 rounded bg-surface border border-surface-border">Reportado por:</span>
-                                                <span className="font-bold">{report.userName || report.user_name}</span>
-                                                <span className="opacity-40 font-sans">({report.userId || report.user_id})</span>
+                                                <span className="font-bold">{report.userName}</span>
+                                                <span className="opacity-40 font-sans">({report.userId})</span>
                                             </div>
                                         </div>
                                     </div>

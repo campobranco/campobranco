@@ -32,10 +32,10 @@ const MapView = dynamic(() => import('@/app/components/MapView'), {
 const BottomNav = dynamic(() => import('@/app/components/BottomNav'), { ssr: false });
 const NewPointModal = dynamic(() => import('@/app/components/Witnessing/NewPointModal'));
 const EditPointModal = dynamic(() => import('@/app/components/Witnessing/EditPointModal'));
-import UserAvatar from '@/app/components/UserAvatar';
 import AssignedUserBadge from '@/app/components/AssignedUserBadge';
 import ConfirmationModal from '@/app/components/ConfirmationModal';
-import { collection, query, where, orderBy, onSnapshot, doc, getDoc, updateDoc, deleteDoc, FieldValue } from 'firebase/firestore';
+import DropDownItem from '@/app/components/DropDownItem';
+import { collection, query, where, orderBy, onSnapshot, doc, getDoc, updateDoc, deleteField, serverTimestamp } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
 import Link from 'next/link';
 import { useAuth } from '@/app/context/AuthContext';
@@ -55,8 +55,7 @@ interface WitnessingPoint {
     wazeLink?: string;
     status: 'AVAILABLE' | 'OCCUPIED';
     schedule?: string;
-    currentPublishers?: string[]; // camelCase
-    activeUsers?: { uid: string, name: string, timestamp?: number }[]; // camelCase
+    activeUsers?: { uid?: string; name: string; timestamp?: number }[]; // uid pode ser vazio em migrações
 }
 
 function WitnessingPointListContent() {
@@ -78,10 +77,6 @@ function WitnessingPointListContent() {
     const [isEditModalOpen, setIsEditModalOpen] = useState(false);
     const [editingPoint, setEditingPoint] = useState<WitnessingPoint | null>(null);
     const [openMenuId, setOpenMenuId] = useState<string | null>(null);
-
-    // Check-In Logic State
-    const [pendingCheckInPoint, setPendingCheckInPoint] = useState<WitnessingPoint | null>(null);
-    const [conflictingPoint, setConflictingPoint] = useState<WitnessingPoint | null>(null);
 
     const [confirmModal, setConfirmModal] = useState<{
         isOpen: boolean;
@@ -116,6 +111,62 @@ function WitnessingPointListContent() {
         return () => clearTimeout(timer);
     }, [loading]);
 
+    // Migra automaticamente dados legados de publicadores para activeUsers
+    const migrarPublicadoresLegados = useCallback(async (docId: string, data: any) => {
+        if (!Array.isArray(data.currentPublishers)) return;
+
+        const legacyPublishers = data.currentPublishers
+            .filter((name: any) => typeof name === 'string' && name.trim().length > 0)
+            .map((name: string) => name.trim());
+
+        const activeUsers = Array.isArray(data.activeUsers) ? data.activeUsers : [];
+        const precisaGerarActive = activeUsers.length === 0 && legacyPublishers.length > 0;
+        const activeFromLegacy = precisaGerarActive
+            ? legacyPublishers.map((name: string) => ({ name }))
+            : activeUsers;
+
+        const updates: Record<string, any> = {
+            currentPublishers: deleteField(),
+            updatedAt: serverTimestamp()
+        };
+
+        if (precisaGerarActive) {
+            updates.activeUsers = activeFromLegacy;
+            updates.status = activeFromLegacy.length > 0 ? 'OCCUPIED' : 'AVAILABLE';
+        }
+
+        try {
+            await updateDoc(doc(db, 'witnessing_points', docId), updates);
+        } catch (error) {
+            console.warn('Falha ao migrar publicadores legados:', error);
+        }
+    }, []);
+
+    const normalizarPonto = useCallback((docId: string, data: any): WitnessingPoint => {
+        const legacyPublishers = Array.isArray(data.currentPublishers) ? data.currentPublishers : [];
+        const activeUsers = Array.isArray(data.activeUsers) ? data.activeUsers : [];
+        const precisaGerarActive = activeUsers.length === 0 && legacyPublishers.length > 0;
+
+        const activeUsersNormalizados = precisaGerarActive
+            ? legacyPublishers
+                .filter((name: any) => typeof name === 'string' && name.trim().length > 0)
+                .map((name: string) => ({ name: name.trim() }))
+            : activeUsers;
+
+        const statusNormalizado = precisaGerarActive
+            ? (activeUsersNormalizados.length > 0 ? 'OCCUPIED' : 'AVAILABLE')
+            : (data.status || (activeUsersNormalizados.length > 0 ? 'OCCUPIED' : 'AVAILABLE'));
+
+        void migrarPublicadoresLegados(docId, data);
+
+        return {
+            id: docId,
+            ...data,
+            activeUsers: activeUsersNormalizados,
+            status: statusNormalizado
+        } as WitnessingPoint;
+    }, [migrarPublicadoresLegados]);
+
     // fetchPoints: buscada manualmente para atualizações pontuais (ex: após criar/editar)
     const fetchPoints = useCallback(async () => {
         if (!congregationId || !cityId) {
@@ -125,7 +176,7 @@ function WitnessingPointListContent() {
 
         try {
             const snap = await (async () => {
-                // Nome correto da coleção no Firestore é 'witnessing_points' (snake_case)
+                // Nome correto da coleção no Firestore é 'witnessing_points'
                 const q = query(
                     collection(db, 'witnessing_points'),
                     where('congregationId', '==', congregationId),
@@ -135,18 +186,18 @@ function WitnessingPointListContent() {
                 const { getDocs } = await import('firebase/firestore');
                 return getDocs(q);
             })();
-            setPoints(snap.docs.map(d => ({ id: d.id, ...d.data() } as WitnessingPoint)));
+            setPoints(snap.docs.map(d => normalizarPonto(d.id, d.data())));
         } catch (error) {
             console.error("Error fetching points:", error);
         } finally {
             setLoading(false);
         }
-    }, [congregationId, cityId]);
+    }, [congregationId, cityId, normalizarPonto]);
 
     useEffect(() => {
         if (authLoading) return;
 
-        // Security Check
+        // Verificacao de seguranca
         if (userCongregationId && congregationId && congregationId !== userCongregationId) {
             router.replace(`/witnessing/city?congregationId=${userCongregationId}&cityId=${cityId}`);
             return;
@@ -165,7 +216,7 @@ function WitnessingPointListContent() {
         fetchPoints();
 
         // onSnapshot: Firestore escuta mudanças em tempo real nos pontos de testemunho
-        // Nome correto da coleção no Firestore é 'witnessing_points' (snake_case)
+        // Nome correto da coleção no Firestore é 'witnessing_points'
         const pointsQuery = query(
             collection(db, 'witnessing_points'),
             where('congregationId', '==', congregationId),
@@ -174,14 +225,14 @@ function WitnessingPointListContent() {
         );
 
         const unsubscribe = onSnapshot(pointsQuery, (snap) => {
-            setPoints(snap.docs.map(d => ({ id: d.id, ...d.data() } as WitnessingPoint)));
+            setPoints(snap.docs.map(d => normalizarPonto(d.id, d.data())));
             setLoading(false);
         }, (err) => {
             console.error("Witnessing points snapshot error:", err);
         });
 
         return () => { unsubscribe(); };
-    }, [congregationId, cityId, fetchPoints, authLoading, userCongregationId, router]);
+    }, [congregationId, cityId, fetchPoints, authLoading, userCongregationId, router, normalizarPonto]);
 
     // Limpeza de check-ins expirados (máximo 5 horas)
     useEffect(() => {
@@ -198,12 +249,10 @@ function WitnessingPointListContent() {
                 });
 
                 if (validUsers.length !== point.activeUsers.length) {
-                    const newStatus = (validUsers.length > 0 || (point.currentPublishers && point.currentPublishers.length > 0))
-                        ? 'OCCUPIED'
-                        : 'AVAILABLE';
+                    const newStatus = validUsers.length > 0 ? 'OCCUPIED' : 'AVAILABLE';
 
                     try {
-                        // Nome correto da coleção no Firestore é 'witnessing_points' (snake_case)
+                        // Nome correto da coleção no Firestore é 'witnessing_points'
                         await updateDoc(doc(db, 'witnessing_points', point.id), {
                             activeUsers: validUsers,
                             status: newStatus
@@ -219,7 +268,7 @@ function WitnessingPointListContent() {
         if (points.length > 0) checkExpired();
     }, [points]);
 
-    // Close menu on click outside
+    // Fecha o menu ao clicar fora
     useEffect(() => {
         const handleClickOutside = () => setOpenMenuId(null);
         if (openMenuId) {
@@ -276,7 +325,12 @@ function WitnessingPointListContent() {
         setIsEditModalOpen(true);
     };
 
-    // 1. Initial Check
+    // Verifica se o usuario ja esta ativo no ponto (uid ou nome)
+    const usuarioEstaAtivo = (usuarios: WitnessingPoint['activeUsers'], userId: string, userName: string) => {
+        return (usuarios || []).some(u => u.uid === userId || (u as any).id === userId || u.name === userName);
+    };
+
+    // 1. Checagem inicial
     const handleCheckInClick = async (point: WitnessingPoint) => {
         if (!user) {
             console.warn("Check-in attempt without authenticated user");
@@ -287,20 +341,15 @@ function WitnessingPointListContent() {
         const userName = profileName || user.displayName || user.email?.split('@')[0] || 'Publicador';
         const userId = user.uid;
 
-        // Is user checked in HERE?
-        const isCheckedInHere =
-            point.activeUsers?.some(u => u.uid === userId || (u as any).id === userId || u.name === userName) ||
-            point.currentPublishers?.includes(userName);
+        // Verifica se o usuario ja esta neste ponto
+        const isCheckedInHere = usuarioEstaAtivo(point.activeUsers, userId, userName);
 
         if (isCheckedInHere) {
             await executeCheckInOut(point, true);
         } else {
             // Verifica se está em OUTRO ponto
             const otherPoint = points.find(p =>
-                p.id !== point.id && (
-                    p.activeUsers?.some(u => u.uid === userId || (u as any).id === userId || u.name === userName) ||
-                    p.currentPublishers?.includes(userName)
-                )
+                p.id !== point.id && usuarioEstaAtivo(p.activeUsers, userId, userName)
             );
 
             if (otherPoint) {
@@ -312,14 +361,12 @@ function WitnessingPointListContent() {
                     const isThisUser = (u.uid && u.uid === userId) || ((u as any).id && (u as any).id === userId) || (u.name && u.name === userName);
                     return !isThisUser;
                 });
-                const otherLegacy = (otherPoint.currentPublishers || []).filter(n => n !== userName);
-                const otherStatus = (otherActive.length > 0 || otherLegacy.length > 0) ? 'OCCUPIED' : 'AVAILABLE';
+                const otherStatus = otherActive.length > 0 ? 'OCCUPIED' : 'AVAILABLE';
 
                 try {
                     // Checkout do ponto anterior via serviço (cliente)
                     await checkInWitnessingPoint(otherPoint.id, {
                         activeUsers: otherActive,
-                        currentPublishers: otherLegacy,
                         status: otherStatus
                     });
 
@@ -340,12 +387,10 @@ function WitnessingPointListContent() {
         const userName = profileName || user.displayName || user.email?.split('@')[0] || 'Publicador';
         const userId = user.uid;
 
-        let newPublishers = [...(point.currentPublishers || [])];
         let newActiveUsers = [...(point.activeUsers || [])];
 
         if (isCheckingOut) {
-            // Robust filtering: remove if uid matches OR id matches OR name matches
-            newPublishers = newPublishers.filter(n => n !== userName);
+            // Filtro robusto: remove por uid, id legado ou nome
             newActiveUsers = newActiveUsers.filter(u => {
                 const isThisUser = (u.uid && u.uid === userId) || ((u as any).id && (u as any).id === userId) || (u.name && u.name === userName);
                 return !isThisUser;
@@ -354,31 +399,25 @@ function WitnessingPointListContent() {
             if (!newActiveUsers.some(u => u.uid === userId)) {
                 newActiveUsers.push({ uid: userId, name: userName, timestamp: Date.now() });
             }
-            if (!newPublishers.includes(userName)) {
-                newPublishers.push(userName);
-            }
         }
 
-        const newStatus = (newPublishers.length > 0 || newActiveUsers.length > 0) ? 'OCCUPIED' : 'AVAILABLE';
+        const newStatus = newActiveUsers.length > 0 ? 'OCCUPIED' : 'AVAILABLE';
 
-                try {
-                    const updates = {
-                        currentPublishers: newPublishers,
-                        activeUsers: newActiveUsers,
-                        status: newStatus
-                    };
+        try {
+            const updates = {
+                activeUsers: newActiveUsers,
+                status: newStatus
+            };
 
-                    const result = await checkInWitnessingPoint(point.id, updates);
+            const result = await checkInWitnessingPoint(point.id, updates);
 
-                    if (!result.success) {
-                        throw new Error(result.error || 'Erro ao processar check-in');
-                    }
-                } catch (error: any) {
-                    toast.error(`Erro ao salvar: ${error.message}`);
-                }
+            if (!result.success) {
+                throw new Error(result.error || 'Erro ao processar check-in');
+            }
+        } catch (error: any) {
+            toast.error(`Erro ao salvar: ${error.message}`);
+        }
     };
-
-
 
     const filteredPoints = points.filter(p =>
         p.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -462,9 +501,7 @@ function WitnessingPointListContent() {
 
                                 // Determina o nome e status de check-in do usuário atual
                                 const currentUserName = profileName || user?.displayName || user?.email?.split('@')[0] || 'Publicador';
-                                const userIsCheckedIn =
-                                    point.activeUsers?.some((u: any) => u.uid === user?.uid || u.id === user?.uid || u.name === currentUserName) ||
-                                    point.currentPublishers?.includes(currentUserName);
+                                const userIsCheckedIn = usuarioEstaAtivo(point.activeUsers, user?.uid || '', currentUserName);
 
                                 return (
                                     <div
@@ -537,28 +574,29 @@ function WitnessingPointListContent() {
                                                     </button>
 
                                                     {openMenuId === point.id && (
-                                                        <div className="absolute right-0 top-full mt-2 w-32 bg-surface rounded-lg shadow-xl border border-surface-border py-2 z-50 animate-in fade-in zoom-in-95 duration-150 origin-top-right">
-                                                            <button
-                                                                onClick={() => {
-                                                                    handleEditClick(point);
-                                                                    setOpenMenuId(null);
-                                                                }}
-                                                                className="w-full px-4 py-2 text-left text-xs font-bold text-main hover:bg-primary-light/50 dark:hover:bg-primary-dark/30 hover:text-primary dark:hover:text-primary-light flex items-center gap-2 transition-colors border-b border-surface-border"
-                                                            >
-                                                                <Pencil className="w-3.5 h-3.5" />
-                                                                Editar
-                                                            </button>
-                                                            <button
-                                                                onClick={() => {
-                                                                    handleDeletePoint(point.id, point.name);
-                                                                    setOpenMenuId(null);
-                                                                }}
-                                                                className="w-full px-4 py-2 text-left text-xs font-bold text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20 flex items-center gap-2 transition-colors"
-                                                            >
-                                                                <Trash2 className="w-3.5 h-3.5" />
-                                                                Excluir
-                                                            </button>
-                                                        </div>
+                                                        <>
+                                                            <div className="fixed inset-0 z-40" onClick={() => setOpenMenuId(null)} />
+                                                            <div className="absolute right-0 top-full mt-2 w-48 bg-surface rounded-xl shadow-2xl border border-surface-border p-1 z-50 animate-in fade-in zoom-in-95 duration-200 origin-top-right">
+                                                                <DropDownItem
+                                                                    icon={Pencil}
+                                                                    label="Editar"
+                                                                    variant="primary"
+                                                                    onClick={() => {
+                                                                        handleEditClick(point);
+                                                                        setOpenMenuId(null);
+                                                                    }}
+                                                                />
+                                                                <DropDownItem
+                                                                    icon={Trash2}
+                                                                    label="Excluir"
+                                                                    variant="danger"
+                                                                    onClick={() => {
+                                                                        handleDeletePoint(point.id, point.name);
+                                                                        setOpenMenuId(null);
+                                                                    }}
+                                                                />
+                                                            </div>
+                                                        </>
                                                     )}
                                                 </div>
                                             )}
@@ -573,32 +611,18 @@ function WitnessingPointListContent() {
 
                                         <div className="flex items-center justify-between mt-4 pt-3 border-t border-surface-border">
                                             <div className="flex flex-wrap gap-2 items-center">
-                                                {(point.activeUsers && point.activeUsers.length > 0) || (point.currentPublishers && point.currentPublishers.length > 0) ? (
-                                                    <>
-                                                        {/* Usuários com check-in ativo */}
-                                                        {point.activeUsers && point.activeUsers.length > 0 ? (
-                                                            point.activeUsers.map((pub: any, i: number) => (
-                                                                <div key={`active-${i}`} className="bg-gray-100 dark:bg-gray-800 px-3 py-1.5 rounded-full border border-gray-200 dark:border-gray-700 flex items-center justify-center">
-                                                                    <span className="text-xs font-bold text-main uppercase tracking-wide">
-                                                                        {pub.uid ? (
-                                                                            <AssignedUserBadge userId={pub.uid} fallbackName={pub.name} />
-                                                                        ) : (
-                                                                            pub.name ? pub.name.split(' ')[0] : 'Publicador'
-                                                                        )}
-                                                                    </span>
-                                                                </div>
-                                                            ))
-                                                        ) : (
-                                                            /* Legacy */
-                                                            point.currentPublishers?.map((name: string, i: number) => (
-                                                                <div key={`legacy-${i}`} className="bg-gray-100 dark:bg-gray-800 px-3 py-1.5 rounded-full border border-gray-200 dark:border-gray-700 flex items-center justify-center">
-                                                                    <span className="text-xs font-bold text-main uppercase tracking-wide">
-                                                                        {name}
-                                                                    </span>
-                                                                </div>
-                                                            ))
-                                                        )}
-                                                    </>
+                                                {point.activeUsers && point.activeUsers.length > 0 ? (
+                                                    point.activeUsers.map((pub: any, i: number) => (
+                                                        <div key={`active-${i}`} className="bg-gray-100 dark:bg-gray-800 px-3 py-1.5 rounded-full border border-gray-200 dark:border-gray-700 flex items-center justify-center">
+                                                            <span className="text-xs font-bold text-main uppercase tracking-wide">
+                                                                {pub.uid ? (
+                                                                    <AssignedUserBadge userId={pub.uid} fallbackName={pub.name} />
+                                                                ) : (
+                                                                    pub.name ? pub.name.split(' ')[0] : 'Publicador'
+                                                                )}
+                                                            </span>
+                                                        </div>
+                                                    ))
                                                 ) : (
                                                     <span className="text-xs text-muted italic">Disponível</span>
                                                 )}
@@ -641,11 +665,10 @@ function WitnessingPointListContent() {
                             lng: p.lng || 0,
                             title: p.name,
                             number: p.name,
-                            subtitle: p.currentPublishers && p.currentPublishers.length > 0
-                                ? `Ocupado por: ${p.currentPublishers.join(', ')}`
+                            subtitle: p.activeUsers && p.activeUsers.length > 0
+                                ? `Ocupado por: ${p.activeUsers.map(u => u.name || 'Publicador').join(', ')}`
                                 : 'Livre',
                             status: p.status === 'OCCUPIED' ? 'OCUPADO' : 'LIVRE',
-                            color: p.status === 'OCCUPIED' ? 'red' : 'green',
                             fullAddress: `${p.address}, ${cityName}`
                         }))}
                     />

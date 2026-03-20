@@ -25,7 +25,7 @@ interface Congregation {
     id: string;
     name: string;
     category?: string;
-    created_at?: string;
+    createdAt?: string;
 }
 
 export default function CongregationListPage() {

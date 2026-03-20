@@ -42,7 +42,7 @@ Este aplicativo é uma iniciativa **independente e open source**. Ele **não** �
 - **Frontend:** [Next.js 15](https://nextjs.org/) (App Router), React 19
 - **Estilização:** [Tailwind CSS](https://tailwindcss.com/)
 - **Mapas:** [Leaflet](https://leafletjs.com/) & OpenStreetMap
-- **Banco de Dados & Auth:** [Supabase](https://supabase.com/) (PostgreSQL)
+- **Banco de Dados & Auth:** [Firebase](https://firebase.google.com/) (Firestore/Auth)
 - **Hospedagem:** [Firebase Hosting](https://firebase.google.com/hosting)
 - **PWA:** `@ducanh2912/next-pwa`
 
@@ -50,8 +50,8 @@ Este aplicativo é uma iniciativa **independente e open source**. Ele **não** �
 
 ### 1. Pré-requisitos
 - Node.js 18+
-- Projeto no Supabase (Banco de Dados e Auth configurados)
-- **Importante:** Após criar seu projeto no Supabase, execute o conteúdo do arquivo `supabase/schema.sql` no Editor SQL do seu painel Supabase para criar todas as tabelas e permissões necessárias.
+- Projeto no Firebase (Firestore e Auth ativados)
+- **Plano Spark:** O projeto é otimizado para funcionar inteiramente no plano gratuito do Firebase.
 
 ### 2. Instalação
 ```bash
@@ -75,12 +75,16 @@ npm run dev
 # Acesse http://localhost:3000
 ```
 
-## 🔥 Firebase Hosting
+## 🔥 Firebase Hosting & App Hosting
 
-Embora o banco de dados tenha sido migrado para o Supabase, o **Firebase Hosting** continua sendo utilizado para hospedagem estática e PWA.
+O **Firebase** é utilizado de forma integral:
+- **Hosting**: Hospedagem estática para o PWA (pasta `out/`).
+- **App Hosting**: Para deploys server-side automáticos (se aplicável).
+- **Firestore**: Banco de dados NoSQL.
+- **Auth**: Autenticação segura.
 
 1.  Certifique-se de estar logado: `firebase login`
-2.  Faça o deploy: `npm run build && firebase deploy`
+2.  Faça o deploy: `npm run deploy:production` (ou o comando correspondente no `package.json`).
 
 ### Redirects Customizados
 

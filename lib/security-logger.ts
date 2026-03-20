@@ -80,7 +80,7 @@ export class SecurityLogger {
             // O Firestore Admin SDK ignora as Security Rules, o que é ideal para logs de auditoria
             await adminDb.collection('security_logs').add({
                 ...logData,
-                serverTimestamp: new Date() // Adicionado para facilitar consultas por data no Firestore
+                timestamp: new Date() // Adicionado para facilitar consultas por data no Firestore
             });
         } catch (error) {
             // Se falhar ao salvar o log, o app não deve quebrar, mas avisamos no console

@@ -34,11 +34,15 @@ service cloud.firestore {
       return isAuthenticated() && (getAuthRole() == 'SERVO' || isElder());
     }
 
+    function isModerator() {
+      return isAdmin() || isServant();
+    }
+
     // --- HELPERS DE CONGREGAÇÃO (ROBUSTOS) ---
     
-    // Obtém o ID da congregação de um mapa de dados (suporta camelCase e snake_case)
+    // Obtém o ID da congregação de um mapa de dados (exclusivo camelCase)
     function getCongId(data) {
-      return data.get('congregationId', data.get('congregation_id', null));
+      return data.get('congregationId', null);
     }
 
     // Verifica se o documento pertence à congregação do usuário logado
@@ -51,21 +55,19 @@ service cloud.firestore {
     // --- REGRAS POR COLEÇÃO ---
 
     // 1. Congregações
-    match /congregations/{congregationId} {
+    match /congregations/{congregation_id} {
       allow read: if true; // Permitir leitura pública para exibir nome da congregação em listas compartilhadas
       allow create, delete: if isAdmin();
-      allow update: if isAuthenticated() && (isAdmin() || (isServant() && (congregationId == getCongId(get(/databases/$(database)/documents/users/$(request.auth.uid)).data))));
+      allow update: if isAuthenticated() && (isAdmin() || (isServant() && (congregation_id == getCongId(get(/databases/$(database)/documents/users/$(request.auth.uid)).data))));
     }
 
     // 2. Coleção de Usuários
     match /users/{userId} {
-      // Prioriza check de UID próprio para evitar recursão no getAuthRole()
-      // Publicadores podem ler outros usuários SE forem da mesma congregação
-      allow read: if isAuthenticated() && (
+      allow read, list: if isAuthenticated() && (
         request.auth.uid == userId || 
         isAdmin() || 
-        isServant() || 
-        isSameCongregation(resource.data)
+        isServant() ||
+        isElder()
       );
       allow create: if isAuthenticated() && request.auth.uid == userId;
       allow update: if isAuthenticated() && (request.auth.uid == userId || isAdmin() || isServant());
@@ -90,7 +92,7 @@ service cloud.firestore {
       allow update: if isAuthenticated() && (
         isAdmin() || isServant() || 
         request.resource.data.diff(resource.data).affectedKeys()
-          .hasOnly(['visit_status', 'last_visited_at', 'last_visited_by', 'notes', 'tags_snapshot', 'visitStatus', 'visitNotes'])
+          .hasOnly(['visit_status', 'visit_notes', 'last_visited_at', 'last_visited_by', 'notes', 'tagsSnapshot'])
       );
       
       // Subcoleção de Histórico de Endereço
@@ -117,17 +119,15 @@ service cloud.firestore {
         resource.data.get('createdBy', null) == request.auth.uid ||
         // Permite que qualquer usuário autenticado aceite se estiver vago ou se for o designado
         (isAuthenticated() && (
-          resource.data.get('assigned_to', null) == null || 
-          resource.data.get('assigned_to', "") == "" || 
           resource.data.get('assignedTo', null) == null || 
-          resource.data.get('assigned_to', null) == request.auth.uid ||
+          resource.data.get('assignedTo', "") == "" || 
           resource.data.get('assignedTo', null) == request.auth.uid
         ))
       );
       allow delete: if isAdmin() || isServant() || resource.data.get('createdBy', null) == request.auth.uid;
 
       // Subcoleções de Listas
-      match /items/{itemId} {
+      match /items/{item_id} {
         allow read: if true;
         allow write: if isAuthenticated();
       }
@@ -149,20 +149,15 @@ service cloud.firestore {
       
       match /visits/{id} {
         allow read: if true;
-        allow create, update: if isAuthenticated() && (isAdmin() || isServant() || getAuthRole() == 'PUBLICADOR');
-        allow delete: if isAdmin() || isServant();
+        allow write: if isAuthenticated();
       }
     }
 
     // 8. Pontos de Testemunho
-    match /witnessing_points/{id} {
-      allow read: if isAuthenticated() && (isAdmin() || isServant() || getAuthRole() == 'PUBLICADOR');
-      allow create, delete: if isAdmin() || isServant();
-      allow update: if isAuthenticated() && (
-        isAdmin() || 
-        isServant() || 
-        getAuthRole() == 'PUBLICADOR'
-      );
+    match /witnessing_points/{pointId} {
+      allow read: if isAuthenticated();
+      allow create: if isAuthenticated() && isModerator();
+      allow update, delete: if isModerator();
     }
 
     // 9. Miscelânea (Logs, Reports, etc)
@@ -184,6 +179,20 @@ service cloud.firestore {
     match /settings/{id} {
       allow read: if true;
       allow write: if isAdmin();
+    }
+
+    match /security_logs/{id} {
+      allow create: if true; // Permite que o client SDK crie logs (mas o middleware/adminSDK também usa)
+      allow read, update: if isAdmin();
+    }
+
+    match /lgpd_logs/{id} {
+      allow read, write: if isAdmin();
+    }
+
+    match /lgpd_requests/{id} {
+      allow create: if isAuthenticated();
+      allow read, update: if isAdmin();
     }
 
     // Fallback: Bloqueia tudo que não foi explicitamente permitido

@@ -15,7 +15,6 @@ import {
     orderBy,
     serverTimestamp,
     writeBatch,
-    or
 } from "firebase/firestore";
 import { db } from "@/lib/firebase";
 import Link from 'next/link';
@@ -41,6 +40,7 @@ import {
     Trash2
 } from 'lucide-react';
 import { toast } from 'sonner';
+import DropDownItem from "@/app/components/DropDownItem";
 
 function CardsContent() {
     const searchParams = useSearchParams();
@@ -79,18 +79,12 @@ function CardsContent() {
 
             // SCOPE: MINE
             if (scope === 'mine') {
-                q = query(listsRef, or(
-                    where("assigned_to", "==", user.uid),
-                    where("assignedTo", "==", user.uid)
-                ));
+                q = query(listsRef, where("assignedTo", "==", user.uid));
             }
             // SCOPE: MANAGED (Sent/All)
             else if (scope === 'managed') {
                 if (role !== 'ADMIN' && congregationId) {
-                    q = query(listsRef, or(
-                        where("congregationId", "==", congregationId),
-                        where("congregation_id", "==", congregationId)
-                    ));
+                    q = query(listsRef, where("congregationId", "==", congregationId));
                 } else if (role !== 'ADMIN') {
                     setLists([]);
                     setLoading(false);
@@ -110,12 +104,12 @@ function CardsContent() {
 
             let rawLists: any[] = (data || []).map((item: any) => ({
                 ...item,
-                assignedTo: item.assigned_to || item.assignedTo,
-                assignedName: item.assigned_name || item.assignedName,
-                congregationId: item.congregation_id || item.congregationId,
-                createdAt: item.created_at || item.createdAt,
-                expiresAt: item.expires_at || item.expiresAt,
-                responsibleName: scope === 'mine' ? 'Você' : (item.assignedName || item.assigned_name || (item.assignedTo || item.assigned_to ? 'Usuário' : 'Não atribuído'))
+                assignedTo: item.assignedTo,
+                assignedName: item.assignedName,
+                congregationId: item.congregationId,
+                createdAt: item.createdAt,
+                expiresAt: item.expiresAt,
+                responsibleName: scope === 'mine' ? 'Você' : (item.assignedName || (item.assignedTo ? 'Usuário' : 'Não atribuído'))
             }));
 
             // Filter for Publisher in Managed View
@@ -212,9 +206,7 @@ function CardsContent() {
         try {
             const listRef = doc(db, "shared_lists", id);
             await updateDoc(listRef, {
-                assigned_to: null,
                 assignedTo: null,
-                assigned_name: null,
                 assignedName: null,
                 updatedAt: serverTimestamp()
             });
@@ -257,9 +249,7 @@ function CardsContent() {
             selectedIds.forEach(id => {
                 const listRef = doc(db, "shared_lists", id);
                 batch.update(listRef, {
-                    assigned_to: null,
                     assignedTo: null,
-                    assigned_name: null,
                     assignedName: null,
                     updatedAt: serverTimestamp()
                 });
@@ -306,7 +296,7 @@ function CardsContent() {
 
     const formatExpirationTime = (expiresAtValue: any) => {
         if (!expiresAtValue) return "Por tempo indeterminado";
-        const expiresAt = new Date(expiresAtValue);
+        const expiresAt = typeof expiresAtValue.toDate === 'function' ? expiresAtValue.toDate() : new Date(expiresAtValue);
         const now = new Date();
         const diffMs = expiresAt.getTime() - now.getTime();
         if (diffMs <= 0) return "Vencido";
@@ -460,9 +450,14 @@ function CardsContent() {
                                     <div className="flex items-center gap-4">
                                         <div className="flex items-center gap-1">
                                             <Calendar className="w-3 h-3 text-muted" />
-                                            <span className="text-[10px] text-muted font-medium">Início: {formatDate(list.createdAt || list.created_at)}</span>
+                                            <span className="text-[10px] text-muted font-medium">Início: {formatDate(list.createdAt)}</span>
                                         </div>
-                                        {list.status !== 'completed' && list.expiresAt && formatExpirationTime(list.expiresAt) && (
+                                        {list.status === 'completed' ? (
+                                            <div className="flex items-center gap-1">
+                                                <CheckCircle2 className="w-3 h-3 text-green-500" />
+                                                <span className="text-[10px] text-muted font-medium">Fim: {formatDate(list.updatedAt || list.createdAt)}</span>
+                                            </div>
+                                        ) : list.status !== 'completed' && list.expiresAt && formatExpirationTime(list.expiresAt) && (
                                             <div className="flex items-center gap-1">
                                                 <Clock className="w-3 h-3 text-orange-400" />
                                                 <span className={`text-[10px] font-bold ${(list.expiresAt && (list.expiresAt.seconds * 1000 - Date.now()) < 5 * 24 * 60 * 60 * 1000)
@@ -489,39 +484,30 @@ function CardsContent() {
                                         )}
 
                                         {openMenuId === list.id && (
-                                            <div className="absolute right-0 top-8 w-48 bg-surface rounded-lg shadow-xl border border-surface-border py-2 z-50 animate-in fade-in zoom-in-95 duration-150 origin-top-right">
-                                                <button
-                                                    onClick={() => {
-                                                        handleOpenLink(list.id);
-                                                        setOpenMenuId(null);
-                                                    }}
-                                                    className="w-full px-4 py-2.5 text-left text-xs font-bold text-main hover:bg-primary-light/50 dark:hover:bg-blue-900/30 hover:text-primary dark:hover:text-blue-400 flex items-center gap-2 transition-colors border-b border-surface-border"
-                                                >
-                                                    <ExternalLink className="w-3.5 h-3.5" />
-                                                    Abrir Link
-                                                </button>
-                                                <button
-                                                    onClick={() => {
-                                                        handleCopyLink(list.id);
-                                                        setOpenMenuId(null);
-                                                    }}
-                                                    className="w-full px-4 py-2.5 text-left text-xs font-bold text-main hover:bg-primary-light/50 dark:hover:bg-blue-900/30 hover:text-primary dark:hover:text-blue-400 flex items-center gap-2 transition-colors border-b border-surface-border"
-                                                >
-                                                    <Copy className="w-3.5 h-3.5" />
-                                                    Copiar Link
-                                                </button>
-                                                <button
-                                                    onClick={() => {
-                                                        handleShareLink(list.id, list.title);
-                                                        setOpenMenuId(null);
-                                                    }}
-                                                    className="w-full px-4 py-2.5 text-left text-xs font-bold text-main hover:bg-primary-light/50 dark:hover:bg-blue-900/30 hover:text-primary dark:hover:text-blue-400 flex items-center gap-2 transition-colors border-b border-surface-border"
-                                                >
-                                                    <Share2 className="w-3.5 h-3.5" />
-                                                    Enviar Link
-                                                </button>
+                                            <div className="absolute right-0 top-8 w-52 bg-surface rounded-xl shadow-2xl border border-surface-border p-1 z-50 animate-in fade-in zoom-in-95 duration-150 origin-top-right">
+                                                <DropDownItem 
+                                                    icon={ExternalLink} 
+                                                    label="Abrir Link" 
+                                                    variant="primary" 
+                                                    onClick={() => { handleOpenLink(list.id); setOpenMenuId(null); }} 
+                                                />
+                                                <DropDownItem 
+                                                    icon={Copy} 
+                                                    label="Copiar Link" 
+                                                    variant="neutral" 
+                                                    onClick={() => { handleCopyLink(list.id); setOpenMenuId(null); }} 
+                                                />
+                                                <DropDownItem 
+                                                    icon={Share2} 
+                                                    label="Enviar Link" 
+                                                    variant="neutral" 
+                                                    onClick={() => { handleShareLink(list.id, list.title); setOpenMenuId(null); }} 
+                                                />
                                                 {(isElder || isServant || role === 'ADMIN') && (
-                                                    <button
+                                                    <DropDownItem 
+                                                        icon={UserMinus} 
+                                                        label="Remover Responsável" 
+                                                        variant="orange" 
                                                         onClick={() => {
                                                             setConfirmModal({
                                                                 title: 'Remover Responsável?',
@@ -530,14 +516,13 @@ function CardsContent() {
                                                                 onConfirm: () => handleRemoveResponsible(list.id)
                                                             });
                                                             setOpenMenuId(null);
-                                                        }}
-                                                        className="w-full px-4 py-2.5 text-left text-xs font-bold text-orange-600 dark:text-orange-400 hover:bg-orange-50 dark:hover:bg-orange-900/30 flex items-center gap-2 transition-colors border-b border-surface-border"
-                                                    >
-                                                        <UserMinus className="w-3.5 h-3.5" />
-                                                        Remover Responsável
-                                                    </button>
+                                                        }} 
+                                                    />
                                                 )}
-                                                <button
+                                                <DropDownItem 
+                                                    icon={Trash2} 
+                                                    label="Excluir" 
+                                                    variant="danger" 
                                                     onClick={() => {
                                                         setConfirmModal({
                                                             title: 'Excluir Cartão?',
@@ -546,12 +531,8 @@ function CardsContent() {
                                                             onConfirm: () => handleDeleteShare(list.id)
                                                         });
                                                         setOpenMenuId(null);
-                                                    }}
-                                                    className="w-full px-4 py-2.5 text-left text-xs font-bold text-red-500 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/30 flex items-center gap-2 transition-colors"
-                                                >
-                                                    <Trash2 className="w-3.5 h-3.5" />
-                                                    Excluir
-                                                </button>
+                                                    }} 
+                                                />
                                             </div>
                                         )}
                                     </div>

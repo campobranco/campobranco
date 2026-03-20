@@ -34,16 +34,12 @@ type BugStatus = 'NEW' | 'VIEWED' | 'DEFERRED' | 'ACCEPTED' | 'RESOLVED';
 interface BugReport {
     id: string;
     userId: string;
-    user_id?: string; // Legado
     title: string;
     description: string;
     deviceInfo?: any;
-    device_info?: any; // Legado
     status: BugStatus;
     adminNotes?: string;
-    admin_notes?: string; // Legado
     createdAt: any;
-    created_at?: any; // Legado
     updatedAt: any;
     user?: {
         name: string;
@@ -86,7 +82,7 @@ export default function BugReportsAdminPage() {
             const rawReports = snapshot.docs.map(d => ({ id: d.id, ...d.data() })) as any[];
 
             // Busca usuários envolvidos para o "join" manual
-            const userIds = Array.from(new Set(rawReports.map(r => r.userId || r.user_id).filter(Boolean)));
+            const userIds = Array.from(new Set(rawReports.map(r => r.userId).filter(Boolean)));
             const userMap: Record<string, { name: string, email: string }> = {};
 
             // Busca perfis de usuários em paralelo
@@ -99,9 +95,14 @@ export default function BugReportsAdminPage() {
             }));
 
             const dataWithUsers = rawReports.map(r => ({
+                id: r.id,
                 ...r,
-                user: userMap[r.userId || r.user_id]
-            }));
+                userId: r.userId,
+                deviceInfo: r.deviceInfo,
+                adminNotes: r.adminNotes || '',
+                createdAt: r.createdAt,
+                user: userMap[r.userId]
+            })) as BugReport[];
 
             setReports(dataWithUsers);
         } catch (error: any) {
@@ -226,13 +227,13 @@ export default function BugReportsAdminPage() {
                             ) : (
                                 filteredReports.map(report => {
                                     const StatusIcon = STATUS_CONFIG[report.status].icon;
-                                    const date = report.createdAt?.toDate ? report.createdAt.toDate() : (report.created_at ? new Date(report.created_at) : new Date());
+                                    const date = report.createdAt?.toDate ? report.createdAt.toDate() : (report.createdAt ? new Date(report.createdAt) : new Date());
                                     return (
                                         <button
                                             key={report.id}
                                             onClick={() => {
                                                 setSelectedReport(report);
-                                                setAdminNotes(report.adminNotes || report.admin_notes || '');
+                                                setAdminNotes(report.adminNotes || '');
                                             }}
                                             className={`w-full text-left p-4 rounded-xl border transition-all ${selectedReport?.id === report.id ? 'bg-primary/5 border-primary shadow-sm' : 'bg-surface border-surface-border hover:border-primary/30'}`}
                                         >
@@ -270,9 +271,9 @@ export default function BugReportsAdminPage() {
                                                     <span className="opacity-50">•</span>
                                                     {selectedReport.user?.email}
                                                 </div>
-                                                <div className="flex items-center gap-1.5">
-                                                    <Clock className="w-3.5 h-3.5" />
-                                                    {format(selectedReport.createdAt?.toDate ? selectedReport.createdAt.toDate() : (selectedReport.created_at ? new Date(selectedReport.created_at) : new Date()), "dd 'de' MMMM 'às' HH:mm", { locale: ptBR })}
+                                                <div className="flex items-center gap-1.5 bg-background px-2 py-1 rounded-md border border-surface-border">
+                                                    <Clock className="w-3.5 h-3.5 text-primary/60" />
+                                                    {format(selectedReport.createdAt?.toDate ? selectedReport.createdAt.toDate() : new Date(selectedReport.createdAt), "dd 'de' MMMM 'às' HH:mm", { locale: ptBR })}
                                                 </div>
                                             </div>
                                         </div>
@@ -304,7 +305,7 @@ export default function BugReportsAdminPage() {
                                 </div>
 
                                 <div className="p-6 space-y-6">
-                                    {(selectedReport.deviceInfo || selectedReport.device_info) && (
+                                    {selectedReport.deviceInfo && (
                                         <div className="space-y-6">
                                             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                                                 <div className="bg-background/50 p-4 rounded-xl border border-surface-border">
@@ -313,7 +314,7 @@ export default function BugReportsAdminPage() {
                                                         <h3 className="text-[10px] font-bold uppercase tracking-widest">Informações do Dispositivo</h3>
                                                     </div>
                                                     <div className="grid grid-cols-2 gap-y-2">
-                                                        {Object.entries(selectedReport.deviceInfo || selectedReport.device_info).map(([key, value]: [string, any]) => {
+                                                        {Object.entries(selectedReport.deviceInfo).map(([key, value]: [string, any]) => {
                                                             if (key === 'consoleLogs') return null;
                                                             return (
                                                                 <div key={key}>
@@ -337,7 +338,7 @@ export default function BugReportsAdminPage() {
                                                     />
                                                     <button
                                                         onClick={() => handleUpdateStatus(selectedReport.id, selectedReport.status)}
-                                                        disabled={updating || adminNotes === (selectedReport.adminNotes || selectedReport.admin_notes)}
+                                                        disabled={updating || adminNotes === (selectedReport.adminNotes || '')}
                                                         className="mt-3 w-full bg-primary hover:bg-primary-dark text-white text-[10px] font-bold uppercase py-2 rounded-lg transition-all disabled:opacity-50"
                                                     >
                                                         {updating ? 'Salvando...' : 'Salvar Notas'}
@@ -345,7 +346,7 @@ export default function BugReportsAdminPage() {
                                                 </div>
                                             </div>
 
-                                            {(selectedReport.deviceInfo?.consoleLogs || selectedReport.device_info?.consoleLogs) && (selectedReport.deviceInfo?.consoleLogs?.length > 0 || selectedReport.device_info?.consoleLogs?.length > 0) && (
+                                            {selectedReport.deviceInfo?.consoleLogs && selectedReport.deviceInfo.consoleLogs.length > 0 && (
                                                 <div className="bg-background/50 p-4 rounded-xl border border-surface-border">
                                                     <div className="flex items-center gap-2 mb-3 text-muted">
                                                         <MessageSquare className="w-4 h-4" />
@@ -353,13 +354,13 @@ export default function BugReportsAdminPage() {
                                                     </div>
                                                     <div className="bg-zinc-950 p-4 rounded-lg overflow-x-auto max-h-[300px] custom-scrollbar">
                                                         <pre className="text-[10px] font-mono leading-relaxed text-zinc-300">
-                                                            {(selectedReport.deviceInfo?.consoleLogs || selectedReport.device_info?.consoleLogs).join('\n')}
+                                                            {selectedReport.deviceInfo.consoleLogs.join('\n')}
                                                         </pre>
                                                     </div>
                                                 </div>
                                             )}
 
-                                            {(selectedReport.deviceInfo?.screenshot || selectedReport.device_info?.screenshot) && (
+                                            {selectedReport.deviceInfo?.screenshot && (
                                                 <div className="bg-background/50 p-4 rounded-xl border border-surface-border">
                                                     <div className="flex items-center gap-2 mb-3 text-muted">
                                                         <Monitor className="w-4 h-4" />
@@ -367,10 +368,10 @@ export default function BugReportsAdminPage() {
                                                     </div>
                                                     <div className="rounded-xl overflow-hidden border border-surface-border bg-black group relative cursor-zoom-in">
                                                         <img
-                                                            src={selectedReport.deviceInfo?.screenshot || selectedReport.device_info?.screenshot}
+                                                            src={selectedReport.deviceInfo.screenshot}
                                                             alt="Bug Screenshot"
                                                             className="w-full h-auto max-h-[600px] object-contain transition-transform duration-500 group-hover:scale-105"
-                                                            onClick={() => setLightboxImage(selectedReport.deviceInfo?.screenshot || selectedReport.device_info?.screenshot)}
+                                                            onClick={() => setLightboxImage(selectedReport.deviceInfo.screenshot)}
                                                         />
                                                         <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center pointer-events-none">
                                                             <p className="text-white text-xs font-bold bg-black/60 px-4 py-2 rounded-full">Clique para ampliar</p>

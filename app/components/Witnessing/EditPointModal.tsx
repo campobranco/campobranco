@@ -22,7 +22,6 @@ interface WitnessingPoint {
     wazeLink?: string;
     status: 'AVAILABLE' | 'OCCUPIED';
     schedule?: string;
-    currentPublishers?: string[];
 }
 
 interface EditPointModalProps {

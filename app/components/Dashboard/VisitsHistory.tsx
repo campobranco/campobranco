@@ -34,6 +34,7 @@ import {
 import Link from "next/link";
 import { toast } from "sonner";
 import ConfirmationModal from "@/app/components/ConfirmationModal";
+import DropDownItem from "@/app/components/DropDownItem";
 
 export default function VisitsHistory({ scope = 'all', showViewAll = true }: { scope?: 'mine' | 'all', showViewAll?: boolean }) {
     const { user, congregationId, role, isElder, isServant, profileName, loading: authLoading } = useAuth();
@@ -78,7 +79,7 @@ export default function VisitsHistory({ scope = 'all', showViewAll = true }: { s
 
             // 2. Filter logic (Scope)
             const filteredVisits = rawVisits.filter((v: any) => {
-                const visitUserId = v.userId || v.user_id;
+                const visitUserId = v.userId;
                 if (scope === 'mine' && visitUserId !== user?.uid) return false;
                 if (scope === 'all' && role !== 'ADMIN' && !isElder && !isServant) {
                     if (visitUserId !== user?.uid) return false;
@@ -87,8 +88,8 @@ export default function VisitsHistory({ scope = 'all', showViewAll = true }: { s
             });
 
             // 3. Fetch Related Names manually
-            const addressIds = Array.from(new Set(filteredVisits.map((v: any) => v.addressId || v.address_id).filter(id => !!id)));
-            const userIds = Array.from(new Set(filteredVisits.map((v: any) => v.userId || v.user_id).filter(id => !!id)));
+            const addressIds = Array.from(new Set(filteredVisits.map((v: any) => v.addressId).filter(id => !!id)));
+            const userIds = Array.from(new Set(filteredVisits.map((v: any) => v.userId).filter(id => !!id)));
 
             const addressMap: Record<string, string> = {};
             const userMap: Record<string, string> = {};
@@ -139,9 +140,9 @@ export default function VisitsHistory({ scope = 'all', showViewAll = true }: { s
             }
 
             const mergedVisits = filteredVisits.map((v: any) => {
-                const addressId = v.addressId || v.address_id;
-                const userId = v.userId || v.user_id;
-                const visitDate = v.visitDate || v.visit_date;
+                const addressId = v.addressId;
+                const userId = v.userId;
+                const visitDate = v.visitDate;
 
                 return {
                     ...v,
@@ -279,9 +280,9 @@ export default function VisitsHistory({ scope = 'all', showViewAll = true }: { s
     const getStatusLabel = (status: string) => {
         switch (status) {
             case 'contacted': return { label: 'Encontrado', color: 'bg-green-50 text-green-700 border border-green-500 dark:bg-green-900/20 dark:border-green-600 dark:text-green-400' };
-            case 'not_contacted': return { label: 'Não Enc.', color: 'bg-orange-50 text-orange-600 border border-orange-500 dark:bg-orange-900/20 dark:border-orange-600 dark:text-orange-400' };
+            case 'notContacted': return { label: 'Não Enc.', color: 'bg-orange-50 text-orange-600 border border-orange-500 dark:bg-orange-900/20 dark:border-orange-600 dark:text-orange-400' };
             case 'moved': return { label: 'Mudou-se', color: 'bg-blue-50 text-blue-600 border border-blue-500 dark:bg-blue-900/20 dark:border-blue-600 dark:text-blue-400' };
-            case 'do_not_visit': return { label: 'Não Visitar', color: 'bg-red-50 text-red-600 border border-red-500 dark:bg-red-900/20 dark:border-red-600 dark:text-red-400' };
+            case 'doNotVisit': return { label: 'Não Visitar', color: 'bg-red-50 text-red-600 border border-red-500 dark:bg-red-900/20 dark:border-red-600 dark:text-red-400' };
             default: return { label: status, color: 'bg-gray-50 text-gray-600 border border-gray-300 dark:bg-gray-800 dark:border-gray-600 dark:text-gray-400' };
         }
     };
@@ -366,9 +367,9 @@ export default function VisitsHistory({ scope = 'all', showViewAll = true }: { s
                                             onChange={e => setEditForm({ ...editForm, status: e.target.value })}
                                         >
                                             <option value="contacted">Encontrado</option>
-                                            <option value="not_contacted">Não Encontrado</option>
+                                            <option value="notContacted">Não Encontrado</option>
                                             <option value="moved">Mudou-se</option>
-                                            <option value="do_not_visit">Não Visitar</option>
+                                            <option value="doNotVisit">Não Visitar</option>
                                         </select>
                                     </div>
 
@@ -418,28 +419,29 @@ export default function VisitsHistory({ scope = 'all', showViewAll = true }: { s
                                             </button>
 
                                             {openMenuId === visit.id && (
-                                                <div className="absolute right-0 top-full mt-2 w-32 bg-surface rounded-lg shadow-xl border border-surface-border py-2 z-50 animate-in fade-in zoom-in-95 duration-150 origin-top-right">
-                                                    <button
-                                                        onClick={() => {
-                                                            startEdit(visit);
-                                                            setOpenMenuId(null);
-                                                        }}
-                                                        className="w-full px-4 py-2 text-left text-xs font-bold text-gray-700 dark:text-gray-300 hover:bg-primary-light/50 dark:hover:bg-blue-900/30 hover:text-primary dark:hover:text-blue-400 flex items-center gap-2 transition-colors border-b border-surface-border"
-                                                    >
-                                                        <Pencil className="w-3.5 h-3.5" />
-                                                        Editar
-                                                    </button>
-                                                    <button
-                                                        onClick={() => {
-                                                            handleDelete(visit);
-                                                            setOpenMenuId(null);
-                                                        }}
-                                                        className="w-full px-4 py-2 text-left text-xs font-bold text-red-500 hover:bg-red-50 dark:hover:bg-red-900/30 flex items-center gap-2 transition-colors"
-                                                    >
-                                                        <Trash2 className="w-3.5 h-3.5" />
-                                                        Excluir
-                                                    </button>
-                                                </div>
+                                                <>
+                                                    <div className="fixed inset-0 z-40" onClick={() => setOpenMenuId(null)} />
+                                                    <div className="absolute right-0 top-full mt-2 w-48 bg-surface rounded-xl shadow-2xl border border-surface-border p-1 z-50 animate-in fade-in zoom-in-95 duration-200 origin-top-right">
+                                                        <DropDownItem
+                                                            icon={Pencil}
+                                                            label="Editar Registro"
+                                                            variant="primary"
+                                                            onClick={() => {
+                                                                startEdit(visit);
+                                                                setOpenMenuId(null);
+                                                            }}
+                                                        />
+                                                        <DropDownItem
+                                                            icon={Trash2}
+                                                            label="Excluir Registro"
+                                                            variant="danger"
+                                                            onClick={() => {
+                                                                handleDelete(visit);
+                                                                setOpenMenuId(null);
+                                                            }}
+                                                        />
+                                                    </div>
+                                                </>
                                             )}
                                         </div>
                                     </div>

@@ -38,22 +38,6 @@ export async function getAddresses(congregationId: string, cityId?: string | nul
         const snapshot = await getDocs(q);
         const addresses = snapshot.docs.map(d => ({ id: d.id, ...d.data() }));
 
-        if (snapshot.empty && cityId) {
-            // Retrocompatibilidade: busca por city_id/territory_id se os novos campos falharem
-             let qLegacy = query(
-                collection(db, TABLE),
-                where('congregation_id', '==', congregationId)
-            );
-            if (cityId) qLegacy = query(qLegacy, where('city_id', '==', cityId));
-            if (territoryId) qLegacy = query(qLegacy, where('territory_id', '==', territoryId));
-            
-            const snapLegacy = await getDocs(qLegacy);
-            return { 
-                success: true, 
-                addresses: snapLegacy.docs.map(d => ({ id: d.id, ...d.data() })) 
-            };
-        }
-
         return { success: true, addresses };
     } catch (error: any) {
         console.error('Error fetching addresses:', error);

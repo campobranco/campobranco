@@ -122,7 +122,7 @@ function SharedPreviewContent() {
 
             const { list: listData, items: fetchedItems, visits: visitsData, congregationCategory } = res;
 
-            setPageCongregationId(listData.congregation_id || null);
+            setPageCongregationId(listData.congregationId || null);
             setCongregationType(congregationCategory as any);
 
             // 2. Identify "Main Data" (The Territory or City being previewed)
@@ -138,12 +138,12 @@ function SharedPreviewContent() {
 
             // 3. Process Addresses
             // Filter snapshots to get only relevant addresses for this territory/city
-            // Addresses in snapshots usually have territory_id or city_id
+            // Endereços em snapshots devem conter territoryId ou cityId
             const addressesData = fetchedItems.filter((item: any) => {
                 const sourceData = item.data || item;
                 return type === 'city'
-                    ? (sourceData.city_id || sourceData.cityId) === id
-                    : (sourceData.territory_id || sourceData.territoryId) === id;
+                    ? sourceData.cityId === id
+                    : sourceData.territoryId === id;
             });
 
             const addresses: PreviewItem[] = addressesData.map((a: any) => {
@@ -153,21 +153,21 @@ function SharedPreviewContent() {
                     street: sourceData.street,
                     number: sourceData.number,
                     complement: sourceData.complement,
-                    residentName: sourceData.resident_name || sourceData.residentName,
-                    googleMapsLink: sourceData.google_maps_link || sourceData.googleMapsLink,
+                    residentName: sourceData.residentName,
+                    googleMapsLink: sourceData.googleMapsLink,
                     lat: sourceData.lat,
                     lng: sourceData.lng,
-                    isActive: sourceData.is_active !== false && sourceData.isActive !== false,
+                    isActive: sourceData.isActive !== false,
                     gender: sourceData.gender,
-                    isDeaf: sourceData.is_deaf || sourceData.isDeaf,
-                    isMinor: sourceData.is_minor || sourceData.isMinor,
-                    isStudent: sourceData.is_student || sourceData.isStudent,
-                    isNeurodivergent: sourceData.is_neurodivergent || sourceData.isNeurodivergent,
+                    isDeaf: sourceData.isDeaf,
+                    isMinor: sourceData.isMinor,
+                    isStudent: sourceData.isStudent,
+                    isNeurodivergent: sourceData.isNeurodivergent,
                     observations: sourceData.observations,
-                    visitStatus: sourceData.visit_status || sourceData.visitStatus,
-                    territoryId: sourceData.territory_id || sourceData.territoryId,
-                    cityId: sourceData.city_id || sourceData.cityId,
-                    inactivatedAt: sourceData.inactivated_at || sourceData.inactivatedAt
+                    visitStatus: sourceData.visitStatus,
+                    territoryId: sourceData.territoryId,
+                    cityId: sourceData.cityId,
+                    inactivatedAt: sourceData.inactivatedAt
                 };
             });
 
@@ -175,7 +175,7 @@ function SharedPreviewContent() {
             const linkResults: Record<string, any> = {};
             if (visitsData) {
                 visitsData.forEach((v: any) => {
-                    linkResults[v.address_id] = v;
+                    linkResults[v.addressId] = v;
                 });
             }
 
@@ -210,7 +210,7 @@ function SharedPreviewContent() {
                 setSubtitle(mainData.description || mainData.notes || "Cidade");
                 setCityName("");
             }
-            
+
             setItems(mergedItems);
             setLoading(false);
 
@@ -236,21 +236,21 @@ function SharedPreviewContent() {
         if (!selectedAddressForReport || !shareId) return;
 
         try {
-            const visit_date = new Date().toISOString();
+            const visitDate = new Date().toISOString();
 
             // Prepare visit data
             const visitData = {
-                address_id: selectedAddressForReport.id,
-                territory_id: selectedAddressForReport.territoryId,
-                user_id: user?.uid || null,
+                addressId: selectedAddressForReport.id,
+                territoryId: selectedAddressForReport.territoryId,
+                userId: user?.uid || null,
                 status: data.status,
                 notes: data.observations || '',
-                visit_date: visit_date,
-                tags_snapshot: {
-                    is_deaf: data.isDeaf,
-                    is_minor: data.isMinor,
-                    is_student: data.isStudent,
-                    is_neurodivergent: data.isNeurodivergent,
+                visitDate: visitDate,
+                tagsSnapshot: {
+                    isDeaf: data.isDeaf,
+                    isMinor: data.isMinor,
+                    isStudent: data.isStudent,
+                    isNeurodivergent: data.isNeurodivergent,
                     gender: data.gender
                 }
             };
@@ -431,9 +431,9 @@ function SharedPreviewContent() {
                     ${activeDropdownId === item.id ? 'relative z-20 ring-1 ring-primary-100 dark:ring-primary-900' : ''}
                     ${item.visitStatus && item.visitStatus !== 'none'
                         ? item.visitStatus === 'contacted' || item.visitStatus === 'contested' ? 'border-green-500 bg-green-50/30 dark:bg-green-900/10'
-                            : item.visitStatus === 'not_contacted' ? 'border-orange-500 bg-orange-50/30 dark:bg-orange-900/10'
+                            : item.visitStatus === 'notContacted' ? 'border-orange-500 bg-orange-50/30 dark:bg-orange-900/10'
                                 : item.visitStatus === 'moved' ? 'border-blue-500 bg-blue-50/30 dark:bg-blue-900/10'
-                                    : item.visitStatus === 'do_not_visit' ? 'border-red-500 bg-red-50/30 dark:bg-red-900/10'
+                                    : item.visitStatus === 'doNotVisit' ? 'border-red-500 bg-red-50/30 dark:bg-red-900/10'
                                         : 'border-surface-border'
                         : 'border-surface-border'
                     }
@@ -457,13 +457,13 @@ function SharedPreviewContent() {
                                     if (item.visitStatus === 'contacted' || item.visitStatus === 'contested') {
                                         badgeStyles = "bg-green-100 text-green-700 border-green-200 dark:bg-green-900/40 dark:text-green-400 dark:border-green-800";
                                         StatusIcon = ThumbsUp;
-                                    } else if (item.visitStatus === 'not_contacted') {
+                                    } else if (item.visitStatus === 'notContacted') {
                                         badgeStyles = "bg-orange-100 text-orange-700 border-orange-200 dark:bg-orange-900/40 dark:text-orange-400 dark:border-orange-800";
                                         StatusIcon = ThumbsDown;
                                     } else if (item.visitStatus === 'moved') {
                                         badgeStyles = "bg-blue-100 text-blue-700 border-blue-200 dark:bg-blue-900/40 dark:text-blue-400 dark:border-blue-800";
                                         StatusIcon = Home;
-                                    } else if (item.visitStatus === 'do_not_visit') {
+                                    } else if (item.visitStatus === 'doNotVisit') {
                                         badgeStyles = "bg-red-100 text-red-700 border-red-200 dark:bg-red-900/40 dark:text-red-400 dark:border-red-800";
                                         StatusIcon = Hand;
                                     }
@@ -642,9 +642,9 @@ function SharedPreviewContent() {
                     <div className="flex items-center gap-2">
                         <h1 className="font-extrabold text-2xl text-main leading-tight">{title}</h1>
                         {cityName && (
-                           <span className="text-sm font-bold text-primary dark:text-primary-light uppercase bg-primary-50 dark:bg-primary-900/10 px-2 py-0.5 rounded-md border border-primary-100 dark:border-primary-900/20">
-                               {cityName}
-                           </span>
+                            <span className="text-sm font-bold text-primary dark:text-primary-light uppercase bg-primary-50 dark:bg-primary-900/10 px-2 py-0.5 rounded-md border border-primary-100 dark:border-primary-900/20">
+                                {cityName}
+                            </span>
                         )}
                     </div>
                     <span className="text-xs text-muted font-bold uppercase tracking-wider">{subtitle}</span>
@@ -700,9 +700,9 @@ function SharedPreviewContent() {
                             // Map shared-list specific status to MapView status
                             let mapStatus: any = 'AGUARDANDO'; // Default Gray for shared links
                             if (a.visitStatus === 'contacted') mapStatus = 'OCUPADO';
-                            else if (a.visitStatus === 'not_contacted') mapStatus = 'NAO_CONTATADO';
+                            else if (a.visitStatus === 'notContacted') mapStatus = 'NAO_CONTATADO';
                             else if (a.visitStatus === 'moved') mapStatus = 'MUDOU';
-                            else if (a.visitStatus === 'do_not_visit') mapStatus = 'NAO_VISITAR';
+                            else if (a.visitStatus === 'doNotVisit') mapStatus = 'NAO_VISITAR';
 
                             return {
                                 id: a.id,

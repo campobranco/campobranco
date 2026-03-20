@@ -128,9 +128,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
                         // O próximo snapshot disparará com os dados atualizados
                     } else {
                         setActualRole(data.role || 'PUBLICADOR');
-                        const resolvedCongId = data.congregationId || data.congregation_id || null;
+                        const resolvedCongId = data.congregationId || null;
                         setCongregationId(resolvedCongId);
-                        setProfileName(data.name || data.display_name || user.displayName || user.email);
+                        setProfileName(data.name || user.displayName || user.email);
                         setNotificationsEnabledInternal(data.notificationsEnabled ?? true);
                         console.log(`[DEBUG] Perfil atualizado (Tempo Real): role=${data.role}, congregationId=${resolvedCongId}`);
                     }

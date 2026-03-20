@@ -10,18 +10,17 @@ export interface MapItem {
     id: string;
     lat?: number;
     lng?: number;
-    title: string;          // Used for Street name or main label (Address usually)
-    subtitle?: string;      // Used for extra info
-    color?: string;         // Legacy color prop (optional override)
+    title: string;          // Nome principal do marcador (normalmente o endereço)
+    subtitle?: string;      // Informação complementar exibida no marcador
     status?: 'LIVRE' | 'OCUPADO' | 'PENDENTE' | 'NAO_VISITAR' | 'MUDOU' | 'NAO_CONTATADO' | 'AGUARDANDO';
-    number?: string;        // visual "displayNumber"
-    residentName?: string;  // Name of the resident to display below
-    fullAddress?: string;   // Crucial for Geocoding: "Rua X, 123, Cidade-UF"
-    googleMapsLink?: string; // Optional: Extract coords from this link if available
+    number?: string;        // Número exibido no marcador (quando aplicável)
+    residentName?: string;  // Nome do morador para exibição
+    fullAddress?: string;   // Endereço completo para geocodificação
+    googleMapsLink?: string; // Link opcional para extrair coordenadas
     gender?: 'HOMEM' | 'MULHER' | 'CASAL';
     variant?: 'default' | 'city' | 'numbered';
-    index?: number;         // Used for numbered variant
-    lastVisit?: string;     // Formatted date string
+    index?: number;         // Índice usado na variante numerada
+    lastVisit?: string;     // Data formatada da última visita
     isDeaf?: boolean;
     isMinor?: boolean;
     isStudent?: boolean;

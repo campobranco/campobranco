@@ -51,7 +51,7 @@ export default function VisitReportModal({
     const congregationType = propType || forcedCongregationType || authType || 'TRADITIONAL';
 
     const [loading, setLoading] = useState(false);
-    const [status, setStatus] = useState<'contacted' | 'not_contacted' | 'moved' | 'do_not_visit' | 'contested' | ''>(
+    const [status, setStatus] = useState<'contacted' | 'notContacted' | 'moved' | 'doNotVisit' | 'contested' | ''>(
         (address.visitStatus && address.visitStatus !== 'none') ? address.visitStatus : ''
     );
     const [isDeaf, setIsDeaf] = useState(address.isDeaf || false);
@@ -238,11 +238,11 @@ export default function VisitReportModal({
                                         </button>
 
                                         <button
-                                            onClick={() => setStatus('not_contacted')}
+                                            onClick={() => setStatus('notContacted')}
                                             className={`p-4 rounded-lg flex flex-col items-center gap-2 transition-all border-2
-                                            ${status === 'not_contacted' ? 'bg-orange-50 dark:bg-orange-900/30 border-orange-500 dark:border-orange-600 text-orange-700 dark:text-orange-400' : 'bg-white dark:bg-slate-800 border-gray-200 dark:border-slate-700 hover:border-blue-200 dark:hover:border-blue-800 text-gray-500 dark:text-gray-400'}`}
+                                            ${status === 'notContacted' ? 'bg-orange-50 dark:bg-orange-900/30 border-orange-500 dark:border-orange-600 text-orange-700 dark:text-orange-400' : 'bg-white dark:bg-slate-800 border-gray-200 dark:border-slate-700 hover:border-blue-200 dark:hover:border-blue-800 text-gray-500 dark:text-gray-400'}`}
                                         >
-                                            <ThumbsDown className={`w-8 h-8 ${status === 'not_contacted' ? 'fill-orange-500' : ''}`} />
+                                            <ThumbsDown className={`w-8 h-8 ${status === 'notContacted' ? 'fill-orange-500' : ''}`} />
                                             <span className="text-xs font-bold uppercase">Não Contatado</span>
                                         </button>
 
@@ -256,11 +256,11 @@ export default function VisitReportModal({
                                         </button>
 
                                         <button
-                                            onClick={() => setStatus('do_not_visit')}
+                                            onClick={() => setStatus('doNotVisit')}
                                             className={`p-4 rounded-lg flex flex-col items-center gap-2 transition-all border-2
-                                            ${status === 'do_not_visit' ? 'bg-red-50 dark:bg-red-900/30 border-red-500 dark:border-red-600 text-red-700 dark:text-red-400' : 'bg-white dark:bg-slate-800 border-gray-200 dark:border-slate-700 hover:border-blue-200 dark:hover:border-blue-800 text-gray-500 dark:text-gray-400'}`}
+                                            ${status === 'doNotVisit' ? 'bg-red-50 dark:bg-red-900/30 border-red-500 dark:border-red-600 text-red-700 dark:text-red-400' : 'bg-white dark:bg-slate-800 border-gray-200 dark:border-slate-700 hover:border-blue-200 dark:hover:border-blue-800 text-gray-500 dark:text-gray-400'}`}
                                         >
-                                            <Hand className={`w-8 h-8 ${status === 'do_not_visit' ? 'fill-red-500' : ''}`} />
+                                            <Hand className={`w-8 h-8 ${status === 'doNotVisit' ? 'fill-red-500' : ''}`} />
                                             <span className="text-xs font-bold uppercase">Não Visitar</span>
                                         </button>
                                     </>

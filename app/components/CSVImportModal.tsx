@@ -100,12 +100,12 @@ function buildPreview(text: string): { cities: Record<string, PreviewCity>; tota
         mapNum: idx(['Número do Mapa (Territories name)', 'Número do Mapa']),
         mapDesc: idx(['Descrição (Territories notes)', 'Descrição']),
         street: idx(['Endereço (street)', 'Endereço']),
-        residents: idx(['Quantidade de residentes', 'Número de residentes (residents_count)', 'Número de residentes', 'Número de Residentes']),
-        name: idx(['Nome (resident_name)', 'Nome']),
+        residents: idx(['Quantidade de residentes', 'Número de residentes', 'Número de Residentes']),
+        name: idx(['Nome']),
         gender: idx(['Gênero (gender)', 'Gênero']),
-        active: idx(['Status (is_active)', 'Status']),
-        deaf: idx(['Surdo (is_deaf)', 'Surdo']),
-        minor: idx(['Menor de idade (is_minor)', 'Menor de idade']),
+        active: idx(['Status']),
+        deaf: idx(['Surdo']),
+        minor: idx(['Menor de idade']),
         number: idx(['Número', 'number', 'N°', 'Nº']),
     };
 

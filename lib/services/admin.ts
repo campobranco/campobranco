@@ -23,9 +23,9 @@ export async function getCongregations() {
  */
 export async function saveCongregation(data: any) {
     try {
-        const { id, name, city, category, term_type, customId } = data;
+        const { id, name, city, category, termType, customId } = data;
         let finalId = customId || id;
-        
+
         if (!finalId) {
             finalId = name.toLowerCase().replace(/\s+/g, '-').replace(/[^a-z0-9-]/g, '');
         }
@@ -35,7 +35,7 @@ export async function saveCongregation(data: any) {
             name,
             city,
             category,
-            term_type,
+            termType,
             updatedAt: new Date().toISOString()
         }, { merge: true });
 
@@ -66,16 +66,16 @@ export async function deleteCongregation(id: string, force: boolean = false) {
         // Se for force, poderíamos apagar tudo, mas no client-side é muito pesado.
         // O ideal é alertar o usuário para migrar os dados ou que a deleção forçada precisará limpar essas coleções manualmente.
         if (force) {
-             const collectionsToClean = ['users', 'territories', 'cities', 'shared_lists', 'addresses', 'visits', 'witnessing_points'];
-             for (const col of collectionsToClean) {
-                 const q = query(collection(db, col), where('congregationId', '==', id));
-                 const snap = await getDocs(q);
-                 if (!snap.empty) {
-                     const batch = writeBatch(db);
-                     snap.docs.forEach(d => batch.delete(d.ref));
-                     await batch.commit();
-                 }
-             }
+            const collectionsToClean = ['users', 'territories', 'cities', 'shared_lists', 'addresses', 'visits', 'witnessing_points'];
+            for (const col of collectionsToClean) {
+                const q = query(collection(db, col), where('congregationId', '==', id));
+                const snap = await getDocs(q);
+                if (!snap.empty) {
+                    const batch = writeBatch(db);
+                    snap.docs.forEach(d => batch.delete(d.ref));
+                    await batch.commit();
+                }
+            }
         }
 
         await deleteDoc(doc(db, 'congregations', id));
@@ -97,7 +97,7 @@ export async function migrateCongregation(oldId: string, newId: string) {
         const oldCongRef = doc(db, 'congregations', oldId);
         const oldCongSnap = await getDoc(oldCongRef);
         if (!oldCongSnap.exists()) throw new Error("Congregação original não encontrada.");
-        
+
         const originalCong = oldCongSnap.data();
 
         // 2. Create new congregation
@@ -115,7 +115,7 @@ export async function migrateCongregation(oldId: string, newId: string) {
         for (const collName of collections) {
             const q = query(collection(db, collName), where('congregationId', '==', oldId));
             const snapshot = await getDocs(q);
-            
+
             if (!snapshot.empty) {
                 let batch = writeBatch(db);
                 let count = 0;
@@ -136,7 +136,7 @@ export async function migrateCongregation(oldId: string, newId: string) {
 
         // 4. Delete old congregation
         await deleteDoc(oldCongRef);
-        
+
         return { success: true };
     } catch (error: any) {
         console.error("Migration error:", error);
@@ -145,14 +145,14 @@ export async function migrateCongregation(oldId: string, newId: string) {
 }
 
 /**
- * Atualiza um usuário (somente campos permitidos como name, role, congregation_id)
+ * Atualiza um usuário (somente campos permitidos como name, role, congregationId)
  */
 export async function updateUser(userId: string, data: any) {
     try {
         if (!userId) throw new Error("ID do usuário inválido");
 
         const userRef = doc(db, 'users', userId);
-        
+
         await setDoc(userRef, {
             ...data,
             updatedAt: new Date().toISOString()
@@ -173,15 +173,15 @@ export async function deleteUser(userId: string) {
         if (!userId) throw new Error("ID do usuário inválido");
 
         // 1. Verificar registros vinculados (Visitas e shared_lists criadas ou atribuídas)
-        const visitsQuery = query(collection(db, 'visits'), where('created_by', '==', userId));
+        const visitsQuery = query(collection(db, 'visits'), where('createdBy', '==', userId));
         const visitsSnap = await getDocs(visitsQuery);
-        
-        const listsQuery = query(collection(db, 'shared_lists'), where('assigned_to', '==', userId));
+
+        const listsQuery = query(collection(db, 'shared_lists'), where('assignedTo', '==', userId));
         const listsSnap = await getDocs(listsQuery);
 
         if (!visitsSnap.empty || !listsSnap.empty) {
             return {
-                success: false, 
+                success: false,
                 error: `Este membro possui ${visitsSnap.size} visitas e ${listsSnap.size} listas vinculadas.`,
                 code: 'HAS_RELATIONS'
             };
@@ -208,10 +208,11 @@ export async function repairOrphanData(id: string, type: string, updates: any) {
             type === 'territory' ? 'territories' :
                 type === 'witnessing' ? 'witnessing_points' :
                     type === 'visit' ? 'visits' :
-                        type === 'city' ? 'cities' : type;
+                        type === 'city' ? 'cities' :
+                            type === 'shared_lists' ? 'shared_lists' : type;
 
         const docRef = doc(db, collectionName, id);
-        
+
         await updateDoc(docRef, {
             ...updates,
             updatedAt: new Date().toISOString()

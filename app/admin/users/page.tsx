@@ -40,6 +40,8 @@ import BottomNav from '@/app/components/BottomNav';
 import ConfirmationModal from '@/app/components/ConfirmationModal';
 import { toast } from 'sonner';
 import { updateUser, deleteUser } from '@/lib/services/admin';
+import DropDownItem from '@/app/components/DropDownItem';
+
 
 
 interface UserProfile {
@@ -50,8 +52,6 @@ interface UserProfile {
     name?: string;
     provider?: string;
     congregationId?: string | null;
-    // Retrocompatibilidade
-    congregation_id?: string | null;
 }
 
 interface Congregation {
@@ -119,9 +119,7 @@ export default function AdminUsersPage() {
         const unsubscribe = onSnapshot(usersQuery, (snapshot) => {
             const usersData = snapshot.docs.map(doc => ({
                 id: doc.id,
-                ...doc.data(),
-                // Mapeia congregationId para congregation_id para compatibilidade com o restante do código
-                congregation_id: doc.data().congregationId || doc.data().congregation_id
+                ...doc.data()
             })) as UserProfile[];
             setUsers(usersData);
             setLoadingData(false);
@@ -145,7 +143,7 @@ export default function AdminUsersPage() {
         if (!isAdminRoleGlobal && !isElder) return;
         if (!editingUser) return;
 
-        if (!isAdminRoleGlobal && editingUser.congregation_id !== congregationId) {
+        if (!isAdminRoleGlobal && editingUser.congregationId !== congregationId) {
             toast.error("Você só pode editar usuários da sua própria congregação.");
             return;
         }
@@ -174,7 +172,7 @@ export default function AdminUsersPage() {
             const result = await updateUser(editingUser.id, {
                 name: editName.trim(),
                 role: legacyRole,
-                congregation_id: editCongId || null
+                congregationId: editCongId || null
             });
 
             if (!result.success) {
@@ -188,7 +186,7 @@ export default function AdminUsersPage() {
             // garantindo consistência entre o estado local e o banco ao recarregar.
             setUsers(prev => prev.map(u =>
                 u.id === editingUser.id
-                    ? { ...u, name: editName.trim(), role: legacyRole, roles: undefined, congregation_id: editCongId || null }
+                    ? { ...u, name: editName.trim(), role: legacyRole, roles: undefined, congregationId: editCongId || null }
                     : u
             ));
 
@@ -237,7 +235,7 @@ export default function AdminUsersPage() {
             return;
         }
 
-        if (!isAdminRoleGlobal && targetUser.congregation_id !== congregationId) {
+        if (!isAdminRoleGlobal && targetUser.congregationId !== congregationId) {
             toast.error("Você só pode excluir usuários da sua própria congregação.");
             return;
         }
@@ -365,10 +363,10 @@ export default function AdminUsersPage() {
                                                         <Mail className="w-3 h-3 shrink-0" />
                                                         {u.email}
                                                     </span>
-                                                    {u.congregation_id && (
+                                                    {u.congregationId && (
                                                         <span className="text-[10px] text-emerald-600 font-bold flex items-center gap-1.5 uppercase tracking-tight">
                                                             <Building2 className="w-3 h-3 shrink-0" />
-                                                            {congregations.find(c => c.id === u.congregation_id)?.name}
+                                                            {congregations.find(c => c.id === u.congregationId)?.name}
                                                         </span>
                                                     )}
                                                 </div>
@@ -401,32 +399,33 @@ export default function AdminUsersPage() {
 
                                     {/* Action Dropdown seguindo o padrão do app */}
                                     {openMenuId === u.id && (
-                                        <div className="absolute right-4 top-14 bg-surface rounded-lg shadow-xl border border-surface-border py-2 z-20 min-w-[140px] animate-in fade-in zoom-in-95 duration-150 origin-top-right">
-                                            <button
-                                                onClick={() => {
-                                                    setEditingUser(u);
-                                                    setEditName(u.name || '');
-                                                    setEditRoles(u.roles || [u.role] || ['PUBLICADOR']);
-                                                    setEditCongId(u.congregation_id || '');
-                                                    setShowEditModal(true);
-                                                    setOpenMenuId(null);
-                                                }}
-                                                className="w-full px-4 py-2 text-left text-xs font-bold text-main hover:bg-emerald-50 dark:hover:bg-emerald-900/20 hover:text-emerald-600 flex items-center gap-2 transition-colors border-b border-surface-border"
-                                            >
-                                                <Pencil className="w-3.5 h-3.5" />
-                                                Editar
-                                            </button>
-                                            <button
-                                                onClick={() => {
-                                                    handleDeleteUser(u);
-                                                    setOpenMenuId(null);
-                                                }}
-                                                className="w-full px-4 py-2 text-left text-xs font-bold text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20 flex items-center gap-2 transition-colors"
-                                            >
-                                                <Trash2 className="w-3.5 h-3.5" />
-                                                Excluir
-                                            </button>
-                                        </div>
+                                        <>
+                                            <div className="fixed inset-0 z-40" onClick={() => setOpenMenuId(null)} />
+                                            <div className="absolute right-4 top-14 bg-surface rounded-xl shadow-2xl border border-surface-border p-1 z-50 min-w-[170px] animate-in fade-in zoom-in-95 duration-150 origin-top-right">
+                                                <DropDownItem
+                                                    icon={Pencil}
+                                                    label="Editar"
+                                                    variant="neutral"
+                                                    onClick={() => {
+                                                        setEditingUser(u);
+                                                        setEditName(u.name || '');
+                                                        setEditRoles(u.roles || [u.role] || ['PUBLICADOR']);
+                                                        setEditCongId(u.congregationId || '');
+                                                        setShowEditModal(true);
+                                                        setOpenMenuId(null);
+                                                    }}
+                                                />
+                                                <DropDownItem
+                                                    icon={Trash2}
+                                                    label="Excluir"
+                                                    variant="danger"
+                                                    onClick={() => {
+                                                        handleDeleteUser(u);
+                                                        setOpenMenuId(null);
+                                                    }}
+                                                />
+                                            </div>
+                                        </>
                                     )}
 
                                     {updatingId === u.id && (

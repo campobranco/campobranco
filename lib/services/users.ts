@@ -27,15 +27,6 @@ export async function getCongregationUsers(congregationId: string) {
 
         let snapshot = await getDocs(q);
 
-        if (snapshot.empty) {
-            // Retrocompatibilidade
-            const qLegacy = query(
-                collection(db, TABLE),
-                where('congregation_id', '==', congregationId)
-            );
-            snapshot = await getDocs(qLegacy);
-        }
-
         const users = snapshot.docs.map(doc => {
             const data = doc.data();
             return {
@@ -43,7 +34,7 @@ export async function getCongregationUsers(congregationId: string) {
                 name: data.name || data.displayName || 'Sem Nome',
                 email: data.email,
                 role: data.role || 'PUBLICADOR',
-                avatar_url: data.photoURL || null
+                avatarUrl: data.photoURL || null
             };
         });
 

@@ -15,8 +15,7 @@ import {
     orderBy,
     serverTimestamp,
     limit,
-    writeBatch,
-    Timestamp 
+    writeBatch
 } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
 
@@ -45,19 +44,19 @@ export async function reportVisit(shareId: string, visitData: any) {
         const finalVisitData = {
             ...visitData,
             sharedListId: shareId,
-            congregationId: list.congregationId || list.congregation_id,
+            congregationId: list.congregationId,
             createdAt: serverTimestamp(),
         };
 
         const docRef = await addDoc(collection(db, TABLE), finalVisitData);
 
         // Atualiza ativamente o documento do endereço correspondente com o status
-        if (visitData.address_id) {
+        if (visitData.addressId) {
             try {
-                await updateDoc(doc(db, 'addresses', visitData.address_id), {
-                    visit_status: visitData.status,
-                    last_visited_at: new Date().toISOString(),
-                    last_visited_by: visitData.user_id || visitData.userId || null,
+                await updateDoc(doc(db, 'addresses', visitData.addressId), {
+                    visitStatus: visitData.status,
+                    lastVisitedAt: new Date().toISOString(),
+                    lastVisitedBy: visitData.userId || null,
                     notes: visitData.notes || ''
                 });
             } catch (err) {
@@ -104,7 +103,7 @@ export async function deleteVisitByAddressAndShare(addressId: string, shareId: s
     try {
         const q = query(
             collection(db, TABLE),
-            where('address_id', '==', addressId),
+            where('addressId', '==', addressId),
             where('sharedListId', '==', shareId),
             limit(1)
         );
@@ -114,12 +113,12 @@ export async function deleteVisitByAddressAndShare(addressId: string, shareId: s
         const batch = writeBatch(db);
         snapshot.docs.forEach(d => batch.delete(d.ref));
 
-        // Also revert the address visit_status
+        // Também reverte o status de visita do endereço
         try {
             batch.update(doc(db, 'addresses', addressId), {
-                visit_status: null,
-                last_visited_at: null,
-                last_visited_by: null
+                visitStatus: null,
+                lastVisitedAt: null,
+                lastVisitedBy: null
             });
         } catch (err) {
             console.warn('Silent skip address reset', err);

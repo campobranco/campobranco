@@ -37,6 +37,7 @@ import VisitReportModal from '@/app/components/VisitReportModal';
 import VisitHistoryModal from '@/app/components/VisitHistoryModal';
 import TerritoryHistoryModal from '@/app/components/TerritoryHistoryModal';
 import ConfirmationModal from '@/app/components/ConfirmationModal';
+import DropDownItem from '@/app/components/DropDownItem';
 import { toast } from 'sonner';
 import Link from 'next/link';
 import { useRouter, useSearchParams } from 'next/navigation';
@@ -95,9 +96,9 @@ export default function SharedListView({ id: propId }: SharedListViewProps) {
         total: 0,
         processed: 0,
         contacted: 0,
-        not_contacted: 0,
+        notContacted: 0,
         moved: 0,
-        do_not_visit: 0,
+        doNotVisit: 0,
         contested: 0
     });
 
@@ -123,18 +124,10 @@ export default function SharedListView({ id: propId }: SharedListViewProps) {
 
                 const { list, items: fetchedItems, visits } = resData as any;
 
-                setListData({
-                    ...list,
-                    assignedTo: list.assigned_to,
-                    assignedName: list.assigned_name,
-                    congregationId: list.congregation_id,
-                    territoryId: list.territory_id,
-                    cityId: list.city_id,
-                    expiresAt: list.expires_at
-                } as any);
+                setListData(list as any);
 
                 // Show responsibility modal if no one is assigned, list is active, and user IS logged in
-                const hasResponsible = list.assigned_to || list.assignedTo || list.assigned_name || list.assignedName;
+                const hasResponsible = list.assignedTo || list.assignedName;
                 if (!hasResponsible && list.status !== 'completed' && user) {
                     setIsResponsibilityModalOpen(true);
                 }
@@ -143,7 +136,7 @@ export default function SharedListView({ id: propId }: SharedListViewProps) {
                 const linkResults: Record<string, any> = {};
                 if (visits) {
                     visits.forEach((v: any) => {
-                        linkResults[v.address_id] = v;
+                        linkResults[v.addressId] = v;
                     });
                 }
 
@@ -162,7 +155,7 @@ export default function SharedListView({ id: propId }: SharedListViewProps) {
                             completed: result?.status === 'contacted',
                             visitStatus: result?.status || item.visitStatus || 'none',
                             visitNotes: result?.notes || '',
-                            inactivatedAt: sourceData.inactivated_at || sourceData.inactivatedAt
+                            inactivatedAt: sourceData.inactivatedAt
                         };
                     });
 
@@ -175,7 +168,7 @@ export default function SharedListView({ id: propId }: SharedListViewProps) {
                         const territoryIds = (list.items || []);
                         allAddresses = fetchedItems.filter((item: any) => {
                             const sourceData = item.data || item;
-                            const tId = sourceData.territory_id || sourceData.territoryId;
+                            const tId = sourceData.territoryId;
                             return tId && (territoryIds.includes(tId) || tId === list.territoryId);
                         }).map((item: any) => ({
                             ...(item.data || item),
@@ -189,15 +182,15 @@ export default function SharedListView({ id: propId }: SharedListViewProps) {
                         total: 0,
                         processed: 0,
                         contacted: 0,
-                        not_contacted: 0,
+                        notContacted: 0,
                         moved: 0,
-                        do_not_visit: 0,
+                        doNotVisit: 0,
                         contested: 0
                     };
 
                     allAddresses.forEach((addr: any) => {
-                        if (addr.is_active !== false && addr.isActive !== false) {
-                            const tId = addr.territory_id || addr.territoryId;
+                        if (addr.isActive !== false) {
+                            const tId = addr.territoryId;
                             if (tId) counts[tId] = (counts[tId] || 0) + 1;
                             stats.total++;
 
@@ -208,9 +201,9 @@ export default function SharedListView({ id: propId }: SharedListViewProps) {
                                 stats.processed++;
                                 if (tId) procCounts[tId] = (procCounts[tId] || 0) + 1;
                                 if (currentStatus === 'contacted') stats.contacted++;
-                                else if (currentStatus === 'not_contacted') stats.not_contacted++;
+                                else if (currentStatus === 'notContacted') stats.notContacted++;
                                 else if (currentStatus === 'moved') stats.moved++;
-                                else if (currentStatus === 'do_not_visit') stats.do_not_visit++;
+                                else if (currentStatus === 'doNotVisit') stats.doNotVisit++;
                                 else if (currentStatus === 'contested') stats.contested++;
                             }
                         }
@@ -242,7 +235,7 @@ export default function SharedListView({ id: propId }: SharedListViewProps) {
                 setConfirmModal(prev => ({ ...prev, isOpen: false }));
                 setReturning(true);
                 try {
-                    const resData = await processSharedListAction(id, 'return_map');
+                    const resData = await processSharedListAction(id, 'returnMap');
                     if (!resData.success) throw new Error(resData.error || 'Erro ao devolver mapa');
                     toast.success("Mapa devolvido com sucesso! O acesso será encerrado em 24 horas.");
                     window.location.reload();
@@ -267,7 +260,7 @@ export default function SharedListView({ id: propId }: SharedListViewProps) {
                     item.id === territoryId ? { ...item, visitStatus: 'completed' } : item
                 ));
                 try {
-                    const resData = await processSharedListAction(id as string, 'return_territory', { territoryId, undo: false });
+                    const resData = await processSharedListAction(id as string, 'returnTerritory', { territoryId, undo: false });
                     if (!resData.success) throw new Error(resData.error || 'Erro ao devolver território');
                     toast.success(`Território ${territoryName} devolvido.`);
                 } catch (e: any) {
@@ -293,7 +286,7 @@ export default function SharedListView({ id: propId }: SharedListViewProps) {
                     item.id === territoryId ? { ...item, visitStatus: 'active' } : item
                 ));
                 try {
-                    const resData = await processSharedListAction(id as string, 'return_territory', { territoryId, undo: true });
+                    const resData = await processSharedListAction(id as string, 'returnTerritory', { territoryId, undo: true });
                     if (!resData.success) throw new Error(resData.error || 'Erro ao desfazer');
                     if (listData?.status === 'completed') {
                         setListData(prev => prev ? { ...prev, status: 'active' } : null);
@@ -320,7 +313,7 @@ export default function SharedListView({ id: propId }: SharedListViewProps) {
         if (!id) return;
         setAccepting(true);
         try {
-            const resData = await processSharedListAction(id, 'accept_responsibility', {
+            const resData = await processSharedListAction(id, 'acceptResponsibility', {
                 userId: user.uid,
                 userName: profileName || 'Irmão sem Nome',
                 userCongregationId: listData?.congregationId
@@ -354,16 +347,16 @@ export default function SharedListView({ id: propId }: SharedListViewProps) {
         const savedItem = visitingItem;
         setVisitingItem(null);
         try {
-            const visit_date = new Date().toISOString();
+            const visitDate = new Date().toISOString();
             const visitData = {
-                address_id: savedItem.id,
-                territory_id: savedItem.territory_id || listData?.territoryId,
-                user_id: user?.uid || 'anonymous',
-                user_name: profileName || 'Visitante',
+                addressId: savedItem.id,
+                territoryId: savedItem.territoryId || listData?.territoryId,
+                userId: user?.uid || 'anonymous',
+                userName: profileName || 'Visitante',
                 status: data.status,
                 notes: data.observations || '',
-                visit_date: visit_date,
-                tags_snapshot: {
+                visitDate: visitDate,
+                tagsSnapshot: {
                     isDeaf: data.isDeaf || false,
                     isMinor: data.isMinor || false,
                     isStudent: data.isStudent || false,
@@ -401,7 +394,7 @@ export default function SharedListView({ id: propId }: SharedListViewProps) {
     };
 
     const handleOpenMap = (item: any) => {
-        if (item.waze_link) {
+        if (item.wazeLink) {
             setMapSelectionItem(item);
             return;
         }
@@ -477,9 +470,9 @@ export default function SharedListView({ id: propId }: SharedListViewProps) {
                             <div className="space-y-2">
                                 <div className="h-4 w-full bg-gray-100 dark:bg-gray-800 rounded-full overflow-hidden flex">
                                     <div style={{ width: `${(globalStats.contacted / globalStats.total) * 100}%` }} className="bg-green-600 h-full transition-all duration-500" title={`Contatados: ${globalStats.contacted}`} />
-                                    <div style={{ width: `${(globalStats.not_contacted / globalStats.total) * 100}%` }} className="bg-orange-500 h-full transition-all duration-500" title={`Não Contatados: ${globalStats.not_contacted}`} />
+                                    <div style={{ width: `${(globalStats.notContacted / globalStats.total) * 100}%` }} className="bg-orange-500 h-full transition-all duration-500" title={`Não Contatados: ${globalStats.notContacted}`} />
                                     <div style={{ width: `${(globalStats.moved / globalStats.total) * 100}%` }} className="bg-blue-500 h-full transition-all duration-500" title={`Mudou-se: ${globalStats.moved}`} />
-                                    <div style={{ width: `${(globalStats.do_not_visit / globalStats.total) * 100}%` }} className="bg-red-500 h-full transition-all duration-500" title={`Não Visitar: ${globalStats.do_not_visit}`} />
+                                    <div style={{ width: `${(globalStats.doNotVisit / globalStats.total) * 100}%` }} className="bg-red-500 h-full transition-all duration-500" title={`Não Visitar: ${globalStats.doNotVisit}`} />
                                 </div>
                                 <div className="flex justify-between text-xs font-bold text-muted">
                                     <span>{globalStats.processed} de {globalStats.total} visitas concluídas</span>
@@ -558,7 +551,7 @@ export default function SharedListView({ id: propId }: SharedListViewProps) {
                         }
                         return (
                             <div key={item.id} className="block group">
-                                <div className={`bg-surface p-4 rounded-lg border border-surface-border flex items-center gap-4 shadow-sm group-hover:border-primary-light dark:group-hover:border-primary-dark group-hover:shadow-md transition-all relative overflow-hidden ${item.is_active === false || item.isActive === false ? 'opacity-60 grayscale' : ''}`}>
+                                <div className={`bg-surface p-4 rounded-lg border border-surface-border flex items-center gap-4 shadow-sm group-hover:border-primary-light dark:group-hover:border-primary-dark group-hover:shadow-md transition-all relative overflow-hidden ${item.isActive === false ? 'opacity-60 grayscale' : ''}`}>
                                     <div
                                         onClick={() => {
                                             if (listData?.type === 'address') {
@@ -567,7 +560,7 @@ export default function SharedListView({ id: propId }: SharedListViewProps) {
                                         }}
                                         className={`absolute inset-0 z-0 ${listData?.type === 'address' ? 'cursor-pointer' : ''}`}
                                     />
-                                    <div className={`w-12 h-12 rounded-lg flex items-center justify-center shrink-0 transition-colors shadow-sm ${listData?.type === 'address' ? (item.visitStatus === 'contacted' ? 'bg-[#21832B] text-white' : item.visitStatus === 'not_contacted' ? 'bg-orange-500 text-white' : item.visitStatus === 'moved' ? 'bg-blue-500 text-white' : item.visitStatus === 'do_not_visit' ? 'bg-red-500 text-white' : 'bg-primary-light/50 dark:bg-primary-dark/30 text-primary-dark dark:text-primary-light group-hover:bg-primary-light/80 dark:group-hover:bg-primary-dark/50 group-hover:text-primary-dark dark:group-hover:text-primary-light') : listData?.type === 'territory' && (addressCounts[item.id] > 0 && addressCounts[item.id] === processedCounts[item.id]) ? 'bg-green-600 text-white shadow-lg shadow-green-500/20' : 'bg-gray-50 dark:bg-gray-800 text-gray-400 dark:text-gray-500 border border-gray-100 dark:border-gray-700 group-hover:bg-primary-light/50 dark:group-hover:bg-primary-dark/30 group-hover:text-primary dark:group-hover:text-primary-light'}`}>
+                                    <div className={`w-12 h-12 rounded-lg flex items-center justify-center shrink-0 transition-colors shadow-sm ${listData?.type === 'address' ? (item.visitStatus === 'contacted' ? 'bg-[#21832B] text-white' : item.visitStatus === 'notContacted' ? 'bg-orange-500 text-white' : item.visitStatus === 'moved' ? 'bg-blue-500 text-white' : item.visitStatus === 'doNotVisit' ? 'bg-red-500 text-white' : 'bg-primary-light/50 dark:bg-primary-dark/30 text-primary-dark dark:text-primary-light group-hover:bg-primary-light/80 dark:group-hover:bg-primary-dark/50 group-hover:text-primary-dark dark:group-hover:text-primary-light') : listData?.type === 'territory' && (addressCounts[item.id] > 0 && addressCounts[item.id] === processedCounts[item.id]) ? 'bg-green-600 text-white shadow-lg shadow-green-500/20' : 'bg-gray-50 dark:bg-gray-800 text-gray-400 dark:text-gray-500 border border-gray-100 dark:border-gray-700 group-hover:bg-primary-light/50 dark:group-hover:bg-primary-dark/30 group-hover:text-primary dark:group-hover:text-primary-light'}`}>
                                         {listData?.type === 'city' && <Building2 className="w-6 h-6" />}
                                         {listData?.type === 'territory' && <MapIcon className="w-6 h-6" />}
                                         {listData?.type === 'address' && (
@@ -593,10 +586,10 @@ export default function SharedListView({ id: propId }: SharedListViewProps) {
                                                 <div className="flex flex-wrap items-center gap-2 mt-1 text-xs text-muted">
                                                     {item.peopleCount && <div className="flex items-center gap-1 bg-gray-100 dark:bg-gray-800 px-1.5 py-0.5 rounded-md"><Users className="w-3 h-3" /><span className="font-bold">{item.peopleCount}</span></div>}
                                                     {item.residentName && <span className="font-semibold text-main">{item.residentName}</span>}
-                                                    {item.is_deaf && <span className="flex items-center gap-1 bg-yellow-100 text-yellow-800 px-1.5 py-0.5 rounded-md font-bold text-[10px] uppercase"><Ear className="w-3 h-3" /> Surdo</span>}
-                                                    {item.is_minor && <span className="flex items-center gap-1 bg-primary-light/30 text-primary-dark px-1.5 py-0.5 rounded-md font-bold text-[10px] uppercase"><Baby className="w-3 h-3" /> Menor</span>}
-                                                    {item.is_student && <span className="flex items-center gap-1 bg-purple-100 text-purple-800 px-1.5 py-0.5 rounded-md font-bold text-[10px] uppercase"><GraduationCap className="w-3 h-3" /> Estudante</span>}
-                                                    {(item.is_active === false || item.isActive === false) && item.inactivatedAt && <span className="flex items-center gap-1 bg-red-50 text-red-600 px-1.5 py-0.5 rounded-md font-bold text-[10px] uppercase border border-red-100 dark:bg-red-900/20 dark:text-red-400 dark:border-red-900/30"><Calendar className="w-3 h-3" /> Desativado em: {new Date(item.inactivatedAt).toLocaleDateString('pt-BR')}</span>}
+                                                    {item.isDeaf && <span className="flex items-center gap-1 bg-yellow-100 text-yellow-800 px-1.5 py-0.5 rounded-md font-bold text-[10px] uppercase"><Ear className="w-3 h-3" /> Surdo</span>}
+                                                    {item.isMinor && <span className="flex items-center gap-1 bg-primary-light/30 text-primary-dark px-1.5 py-0.5 rounded-md font-bold text-[10px] uppercase"><Baby className="w-3 h-3" /> Menor</span>}
+                                                    {item.isStudent && <span className="flex items-center gap-1 bg-purple-100 text-purple-800 px-1.5 py-0.5 rounded-md font-bold text-[10px] uppercase"><GraduationCap className="w-3 h-3" /> Estudante</span>}
+                                                    {item.isActive === false && (item.inactivatedAt) && <span className="flex items-center gap-1 bg-red-50 text-red-600 px-1.5 py-0.5 rounded-md font-bold text-[10px] uppercase border border-red-100 dark:bg-red-900/20 dark:text-red-400 dark:border-red-900/30"><Calendar className="w-3 h-3" /> Desativado em: {new Date(item.inactivatedAt).toLocaleDateString('pt-BR')}</span>}
                                                 </div>
                                             </>
                                         )}
@@ -628,28 +621,31 @@ export default function SharedListView({ id: propId }: SharedListViewProps) {
                                                     <MoreVertical className="w-5 h-5" />
                                                 </button>
                                                 {openMenuId === item.id && (
-                                                    <div className="absolute right-0 top-10 bg-white dark:bg-slate-900 rounded-lg shadow-xl border border-primary-light/20 dark:border-slate-800 p-1 z-[30] min-w-[170px] animate-in fade-in zoom-in-95 duration-200">
-                                                        <button
-                                                            onClick={(e) => {
-                                                                e.stopPropagation();
-                                                                setViewingHistoryItem(item);
-                                                                setOpenMenuId(null);
-                                                            }}
-                                                            className="flex items-center gap-2 px-3 py-2.5 text-sm font-bold text-gray-600 dark:text-gray-300 hover:bg-primary-light/20 dark:hover:bg-primary-dark/20 hover:text-primary dark:hover:text-primary-light rounded-lg transition-colors w-full text-left"
-                                                        >
-                                                            <HistoryIcon className="w-4 h-4" />Ver Histórico
-                                                        </button>
-                                                        <button
-                                                            onClick={(e) => {
-                                                                e.stopPropagation();
-                                                                handleOpenMap(item);
-                                                                setOpenMenuId(null);
-                                                            }}
-                                                            className="flex items-center gap-2 px-3 py-2.5 text-sm font-bold text-gray-600 dark:text-gray-300 hover:bg-primary-light/50 dark:hover:bg-primary-dark/30 text-primary dark:text-primary-light rounded-lg transition-colors w-full text-left"
-                                                        >
-                                                            <Navigation className="w-4 h-4" />Abrir no Mapa
-                                                        </button>
-                                                    </div>
+                                                    <>
+                                                        <div className="fixed inset-0 z-20" onClick={(e) => { e.stopPropagation(); setOpenMenuId(null); }} />
+                                                        <div className="absolute right-0 top-10 bg-white dark:bg-slate-900 rounded-xl shadow-2xl border border-surface-border p-1 z-30 min-w-[200px] animate-in fade-in zoom-in-95 duration-200">
+                                                            <DropDownItem 
+                                                                icon={HistoryIcon} 
+                                                                label="Ver Histórico" 
+                                                                variant="indigo" 
+                                                                onClick={(e) => {
+                                                                    e.stopPropagation();
+                                                                    setViewingHistoryItem(item);
+                                                                    setOpenMenuId(null);
+                                                                }} 
+                                                            />
+                                                            <DropDownItem 
+                                                                icon={Navigation} 
+                                                                label="Abrir no Mapa" 
+                                                                variant="primary" 
+                                                                onClick={(e) => {
+                                                                    e.stopPropagation();
+                                                                    handleOpenMap(item);
+                                                                    setOpenMenuId(null);
+                                                                }} 
+                                                            />
+                                                        </div>
+                                                    </>
                                                 )}
                                             </div>
                                         ) : (
@@ -675,27 +671,27 @@ export default function SharedListView({ id: propId }: SharedListViewProps) {
             </main>
 
             {visitingItem && (
-                <VisitReportModal 
-                    address={visitingItem} 
-                    onClose={() => setVisitingItem(null)} 
-                    onSave={handleSaveVisit} 
-                    onDelete={handleDeleteVisit} 
-                    onViewHistory={() => { setViewingHistoryItem(visitingItem); setVisitingItem(null); }} 
+                <VisitReportModal
+                    address={visitingItem}
+                    onClose={() => setVisitingItem(null)}
+                    onSave={handleSaveVisit}
+                    onDelete={handleDeleteVisit}
+                    onViewHistory={() => { setViewingHistoryItem(visitingItem); setVisitingItem(null); }}
                 />
             )}
             {viewingHistoryItem && (
                 listData?.type === 'city' ? (
-                    <TerritoryHistoryModal 
-                        territoryId={viewingHistoryItem.id} 
-                        territoryName={viewingHistoryItem.name} 
-                        congregationId={listData?.congregationId || null} 
-                        onClose={() => setViewingHistoryItem(null)} 
+                    <TerritoryHistoryModal
+                        territoryId={viewingHistoryItem.id}
+                        territoryName={viewingHistoryItem.name}
+                        congregationId={listData?.congregationId || null}
+                        onClose={() => setViewingHistoryItem(null)}
                     />
                 ) : (
-                    <VisitHistoryModal 
-                        onClose={() => setViewingHistoryItem(null)} 
-                        addressId={viewingHistoryItem.id} 
-                        address={viewingHistoryItem.street || viewingHistoryItem.name} 
+                    <VisitHistoryModal
+                        onClose={() => setViewingHistoryItem(null)}
+                        addressId={viewingHistoryItem.id}
+                        address={viewingHistoryItem.street || viewingHistoryItem.name}
                     />
                 )
             )}
@@ -746,7 +742,7 @@ export default function SharedListView({ id: propId }: SharedListViewProps) {
                                     <ChevronRight className="w-4 h-4 opacity-50" />
                                 </button>
                                 <button
-                                    onClick={() => { window.open(mapSelectionItem.waze_link, '_blank'); setMapSelectionItem(null); }}
+                                    onClick={() => { window.open(mapSelectionItem.wazeLink, '_blank'); setMapSelectionItem(null); }}
                                     className="w-full flex items-center justify-between px-6 py-4 bg-sky-50 dark:bg-sky-900/20 hover:bg-sky-100 dark:hover:bg-sky-900/30 text-sky-700 dark:text-sky-400 rounded-2xl font-bold transition-all active:scale-[0.98] border border-sky-100/50 dark:border-sky-900/30"
                                 >
                                     <div className="flex items-center gap-3">

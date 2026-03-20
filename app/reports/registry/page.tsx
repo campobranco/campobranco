@@ -3,7 +3,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import { useAuth } from '@/app/context/AuthContext';
 import { db } from '@/lib/firebase';
-import { doc, updateDoc } from 'firebase/firestore';
+import { addDoc, collection, deleteDoc, doc, updateDoc } from 'firebase/firestore';
 import { ChevronLeft, ChevronRight, Plus, Save, X, Edit2, Trash2, Calendar, User, FileText, Download, Printer, Building2 } from "lucide-react";
 import ConfirmationModal from '@/app/components/ConfirmationModal';
 import Link from 'next/link';
@@ -13,8 +13,6 @@ import { format } from 'date-fns';
 import { toast } from 'sonner';
 
 import { getRegistryData } from '@/lib/services/reports';
-import { deleteDoc } from 'firebase/firestore';
-import { createSharedList } from '@/lib/services/shared_lists';
 
 interface Territory {
     id: string;
@@ -25,7 +23,7 @@ interface Territory {
 }
 
 interface Assignment {
-    id: string; // shared_list id
+    id: string; // id da lista compartilhada
     territoryId: string;
     publisherName: string;
     publisherId?: string;
@@ -36,7 +34,7 @@ interface Assignment {
 
 interface RegistryRow {
     territory: Territory;
-    lastCompletedDate?: Date; // Reference date (start of sheet)
+    lastCompletedDate?: Date; // Data de referência (início da folha)
     assignments: Assignment[];
 }
 
@@ -49,7 +47,7 @@ export default function RegistryPage() {
     const [territories, setTerritories] = useState<Territory[]>([]);
     const [pageLoading, setPageLoading] = useState(true);
 
-    // Edit/Add Modal State
+    // Estado do modal de edição/criação
     const [isModalOpen, setIsModalOpen] = useState(false);
     const [editingAssignment, setEditingAssignment] = useState<Partial<Assignment> | null>(null);
     const [selectedTerritoryId, setSelectedTerritoryId] = useState<string | null>(null);
@@ -63,7 +61,7 @@ export default function RegistryPage() {
 
     const [selectedCongregationId, setSelectedCongregationId] = useState<string | null>(null);
 
-    // Legacy Date Modal State
+    // Estado do modal de data legada
     const [isLegacyModalOpen, setIsLegacyModalOpen] = useState(false);
     const [editingLegacy, setEditingLegacy] = useState<{ territoryId: string; name: string; date?: Date } | null>(null);
 
@@ -73,7 +71,7 @@ export default function RegistryPage() {
         }
     }, [loading, isElder, isServant, isAdminRoleGlobal, router]);
 
-    // Initialize selectedCongregationId
+    // Inicializa selectedCongregationId
     useEffect(() => {
         if (!loading && congregationId && !selectedCongregationId) {
             setSelectedCongregationId(congregationId);
@@ -82,7 +80,7 @@ export default function RegistryPage() {
 
 
 
-    // Print Settings State
+    // Estado das configurações de impressão
     const [isPrintSettingsOpen, setIsPrintSettingsOpen] = useState(false);
     const [printMode, setPrintMode] = useState<'page-break' | 'continuous'>('page-break');
     const [minColumns, setMinColumns] = useState<Record<string, number>>({});
@@ -94,13 +92,29 @@ export default function RegistryPage() {
         if (rows.length > 0) {
             const cities = Array.from(new Set(rows.map(r => (r.territory.cityName || 'Sem Cidade').trim()))).sort();
             setAvailableCities(cities);
-            // Only set selected cities if not already set (to avoid resetting user selection on re-renders unless desired)
+            // Só define cidades selecionadas se ainda não estiverem definidas (evita resetar a seleção em re-renders)
             if (selectedCities.length === 0) {
                 setSelectedCities(cities);
             }
         }
     }, [rows, selectedCities.length]);
 
+
+    const parseDate = (d: any): Date | undefined => {
+        if (!d) return undefined;
+        if (d instanceof Date) return isNaN(d.getTime()) ? undefined : d;
+        if (typeof d === 'object') {
+            // Firestore Timestamp { seconds, nanoseconds }
+            if (typeof d.seconds === 'number') {
+                return new Date(d.seconds * 1000);
+            }
+            if (d.toDate && typeof d.toDate === 'function') {
+                return d.toDate();
+            }
+        }
+        const date = new Date(d);
+        return isNaN(date.getTime()) ? undefined : date;
+    };
 
     const fetchData = useCallback(async () => {
         const targetCongId = selectedCongregationId || congregationId;
@@ -110,14 +124,14 @@ export default function RegistryPage() {
         try {
             const { start, end } = getServiceYearRange(currentServiceYear);
 
-            // Fetch all data via Client Service
+            // Busca todos os dados via serviço de cliente
             const resData = await getRegistryData(targetCongId);
 
             if (!resData.success) throw new Error(resData.error || "Erro ao buscar dados do servidor");
 
             const terrData = resData.territories;
             const cityData = resData.cities;
-            const listData = resData.sharedLists;
+            const listData = resData.shared_lists || [];
 
             const cityMap = new Map<string, string>();
             cityData?.forEach((d: any) => cityMap.set(d.id, d.name));
@@ -125,12 +139,12 @@ export default function RegistryPage() {
             const terrs: Territory[] = terrData?.map((d: any) => ({
                 id: d.id,
                 name: d.name,
-                cityId: d.city_id,
-                cityName: cityMap.get(d.city_id),
-                manualLastCompletedDate: d.manual_last_completed_date ? new Date(d.manual_last_completed_date) : undefined
+                cityId: d.cityId,
+                cityName: cityMap.get(d.cityId),
+                manualLastCompletedDate: parseDate(d.manualLastCompletedDate)
             })) || [];
 
-            // Sort by City then Name (numeric aware)
+            // Ordena por cidade e depois por nome (numérico)
             terrs.sort((a, b) => {
                 if (a.cityName !== b.cityName) return (a.cityName || '').localeCompare(b.cityName || '');
                 return a.name.localeCompare(b.name, undefined, { numeric: true });
@@ -138,22 +152,42 @@ export default function RegistryPage() {
 
             setTerritories(terrs);
 
-            const assignmentsMap: Record<string, Assignment[]> = {};
-            const completedDatesMap: Record<string, Date> = {}; // For the "Last completed" column
+            // Busca nomes reais para os usuários de forma otimizada
+            const userIds = Array.from(new Set(listData.map((d: any) => d.assignedTo).filter((id: any) => id)));
+            const userNamesMap = new Map<string, string>();
 
-            listData?.forEach((data: any) => {
+            if (userIds.length > 0) {
+                // Como pode haver muitos usuários, buscamos em lotes de 30
+                const chunks = [];
+                for (let i = 0; i < userIds.length; i += 30) {
+                    chunks.push(userIds.slice(i, i + 30));
+                }
+
+                for (const chunk of chunks) {
+                    const { collection, query, where, getDocs, documentId } = await import('firebase/firestore');
+                    const userQuery = query(collection(db, 'users'), where(documentId(), 'in', chunk));
+                    const userSnap = await getDocs(userQuery);
+                    userSnap.docs.forEach(doc => userNamesMap.set(doc.id, doc.data().name));
+                }
+            }
+
+            const assignmentsMap: Record<string, Assignment[]> = {};
+            const completedDatesMap: Record<string, Date> = {}; // Para a coluna "Última conclusão"
+
+            listData.forEach((data: any) => {
                 if (data.type !== 'territory' || !data.items || data.items.length === 0) return;
 
-                // Determine dates
-                const createdDate = new Date(data.created_at || 0);
-                const returnDate = data.returned_at ? new Date(data.returned_at) :
-                    (data.status === 'completed' ? new Date() : undefined);
+                // Determina as datas usando parseDate robusto
+                const createdDate = parseDate(data.createdAt || data.assignedAt);
+                const returnDate = parseDate(data.returnedAt) || (data.status === 'completed' ? (createdDate || new Date()) : undefined);
 
-                // Check if this assignment belongs to the current service year
+                if (!createdDate) return;
+
+                // Verifica se a designação pertence ao ano de serviço atual
                 const inRange = (createdDate >= start && createdDate <= end) || (returnDate && returnDate >= start && returnDate <= end);
 
                 data.items.forEach((tId: string) => {
-                    // Handle "Last Completed" calculation (automatic from history)
+                    // Calcula "Última conclusão" (automático pelo histórico)
                     if (returnDate && returnDate < start) {
                         const existing = completedDatesMap[tId];
                         if (!existing || returnDate > existing) {
@@ -161,30 +195,41 @@ export default function RegistryPage() {
                         }
                     }
 
-                    // Handle Assignments for this year
+                    // Trata designações deste ano
                     if (inRange) {
                         if (!assignmentsMap[tId]) assignmentsMap[tId] = [];
+                        
+                        // Evita que o nome do território (ou variações como "1 - Catiguá") apareça como nome do publicador
+                        const terr = terrs.find(t => t.id === tId);
+                        const cleanTitle = data.title?.trim() || "";
+                        const cleanTerrName = terr?.name?.trim() || "";
+                        
+                        // Ignora se for o próprio nome do território, ou se for padrão numérico "1 - Catiguá"
+                        const isTerrTitle = cleanTitle === cleanTerrName || 
+                                          cleanTitle.includes(cleanTerrName) || 
+                                          /^\d+\s*-\s*/.test(cleanTitle);
+                        
                         assignmentsMap[tId].push({
                             id: data.id,
                             territoryId: tId,
-                            publisherName: data.assigned_name || data.title || 'Indefinido',
-                            publisherId: data.assigned_to,
+                            publisherName: data.assignedName || userNamesMap.get(data.assignedTo) || (!isTerrTitle && cleanTitle !== 'Registro Manual' ? cleanTitle : ''),
+                            publisherId: data.assignedTo,
                             assignedDate: createdDate,
                             completedDate: returnDate,
-                            isManual: data.title === 'Registro Manual' // Use title as marker instead
+                            isManual: data.title === 'Registro Manual'
                         });
                     }
                 });
             });
 
-            // 3. Build Rows
+            // 3. Monta as linhas
             const newRows: RegistryRow[] = terrs.map(t => {
                 const assigns = assignmentsMap[t.id] || [];
-                // Sort assignments by date
+                // Ordena as designações por data
                 assigns.sort((a, b) => a.assignedDate.getTime() - b.assignedDate.getTime());
 
-                // Determine Final Last Completed Date
-                // Precedence: Manual Override > Calculated History
+                // Determina a data final de última conclusão
+                // Prioridade: manual > histórico calculado
                 const finalLastCompleted = t.manualLastCompletedDate || completedDatesMap[t.id];
 
                 return {
@@ -226,34 +271,36 @@ export default function RegistryPage() {
             const targetCongId = selectedCongregationId || congregationId;
             if (!targetCongId) throw new Error("Congregação não identificada.");
 
+            const assignedDateIso = new Date(editingAssignment.assignedDate).toISOString();
             const payload: any = {
                 type: 'territory',
                 items: [selectedTerritoryId],
-                congregation_id: targetCongId,
-                assigned_name: editingAssignment.publisherName,
-                assigned_to: editingAssignment.publisherId || null,
-                created_at: new Date(editingAssignment.assignedDate).toISOString(),
+                congregationId: targetCongId,
+                assignedName: editingAssignment.publisherName,
+                assignedTo: editingAssignment.publisherId || null,
+                createdAt: assignedDateIso,
+                assignedAt: assignedDateIso,
+                updatedAt: new Date().toISOString(),
                 status: editingAssignment.completedDate ? 'completed' : 'active',
-                title: 'Registro Manual' // metadata marker
+                title: 'Registro Manual' // marcador de metadados
             };
 
             if (editingAssignment.completedDate) {
-                payload.returned_at = new Date(editingAssignment.completedDate).toISOString();
-                payload.expires_at = new Date(editingAssignment.completedDate.getTime() + 86400000).toISOString(); // +1 day just to be safe
+                payload.returnedAt = new Date(editingAssignment.completedDate).toISOString();
+                payload.expiresAt = new Date(editingAssignment.completedDate.getTime() + 86400000).toISOString(); // +1 dia para garantir
             } else {
-                // If active, give it 30 days default?
+                // Se estiver ativo, define 30 dias como padrão
                 const exp = new Date(editingAssignment.assignedDate);
                 exp.setDate(exp.getDate() + 30);
-                payload.expires_at = exp.toISOString();
+                payload.expiresAt = exp.toISOString();
             }
 
             if (editingAssignment.id) {
-                // Update existing
+                // Atualiza registro existente
                 const listRef = doc(db, 'shared_lists', editingAssignment.id);
                 await updateDoc(listRef, payload);
             } else {
-                // Create new manual record via createSharedList equivalent parameters manually, or direct Firestore add
-                await createSharedList(payload);
+                await addDoc(collection(db, 'shared_lists'), payload);
             }
 
             setIsModalOpen(false);
@@ -273,7 +320,7 @@ export default function RegistryPage() {
 
         try {
             const updatePayload = {
-                manual_last_completed_date: editingLegacy.date ? editingLegacy.date.toISOString() : null
+                manualLastCompletedDate: editingLegacy.date ? editingLegacy.date.toISOString() : null
             };
 
             const territoryRef = doc(db, "territories", editingLegacy.territoryId);
@@ -327,19 +374,19 @@ export default function RegistryPage() {
         const previousSelection = [...selectedCities];
         const previousTitle = document.title;
 
-        // 1. Isolate City
+        // 1. Isola a cidade
         setSelectedCities([city]);
 
-        // 2. Update Title for Filename
+        // 2. Atualiza o título para o nome do arquivo
         const yearLabel = getServiceYearLabel(currentServiceYear).replace('/', '-');
         document.title = `S-13_T [${yearLabel} - ${city}]`;
 
-        // 3. Wait and Print
+        // 3. Aguarda e imprime
         setTimeout(() => {
             window.print();
 
-            // 4. Restore
-            // Restore immediately after print dialog opens/closes
+            // 4. Restaura
+            // Restaura logo após abrir/fechar o diálogo de impressão
             setTimeout(() => {
                 setSelectedCities(previousSelection);
                 document.title = previousTitle;
@@ -349,7 +396,7 @@ export default function RegistryPage() {
 
     return (
         <div className="min-h-screen bg-background dark:bg-gray-950 text-main pb-10 print:bg-white print:text-black print:min-h-0">
-            {/* Header */}
+            {/* Cabeçalho */}
             <header className="bg-surface dark:bg-gray-900 border-b border-surface-border dark:border-gray-800 sticky top-0 z-20 px-6 py-4 flex items-center justify-between no-print">
                 <div className="flex items-center gap-3">
                     <button onClick={() => router.back()} className="p-2 hover:bg-surface-highlight dark:hover:bg-gray-800 rounded-full transition-colors">
@@ -395,9 +442,9 @@ export default function RegistryPage() {
 
             <main className="max-w-[1200px] mx-auto p-8 overflow-x-auto print-container">
                 <div className="text-center mb-6 hidden print:block">
-                    {/* Only show this global header if we are NOT printing, or manage via CSS logic below */}
+                    {/* Só exibe este cabeçalho global se NÃO estiver imprimindo (ou via CSS abaixo) */}
                 </div>
-                {/* On-Screen Header (Hidden on Print) */}
+                {/* Cabeçalho em tela (oculto na impressão) */}
                 <div className="text-center mb-6 print:hidden">
                     <h1 className="text-xl font-bold uppercase mb-1 font-sans text-main">REGISTRO DE DESIGNAÇÃO DE TERRITÓRIO</h1>
                     <div className="flex items-center justify-center gap-2 font-bold font-sans text-sm text-main">
@@ -413,13 +460,13 @@ export default function RegistryPage() {
                     </div>
                 ) : (
                     <div className="flex flex-col gap-8 print:block">
-                        {/* Filtered Cities Loop */}
+                        {/* Loop de cidades filtradas */}
                         {availableCities
                             .filter(city => selectedCities.includes(city))
                             .map((city, cityIndex) => {
                                 const cityRows = rows.filter(r => (r.territory.cityName || 'Sem Cidade') === city);
 
-                                // Determine number of pages needed for this city (assignments per page based on columnsPerPage)
+                                // Determina quantas páginas são necessárias para esta cidade (designações por página baseado em columnsPerPage)
                                 const currentMinColumns = minColumns[city] || 4;
                                 const maxAssignments = Math.max(...cityRows.map(r => r.assignments.length), currentMinColumns);
                                 const totalPages = Math.ceil(maxAssignments / COLUMNS_PER_PAGE) || 1;
@@ -443,7 +490,7 @@ export default function RegistryPage() {
                                     return (
                                         <div key={`${city}-${pageIndex}`} className={`flex flex-col break-inside-avoid ${shouldBreak ? 'print:break-before-page' : ''} ${!isStrictFirst && !shouldBreak ? 'mt-8 print:mt-8' : ''}`}>
 
-                                            {/* Print-Only Global Header */}
+                                            {/* Cabeçalho global somente na impressão */}
                                             {showMainHeader && (
                                                 <div className={`mb-2 hidden print:block ${isStrictFirst || isPageBreakMode ? 'pt-2' : 'pt-8 border-t border-black mt-8'}`}>
                                                     <h1 className="text-center text-[18px] font-bold uppercase mb-6 font-sans text-black tracking-wide">REGISTRO DE DESIGNAÇÃO DE TERRITÓRIO</h1>
@@ -454,7 +501,7 @@ export default function RegistryPage() {
                                             )}
 
                                             <div className={`border border-black bg-white dark:bg-transparent shadow-sm print:shadow-none min-w-[700px] print:min-w-full print:border-black print:bg-white ${!showMainHeader && !isPageBreakMode && isFirstPageOfCity ? 'border-t-0' : ''}`}>
-                                                {/* Table Column Headers */}
+                                                {/* Cabeçalhos das colunas */}
                                                 {showTableHeaders && (
                                                     <div className="flex border-b border-black bg-gray-200 dark:bg-gray-900 print:bg-gray-200 font-bold text-[9px] text-center tracking-tight font-sans text-black dark:text-gray-300 print:text-black print:border-black">
                                                         <div className="w-[50px] border-r border-black print:border-black flex items-center justify-center p-1 flex-col leading-tight">
@@ -480,17 +527,17 @@ export default function RegistryPage() {
                                                                 </div>
                                                             </div>
                                                         ))}
-                                                        {/* Spacer for Right Action Button Alignment */}
+                                                        {/* Espaçador para alinhar o botão de ação à direita */}
                                                         <div className="w-8 bg-transparent no-print"></div>
                                                     </div>
                                                 )}
 
-                                                {/* City Name Row */}
+                                                {/* Linha do nome da cidade */}
                                                 {showCityName && (
                                                     <div className={`bg-gray-100 dark:bg-gray-800 print:bg-gray-100 border-b border-black print:border-black p-1 font-bold text-xs text-center tracking-wide text-black dark:text-gray-200 print:text-black relative group/header ${showTableHeaders ? 'border-t-black print:border-t-black' : ''}`}>
                                                         {city} {totalPages > 1 && `(Parte ${pageIndex + 1})`}
 
-                                                        {/* Individual Print Button - Only on first page to imply Group Print */}
+                                                        {/* Botão de impressão individual - apenas na primeira página para indicar impressão do grupo */}
                                                         {pageIndex === 0 && (
                                                             <button
                                                                 onClick={(e) => { e.stopPropagation(); handlePrintSingleCity(city); }}
@@ -503,7 +550,7 @@ export default function RegistryPage() {
                                                     </div>
                                                 )}
 
-                                                {/* Rows */}
+                                                {/* Linhas */}
                                                 {cityRows.map((row) => {
                                                     let referenceDate = row.lastCompletedDate;
 
@@ -518,12 +565,12 @@ export default function RegistryPage() {
 
                                                     return (
                                                         <div key={row.territory.id} className="flex border-b border-black print:border-black text-xs h-[40px] hover:bg-yellow-50/30 dark:hover:bg-white/5 transition-colors group/row font-sans page-break-inside-avoid text-black dark:text-gray-200 print:text-black print:bg-white">
-                                                            {/* Territory Name */}
+                                                            {/* Nome do território */}
                                                             <div className="w-[50px] border-r border-black print:border-black flex flex-col items-center justify-center bg-gray-50 dark:bg-gray-900 print:bg-white p-1 font-bold text-sm text-black dark:text-gray-100 print:text-black">
                                                                 {row.territory.name}
                                                             </div>
 
-                                                            {/* Last Completed (Clickable) */}
+                                                            {/* Última conclusão (clicável) */}
                                                             <div
                                                                 onClick={() => {
                                                                     if (pageIndex === 0) {
@@ -541,7 +588,7 @@ export default function RegistryPage() {
                                                                 {pageIndex === 0 && <Edit2 className="w-3 h-3 absolute top-1 right-1 opacity-0 group-hover/legacy-cell:opacity-50 text-primary-light/500 no-print" />}
                                                             </div>
 
-                                                            {/* Assignments (Slots) */}
+                                                            {/* Designações (campos) */}
                                                             {Array.from({ length: 4 }).map((_, i) => {
                                                                 const assign = row.assignments[startIndex + i];
                                                                 return (
@@ -552,7 +599,7 @@ export default function RegistryPage() {
                                                                                     <span className="font-semibold text-black dark:text-gray-200 print:text-black line-clamp-1 text-[10px] leading-none w-full">
                                                                                         {assign.publisherName}
                                                                                     </span>
-                                                                                    {/* Actions Overlay */}
+                                                                                    {/* Camada de ações */}
                                                                                     <div className="absolute right-1 top-[1px] hidden group-hover/cell:flex gap-1 no-print bg-white dark:bg-gray-800 shadow-sm border border-gray-100 dark:border-gray-700 p-0.5 rounded-md z-10">
                                                                                         <button onClick={() => { setSelectedTerritoryId(row.territory.id); setEditingAssignment(assign); setIsModalOpen(true); }} className="text-primary hover:text-blue-800 dark:text-blue-400 dark:hover:text-blue-300 p-0.5 rounded"><Edit2 className="w-3 h-3" /></button>
                                                                                         <button onClick={() => handleDeleteAssignment(assign.id)} className="text-red-500 hover:text-red-700 dark:text-red-400 dark:hover:text-red-300 p-0.5 rounded"><Trash2 className="w-3 h-3" /></button>
@@ -578,7 +625,7 @@ export default function RegistryPage() {
                                                                 );
                                                             })}
 
-                                                            {/* Add Page Trigger (Right Edge) - Only on the last page */}
+                                                            {/* Gatilho para adicionar página (borda direita) - apenas na última página */}
                                                             {isLastPageOfCity && (
                                                                 <div
                                                                     className="w-8 hover:w-10 transition-all duration-200 bg-transparent hover:bg-green-50 dark:hover:bg-green-900/30 flex items-center justify-center cursor-pointer no-print group/add-col border-l border-transparent hover:border-green-200 dark:hover:border-green-800 shrink-0"
@@ -610,13 +657,13 @@ export default function RegistryPage() {
                                 });
                             })}
 
-                        {/* Continuous Footer Placeholder - Logic handled by showFooter */}
+                        {/* Placeholder do rodapé contínuo - lógica controlada por showFooter */}
                     </div>
                 )
                 }
             </main>
 
-            {/* Print Settings Modal */}
+            {/* Modal de configurações de impressão */}
             {isPrintSettingsOpen && (
                 <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm animate-in fade-in no-print">
                     <div className="bg-white dark:bg-gray-900 rounded-2xl w-full max-w-md p-6 shadow-2xl animate-in zoom-in-95">
@@ -626,7 +673,7 @@ export default function RegistryPage() {
                         </div>
 
                         <div className="space-y-6">
-                            {/* Layout Mode */}
+                            {/* Modo de layout */}
                             <div>
                                 <h3 className="text-sm font-bold text-gray-700 dark:text-gray-400 mb-2 uppercase">Layout</h3>
                                 <div className="grid grid-cols-2 gap-3">
@@ -650,7 +697,7 @@ export default function RegistryPage() {
                                 </div>
                             </div>
 
-                            {/* City Filter */}
+                            {/* Filtro de cidade */}
                             <div>
                                 <div className="flex items-center justify-between mb-2">
                                     <h3 className="text-sm font-bold text-gray-700 dark:text-gray-400 uppercase">Cidades</h3>
@@ -692,7 +739,7 @@ export default function RegistryPage() {
                                 onClick={() => {
                                     setIsPrintSettingsOpen(false);
 
-                                    // Set dynamic document title for the print file name
+                                    // Define o título dinâmico do documento para o nome do arquivo de impressão
                                     const yearLabel = getServiceYearLabel(currentServiceYear).replace('/', '-');
                                     let cityLabel = '';
 
@@ -707,10 +754,10 @@ export default function RegistryPage() {
                                     const originalTitle = document.title;
                                     document.title = `S-13_T [${yearLabel} - ${cityLabel}]`;
 
-                                    // Slight delay to allow modal to close before printing
+                                    // Pequeno atraso para permitir que o modal feche antes de imprimir
                                     setTimeout(() => {
                                         window.print();
-                                        // Restore title after print dialog opens (browser handles this asynchronously usually, but for single page apps this is enough)
+                                        // Restaura o título após o diálogo de impressão abrir (o navegador lida de forma assíncrona; para SPA isso é suficiente)
                                         setTimeout(() => { document.title = originalTitle; }, 500);
                                     }, 100);
                                 }}
@@ -725,7 +772,7 @@ export default function RegistryPage() {
                 </div>
             )}
 
-            {/* Modal for Assignments */}
+            {/* Modal de designações */}
             {isModalOpen && (
                 <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm animate-in fade-in no-print">
                     <div className="bg-white dark:bg-gray-900 rounded-2xl w-full max-w-sm p-6 shadow-2xl animate-in zoom-in-95">
@@ -790,7 +837,7 @@ export default function RegistryPage() {
                 </div>
             )}
 
-            {/* Modal for Legacy Date */}
+            {/* Modal de data legada */}
             {isLegacyModalOpen && (
                 <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm animate-in fade-in no-print">
                     <div className="bg-white dark:bg-gray-900 rounded-2xl w-full max-w-sm p-6 shadow-2xl animate-in zoom-in-95">
@@ -829,7 +876,7 @@ export default function RegistryPage() {
                 </div>
             )}
 
-            {/* Confirmation Modal */}
+            {/* Modal de confirmação */}
             <ConfirmationModal
                 isOpen={!!confirmModal}
                 onClose={() => setConfirmModal(null)}
@@ -840,13 +887,13 @@ export default function RegistryPage() {
                 isLoading={isDeleting}
             />
 
-            {/* Print Styles */}
+            {/* Estilos de impressão */}
             <style jsx global>{`
                 @media print {
                     .no-print { display: none !important; }
                     .print-container { padding: 0 !important; margin: 0 !important; max-width: 100% !important; overflow: visible !important; width: 100% !important; }
                     
-                    /* Reset Page & Body */
+                    /* Reset de página e body */
                     body, html { 
                         background-color: white !important; 
                         background: white !important;
@@ -856,20 +903,20 @@ export default function RegistryPage() {
                     }
                     @page { margin: 10mm; size: portrait; }
                     
-                    /* Aggressive Dark Mode Override */
+                    /* Sobrescrita agressiva do modo escuro */
                     :root, .dark, body, div, span, applet, object, iframe, h1, h2, h3, h4, h5, h6, p, blockquote, pre, a, abbr, acronym, address, big, cite, code, del, dfn, em, img, ins, kbd, q, s, samp, small, strike, strong, sub, sup, tt, var, b, u, i, center, dl, dt, dd, ol, ul, li, fieldset, form, label, legend, table, caption, tbody, tfoot, thead, tr, th, td, article, aside, canvas, details, embed, figure, figcaption, footer, header, hgroup, menu, nav, output, ruby, section, summary, time, mark, audio, video {
-                        background-color: transparent !important; /* Let body white show through or specific whites */
+                        background-color: transparent !important; /* Permite o branco do body aparecer ou brancos específicos */
                         color: black !important;
                         box-shadow: none !important;
                         text-shadow: none !important;
                     }
 
-                    /* Specific overrides for containers that need white backgrounds */
+                    /* Sobrescritas específicas para containers que precisam de fundo branco */
                     .bg-white, .print\:bg-white {
                         background-color: white !important;
                     }
                     
-                    /* Helper to ensure grays print as light grays if intended (like headers) */
+                    /* Ajuda a garantir que cinzas imprimam como cinza claro (ex.: cabeçalhos) */
                     .print\:bg-gray-200 {
                         background-color: #e5e7eb !important;
                     }
@@ -877,25 +924,25 @@ export default function RegistryPage() {
                         background-color: #f3f4f6 !important;
                     }
 
-                    /* Borders - Specific targeting to avoid double-borders bug */
+                    /* Bordas - direcionamento específico para evitar bug de bordas duplicadas */
                     * {
                         border-color: black !important;
                     }
-                    /* Increase width ONLY for classes that define borders */
+                    /* Aumenta a largura SOMENTE para classes que definem bordas */
                     .border { border-width: 1.5pt !important; }
                     .border-t { border-top-width: 1.5pt !important; }
                     .border-r { border-right-width: 1.5pt !important; }
                     .border-b { border-bottom-width: 1.5pt !important; }
                     .border-l { border-left-width: 1.5pt !important; }
 
-                    /* Zero overrides must have higher specificity or appear after */
+                    /* Sobrescritas de zero devem ter maior especificidade ou vir depois */
                     .border-0 { border-width: 0 !important; }
                     .border-t-0 { border-top-width: 0 !important; }
                     .border-r-0 { border-right-width: 0 !important; }
                     .border-b-0 { border-bottom-width: 0 !important; }
                     .border-l-0 { border-left-width: 0 !important; }
                     
-                    /* Page Breaks */
+                    /* Quebras de página */
                     .break-inside-avoid {
                         break-inside: avoid !important;
                         page-break-inside: avoid !important;

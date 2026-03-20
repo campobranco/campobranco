@@ -41,7 +41,7 @@ export async function createCity(data: {
     name: string;
     uf: string;
     congregationId: string;
-    parent_city?: string | null;
+    parentCity?: string | null;
     lat?: number | null;
     lng?: number | null;
 }) {

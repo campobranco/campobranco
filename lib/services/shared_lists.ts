@@ -19,7 +19,9 @@ import {
 } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
 
-const TABLE = 'shared_lists';
+const LISTS_TABLE = 'shared_lists';
+const SNAPSHOTS_TABLE = 'shared_list_snapshots';
+const VISITS_TABLE = 'visits';
 
 export async function createSharedList(data: {
     title: string;
@@ -50,13 +52,13 @@ export async function createSharedList(data: {
             updatedAt: serverTimestamp(),
         };
 
-        const docRef = await addDoc(collection(db, TABLE), listData);
+        const docRef = await addDoc(collection(db, LISTS_TABLE), listData);
         const shareId = docRef.id;
 
         // 2. Criar snapshots (Territórios + Endereços) se type === 'territory'
         if (data.type === 'territory' && data.territories && Array.isArray(data.territories)) {
             const batch = writeBatch(db);
-            const snapshotsRef = collection(db, 'shared_list_snapshots');
+            const snapshotsRef = collection(db, SNAPSHOTS_TABLE);
 
             // Snapshot dos Territórios
             data.territories.forEach((t: any) => {
@@ -68,7 +70,7 @@ export async function createSharedList(data: {
                     type: 'territory',
                     data: {
                         ...t,
-                        visit_status: 'none'
+                        visitStatus: 'none'
                     },
                     createdAt: serverTimestamp()
                 });
@@ -98,7 +100,7 @@ export async function createSharedList(data: {
                             type: 'address',
                             data: {
                                 ...d.data(),
-                                visit_status: 'none'
+                                visitStatus: 'none'
                             },
                             createdAt: serverTimestamp()
                         });
@@ -118,7 +120,7 @@ export async function createSharedList(data: {
 
 export async function getSharedList(id: string) {
     try {
-        const docSnap = await getDoc(doc(db, TABLE, id));
+        const docSnap = await getDoc(doc(db, LISTS_TABLE, id));
         if (!docSnap.exists()) throw new Error('Link não encontrado');
 
         const list = { id: docSnap.id, ...docSnap.data() } as any;
@@ -131,9 +133,6 @@ export async function getSharedList(id: string) {
             }
         }
 
-        // Fetch items (territories/cards) - Em arquitetura estática, o cliente busca estes dados
-        // baseados nos IDs contidos na lista.
-        
         return { success: true, data: list };
     } catch (error: any) {
         console.error('Error getting shared list:', error);
@@ -143,7 +142,7 @@ export async function getSharedList(id: string) {
 
 export async function updateSharedListStatus(id: string, status: 'active' | 'completed' | 'archived') {
     try {
-        await updateDoc(doc(db, TABLE, id), {
+        await updateDoc(doc(db, LISTS_TABLE, id), {
             status,
             updatedAt: serverTimestamp(),
             ...(status === 'completed' ? { returnedAt: serverTimestamp() } : {})
@@ -157,7 +156,7 @@ export async function updateSharedListStatus(id: string, status: 'active' | 'com
 
 export async function deleteSharedList(id: string) {
     try {
-        await deleteDoc(doc(db, TABLE, id));
+        await deleteDoc(doc(db, LISTS_TABLE, id));
         return { success: true };
     } catch (error: any) {
         console.error('Error deleting shared list:', error);
@@ -171,7 +170,7 @@ export async function deleteSharedList(id: string) {
  */
 export async function getSharedListWithData(id: string) {
     try {
-        const docSnap = await getDoc(doc(db, TABLE, id));
+        const docSnap = await getDoc(doc(db, LISTS_TABLE, id));
         if (!docSnap.exists()) {
             return { success: false, error: 'Link não encontrado', status: 404 };
         }
@@ -179,7 +178,7 @@ export async function getSharedListWithData(id: string) {
         const list = { id: docSnap.id, ...docSnap.data() } as any;
 
         // Verifica expiração
-        const expiresAt = list.expiresAt || list.expires_at;
+        const expiresAt = list.expiresAt;
         if (expiresAt) {
             const now = new Date();
             const expires = expiresAt.toDate ? expiresAt.toDate() : new Date(expiresAt);
@@ -190,13 +189,13 @@ export async function getSharedListWithData(id: string) {
 
         // Busca os snapshots em paralelo
         const snapshotsQuery = query(
-            collection(db, 'shared_list_snapshots'),
+            collection(db, SNAPSHOTS_TABLE),
             where('sharedListId', '==', id)
         );
         
         // Busca o histórico de visitas
         const visitsQuery = query(
-            collection(db, 'visits'),
+            collection(db, VISITS_TABLE),
             where('sharedListId', '==', id)
         );
 
@@ -210,7 +209,7 @@ export async function getSharedListWithData(id: string) {
 
         // Busca categoria da congregação
         let congregationCategory = 'TRADITIONAL';
-        const congregationId = list.congregationId || list.congregation_id;
+        const congregationId = list.congregationId;
         if (congregationId) {
             const congSnap = await getDoc(doc(db, 'congregations', congregationId));
             if (congSnap.exists()) {
@@ -238,11 +237,11 @@ export async function getSharedListWithData(id: string) {
  */
 export async function processSharedListAction(id: string, action: string, payload: any = {}) {
     try {
-        const listRef = doc(db, TABLE, id);
+        const listRef = doc(db, LISTS_TABLE, id);
         const { territoryId, undo, userId, userName, userCongregationId } = payload;
 
         // AÇÃO 1: Devolver o mapa inteiro
-        if (action === 'return_map') {
+        if (action === 'returnMap') {
             const expiresAt = new Date();
             expiresAt.setHours(expiresAt.getHours() + 24);
 
@@ -256,11 +255,11 @@ export async function processSharedListAction(id: string, action: string, payloa
         }
 
         // AÇÃO 2: Devolver ou desfazer devolução de um território individual
-        if (action === 'return_territory' && territoryId) {
+        if (action === 'returnTerritory' && territoryId) {
             const newStatus = undo ? 'active' : 'completed';
 
             const snapshotsQuery = query(
-                collection(db, 'shared_list_snapshots'),
+                collection(db, SNAPSHOTS_TABLE),
                 where('sharedListId', '==', id),
                 where('itemId', '==', territoryId)
             );
@@ -270,7 +269,7 @@ export async function processSharedListAction(id: string, action: string, payloa
             if (!snapshotsSnap.empty) {
                 const batch = writeBatch(db);
                 snapshotsSnap.docs.forEach(snap => {
-                    batch.update(snap.ref, { 'data.visit_status': newStatus });
+                    batch.update(snap.ref, { 'data.visitStatus': newStatus });
                 });
                 await batch.commit();
             }
@@ -285,21 +284,21 @@ export async function processSharedListAction(id: string, action: string, payloa
                 });
             }
 
-            return {
-                success: true,
-                message: undo ? 'Devolução desfeita!' : 'Território devolvido!'
+            return { 
+                success: true, 
+                message: undo ? 'Devolução desfeita!' : 'Território devolvido!' 
             };
         }
 
         // AÇÃO 3: Aceitar responsabilidade pela lista
-        if (action === 'accept_responsibility') {
+        if (action === 'acceptResponsibility') {
             if (!userId) {
                 throw new Error('Usuário não informado');
             }
 
             await updateDoc(listRef, {
-                assigned_to: userId,
-                assigned_name: userName || 'Irmão sem Nome',
+                assignedTo: userId,
+                assignedName: userName || 'Irmão sem Nome',
                 status: 'active'
             });
 
@@ -309,7 +308,7 @@ export async function processSharedListAction(id: string, action: string, payloa
                 const userSnap = await getDoc(userRef);
                 const userData = userSnap.data() as any;
 
-                if (userData && !userData.congregationId && !userData.congregation_id) {
+                if (userData && !userData.congregationId) {
                     await updateDoc(userRef, {
                         congregationId: userCongregationId,
                         role: 'PUBLICADOR'

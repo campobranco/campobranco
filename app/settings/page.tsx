@@ -179,7 +179,7 @@ export default function SettingsPage() {
 
                         if (congSnap.exists()) {
                             const congData = congSnap.data();
-                            let token = congData.inviteToken || congData.invite_token; // Suporta legado se existir
+                            let token = congData.inviteToken;
 
                             // Se não existe token, gera um automaticamente (apenas Ancião pode regenerar na UI)
                             if (!token && canManageMembers) {

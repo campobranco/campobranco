@@ -55,7 +55,7 @@ function ShareSetupContent() {
 
     const [users, setUsers] = useState<any[]>([]);
     const [searchUserTerm, setSearchUserTerm] = useState('');
-    const [selectedUser, setSelectedUser] = useState<{ id: string, name: string, avatar_url?: string } | null>(null);
+    const [selectedUser, setSelectedUser] = useState<{ id: string, name: string, avatarUrl?: string } | null>(null);
     const [isUserDropdownOpen, setIsUserDropdownOpen] = useState(false);
     const [brokenAvatars, setBrokenAvatars] = useState<Record<string, boolean>>({});
 
@@ -107,7 +107,7 @@ function ShareSetupContent() {
                     setTerritories(fetched);
 
                     // Fetch City Name if possible
-                    const cityId = fetched[0].cityId || fetched[0].city_id;
+                    const cityId = fetched[0].cityId;
                     if (cityId) {
                         const cityRef = doc(db, 'cities', cityId);
                         const citySnap = await getDoc(cityRef);
@@ -138,12 +138,12 @@ function ShareSetupContent() {
                     id: user.uid,
                     name: profileName || user.displayName || user.email || 'Eu mesmo',
                     email: user.email,
-                    avatar_url: user.photoURL || null
+                    avatarUrl: user.photoURL || null
                 });
             }
 
             // 2. Fetch congregation members if possible
-            const congregationId = authCongregationId || (territories.length > 0 ? (territories[0].congregationId || territories[0].congregation_id) : null);
+            const congregationId = authCongregationId || (territories.length > 0 ? territories[0].congregationId : null);
 
             if (congregationId) {
                 try {
@@ -202,7 +202,7 @@ function ShareSetupContent() {
                 title: title,
                 type: 'territory',
                 items: territories.map(t => t.id),
-                congregationId: territories[0].congregationId || territories[0].congregation_id,
+                congregationId: territories[0].congregationId,
                 assignedTo: selectedUser ? selectedUser.id : '',
                 assignedName: selectedUser ? selectedUser.name : '',
                 expiresInHours: expiresAt ? (expiresAt.getTime() - now.getTime()) / (1000 * 60 * 60) : undefined,
@@ -361,9 +361,9 @@ function ShareSetupContent() {
                                 {selectedUser ? (
                                     <>
                                         <div className="flex items-center gap-3">
-                                            {selectedUser.avatar_url && !brokenAvatars[selectedUser.id] ? (
+                                            {selectedUser.avatarUrl && !brokenAvatars[selectedUser.id] ? (
                                                 <img
-                                                    src={selectedUser.avatar_url}
+                                                    src={selectedUser.avatarUrl}
                                                     alt=""
                                                     referrerPolicy="no-referrer"
                                                     className="w-6 h-6 rounded-full object-cover border border-surface-border shrink-0"
@@ -427,15 +427,15 @@ function ShareSetupContent() {
                                                 <button
                                                     key={u.id}
                                                     onClick={() => {
-                                                        setSelectedUser({ id: u.id, name: u.name || 'Sem Nome', avatar_url: u.avatar_url });
+                                                        setSelectedUser({ id: u.id, name: u.name || 'Sem Nome', avatarUrl: u.avatarUrl });
                                                         setIsUserDropdownOpen(false);
                                                         setSearchUserTerm('');
                                                     }}
                                                     className="w-full text-left px-4 py-3 hover:bg-gray-50 dark:hover:bg-gray-800/50 text-sm font-bold text-main transition-colors border-b border-transparent hover:border-surface-border last:border-none flex items-center gap-3"
                                                 >
-                                                    {u.avatar_url && !brokenAvatars[u.id] ? (
+                                                    {u.avatarUrl && !brokenAvatars[u.id] ? (
                                                         <img
-                                                            src={u.avatar_url}
+                                                            src={u.avatarUrl}
                                                             alt=""
                                                             referrerPolicy="no-referrer"
                                                             className="w-6 h-6 rounded-full object-cover border border-surface-border shrink-0"

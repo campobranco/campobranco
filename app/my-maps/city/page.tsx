@@ -49,16 +49,17 @@ import { useAuth } from '@/app/context/AuthContext';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { getServiceYear, getServiceYearLabel, getServiceYearRange } from '@/lib/serviceYearUtils';
 import CSVActionButtons from '@/app/components/CSVActionButtons';
+import DropDownItem from '@/app/components/DropDownItem';
 
 interface City {
     id: string;
     name: string;
     uf: string;
-    created_at?: string;
-    congregation_id: string;
+    createdAt?: string;
+    congregationId: string;
     lat?: number;
     lng?: number;
-    parent_city?: string;
+    parentCity?: string;
 }
 
 function CityListContent() {
@@ -89,7 +90,7 @@ function CityListContent() {
         total: number,
         completedUnique: number,
         completedVolume: number,
-        statusBreakdown: { contacted: number, not_contacted: number, moved: number, do_not_visit: number, total_visits: number }
+        statusBreakdown: { contacted: number, notContacted: number, moved: number, doNotVisit: number, totalVisits: number }
     }>>({});
 
     // Edit State
@@ -178,7 +179,7 @@ function CityListContent() {
                 const congRef = doc(db, 'congregations', congregationId);
                 const congSnap = await getDoc(congRef);
                 if (congSnap.exists()) {
-                    setLocalTermType(congSnap.data().term_type || 'city');
+                    setLocalTermType(congSnap.data().termType || 'city');
                 }
             } catch (err) {
                 console.error("Error fetching congregation termType:", err);
@@ -212,9 +213,8 @@ function CityListContent() {
                 const territoryCityMap: Record<string, string> = {};
 
                 territories.forEach((t: any) => {
-                    console.log('[DEBUG] Processing territory:', t.id, t.name, 'city_id:', t.city_id, 'cityId:', t.cityId);
-                    // Aceita ambos os padrões: city_id (legado) e cityId (novo)
-                    const cityId = t.city_id || t.cityId;
+                    console.log('[DEBUG] Processing territory:', t.id, t.name, 'cityId:', t.cityId, 'cityId:', t.cityId);
+                    const cityId = t.cityId;
                     if (cityId) {
                         cityTotals[cityId] = (cityTotals[cityId] || 0) + 1;
                         territoryCityMap[t.id] = cityId;
@@ -228,8 +228,7 @@ function CityListContent() {
                 const completedVolumeByCity: Record<string, number> = {};
 
                 history.forEach((h: any) => {
-                    // Aceita ambos os padrões: territory_id (legado) e territoryId (novo)
-                    const territoryId = h.territory_id || h.territoryId;
+                    const territoryId = h.territoryId;
                     if (territoryId) {
                         const cId = territoryCityMap[territoryId];
                         if (cId) {
@@ -249,31 +248,29 @@ function CityListContent() {
                     }
                 });
 
-                const statusByCity: Record<string, { contacted: number, not_contacted: number, moved: number, do_not_visit: number, total_visits: number }> = {};
+                const statusByCity: Record<string, { contacted: number, notContacted: number, moved: number, doNotVisit: number, totalVisits: number }> = {};
 
                 addresses.forEach((a: any) => {
-                    // Aceita ambos os padrões: city_id/territory_id (legado) e cityId/territoryId (novo)
-                    const cityId = a.city_id || a.cityId;
-                    const territoryId = a.territory_id || a.territoryId;
+                    const cityId = a.cityId;
+                    const territoryId = a.territoryId;
                     const cId = cityId || (territoryId ? territoryCityMap[territoryId] : null);
                     if (!cId) return;
 
-                    if (!statusByCity[cId]) statusByCity[cId] = { contacted: 0, not_contacted: 0, moved: 0, do_not_visit: 0, total_visits: 0 };
+                    if (!statusByCity[cId]) statusByCity[cId] = { contacted: 0, notContacted: 0, moved: 0, doNotVisit: 0, totalVisits: 0 };
 
-                    statusByCity[cId].total_visits++;
-                    // Aceita ambos os padrões para visit_status
-                    const visitStatus = a.visit_status || a.visitStatus;
+                    statusByCity[cId].totalVisits++;
+                    const visitStatus = a.visitStatus;
                     if (visitStatus === 'contacted') statusByCity[cId].contacted++;
-                    else if (visitStatus === 'not_contacted') statusByCity[cId].not_contacted++;
+                    else if (visitStatus === 'notContacted') statusByCity[cId].notContacted++;
                     else if (visitStatus === 'moved') statusByCity[cId].moved++;
-                    else if (visitStatus === 'do_not_visit') statusByCity[cId].do_not_visit++;
+                    else if (visitStatus === 'doNotVisit') statusByCity[cId].doNotVisit++;
                 });
 
                 const stats: Record<string, {
                     total: number,
                     completedUnique: number,
                     completedVolume: number,
-                    statusBreakdown: { contacted: number, not_contacted: number, moved: number, do_not_visit: number, total_visits: number }
+                    statusBreakdown: { contacted: number, notContacted: number, moved: number, doNotVisit: number, totalVisits: number }
                 }> = {};
 
                 Object.keys(cityTotals).forEach(cityId => {
@@ -281,7 +278,7 @@ function CityListContent() {
                         total: cityTotals[cityId],
                         completedUnique: completedUniqueByCity[cityId]?.size || 0,
                         completedVolume: completedVolumeByCity[cityId] || 0,
-                        statusBreakdown: statusByCity[cityId] || { contacted: 0, not_contacted: 0, moved: 0, do_not_visit: 0, total_visits: 0 }
+                        statusBreakdown: statusByCity[cityId] || { contacted: 0, notContacted: 0, moved: 0, doNotVisit: 0, totalVisits: 0 }
                     };
                 });
 
@@ -314,7 +311,7 @@ function CityListContent() {
                 name: newCityName.trim(),
                 uf: newCityUF,
                 congregationId: congregationId,
-                parent_city: localTermType === 'neighborhood' ? newParentCity.trim() : null,
+                parentCity: localTermType === 'neighborhood' ? newParentCity.trim() : null,
                 lat: newCityLat ? parseFloat(newCityLat) : null,
                 lng: newCityLng ? parseFloat(newCityLng) : null
             });
@@ -345,7 +342,7 @@ function CityListContent() {
             const resData = await updateCity(editingCity.id, {
                 name: editingCity.name,
                 uf: editingCity.uf,
-                parent_city: editingCity.parent_city,
+                parentCity: editingCity.parentCity,
                 lat: editingCity.lat ? parseFloat(editingCity.lat.toString()) : null,
                 lng: editingCity.lng ? parseFloat(editingCity.lng.toString()) : null
             });
@@ -376,7 +373,7 @@ function CityListContent() {
             if (!resData.success) {
                 throw new Error(resData.error || 'Erro ao excluir');
             }
-            toast.success(`${localTermType === 'neighborhood' ? 'Bairro' : 'Cidade'} excluído(a) com sucesso!`);
+            toast.success(`${localTermType === 'neighborhood' ? 'Bairro' : 'Cidade'} excluÃ­do(a) com sucesso!`);
             fetchCities();
             setIsDeleteDialogOpen(false);
             setCityToDelete(null);
@@ -444,14 +441,6 @@ function CityListContent() {
 
 
                 <div className="flex items-center gap-2">
-                    <button
-                        onClick={handleSignOut}
-                        className="p-2 text-muted hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-xl transition-all"
-                        title="Sair"
-                    >
-                        <LogOut className="w-5 h-5" />
-                    </button>
-
                     {(isAdmin || isServant || isElder || isAdminRoleGlobal) && (
                         <>
                             <CSVActionButtons
@@ -606,8 +595,8 @@ function CityListContent() {
                                                     <div className="flex items-center justify-between mb-1">
                                                         <div>
                                                             <h3 className="font-bold text-main text-base truncate leading-tight">{city.name}</h3>
-                                                            {city.parent_city && (
-                                                                <p className="text-[10px] text-muted font-black uppercase tracking-wider">{city.parent_city}</p>
+                                                            {city.parentCity && (
+                                                                <p className="text-[10px] text-muted font-black uppercase tracking-wider">{city.parentCity}</p>
                                                             )}
                                                         </div>
                                                         {(stats && stats.total > 0) && (
@@ -678,27 +667,34 @@ function CityListContent() {
                                                                     className="fixed inset-0 z-10"
                                                                     onClick={(e) => { e.stopPropagation(); setOpenMenuId(null); }}
                                                                 />
-                                                                <div className="absolute right-0 mt-2 w-32 bg-surface rounded-lg shadow-xl border border-surface-border z-20 py-1 animation-fade-in origin-top-right">
-                                                                    <button
+                                                                <div className="absolute right-0 mt-2 w-48 bg-surface rounded-xl shadow-2xl border border-surface-border p-1 z-20 animate-in fade-in zoom-in-95 duration-200">
+                                                                    <DropDownItem 
+                                                                        icon={ArrowRight} 
+                                                                        label="Gerenciar Mapas" 
+                                                                        variant="primary" 
+                                                                        onClick={() => router.push(`/my-maps/territory?congregationId=${congregationId}&cityId=${city.id}`)} 
+                                                                    />
+                                                                    <DropDownItem 
+                                                                        icon={Pencil} 
+                                                                        label="Editar" 
+                                                                        variant="neutral" 
                                                                         onClick={(e) => {
                                                                             e.stopPropagation();
                                                                             setEditingCity(city);
                                                                             setIsEditModalOpen(true);
                                                                             setOpenMenuId(null);
-                                                                        }}
-                                                                        className="w-full text-left px-4 py-2 text-sm font-medium text-main hover:bg-background flex items-center gap-2"
-                                                                    >
-                                                                        <Pencil className="w-3.5 h-3.5" /> Editar
-                                                                    </button>
-                                                                    <button
+                                                                        }} 
+                                                                    />
+                                                                    <DropDownItem 
+                                                                        icon={Trash2} 
+                                                                        label="Excluir" 
+                                                                        variant="danger" 
                                                                         onClick={(e) => {
                                                                             e.stopPropagation();
                                                                             handleDeleteCity(city.id, city.name);
-                                                                        }}
-                                                                        className="w-full text-left px-4 py-2 text-sm font-medium text-red-600 hover:bg-red-50 dark:hover:bg-red-900/20 flex items-center gap-2"
-                                                                    >
-                                                                        <Trash2 className="w-3.5 h-3.5" /> Excluir
-                                                                    </button>
+                                                                            setOpenMenuId(null);
+                                                                        }} 
+                                                                    />
                                                                 </div>
                                                             </>
                                                         )}
@@ -885,8 +881,8 @@ function CityListContent() {
                                         <label className="text-xs font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wider">Cidade do Bairro</label>
                                         <input
                                             type="text"
-                                            value={editingCity.parent_city || ''}
-                                            onChange={e => setEditingCity({ ...editingCity, parent_city: e.target.value })}
+                                            value={editingCity.parentCity || ''}
+                                            onChange={e => setEditingCity({ ...editingCity, parentCity: e.target.value })}
                                             className="w-full bg-gray-50 dark:bg-slate-800 border border-gray-200 dark:border-slate-700 rounded-lg p-3 text-gray-900 dark:text-white font-bold focus:ring-2 focus:ring-primary/20 outline-none placeholder:text-gray-400"
                                             placeholder="Cidade"
                                             required

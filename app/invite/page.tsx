@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState, Suspense } from 'react';
+import { useEffect, Suspense } from 'react';
 import { useAuth } from '@/app/context/AuthContext';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { Users, Loader2, CheckCircle, AlertCircle } from 'lucide-react';
@@ -20,17 +20,7 @@ import {
 
 function InviteContent() {
     const searchParams = useSearchParams();
-    const [token, setToken] = useState<string | null>(searchParams.get('token'));
-
-    useEffect(() => {
-        if (!token) {
-            // Fallback: Check path for legacy /invite/TOKEN format
-            const pathParts = window.location.pathname.split('/');
-            if (pathParts.length > 2 && pathParts[1] === 'invite') {
-                setToken(pathParts[2]);
-            }
-        }
-    }, [token]);
+    const token = searchParams.get('token');
 
     const { user, loading: authLoading, profileName } = useAuth();
     const router = useRouter();
@@ -65,14 +55,9 @@ function InviteContent() {
                 // 1. Validate Token & Get Congregation
                 const congRef = collection(db, "congregations");
 
-                // Busca por inviteToken (novo padrão) ou invite_token (legado)
-                let q = query(congRef, where("inviteToken", "==", token));
-                let querySnapshot = await getDocs(q);
-
-                if (querySnapshot.empty) {
-                    q = query(congRef, where("invite_token", "==", token));
-                    querySnapshot = await getDocs(q);
-                }
+                // Busca por inviteToken (padrão atual)
+                const q = query(congRef, where("inviteToken", "==", token));
+                const querySnapshot = await getDocs(q);
 
                 if (querySnapshot.empty) {
                     setError("Link de convite inválido ou expirado.");
@@ -129,7 +114,7 @@ function InviteContent() {
         if (!user) {
             const targetUrl = `/invite?token=${token}`;
             if (typeof window !== 'undefined') {
-                localStorage.setItem('login_redirect', targetUrl);
+                localStorage.setItem('loginRedirect', targetUrl);
             }
             // Force full page navigation to ensure parameters are not lost by client router
             window.location.href = `/login?redirect=${encodeURIComponent(targetUrl)}`;
@@ -149,7 +134,7 @@ function InviteContent() {
 
             if (userSnap.exists()) {
                 const userData = userSnap.data();
-                const currentCongId = userData.congregationId || userData.congregation_id;
+                const currentCongId = userData.congregationId;
 
                 if (currentCongId) {
                     // Already bound logic

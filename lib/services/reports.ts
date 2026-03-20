@@ -6,21 +6,21 @@ export async function getRegistryData(congregationId: string) {
         if (!congregationId) throw new Error("ID da congregação é obrigatório.");
 
         // Fetch territories
-        const terrQuery = query(collection(db, 'territories'), where('congregation_id', '==', congregationId));
+        const terrQuery = query(collection(db, 'territories'), where('congregationId', '==', congregationId));
         const terrSnap = await getDocs(terrQuery);
         const territories = terrSnap.docs.map(doc => ({ id: doc.id, ...doc.data() }));
 
         // Fetch cities
-        const cityQuery = query(collection(db, 'cities'), where('congregation_id', '==', congregationId));
+        const cityQuery = query(collection(db, 'cities'), where('congregationId', '==', congregationId));
         const citySnap = await getDocs(cityQuery);
         const cities = citySnap.docs.map(doc => ({ id: doc.id, ...doc.data() }));
 
         // Fetch shared_lists
-        const listsQuery = query(collection(db, 'shared_lists'), where('congregation_id', '==', congregationId));
+        const listsQuery = query(collection(db, 'shared_lists'), where('congregationId', '==', congregationId));
         const listsSnap = await getDocs(listsQuery);
-        const sharedLists = listsSnap.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+        const shared_lists = listsSnap.docs.map(doc => ({ id: doc.id, ...doc.data() }));
 
-        return { success: true, territories, cities, sharedLists };
+        return { success: true, territories, cities, shared_lists };
     } catch (error: any) {
         console.error('Error in getRegistryData:', error);
         return { success: false, error: error.message };

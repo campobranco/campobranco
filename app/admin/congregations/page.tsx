@@ -31,15 +31,17 @@ import { toast } from 'sonner';
 import BottomNav from '@/app/components/BottomNav';
 import ConfirmationModal from '@/app/components/ConfirmationModal';
 import { getCongregations, saveCongregation, deleteCongregation, migrateCongregation } from '@/lib/services/admin';
+import DropDownItem from '@/app/components/DropDownItem';
+
 
 
 interface Congregation {
     id: string;
     name: string;
     city?: string;
-    term_type?: 'city' | 'neighborhood';
+    termType?: 'city' | 'neighborhood';
     category?: string;
-    created_at?: any;
+    createdAt?: any;
 }
 
 const CATEGORY_LABELS: Record<string, string> = {
@@ -157,7 +159,7 @@ export default function CongregationsPage() {
                 name: newName.trim(),
                 city: newCity.trim() || null,
                 category: newCategory.trim() || null,
-                term_type: newTermType,
+                termType: newTermType,
                 customId: customId.trim() || null
             });
 
@@ -351,7 +353,7 @@ export default function CongregationsPage() {
                                                 )}
                                             </div>
                                             <p className="text-[10px] text-muted truncate">
-                                                {cong.city ? `${cong.city} • ` : ''}Modo: {cong.term_type === 'neighborhood' ? 'Bairros' : 'Cidades'}
+                                                {cong.city ? `${cong.city} • ` : ''}Modo: {cong.termType === 'neighborhood' ? 'Bairros' : 'Cidades'}
                                             </p>
                                             {cong.category && (
                                                 <div className="mt-1.5">
@@ -397,8 +399,11 @@ export default function CongregationsPage() {
                                                     setOpenMenuId(null);
                                                 }}
                                             ></div>
-                                            <div className="absolute right-0 top-full mt-1 w-48 bg-surface border border-surface-border rounded-lg shadow-xl z-50 py-1 overflow-hidden animate-in fade-in zoom-in-95 duration-200">
-                                                <button
+                                            <div className="absolute right-0 top-full mt-1 w-48 bg-surface border border-surface-border rounded-xl shadow-2xl z-50 p-1 animate-in fade-in zoom-in-95 duration-200 origin-top-right">
+                                                <DropDownItem
+                                                    icon={Pencil}
+                                                    label="Editar"
+                                                    variant="neutral"
                                                     onClick={(e) => {
                                                         e.stopPropagation();
                                                         setOpenMenuId(null);
@@ -410,45 +415,42 @@ export default function CongregationsPage() {
                                                         if (lowerCat.includes('sinais') || lowerCat.includes('sign')) cat = 'SIGN_LANGUAGE';
                                                         else if (lowerCat.includes('estrangeira') || lowerCat.includes('foreign')) cat = 'FOREIGN_LANGUAGE';
                                                         setNewCategory(cat);
-                                                        setNewTermType(cong.term_type || 'city');
+                                                        setNewTermType(cong.termType || 'city');
                                                         setCustomId(cong.id);
                                                         setIsCreateModalOpen(true);
                                                     }}
-                                                    className="w-full flex items-center gap-2 px-4 py-2.5 text-sm font-medium text-main hover:bg-background transition-colors"
-                                                >
-                                                    <Pencil className="w-4 h-4 text-muted" />
-                                                    Editar
-                                                </button>
+                                                />
 
                                                 {userCongId === cong.id ? (
-                                                    <button
+                                                    <DropDownItem
+                                                        icon={LogOut}
+                                                        label="Sair desta"
+                                                        variant="orange"
                                                         onClick={(e) => {
                                                             e.stopPropagation();
                                                             setOpenMenuId(null);
                                                             handleLeaveCongregation();
                                                         }}
-                                                        className="w-full flex items-center gap-2 px-4 py-2.5 text-sm font-medium text-amber-600 hover:bg-amber-50 dark:hover:bg-amber-900/20 transition-colors"
-                                                    >
-                                                        <LogOut className="w-4 h-4" />
-                                                        Sair desta
-                                                    </button>
+                                                    />
                                                 ) : (
-                                                    <button
+                                                    <DropDownItem
+                                                        icon={LogIn}
+                                                        label="Entrar nesta"
+                                                        variant="primary"
                                                         onClick={(e) => {
                                                             e.stopPropagation();
                                                             setOpenMenuId(null);
                                                             handleEnterCongregation(cong.id);
                                                         }}
-                                                        className="w-full flex items-center gap-2 px-4 py-2.5 text-sm font-medium text-primary hover:bg-primary-light/10 transition-colors"
-                                                    >
-                                                        <LogIn className="w-4 h-4" />
-                                                        Entrar nesta
-                                                    </button>
+                                                    />
                                                 )}
 
                                                 <div className="h-px bg-surface-border my-1"></div>
 
-                                                <button
+                                                <DropDownItem
+                                                    icon={Trash2}
+                                                    label="Excluir"
+                                                    variant="danger"
                                                     onClick={(e) => {
                                                         e.stopPropagation();
                                                         setOpenMenuId(null);
@@ -459,11 +461,7 @@ export default function CongregationsPage() {
                                                             onConfirm: () => handleDelete(cong.id)
                                                         });
                                                     }}
-                                                    className="w-full flex items-center gap-2 px-4 py-2.5 text-sm font-medium text-red-600 hover:bg-red-50 dark:hover:bg-red-900/20 transition-colors"
-                                                >
-                                                    <Trash2 className="w-4 h-4" />
-                                                    Excluir
-                                                </button>
+                                                />
                                             </div>
                                         </>
                                     )}
@@ -556,7 +554,7 @@ export default function CongregationsPage() {
                                     <p className="text-[10px] text-muted italic">Isso definirá a URL da congregação.</p>
                                     {editingCongregation && (
                                         <p className="text-[10px] text-orange-500 font-bold mt-1">
-                                            ⚠️ Alterar o ID pode quebrar links existentes se houver dados vinculados!
+                                            âš ï¸ Alterar o ID pode quebrar links existentes se houver dados vinculados!
                                         </p>
                                     )}
                                 </div>
