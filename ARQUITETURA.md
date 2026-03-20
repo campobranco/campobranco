@@ -86,6 +86,8 @@ Para eliminar custos e dependência de cartão de crédito, o sistema utiliza um
 
 ---
 ### 📝 Registro de Melhorias Recentes:
+- **v0.8.45-beta**: **Refino Visual do Instalador**. (20/03/2026)
+  - **Limpeza**: Removidos botões redundantes (Build/Instalar) do painel principal para um fluxo mais direto. Estrutura HTML corrigida.
 - **v0.8.44-beta**: **Configuração Única Sincronizada**. (20/03/2026)
   - **Melhoria**: O Instalador Visual agora pré-carrega dados salvos e possui opção para sincronizar as mesmas credenciais entre DEV e PROD com um clique.
 - **v0.8.43-beta**: **Instalador Visual e Plug-and-Play**. (20/03/2026)
