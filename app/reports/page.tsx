@@ -165,7 +165,7 @@ export default function ReportsPage() {
                         }
                     }
                 });
-                const avgRotationDays = completedCount > 0 ? Math.round(totalDays / completedCount) : null;
+                const avgRotationDays = completedCount > 0 ? Math.round(totalDays / completedCount) : 0;
 
                 // --- CHARTS (Monthly History) ---
                 const months = ['Jan', 'Fev', 'Mar', 'Abr', 'Mai', 'Jun', 'Jul', 'Ago', 'Set', 'Out', 'Nov', 'Dez'];
