@@ -86,6 +86,11 @@ Para eliminar custos e dependência de cartão de crédito, o sistema utiliza um
 
 ---
 ### 📝 Registro de Melhorias Recentes:
+- **v0.8.39-beta**: **Correção de Dependências e Build**. (20/03/2026)
+  - **Build**: Corrigida a falta do import `useState` em `app/invite/page.tsx` que impedia o build de produção.
+- **v0.8.38-beta**: **Correção de Edição e Melhoria no Dashboard**. (20/03/2026)
+  - **Edição**: Corrigida a falha onde o formulário de edição de endereço abria vazio; agora todos os dados são carregados corretamente.
+  - **Dashboard**: Adicionada exibição do número e descrição (ex: "1 - Catiguá") no Centro de Ação para territórios inativos.
 - **v0.8.37-beta**: **Personalização de Histórico e Relatórios**. (20/03/2026)
   - **Identidade**: Implementada resolução automática de nomes de usuários no Histórico de Território e Registro de Designação (PDF), eliminando o texto genérico "Usuário".
   - **Refinamento**: Adicionado filtro inteligente para evitar que o nome do território (utilizado como título de link) seja exibido indevidamente como nome do responsável no relatório.
