@@ -43,7 +43,7 @@ export default function LegalConsentPage() {
             await updateDoc(userRef, {
                 termsAcceptedAt: serverTimestamp(),
                 // Mantemos suporte ao campo legado se necessário, mas o padrão agora é camelCase
-                termsAcceptedAt: new Date().toISOString()
+                terms_accepted_at: new Date().toISOString()
             });
 
             // Forçar redirecionamento para garantir nova verificação de sessão

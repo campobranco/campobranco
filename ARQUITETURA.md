@@ -86,6 +86,8 @@ Para eliminar custos e dependência de cartão de crédito, o sistema utiliza um
 
 ---
 ### 📝 Registro de Melhorias Recentes:
+- **v0.8.40-beta**: **Resiliência de Build e Consentimento**. (20/03/2026)
+  - **Build**: Corrigido erro de propriedade duplicada (`termsAcceptedAt`) em `app/legal-consent/page.tsx`.
 - **v0.8.39-beta**: **Correção de Dependências e Build**. (20/03/2026)
   - **Build**: Corrigida a falta do import `useState` em `app/invite/page.tsx` que impedia o build de produção.
 - **v0.8.38-beta**: **Correção de Edição e Melhoria no Dashboard**. (20/03/2026)
