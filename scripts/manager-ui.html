@@ -226,6 +226,7 @@
             configLabel.className = env === 'prod' ? 'text-primary' : 'text-warning';
 
             // Carregar configuração existente se houver
+            let hasConfig = false;
             try {
                 const res = await fetch(`/get-config?type=${env}`);
                 const data = await res.json();
@@ -236,11 +237,12 @@
                         if (input) input.value = value;
                     });
                     appendLog('status', `Configurações de ${env} carregadas.`);
+                    hasConfig = true;
                 }
             } catch (e) { console.warn("Sem configuração prévia"); }
 
-            // Por padrão, sempre vamos para a configuração primeiro na instalação
-            showView('config-view');
+            // Se já tem config, vai direto pro painel. Senão, vai pra config.
+            showView(hasConfig ? 'main-view' : 'config-view');
 
             renderActions();
             lucide.createIcons();

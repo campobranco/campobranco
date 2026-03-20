@@ -86,6 +86,8 @@ Para eliminar custos e dependência de cartão de crédito, o sistema utiliza um
 
 ---
 ### 📝 Registro de Melhorias Recentes:
+- **v0.8.47-beta**: **Detecção Automática de Envs**. (20/03/2026)
+  - **Navegação**: O instalador agora pula para o painel de controle se o `.env` do ambiente selecionado já existir.
 - **v0.8.46-beta**: **Automação de Inicialização**. (20/03/2026)
   - **Eficiência**: O botão "Iniciar Servidor Dev" agora executa `npm install` automaticamente antes da execução principal.
 - **v0.8.45-beta**: **Refino Visual do Instalador**. (20/03/2026)
