@@ -114,8 +114,25 @@ const server = http.createServer(async (req, res) => {
                 currentProcess = proc;
                 sendLog('status', `Iniciando: ${cmd} ${args.join(' ')}...`);
 
-                proc.stdout.on('data', (data) => sendLog('stdout', data));
-                proc.stderr.on('data', (data) => sendLog('stderr', data));
+                proc.stdout.on('data', (data) => {
+                    const output = data.toString();
+                    sendLog('stdout', output);
+                    
+                    // Detectar URL e abrir navegador automaticamente
+                    if (output.includes('http://localhost:')) {
+                        const match = output.match(/http:\/\/localhost:\d+/);
+                        if (match) {
+                            const url = match[0];
+                            // Abrir apenas uma vez por execução
+                            if (!proc.openedBrowser) {
+                                proc.openedBrowser = true;
+                                sendLog('status', `Servidor Online: Abrindo ${url}...`);
+                                spawn('cmd', ['/c', 'start', '', url], { detached: true, stdio: 'ignore' }).unref();
+                            }
+                        }
+                    }
+                });
+                proc.stderr.on('data', (data) => sendLog('stderr', data.toString()));
 
                 proc.on('error', (err) => {
                     sendLog('error', `Falha ao iniciar processo: ${err.message}`);
@@ -261,6 +278,30 @@ const server = http.createServer(async (req, res) => {
         } catch (e) {
             res.writeHead(200, { 'Content-Type': 'application/json' });
             res.end(JSON.stringify({ success: false, message: 'Arquivo não existe' }));
+        }
+        return;
+    }
+
+    // Endpoint para Interromper Comando
+    if (url.pathname === '/stop-command' && req.method === 'POST') {
+        if (currentProcess) {
+            sendLog('status', 'Interrompendo processo...');
+            const pid = currentProcess.pid;
+            const isWin = process.platform === 'win32';
+            
+            if (isWin) {
+                // No Windows, matamos a arvore de processos
+                spawn('taskkill', ['/F', '/T', '/PID', pid]);
+            } else {
+                currentProcess.kill('SIGTERM');
+            }
+            
+            currentProcess = null;
+            res.writeHead(200, { 'Content-Type': 'application/json' });
+            res.end(JSON.stringify({ success: true }));
+        } else {
+            res.writeHead(400, { 'Content-Type': 'application/json' });
+            res.end(JSON.stringify({ success: false, message: 'Nenhum processo ativo' }));
         }
         return;
     }

@@ -191,9 +191,12 @@
                         <div class="dot dot-green"></div>
                     </div>
                     <div class="status-badge">
-                        <div id="status-indicator" class="status-idle"></div>
+                    <div id="status-indicator" class="status-idle"></div>
                         <span id="status-text">PRONTO</span>
                     </div>
+                    <button id="stop-btn" onclick="stopCommand()" style="display: none; background: #ef4444; color: white; border: none; padding: 4px 12px; border-radius: 4px; font-size: 0.75rem; font-weight: bold; cursor: pointer; animation: pulse 2s infinite; align-items: center; gap: 4px;">
+                        <i data-lucide="square" style="width: 12px; height: 12px; fill: white;"></i> Interromper Servidor
+                    </button>
                 </div>
                 <div class="terminal-body" id="terminal-output">Aguardando comando...</div>
             </div>
@@ -333,16 +336,34 @@
             terminal.scrollTop = terminal.scrollHeight;
         }
 
-        function setWorking(isWorking) {
+        function setWorking(working) {
+            isWorking = working;
             const btns = document.querySelectorAll('.btn');
-            btns.forEach(b => b.disabled = isWorking);
+            const stopBtn = document.getElementById('stop-btn');
             
-            if (isWorking) {
+            btns.forEach(b => b.disabled = working);
+            
+            if (working) {
                 statusText.textContent = "EXECUTANDO...";
                 statusIndicator.className = "status-working";
+                stopBtn.style.display = "flex";
             } else {
-                statusText.textContent = "CONCLUÍDO";
+                statusText.textContent = "PRONTO";
                 statusIndicator.className = "status-idle";
+                stopBtn.style.display = "none";
+            }
+        }
+
+        async function stopCommand() {
+            try {
+                appendLog('status', 'Solicitando interrupção do servidor...');
+                const res = await fetch('/stop-command', { method: 'POST' });
+                const data = await res.json();
+                if (data.success) {
+                    appendLog('status', 'Servidor interrompido.');
+                }
+            } catch (err) {
+                appendLog('error', `Erro ao interromper: ${err.message}`);
             }
         }
 

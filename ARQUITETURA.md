@@ -86,6 +86,8 @@ Para eliminar custos e dependência de cartão de crédito, o sistema utiliza um
 
 ---
 ### 📝 Registro de Melhorias Recentes:
+- **v0.8.50-beta**: **Automação e Controle de Fluxo**. (20/03/2026)
+  - **Novidades**: Abertura automática do navegador ao iniciar localhost. Adicionado botão "Interromper" para encerrar o servidor via interface.
 - **v0.8.48-beta**: **Ajuste de Nomenclatura**. (20/03/2026)
   - **UI**: Botões de desenvolvimento renomeados para maior clareza ("Ver em Local", "Teste online").
 - **v0.8.47-beta**: **Detecção Automática de Envs**. (20/03/2026)
