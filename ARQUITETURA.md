@@ -86,6 +86,8 @@ Para eliminar custos e dependência de cartão de crédito, o sistema utiliza um
 
 ---
 ### 📝 Registro de Melhorias Recentes:
+- **v0.8.42-beta**: **Configuração de Ambiente DEV**. (20/03/2026)
+  - **Infra**: Sincronizado `apphosting.yaml` com o projeto `campobrancodev` e adicionada variável `NEXT_PUBLIC_MASTER_EMAIL`, corrigindo acesso ADMIN em ambiente de staging.
 - **v0.8.41-beta**: **Resiliência de Relatórios**. (20/03/2026)
   - **Build**: Corrigido erro de tipagem (`number | null`) no indicador de giro médio em `app/reports/page.tsx`.
 - **v0.8.40-beta**: **Resiliência de Build e Consentimento**. (20/03/2026)
