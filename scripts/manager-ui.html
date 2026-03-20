@@ -149,9 +149,13 @@
                             <input type="text" name="NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET" style="padding: 10px; border-radius: 8px; border: 1px solid var(--primary-light); background: transparent; color: inherit;">
                         </div>
                     </div>
-                    <button type="submit" class="btn" style="background: var(--primary); color: white; justify-content: center; margin-top: 10px;">
+                    <button type="submit" class="btn" style="background: var(--primary); color: white; justify-content: center; margin-top: 5px;">
                         Salvar e Continuar <i data-lucide="check" style="margin-left: 10px;"></i>
                     </button>
+                    <div style="display: flex; align-items: center; gap: 8px; justify-content: center; margin-top: 5px;">
+                        <input type="checkbox" id="sync-configs" style="width: 16px; height: 16px; cursor: pointer;">
+                        <label for="sync-configs" style="font-size: 0.8rem; color: var(--text-muted); cursor: pointer;">Aplicar estas mesmas credenciais em ambos os ambientes</label>
+                    </div>
                 </form>
             </div>
         </div>
@@ -211,7 +215,7 @@
             document.getElementById(viewId).style.display = 'block';
         }
 
-        function selectEnv(env) {
+        async function selectEnv(env) {
             selectedEnv = env;
             const label = document.getElementById('env-label');
             const configLabel = document.getElementById('config-env-label');
@@ -219,6 +223,20 @@
             label.textContent = env === 'prod' ? 'Produção' : 'Desenvolvimento';
             configLabel.textContent = `(${label.textContent})`;
             configLabel.className = env === 'prod' ? 'text-primary' : 'text-warning';
+
+            // Carregar configuração existente se houver
+            try {
+                const res = await fetch(`/get-config?type=${env}`);
+                const data = await res.json();
+                if (data.success) {
+                    const form = document.getElementById('config-form');
+                    Object.entries(data.config).forEach(([key, value]) => {
+                        const input = form.querySelector(`[name="${key}"]`);
+                        if (input) input.value = value;
+                    });
+                    appendLog('status', `Configurações de ${env} carregadas.`);
+                }
+            } catch (e) { console.warn("Sem configuração prévia"); }
 
             // Por padrão, sempre vamos para a configuração primeiro na instalação
             showView('config-view');
@@ -231,6 +249,7 @@
             event.preventDefault();
             const formData = new FormData(event.target);
             const config = Object.fromEntries(formData.entries());
+            const shouldSync = document.getElementById('sync-configs').checked;
             
             // Adicionar campos calculados comuns
             const projId = config.NEXT_PUBLIC_FIREBASE_PROJECT_ID;
@@ -240,21 +259,28 @@
             config.NEXT_PUBLIC_API_BASE_URL = `${config.NEXT_PUBLIC_APP_URL}/api`;
 
             setWorking(true);
-            appendLog('status', `Salvando configuração para ${selectedEnv}...`);
+            appendLog('status', `Salvando configuração para ${selectedEnv}${shouldSync ? ' (e sincronizando)' : ''}...`);
 
-            try {
+            const save = async (type) => {
                 const res = await fetch('/save-env', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ type: selectedEnv, config })
+                    body: JSON.stringify({ type, config })
                 });
-                const data = await res.json();
+                return res.json();
+            };
+
+            try {
+                const result = await save(selectedEnv);
+                if (shouldSync) {
+                    await save(selectedEnv === 'prod' ? 'dev' : 'prod');
+                }
                 
-                if (data.success) {
-                    appendLog('status', 'Configuração salva com sucesso!');
+                if (result.success) {
+                    appendLog('status', 'Configuração sincronizada com sucesso!');
                     showView('main-view');
                 } else {
-                    throw new Error(data.error);
+                    throw new Error(result.error);
                 }
             } catch (err) {
                 appendLog('error', `Erro ao salvar: ${err.message}`);
