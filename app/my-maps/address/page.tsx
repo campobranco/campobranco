@@ -125,7 +125,7 @@ function AddressListContent() {
                     const activeList = qSnap.docs.find(d => d.data().status !== 'completed' && d.data().status !== 'archived');
 
                     if (!activeList) {
-                        toast.error("Você não tem permissão para acessar este mapa ou ele já foi devolvido.");
+                        toast.error("VocÃª nÃ£o tem permissÃ£o para acessar este mapa ou ele jÃ¡ foi devolvido.");
                         router.replace('/dashboard');
                     }
                 } catch (e) {
@@ -147,7 +147,7 @@ function AddressListContent() {
     const [isActive, setIsActive] = useState(true);
     const [googleMapsLink, setGoogleMapsLink] = useState('');
     const [wazeLink, setWazeLink] = useState('');
-    const [residentsCount, setResidentsCount] = useState('1'); // Quantidade de residentes no endereço
+    const [residentsCount, setResidentsCount] = useState('1'); // Quantidade de residentes no endereÃ§o
     // Gender Stats State: territoryId -> { men: number, women: number, couples: number }
     const [genderStats, setGenderStats] = useState<Record<string, { men: number, women: number, couples: number }>>({});
     const [residentName, setResidentName] = useState('');
@@ -186,13 +186,13 @@ function AddressListContent() {
                 const newCoords = { lat: parseFloat(lat), lng: parseFloat(lon) };
                 setPickerTempCoords(newCoords);
                 setIsMapSelectionMode(true);
-                toast.success("Localização encontrada!");
+                toast.success("LocalizaÃ§Ã£o encontrada!");
             } else {
-                toast.error("Endereço não encontrado");
+                toast.error("EndereÃ§o nÃ£o encontrado");
             }
         } catch (error) {
             console.error("Error geocoding in picker:", error);
-            toast.error("Erro ao pesquisar endereço");
+            toast.error("Erro ao pesquisar endereÃ§o");
         } finally {
             setIsGeocodingMap(false);
         }
@@ -257,8 +257,8 @@ function AddressListContent() {
                 const cityResData = resData.city;
                 const terrResData = resData.territory;
 
-                // Concatenando o numero com descricao para exibir no cabeçalho
-                let territoryDisplayName = 'Não encontrada';
+                // Concatenando o numero com descricao para exibir no cabeÃ§alho
+                let territoryDisplayName = 'NÃ£o encontrada';
                 if (terrResData) {
                     territoryDisplayName = (terrResData as any).name;
                     if ((terrResData as any).notes) {
@@ -267,8 +267,8 @@ function AddressListContent() {
                 }
 
                 setContextNames({
-                    congregation: (congResData as any)?.name || 'Não encontrada',
-                    city: (cityResData as any)?.name || 'Não encontrada',
+                    congregation: (congResData as any)?.name || 'NÃ£o encontrada',
+                    city: (cityResData as any)?.name || 'NÃ£o encontrada',
                     territory: territoryDisplayName
                 });
 
@@ -300,10 +300,10 @@ function AddressListContent() {
 
         try {
             const resData = await getAddresses(congregationId, cityId, territoryId);
-            console.log("[Debug] Endereços recebidos:", resData);
+            console.log("[Debug] EndereÃ§os recebidos:", resData);
 
             if (!resData.success) {
-                throw new Error(resData.error || 'Erro ao buscar endereços');
+                throw new Error(resData.error || 'Erro ao buscar endereÃ§os');
             }
 
             const data = (resData.addresses || []).map((addr: any) => ({
@@ -321,7 +321,7 @@ function AddressListContent() {
             setAddresses(sorted as Address[]);
         } catch (error: any) {
             console.error("Error fetching addresses:", error);
-            toast.error(error.message || "Erro ao carregar endereços.");
+            toast.error(error.message || "Erro ao carregar endereÃ§os.");
         } finally {
             setLoading(false);
         }
@@ -343,10 +343,10 @@ function AddressListContent() {
                     fetchAddresses();
                 },
                 error: (error) => {
-                    // Usamos warn para não disparar o bug report, já que temos fallback via API
-                    console.warn("[SnapShot] Listener de endereços limitado:", error.message);
+                    // Usamos warn para nÃ£o disparar o bug report, jÃ¡ que temos fallback via API
+                    console.warn("[SnapShot] Listener de endereÃ§os limitado:", error.message);
                     if (error.code === 'permission-denied') {
-                        // Silencioso: fallback já está em ação
+                        // Silencioso: fallback jÃ¡ estÃ¡ em aÃ§Ã£o
                     }
                 }
             });
@@ -414,7 +414,7 @@ function AddressListContent() {
             const addressToEdit = addresses.find(addr => addr.id === editAddressId);
             if (addressToEdit) {
                 handleEditAddress(addressToEdit);
-                // Remove o parâmetro edit da URL para não abrir novamente em refresh
+                // Remove o parÃ¢metro edit da URL para nÃ£o abrir novamente em refresh
                 const url = new URL(window.location.href);
                 url.searchParams.delete('edit');
                 router.replace(url.pathname + url.search, { scroll: false });
@@ -428,7 +428,7 @@ function AddressListContent() {
     const handleCreateAddress = async (e: React.FormEvent) => {
         e.preventDefault();
         if (!combinedAddress.trim()) {
-            toast.error("Preencha o Endereço Completo para salvar.");
+            toast.error("Preencha o EndereÃ§o Completo para salvar.");
             return;
         }
 
@@ -456,15 +456,15 @@ function AddressListContent() {
             const resData = await saveAddress(editingId || null, addressData);
 
             if (!resData.success) {
-                throw new Error(resData.error || 'Erro ao salvar endereço');
+                throw new Error(resData.error || 'Erro ao salvar endereÃ§o');
             }
 
-            toast.success(editingId ? "Endereço atualizado com sucesso!" : "Endereço cadastrado com sucesso!");
+            toast.success(editingId ? "EndereÃ§o atualizado com sucesso!" : "EndereÃ§o cadastrado com sucesso!");
             fetchAddresses();
             resetForm();
         } catch (error: any) {
             console.error("Error saving address:", error);
-            toast.error(error.message || "Erro ao salvar endereço.");
+            toast.error(error.message || "Erro ao salvar endereÃ§o.");
         }
     };
 
@@ -488,6 +488,26 @@ function AddressListContent() {
     };
 
     const handleEditAddress = (addr: Address) => {
+        setEditingId(addr.id);
+        setCombinedAddress(addr.street);
+        setLat(addr.lat ? addr.lat.toString() : '');
+        setLng(addr.lng ? addr.lng.toString() : '');
+        setIsActive(addr.isActive !== false);
+        setGoogleMapsLink(addr.googleMapsLink || '');
+        setWazeLink(addr.wazeLink || '');
+        setResidentsCount(addr.residentsCount ? addr.residentsCount.toString() : '1');
+        setResidentName(addr.residentName || '');
+        setGender(addr.gender || '');
+        setIsDeaf(!!addr.isDeaf);
+        setIsMinor(!!addr.isMinor);
+        setIsStudent(!!addr.isStudent);
+        setIsNeurodivergent(!!addr.isNeurodivergent);
+        setObservations(addr.observations || '');
+        
+        if (addr.congregationId) setSelectedCongregationId(addr.congregationId);
+        if (addr.cityId) setSelectedCityId(addr.cityId);
+        if (addr.territoryId) setSelectedTerritoryId(addr.territoryId);
+        
         setIsCreateModalOpen(true);
     };
 
@@ -503,14 +523,14 @@ function AddressListContent() {
             const resData = await deleteAddress(addressToDelete);
             if (!resData.success) throw new Error(resData.error);
 
-            toast.success("Endereço excluído com sucesso!");
+            toast.success("EndereÃ§o excluÃ­do com sucesso!");
             fetchAddresses();
             setIsDeleteDialogOpen(false);
             setAddressToDelete(null);
             setOpenMenuId(null);
         } catch (error: any) {
             console.error("Error deleting address:", error);
-            toast.error(error.message || "Erro ao excluir endereço.");
+            toast.error(error.message || "Erro ao excluir endereÃ§o.");
         } finally {
             setIsDeleting(false);
         }
@@ -559,15 +579,15 @@ function AddressListContent() {
                 batch.update(addrRef, { sortOrder: index });
             });
             await batch.commit();
-            toast.success("Ordem dos endereços atualizada!");
+            toast.success("Ordem dos endereÃ§os atualizada!");
         } catch (error) {
             console.error("Error updating sort order:", error);
-            toast.error("Erro ao salvar nova ordem dos endereços.");
+            toast.error("Erro ao salvar nova ordem dos endereÃ§os.");
         }
     };
 
     const filteredAddresses = addresses.filter(a =>
-        // Pesquisa apenas pelo campo unificado de endereço
+        // Pesquisa apenas pelo campo unificado de endereÃ§o
         a.street.toLowerCase().includes(searchTerm.toLowerCase())
     );
 
@@ -599,7 +619,7 @@ function AddressListContent() {
             return;
         }
 
-        // Usa o endereço completo para abrir no mapa (busca padrão)
+        // Usa o endereÃ§o completo para abrir no mapa (busca padrÃ£o)
         const query = item.street;
         const isIOS = /iPhone|iPad|iPod/i.test(navigator.userAgent);
         const isAndroid = /Android/i.test(navigator.userAgent);
@@ -622,11 +642,11 @@ function AddressListContent() {
             const resData = await saveAddress(addr.id, addressData as any);
             if (!resData.success) throw new Error(resData.error);
 
-            toast.success("Endereço desativado com sucesso!");
+            toast.success("EndereÃ§o desativado com sucesso!");
             fetchAddresses();
         } catch (error: any) {
             console.error(error);
-            toast.error(error.message || "Erro ao aprovar solicitação.");
+            toast.error(error.message || "Erro ao aprovar solicitaÃ§Ã£o.");
         }
     };
 
@@ -643,7 +663,7 @@ function AddressListContent() {
             const qSnap = await getDocs(q);
             const latestVisit = qSnap.docs[0];
 
-            if (!latestVisit) throw new Error("Não foi possível encontrar a visita relacionada.");
+            if (!latestVisit) throw new Error("NÃ£o foi possÃ­vel encontrar a visita relacionada.");
 
             const resData = await deleteVisit(latestVisit.id);
             if (!resData.success) throw new Error(resData.error);
@@ -657,11 +677,11 @@ function AddressListContent() {
                 });
             } catch (e) { console.warn(e); }
 
-            toast.success("Marcação removida com sucesso!");
+            toast.success("MarcaÃ§Ã£o removida com sucesso!");
             fetchAddresses();
         } catch (error: any) {
             console.error(error);
-            toast.error(error.message || "Erro ao remover marcação.");
+            toast.error(error.message || "Erro ao remover marcaÃ§Ã£o.");
         }
     };
 
@@ -677,7 +697,7 @@ function AddressListContent() {
             const resData = await saveAddress(addr.id, addressData as any);
             if (!resData.success) throw new Error(resData.error);
 
-            toast.success(`Endereço ${!currentActive ? 'inativado' : 'reativado'} com sucesso!`);
+            toast.success(`EndereÃ§o ${!currentActive ? 'inativado' : 'reativado'} com sucesso!`);
             fetchAddresses();
         } catch (error: any) {
             console.error(error);
@@ -734,7 +754,7 @@ function AddressListContent() {
                             let lastVisitFormatted = "Sem visitas este ano";
                             if (addr.lastVisitedAt) {
                                 const lvDate = new Date(addr.lastVisitedAt);
-                                lastVisitFormatted = `Última visita: ${lvDate.toLocaleDateString()}`;
+                                lastVisitFormatted = `Ãšltima visita: ${lvDate.toLocaleDateString()}`;
                             }
 
                             // Mudou-se Highlight - Blue Home Icon
@@ -855,7 +875,7 @@ function AddressListContent() {
                                 )}
                                 {active !== false && addr.visitStatus === 'doNotVisit' && (
                                     <span className="flex items-center gap-1 bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-400 px-1.5 py-0.5 rounded-md font-bold text-[10px] uppercase animate-pulse border border-red-200 dark:border-red-800">
-                                        <Hand className="w-3 h-3" /> Pediu para não ser visitado
+                                        <Hand className="w-3 h-3" /> Pediu para nÃ£o ser visitado
                                     </span>
                                 )}
                             </div>
@@ -876,11 +896,11 @@ function AddressListContent() {
                                     e.stopPropagation();
                                     setConfirmModal({
                                         isOpen: true,
-                                        title: "Pedido de Não Visitar",
-                                        message: "Este morador solicitou não ser visitado. O que deseja fazer?",
+                                        title: "Pedido de NÃ£o Visitar",
+                                        message: "Este morador solicitou nÃ£o ser visitado. O que deseja fazer?",
                                         variant: 'danger',
-                                        confirmText: "Inativar Endereço",
-                                        cancelText: "Remover Marcação",
+                                        confirmText: "Inativar EndereÃ§o",
+                                        cancelText: "Remover MarcaÃ§Ã£o",
                                         onConfirm: () => {
                                             setConfirmModal(prev => ({ ...prev, isOpen: false }));
                                             handleApproveDNV(addr);
@@ -893,7 +913,7 @@ function AddressListContent() {
                                 }}
                                 className="bg-red-600 hover:bg-red-700 text-white text-[10px] font-bold px-3 py-1.5 rounded-full shadow-sm transition-colors flex items-center gap-1 animate-pulse"
                             >
-                                <Hand className="w-3 h-3" /> Gerenciar Solicitação
+                                <Hand className="w-3 h-3" /> Gerenciar SolicitaÃ§Ã£o
                             </button>
                         )}
                         {(isElder || isServant) ? (
@@ -931,7 +951,7 @@ function AddressListContent() {
 
                                     <DropDownItem 
                                         icon={HistoryIcon} 
-                                        label="Abrir Histórico" 
+                                        label="Abrir HistÃ³rico" 
                                         variant="indigo" 
                                         onClick={() => { setHistoryAddressId(addr.id); setOpenMenuId(null); }} 
                                     />
@@ -948,15 +968,15 @@ function AddressListContent() {
                                     {(isElder || isServant) && (
                                         <DropDownItem 
                                             icon={addr.isActive === false ? CheckCircle : X} 
-                                            label={addr.isActive === false ? 'Ativar Cartão' : 'Desativar Cartão'} 
+                                            label={addr.isActive === false ? 'Ativar CartÃ£o' : 'Desativar CartÃ£o'} 
                                             variant={addr.isActive === false ? 'success' : 'orange'} 
                                             onClick={() => {
                                                 setConfirmModal({
                                                     isOpen: true,
-                                                    title: addr.isActive === false ? "Reativar Endereço" : "Desativar Endereço",
+                                                    title: addr.isActive === false ? "Reativar EndereÃ§o" : "Desativar EndereÃ§o",
                                                     message: addr.isActive === false
-                                                        ? "Deseja reativar este endereço para que ele volte a aparecer nos links?"
-                                                        : "Deseja desativar este endereço temporariamente?",
+                                                        ? "Deseja reativar este endereÃ§o para que ele volte a aparecer nos links?"
+                                                        : "Deseja desativar este endereÃ§o temporariamente?",
                                                     variant: addr.isActive === false ? 'info' : 'danger',
                                                     confirmText: addr.isActive === false ? "Reativar" : "Desativar",
                                                     cancelText: "Cancelar",
@@ -1011,7 +1031,7 @@ function AddressListContent() {
                             <span className="text-[10px] text-muted font-bold uppercase tracking-wider">{localTermType === 'neighborhood' ? 'Bairro' : 'Cidade'}: {contextNames.city}</span>
                             {parentCity && (
                                 <>
-                                    <span className="text-[8px] text-gray-300 dark:text-gray-600">•</span>
+                                    <span className="text-[8px] text-gray-300 dark:text-gray-600">â€¢</span>
                                     <span className="text-[10px] text-blue-500 font-black tracking-tight uppercase">{parentCity}</span>
                                 </>
                             )}
@@ -1047,7 +1067,7 @@ function AddressListContent() {
                             <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-muted w-5 h-5 group-focus-within:text-blue-500 transition-colors" />
                             <input
                                 type="text"
-                                placeholder="Buscar rua ou número..."
+                                placeholder="Buscar rua ou nÃºmero..."
                                 value={searchTerm}
                                 onChange={(e) => setSearchTerm(e.target.value)}
                                 className="w-full bg-surface border-0 text-main text-sm font-medium rounded-lg py-4 pl-12 pr-4 shadow-sm focus:ring-2 focus:ring-blue-500/20 focus:outline-none transition-all placeholder:text-muted"
@@ -1060,7 +1080,7 @@ function AddressListContent() {
                     ) : filteredAddresses.length === 0 ? (
                         <div className="text-center py-12 opacity-50">
                             <Home className="w-12 h-12 mx-auto mb-3 text-gray-300" />
-                            <p className="text-gray-400 font-medium">Nenhum endereço cadastrado</p>
+                            <p className="text-gray-400 font-medium">Nenhum endereÃ§o cadastrado</p>
                         </div>
                     ) : (
                         <div className="px-6 pb-6 space-y-3 max-w-6xl mx-auto">
@@ -1102,7 +1122,7 @@ function AddressListContent() {
                                 id: a.id,
                                 lat: a.lat,
                                 lng: a.lng,
-                                // Endereço unificado no campo street
+                                // EndereÃ§o unificado no campo street
                                 title: a.street,
                                 subtitle: a.observations || '',
                                 variant: 'numbered' as const,
@@ -1123,7 +1143,7 @@ function AddressListContent() {
                                 id: a.id,
                                 lat: a.lat,
                                 lng: a.lng,
-                                // Endereço unificado no campo street
+                                // EndereÃ§o unificado no campo street
                                 title: a.street,
                                 subtitle: a.observations || '',
                                 variant: 'numbered' as const,
@@ -1387,7 +1407,7 @@ function AddressListContent() {
                 <div className="fixed inset-0 z-[2000] bg-background flex flex-col animate-in fade-in duration-300">
                     <header className="bg-surface border-b border-surface-border px-6 py-4 flex items-center justify-between">
                         <div>
-                            <h2 className="text-xl font-bold text-main tracking-tight">Selecionar Localização</h2>
+                            <h2 className="text-xl font-bold text-main tracking-tight">Selecionar LocalizaÃ§Ã£o</h2>
                             <p className="text-xs text-muted font-bold uppercase tracking-widest">
                                 {isMapSelectionMode ? 'Clique para marcar o ponto' : 'Arraste para navegar'}
                             </p>
@@ -1407,7 +1427,7 @@ function AddressListContent() {
                                 <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-muted w-4 h-4" />
                                 <input
                                     type="text"
-                                    placeholder="Pesquisar endereço para o pino..."
+                                    placeholder="Pesquisar endereÃ§o para o pino..."
                                     className="w-full bg-background border border-surface-border rounded-lg py-2 pl-9 pr-4 text-sm font-medium focus:ring-2 focus:ring-blue-500/20 outline-none transition-all"
                                     value={mapSearchQuery}
                                     onChange={(e) => setMapSearchQuery(e.target.value)}
@@ -1429,14 +1449,14 @@ function AddressListContent() {
                             <button
                                 onClick={() => setIsMapSelectionMode(true)}
                                 className={`p-3 rounded-2xl shadow-xl transition-all ${isMapSelectionMode ? 'bg-blue-600 text-white scale-110' : 'bg-surface text-muted hover:text-main border border-surface-border'}`}
-                                title="Modo Seleção"
+                                title="Modo SeleÃ§Ã£o"
                             >
                                 <MousePointer2 className="w-6 h-6" />
                             </button>
                             <button
                                 onClick={() => setIsMapSelectionMode(false)}
                                 className={`p-3 rounded-2xl shadow-xl transition-all ${!isMapSelectionMode ? 'bg-blue-600 text-white scale-110' : 'bg-surface text-muted hover:text-main border border-surface-border'}`}
-                                title="Modo Navegação"
+                                title="Modo NavegaÃ§Ã£o"
                             >
                                 <Navigation className="w-6 h-6" />
                             </button>
@@ -1496,8 +1516,8 @@ function AddressListContent() {
                     setAddressToDelete(null);
                 }}
                 onConfirm={confirmDeleteAddress}
-                title="Excluir Endereço"
-                message="Tem certeza que deseja excluir permanentemente este endereço? Esta ação não pode ser desfeita."
+                title="Excluir EndereÃ§o"
+                message="Tem certeza que deseja excluir permanentemente este endereÃ§o? Esta aÃ§Ã£o nÃ£o pode ser desfeita."
                 confirmText="Excluir"
                 variant="danger"
                 isLoading={isDeleting}

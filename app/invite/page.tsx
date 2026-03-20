@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, Suspense } from 'react';
+import { useEffect, useState, Suspense } from 'react';
 import { useAuth } from '@/app/context/AuthContext';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { Users, Loader2, CheckCircle, AlertCircle } from 'lucide-react';

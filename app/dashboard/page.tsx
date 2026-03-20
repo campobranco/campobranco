@@ -288,8 +288,12 @@ export default function DashboardPage() {
                         const ago = new Date(); ago.setDate(ago.getDate() - 180);
                         const laDate = lastAny > 0 ? new Date(lastAny) : null;
                         idleList.push({
-                            id: t.id, name: t.name || 'Sem Nome', city: cityMap[t.cityId] || 'Cidade Desconhecida',
-                            lastVisit: laDate, variant: !laDate ? 'danger' : (laDate < ago ? 'warning' : 'info')
+                            id: t.id,
+                            name: t.name || 'Sem Nome',
+                            description: t.description || '', // Inclui a descrição (ex: Catiguá)
+                            city: cityMap[t.cityId] || 'Cidade Desconhecida',
+                            lastVisit: laDate,
+                            variant: !laDate ? 'danger' : (laDate < ago ? 'warning' : 'info')
                         });
                     }
                 });
