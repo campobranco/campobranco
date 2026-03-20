@@ -86,6 +86,8 @@ Para eliminar custos e dependência de cartão de crédito, o sistema utiliza um
 
 ---
 ### 📝 Registro de Melhorias Recentes:
+- **v0.8.52-beta**: **Padronização de Envs**. (20/03/2026)
+  - **Organização**: Os arquivos `.env` gerados agora seguem um template estruturado com comentários e seções organizadas.
 - **v0.8.51-beta**: **Comandos Paralelos no Gerenciador**. (20/03/2026)
   - **Flexibilidade**: Agora é possível sincronizar regras ou fazer deploy para teste enquanto o servidor local está rodando, sem bloqueio de interface.
 - **v0.8.50-beta**: **Automação e Controle de Fluxo**. (20/03/2026)
