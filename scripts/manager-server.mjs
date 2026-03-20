@@ -238,6 +238,30 @@ const server = http.createServer(async (req, res) => {
         return;
     }
 
+    // Endpoint para Ler .env existente
+    if (url.pathname === '/get-config' && req.method === 'GET') {
+        const type = url.searchParams.get('type');
+        const fileName = type === 'prod' ? '.env.production' : '.env.development';
+        try {
+            const content = await readFile(join(ROOT_DIR, fileName), 'utf-8');
+            const config = {};
+            content.split('\n').forEach(line => {
+                const match = line.match(/^\s*([\w.-]+)\s*=\s*(.*)?\s*$/);
+                if (match) {
+                    let value = (match[2] || '').split('#')[0].trim();
+                    if (value.startsWith('"') && value.endsWith('"')) value = value.slice(1, -1);
+                    config[match[1]] = value.trim();
+                }
+            });
+            res.writeHead(200, { 'Content-Type': 'application/json' });
+            res.end(JSON.stringify({ success: true, config }));
+        } catch (e) {
+            res.writeHead(200, { 'Content-Type': 'application/json' });
+            res.end(JSON.stringify({ success: false, message: 'Arquivo não existe' }));
+        }
+        return;
+    }
+
     res.writeHead(404);
     res.end('Não encontrado');
 });
