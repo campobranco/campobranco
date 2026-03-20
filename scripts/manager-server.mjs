@@ -252,38 +252,41 @@ const server = http.createServer(async (req, res) => {
         req.on('end', async () => {
             try {
                 const { type, config } = JSON.parse(body);
-                if (!['prod', 'dev'].includes(type)) throw new Error('Tipo inválido');
-
                 const fileName = type === 'prod' ? '.env.production' : '.env.development';
                 const envPath = join(ROOT_DIR, fileName);
                 
-                let pkgVersion = "0.8.52-beta";
+                // Carregar versão atual para o config
                 try {
                     const pkg = JSON.parse(await readFile(join(ROOT_DIR, 'package.json'), 'utf-8'));
-                    pkgVersion = pkg.version;
+                    config.NEXT_PUBLIC_APP_VERSION = pkg.version;
                 } catch(e){}
 
-                const envContent = `
+                let currentContent = '';
+                try {
+                    currentContent = await readFile(envPath, 'utf-8');
+                } catch (e) {
+                    // Modelo exato fornecido pelo usuário
+                    currentContent = `
 # =====================
 # Configurações do App
 # =====================
 NEXT_PUBLIC_APP_NAME="Campo Branco"
 NEXT_PUBLIC_APP_DESCRIPTION="Gestão de Territórios para Testemunhas de Jeová"
-NEXT_PUBLIC_APP_VERSION="${pkgVersion}"
-NEXT_PUBLIC_APP_URL="${config.NEXT_PUBLIC_APP_URL || ''}"
-NEXT_PUBLIC_SUPPORT_EMAIL="${config.NEXT_PUBLIC_MASTER_EMAIL || ''}"
-NEXT_PUBLIC_MASTER_EMAIL="${config.NEXT_PUBLIC_MASTER_EMAIL || ''}"
+NEXT_PUBLIC_APP_VERSION="${config.NEXT_PUBLIC_APP_VERSION || '0.0.0'}"
+NEXT_PUBLIC_APP_URL=""
+NEXT_PUBLIC_SUPPORT_EMAIL=""
+NEXT_PUBLIC_MASTER_EMAIL=""
 NEXT_PUBLIC_LEGACY_HOST=""
 
 # =====================
 # Firebase Client SDK (Público) - ${type === 'prod' ? 'Produção' : 'Desenvolvimento'}
 # =====================
-NEXT_PUBLIC_FIREBASE_PROJECT_ID="${config.NEXT_PUBLIC_FIREBASE_PROJECT_ID || ''}"
-NEXT_PUBLIC_FIREBASE_API_KEY="${config.NEXT_PUBLIC_FIREBASE_API_KEY || ''}"
-NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN="${config.NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN || ''}"
-NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET="${config.NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET || ''}"
-NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID="${config.NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID || ''}"
-NEXT_PUBLIC_FIREBASE_APP_ID="${config.NEXT_PUBLIC_FIREBASE_APP_ID || ''}"
+NEXT_PUBLIC_FIREBASE_PROJECT_ID=""
+NEXT_PUBLIC_FIREBASE_API_KEY=""
+NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN=""
+NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET=""
+NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID=""
+NEXT_PUBLIC_FIREBASE_APP_ID=""
 NEXT_PUBLIC_FIREBASE_DATABASE_ID="default"
 
 # =====================
@@ -292,10 +295,24 @@ NEXT_PUBLIC_FIREBASE_DATABASE_ID="default"
 FIREBASE_CLIENT_EMAIL=""
 FIREBASE_PRIVATE_KEY=""
 `.trim();
+                }
 
-                await writeFile(envPath, envContent);
+                let newContent = currentContent;
+
+                // Substituir cirurgicamente cada chave usando Regex para manter IGUALDADE
+                Object.entries(config).forEach(([key, value]) => {
+                    const regex = new RegExp(`^(\\s*${key}\\s*=).*$`, 'm');
+                    if (regex.test(newContent)) {
+                        newContent = newContent.replace(regex, `$1"${value}"`);
+                    } else if (!currentContent) { 
+                        // Se for novo arquivo e não está no template, adiciona ao fim
+                        newContent += `\n${key}="${value}"`;
+                    }
+                });
+
+                await writeFile(envPath, newContent.trim() + '\n');
                 res.writeHead(200, { 'Content-Type': 'application/json' });
-                res.end(JSON.stringify({ success: true, message: `${fileName} salvo com sucesso!` }));
+                res.end(JSON.stringify({ success: true, message: `${fileName} atualizado!` }));
             } catch (err) {
                 res.writeHead(500, { 'Content-Type': 'application/json' });
                 res.end(JSON.stringify({ success: false, error: err.message }));

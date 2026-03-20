@@ -86,6 +86,8 @@ Para eliminar custos e dependência de cartão de crédito, o sistema utiliza um
 
 ---
 ### 📝 Registro de Melhorias Recentes:
+- **v0.8.53-beta**: **Fidelidade Total ao Padrão .env**. (20/03/2026)
+  - **Integridade**: A geração de arquivos agora preserva 100% da estrutura, comentários e ordem do modelo original, atualizando apenas os valores.
 - **v0.8.52-beta**: **Padronização de Envs**. (20/03/2026)
   - **Organização**: Os arquivos `.env` gerados agora seguem um template estruturado com comentários e seções organizadas.
 - **v0.8.51-beta**: **Comandos Paralelos no Gerenciador**. (20/03/2026)
