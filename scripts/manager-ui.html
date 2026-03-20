@@ -107,6 +107,55 @@
             </div>
         </div>
 
+        <!-- Tela de Configuração (Formulário) -->
+        <div id="config-view" style="display: none; animation: fadeIn 0.5s ease;">
+            <button onclick="showView('setup-view')" style="background: none; border: none; color: var(--text-muted); cursor: pointer; display: flex; align-items: center; gap: 4px; font-size: 0.85rem; font-weight: 600; margin-bottom: 20px;">
+                <i data-lucide="arrow-left" style="width: 14px; height: 14px;"></i> Voltar
+            </button>
+            <div class="card">
+                <div class="section-title"><i data-lucide="settings"></i> Configurar Ambiente <span id="config-env-label" style="margin-left:5px"></span></div>
+                <form id="config-form" onsubmit="saveConfig(event)" style="display: grid; gap: 15px;">
+                    <div style="display: grid; gap: 5px;">
+                        <label style="font-size: 0.75rem; font-weight: bold; color: var(--text-muted);">E-MAIL MASTER ADMIN</label>
+                        <input type="email" name="NEXT_PUBLIC_MASTER_EMAIL" required style="padding: 10px; border-radius: 8px; border: 1px solid var(--primary-light); background: transparent; color: inherit;" placeholder="seu-email@gmail.com">
+                    </div>
+                    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 15px;">
+                        <div style="display: grid; gap: 5px;">
+                            <label style="font-size: 0.75rem; font-weight: bold; color: var(--text-muted);">PROJECT ID</label>
+                            <input type="text" name="NEXT_PUBLIC_FIREBASE_PROJECT_ID" required style="padding: 10px; border-radius: 8px; border: 1px solid var(--primary-light); background: transparent; color: inherit;">
+                        </div>
+                        <div style="display: grid; gap: 5px;">
+                            <label style="font-size: 0.75rem; font-weight: bold; color: var(--text-muted);">API KEY</label>
+                            <input type="text" name="NEXT_PUBLIC_FIREBASE_API_KEY" required style="padding: 10px; border-radius: 8px; border: 1px solid var(--primary-light); background: transparent; color: inherit;">
+                        </div>
+                    </div>
+                    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 15px;">
+                        <div style="display: grid; gap: 5px;">
+                            <label style="font-size: 0.75rem; font-weight: bold; color: var(--text-muted);">AUTH DOMAIN</label>
+                            <input type="text" name="NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN" style="padding: 10px; border-radius: 8px; border: 1px solid var(--primary-light); background: transparent; color: inherit;">
+                        </div>
+                        <div style="display: grid; gap: 5px;">
+                            <label style="font-size: 0.75rem; font-weight: bold; color: var(--text-muted);">APP ID</label>
+                            <input type="text" name="NEXT_PUBLIC_FIREBASE_APP_ID" style="padding: 10px; border-radius: 8px; border: 1px solid var(--primary-light); background: transparent; color: inherit;">
+                        </div>
+                    </div>
+                    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 15px;">
+                        <div style="display: grid; gap: 5px;">
+                            <label style="font-size: 0.75rem; font-weight: bold; color: var(--text-muted);">SENDER ID</label>
+                            <input type="text" name="NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID" style="padding: 10px; border-radius: 8px; border: 1px solid var(--primary-light); background: transparent; color: inherit;">
+                        </div>
+                        <div style="display: grid; gap: 5px;">
+                            <label style="font-size: 0.75rem; font-weight: bold; color: var(--text-muted);">STORAGE BUCKET</label>
+                            <input type="text" name="NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET" style="padding: 10px; border-radius: 8px; border: 1px solid var(--primary-light); background: transparent; color: inherit;">
+                        </div>
+                    </div>
+                    <button type="submit" class="btn" style="background: var(--primary); color: white; justify-content: center; margin-top: 10px;">
+                        Salvar e Continuar <i data-lucide="check" style="margin-left: 10px;"></i>
+                    </button>
+                </form>
+            </div>
+        </div>
+
         <!-- Painel de Controle (Escondido initially) -->
         <div id="main-view" style="display: none; animation: fadeIn 0.5s ease;">
             <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
@@ -117,36 +166,16 @@
                 <button onclick="location.reload()" style="background: none; border: none; color: var(--text-muted); cursor: pointer; display: flex; align-items: center; gap: 4px; font-size: 0.85rem; font-weight: 600;">
                     <i data-lucide="refresh-ccw" style="width: 14px; height: 14px;"></i> Alterar Ambiente
                 </button>
-            </div>
-
-            <div class="dashboard-grid">
-                <!-- Coluna 1: Desenvolvimento (Escondida em PROD) -->
-                <div class="card" id="dev-card">
-                    <div class="section-title"><i data-lucide="code-2"></i> Desenvolvimento</div>
-                    <div class="btn-group">
-                        <button class="btn" onclick="runCommand('install')" id="btn-install">
-                            <span>Instalar Dependências</span>
-                            <i data-lucide="download"></i>
-                        </button>
-                        <button class="btn" onclick="runCommand('dev')" id="btn-dev">
-                            <span>Iniciar Servidor Dev</span>
-                            <i data-lucide="play"></i>
-                        </button>
-                        <button class="btn" onclick="runCommand('build')" id="btn-build">
-                            <span>Build do Projeto</span>
-                            <i data-lucide="package"></i>
-                        </button>
-                    </div>
-                </div>
-
-                <!-- Coluna 2: Firebase / Deploy (Contextual) -->
+                      <div class="dashboard-grid" id="main-actions-grid" style="grid-template-columns: 1fr; max-width: 500px; margin: 0 auto 30px;">
+                <!-- Ações Dinâmicas -->
                 <div class="card">
-                    <div class="section-title"><i data-lucide="cloud-upload"></i> Deploy & Regras</div>
+                    <div class="section-title"><i data-lucide="zap"></i> Ações Disponíveis</div>
                     <div class="btn-group" id="context-actions">
                         <!-- Botões injetados via JS -->
                     </div>
                 </div>
             </div>
+     </div>
 
             <!-- Terminal de Logs -->
             <div class="terminal-container">
@@ -175,41 +204,95 @@
         const statusText = document.getElementById('status-text');
         const statusIndicator = document.getElementById('status-indicator');
 
+        function showView(viewId) {
+            document.getElementById('setup-view').style.display = 'none';
+            document.getElementById('config-view').style.display = 'none';
+            document.getElementById('main-view').style.display = 'none';
+            document.getElementById(viewId).style.display = 'block';
+        }
+
         function selectEnv(env) {
             selectedEnv = env;
-            document.getElementById('setup-view').style.display = 'none';
-            document.getElementById('main-view').style.display = 'block';
-            
             const label = document.getElementById('env-label');
+            const configLabel = document.getElementById('config-env-label');
+            
             label.textContent = env === 'prod' ? 'Produção' : 'Desenvolvimento';
-            
-            // Visibilidade do card de desenvolvimento
-            const devCard = document.getElementById('dev-card');
-            devCard.style.display = env === 'prod' ? 'none' : 'block';
-            
-            // Ajuste na grid para centralizar se sobrar apenas um card
-            const grid = document.querySelector('.dashboard-grid');
-            grid.style.gridTemplateColumns = env === 'prod' ? '1fr' : 'repeat(auto-fit, minmax(280px, 1fr))';
-            if (env === 'prod') grid.style.maxWidth = "500px";
-            if (env === 'prod') grid.style.margin = "0 auto 30px";
+            configLabel.textContent = `(${label.textContent})`;
+            configLabel.className = env === 'prod' ? 'text-primary' : 'text-warning';
+
+            // Por padrão, sempre vamos para a configuração primeiro na instalação
+            showView('config-view');
 
             renderActions();
             lucide.createIcons();
         }
 
+        async function saveConfig(event) {
+            event.preventDefault();
+            const formData = new FormData(event.target);
+            const config = Object.fromEntries(formData.entries());
+            
+            // Adicionar campos calculados comuns
+            const projId = config.NEXT_PUBLIC_FIREBASE_PROJECT_ID;
+            config.NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN = config.NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN || `${projId}.firebaseapp.com`;
+            config.NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET = config.NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET || `${projId}.firebasestorage.app`;
+            config.NEXT_PUBLIC_APP_URL = selectedEnv === 'prod' ? `https://${projId}.web.app` : `https://${projId}.web.app`;
+            config.NEXT_PUBLIC_API_BASE_URL = `${config.NEXT_PUBLIC_APP_URL}/api`;
+
+            setWorking(true);
+            appendLog('status', `Salvando configuração para ${selectedEnv}...`);
+
+            try {
+                const res = await fetch('/save-env', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ type: selectedEnv, config })
+                });
+                const data = await res.json();
+                
+                if (data.success) {
+                    appendLog('status', 'Configuração salva com sucesso!');
+                    showView('main-view');
+                } else {
+                    throw new Error(data.error);
+                }
+            } catch (err) {
+                appendLog('error', `Erro ao salvar: ${err.message}`);
+            } finally {
+                setWorking(false);
+            }
+        }
+
         function renderActions() {
             const container = document.getElementById('context-actions');
             
-            container.innerHTML = `
-                <button class="btn" onclick="runCommand('deploy-${selectedEnv}')">
-                    <span>Fazer Deploy Completo</span>
-                    <i data-lucide="rocket"></i>
-                </button>
-                <button class="btn" onclick="runCommand('sync-rules-${selectedEnv}')">
-                    <span>Sincronizar Apenas Regras</span>
-                    <i data-lucide="shield-check"></i>
-                </button>
-            `;
+            if (selectedEnv === 'prod') {
+                container.innerHTML = `
+                    <button class="btn" onclick="runCommand('deploy-prod')">
+                        <span>Fazer Deploy Produção</span>
+                        <i data-lucide="rocket"></i>
+                    </button>
+                    <button class="btn" onclick="runCommand('sync-rules-prod')">
+                        <span>Sincronizar Regras Prod</span>
+                        <i data-lucide="shield-check"></i>
+                    </button>
+                `;
+            } else {
+                container.innerHTML = `
+                    <button class="btn" onclick="runCommand('dev')">
+                        <span>Ver Local (npm run dev)</span>
+                        <i data-lucide="play"></i>
+                    </button>
+                    <button class="btn" onclick="runCommand('deploy-dev')">
+                        <span>Subir para Teste (Staging)</span>
+                        <i data-lucide="flask-conical"></i>
+                    </button>
+                    <button class="btn" onclick="runCommand('sync-rules-dev')">
+                        <span>Sincronizar Regras Dev</span>
+                        <i data-lucide="shield-check"></i>
+                    </button>
+                `;
+            }
         }
 
 

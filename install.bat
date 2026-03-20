@@ -19,12 +19,22 @@ echo %cyan%=====================================================================
 echo %white%%bold%             CAMPO BRANCO - INSTALADOR VISUAL                      %reset%
 echo %cyan%=====================================================================%reset%
 echo.
-echo  %yellow%Iniciando o servidor do gerenciador...%reset%
+
+:: Verificar Node.js
+where node >nul 2>nul
+if %errorlevel% neq 0 (
+    echo  %red%[ERRO] Node.js nao encontrado!%reset%
+    echo  %white%Por favor, instale o Node.js em https://nodejs.org/%reset%
+    pause
+    exit /b
+)
+
+echo  %yellow%Iniciando o assistente de configuracao...%reset%
 echo  %white%A interface abrira automaticamente no seu navegador.%reset%
 echo.
 echo  %green%Acesse: http://localhost:4000%reset%
 echo.
-echo  %gray%Mantenha esta janela aberta durante o uso.%reset%
+echo  %gray%Mantenha esta janela aberta durante a instalacao.%reset%
 echo.
 echo %cyan%=====================================================================%reset%
 

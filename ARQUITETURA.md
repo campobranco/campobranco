@@ -86,6 +86,9 @@ Para eliminar custos e dependência de cartão de crédito, o sistema utiliza um
 
 ---
 ### 📝 Registro de Melhorias Recentes:
+- **v0.8.43-beta**: **Instalador Visual e Plug-and-Play**. (20/03/2026)
+  - **Novidade**: Criado `install.bat` e assistente web para configuração inicial (Firebase + Master Email).
+  - **Dev/Prod**: Fluxos separados para deploy em Staging ou Produção com preenchimento dinâmico de `.env`.
 - **v0.8.42-beta**: **Configuração de Ambiente DEV**. (20/03/2026)
   - **Infra**: Sincronizado `apphosting.yaml` com o projeto `campobrancodev` e adicionada variável `NEXT_PUBLIC_MASTER_EMAIL`, corrigindo acesso ADMIN em ambiente de staging.
 - **v0.8.41-beta**: **Resiliência de Relatórios**. (20/03/2026)

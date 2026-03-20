@@ -1,6 +1,6 @@
 import http from 'node:http';
 import { spawn } from 'node:child_process';
-import { readFile } from 'node:fs/promises';
+import { readFile, writeFile } from 'node:fs/promises';
 import { join, dirname } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
@@ -206,6 +206,35 @@ const server = http.createServer(async (req, res) => {
             clearInterval(heartbeat);
         });
 
+        return;
+    }
+
+    // Endpoint para Salvar .env
+    if (url.pathname === '/save-env' && req.method === 'POST') {
+        let body = '';
+        req.on('data', chunk => { body += chunk.toString(); });
+        req.on('end', async () => {
+            try {
+                const { type, config } = JSON.parse(body);
+                if (!['prod', 'dev'].includes(type)) throw new Error('Tipo inválido');
+
+                const fileName = type === 'prod' ? '.env.production' : '.env.development';
+                let content = '# Campo Branco - Configuracao Gerada\n';
+                content += `NEXT_PUBLIC_ENVIRONMENT="${type === 'prod' ? 'production' : 'development'}"\n\n`;
+                
+                Object.entries(config).forEach(([key, value]) => {
+                    content += `${key}="${value}"\n`;
+                });
+
+                await writeFile(join(ROOT_DIR, fileName), content);
+                
+                res.writeHead(200, { 'Content-Type': 'application/json' });
+                res.end(JSON.stringify({ success: true, message: `${fileName} salvo com sucesso!` }));
+            } catch (err) {
+                res.writeHead(400, { 'Content-Type': 'application/json' });
+                res.end(JSON.stringify({ success: false, error: err.message }));
+            }
+        });
         return;
     }
 
