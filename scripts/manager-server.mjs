@@ -178,7 +178,10 @@ const server = http.createServer(async (req, res) => {
             case 'build': 
                 tasks = [{ cmd: 'npm', args: ['run', 'build'] }]; break;
             case 'dev': 
-                tasks = [{ cmd: 'npm', args: ['run', 'dev'] }]; break;
+                tasks = [
+                    { cmd: 'npm', args: ['install'] },
+                    { cmd: 'npm', args: ['run', 'dev'] }
+                ]; break;
             case 'deploy-prod': 
                 tasks = [
                     { cmd: 'npm', args: ['run', 'build'] },

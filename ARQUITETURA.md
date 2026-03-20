@@ -86,6 +86,8 @@ Para eliminar custos e dependência de cartão de crédito, o sistema utiliza um
 
 ---
 ### 📝 Registro de Melhorias Recentes:
+- **v0.8.46-beta**: **Automação de Inicialização**. (20/03/2026)
+  - **Eficiência**: O botão "Iniciar Servidor Dev" agora executa `npm install` automaticamente antes da execução principal.
 - **v0.8.45-beta**: **Refino Visual do Instalador**. (20/03/2026)
   - **Limpeza**: Removidos botões redundantes (Build/Instalar) do painel principal para um fluxo mais direto. Estrutura HTML corrigida.
 - **v0.8.44-beta**: **Configuração Única Sincronizada**. (20/03/2026)
