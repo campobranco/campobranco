@@ -86,6 +86,10 @@ Para eliminar custos e dependência de cartão de crédito, o sistema utiliza um
 
 ---
 ### 📝 Registro de Melhorias Recentes:
+- **v0.8.55-beta**: **Sincronização com GitHub Dev**. (22/03/2026)
+  - **Entrega**: Sincronização do estado atual do projeto com o repositório remoto na branch `dev`.
+- **v0.8.54-beta**: **Sincronização Final da Automação**. (20/03/2026)
+  - **Entrega**: Consolidação de todas as features do Instalador Visual e suporte a comandos paralelos. Walkthrough final gerado.
 - **v0.8.53-beta**: **Fidelidade Total ao Padrão .env**. (20/03/2026)
   - **Integridade**: A geração de arquivos agora preserva 100% da estrutura, comentários e ordem do modelo original, atualizando apenas os valores.
 - **v0.8.52-beta**: **Padronização de Envs**. (20/03/2026)
