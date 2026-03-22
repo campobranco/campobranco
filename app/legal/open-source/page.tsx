@@ -135,7 +135,7 @@ export default function OpenSourceLicensePage() {
                         De forma simples: Você pode usar este projeto livremente, inclusive para fins comerciais e para qualquer finalidade lícita, desde que mantenha o aviso de copyright e o texto da Licença MIT em todas as cópias ou partes substanciais do software.
                     </p>
                     <p className="text-xs text-muted px-2 mt-2 border-t border-surface-border pt-2">
-                        <strong>Nota:</strong> O código-fonte do projeto é licenciado sob a Licença MIT. O uso do aplicativo final é regido pelos <Link href="/legal/terms" className="underline hover:text-primary">Termos de Uso</Link> disponíveis nesta plataforma.
+                        <strong>Nota:</strong> O código-fonte do projeto é licenciado sob a Licença MIT. O uso do aplicativo final é regido pelos <Link prefetch={false} href="/legal/terms" className="underline hover:text-primary">Termos de Uso</Link> disponíveis nesta plataforma.
                     </p>
                 </section>
 

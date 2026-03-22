@@ -34,19 +34,19 @@ export default function LegalLayout({
             <footer className="bg-white dark:bg-slate-900 border-t border-gray-200 dark:border-slate-800 py-8 mt-auto transition-colors">
                 <div className="container mx-auto px-4">
                     <div className="flex flex-wrap justify-center gap-6 md:gap-8">
-                        <Link href="/legal/terms" className="text-sm font-medium text-gray-500 dark:text-gray-400 hover:text-[#16a34a] dark:hover:text-green-400 transition-colors flex items-center gap-1.5">
+                        <Link prefetch={false} href="/legal/terms" className="text-sm font-medium text-gray-500 dark:text-gray-400 hover:text-[#16a34a] dark:hover:text-green-400 transition-colors flex items-center gap-1.5">
                             <FileText className="w-4 h-4" />
                             Termos de Uso
                         </Link>
-                        <Link href="/legal/privacy" className="text-sm font-medium text-gray-500 dark:text-gray-400 hover:text-[#16a34a] dark:hover:text-green-400 transition-colors flex items-center gap-1.5">
+                        <Link prefetch={false} href="/legal/privacy" className="text-sm font-medium text-gray-500 dark:text-gray-400 hover:text-[#16a34a] dark:hover:text-green-400 transition-colors flex items-center gap-1.5">
                             <Lock className="w-4 h-4" />
                             Política de Privacidade
                         </Link>
-                        <Link href="/legal/data-usage" className="text-sm font-medium text-gray-500 dark:text-gray-400 hover:text-[#16a34a] dark:hover:text-green-400 transition-colors flex items-center gap-1.5">
+                        <Link prefetch={false} href="/legal/data-usage" className="text-sm font-medium text-gray-500 dark:text-gray-400 hover:text-[#16a34a] dark:hover:text-green-400 transition-colors flex items-center gap-1.5">
                             <Shield className="w-4 h-4" />
                             Uso de Dados
                         </Link>
-                        <Link href="/legal/user-commitment" className="text-sm font-medium text-gray-500 dark:text-gray-400 hover:text-[#16a34a] dark:hover:text-green-400 transition-colors flex items-center gap-1.5">
+                        <Link prefetch={false} href="/legal/user-commitment" className="text-sm font-medium text-gray-500 dark:text-gray-400 hover:text-[#16a34a] dark:hover:text-green-400 transition-colors flex items-center gap-1.5">
                             <UserCheck className="w-4 h-4" />
                             Compromisso
                         </Link>

@@ -1,7 +1,7 @@
 {
   "indexes": [
     {
-      "collectionGroup": "cities",
+      "collectionGroup": "addresses",
       "queryScope": "COLLECTION",
       "fields": [
         {
@@ -9,25 +9,15 @@
           "order": "ASCENDING"
         },
         {
-          "fieldPath": "name",
-          "order": "ASCENDING"
-        }
-      ]
-    },
-    {
-      "collectionGroup": "territories",
-      "queryScope": "COLLECTION",
-      "fields": [
-        {
-          "fieldPath": "congregationId",
+          "fieldPath": "territoryId",
           "order": "ASCENDING"
         },
         {
-          "fieldPath": "cityId",
+          "fieldPath": "sortOrder",
           "order": "ASCENDING"
         },
         {
-          "fieldPath": "name",
+          "fieldPath": "__name__",
           "order": "ASCENDING"
         }
       ]
@@ -51,11 +41,15 @@
         {
           "fieldPath": "number",
           "order": "ASCENDING"
+        },
+        {
+          "fieldPath": "__name__",
+          "order": "ASCENDING"
         }
       ]
     },
     {
-      "collectionGroup": "addresses",
+      "collectionGroup": "cities",
       "queryScope": "COLLECTION",
       "fields": [
         {
@@ -63,13 +57,39 @@
           "order": "ASCENDING"
         },
         {
-          "fieldPath": "isActive",
+          "fieldPath": "name",
+          "order": "ASCENDING"
+        },
+        {
+          "fieldPath": "__name__",
           "order": "ASCENDING"
         }
       ]
     },
     {
-      "collectionGroup": "addresses",
+      "collectionGroup": "territories",
+      "queryScope": "COLLECTION",
+      "fields": [
+        {
+          "fieldPath": "city_id",
+          "order": "ASCENDING"
+        },
+        {
+          "fieldPath": "congregation_id",
+          "order": "ASCENDING"
+        },
+        {
+          "fieldPath": "name",
+          "order": "ASCENDING"
+        },
+        {
+          "fieldPath": "__name__",
+          "order": "ASCENDING"
+        }
+      ]
+    },
+    {
+      "collectionGroup": "territories",
       "queryScope": "COLLECTION",
       "fields": [
         {
@@ -77,11 +97,15 @@
           "order": "ASCENDING"
         },
         {
-          "fieldPath": "territoryId",
+          "fieldPath": "cityId",
           "order": "ASCENDING"
         },
         {
-          "fieldPath": "sortOrder",
+          "fieldPath": "name",
+          "order": "ASCENDING"
+        },
+        {
+          "fieldPath": "__name__",
           "order": "ASCENDING"
         }
       ]
@@ -97,6 +121,64 @@
         {
           "fieldPath": "name",
           "order": "ASCENDING"
+        },
+        {
+          "fieldPath": "__name__",
+          "order": "ASCENDING"
+        }
+      ]
+    },
+    {
+      "collectionGroup": "visits",
+      "queryScope": "COLLECTION_GROUP",
+      "fields": [
+        {
+          "fieldPath": "congregationId",
+          "order": "ASCENDING"
+        },
+        {
+          "fieldPath": "date",
+          "order": "DESCENDING"
+        },
+        {
+          "fieldPath": "__name__",
+          "order": "DESCENDING"
+        }
+      ]
+    },
+    {
+      "collectionGroup": "visits",
+      "queryScope": "COLLECTION",
+      "fields": [
+        {
+          "fieldPath": "addressId",
+          "order": "ASCENDING"
+        },
+        {
+          "fieldPath": "createdAt",
+          "order": "DESCENDING"
+        },
+        {
+          "fieldPath": "__name__",
+          "order": "DESCENDING"
+        }
+      ]
+    },
+    {
+      "collectionGroup": "visits",
+      "queryScope": "COLLECTION",
+      "fields": [
+        {
+          "fieldPath": "congregationId",
+          "order": "ASCENDING"
+        },
+        {
+          "fieldPath": "date",
+          "order": "ASCENDING"
+        },
+        {
+          "fieldPath": "__name__",
+          "order": "ASCENDING"
         }
       ]
     },
@@ -110,6 +192,10 @@
         },
         {
           "fieldPath": "visitDate",
+          "order": "ASCENDING"
+        },
+        {
+          "fieldPath": "__name__",
           "order": "ASCENDING"
         }
       ]
@@ -125,19 +211,9 @@
         {
           "fieldPath": "visitDate",
           "order": "DESCENDING"
-        }
-      ]
-    },
-    {
-      "collectionGroup": "visits",
-      "queryScope": "COLLECTION",
-      "fields": [
-        {
-          "fieldPath": "addressId",
-          "order": "ASCENDING"
         },
         {
-          "fieldPath": "createdAt",
+          "fieldPath": "__name__",
           "order": "DESCENDING"
         }
       ]
@@ -165,15 +241,19 @@
       ]
     },
     {
-      "collectionGroup": "visits",
+      "collectionGroup": "witnessingPoints",
       "queryScope": "COLLECTION",
       "fields": [
+        {
+          "fieldPath": "cityId",
+          "order": "ASCENDING"
+        },
         {
           "fieldPath": "congregationId",
           "order": "ASCENDING"
         },
         {
-          "fieldPath": "visitDate",
+          "fieldPath": "name",
           "order": "ASCENDING"
         },
         {
@@ -181,53 +261,6 @@
           "order": "ASCENDING"
         }
       ]
-    },
-    {
-      "collectionGroup": "shared_lists",
-      "queryScope": "COLLECTION",
-      "fields": [
-        {
-          "fieldPath": "congregationId",
-          "order": "ASCENDING"
-        },
-        {
-          "fieldPath": "status",
-          "order": "ASCENDING"
-        },
-        {
-          "fieldPath": "createdAt",
-          "order": "DESCENDING"
-        }
-      ]
-    },
-    {
-      "collectionGroup": "shared_listsnapshots",
-      "queryScope": "COLLECTION",
-      "fields": [
-        {
-          "fieldPath": "sharedListId",
-          "order": "ASCENDING"
-        },
-        {
-          "fieldPath": "itemId",
-          "order": "ASCENDING"
-        }
-      ]
-    },
-    {
-      "collectionGroup": "addresses",
-      "queryScope": "COLLECTION",
-      "fields": [
-        {
-          "fieldPath": "territoryId",
-          "order": "ASCENDING"
-        },
-        {
-          "fieldPath": "isActive",
-          "order": "ASCENDING"
-        }
-      ]
     }
-  ],
-  "fieldOverrides": []
+  ]
 }

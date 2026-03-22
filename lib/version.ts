@@ -2,6 +2,6 @@
 // O valor é injetado como variável de ambiente NEXT_PUBLIC_APP_VERSION em tempo de build.
 // NUNCA altere este valor manualmente — altere apenas o "version" no package.json.
 export const APP_VERSION: string =
-    process.env.NEXT_PUBLIC_APP_VERSION ?? '0.8.30-beta';
+    process.env.NEXT_PUBLIC_APP_VERSION ?? '0.0.0';
 
 export const appVersion = APP_VERSION;

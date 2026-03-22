@@ -5,7 +5,7 @@ import Image from 'next/image';
 
 import { useAuth } from '@/app/context/AuthContext';
 import { useRouter } from 'next/navigation';
-import { updateProfile } from 'firebase/auth';
+import { updateProfile, deleteUser } from 'firebase/auth';
 import {
     doc,
     updateDoc,
@@ -17,7 +17,7 @@ import {
     getDoc,
     deleteDoc
 } from 'firebase/firestore';
-import { db } from '@/lib/firebase';
+import { db, auth } from '@/lib/firebase';
 import {
     LogOut,
     User,
@@ -849,7 +849,7 @@ export default function SettingsPage() {
                 <section className="space-y-4">
                     <h2 className="text-sm font-bold text-muted uppercase tracking-widest pl-1">Sobre & Legal</h2>
                     <div className="bg-surface p-2 rounded-lg shadow-sm border border-surface-border">
-                        <Link href="/legal/terms" className="flex items-center justify-between p-4 hover:bg-background rounded-lg transition-colors group">
+                        <Link prefetch={false} href="/legal/terms" className="flex items-center justify-between p-4 hover:bg-background rounded-lg transition-colors group">
                             <div className="flex items-center gap-3">
                                 <div className="p-2 bg-gray-100 dark:bg-gray-800 rounded-lg text-gray-500">
                                     <FileText className="w-5 h-5" />
@@ -859,7 +859,7 @@ export default function SettingsPage() {
                             <Eye className="w-4 h-4 text-muted group-hover:text-primary transition-colors" />
                         </Link>
 
-                        <Link href="/legal/data-usage" className="flex items-center justify-between p-4 hover:bg-background rounded-lg transition-colors group">
+                        <Link prefetch={false} href="/legal/data-usage" className="flex items-center justify-between p-4 hover:bg-background rounded-lg transition-colors group">
                             <div className="flex items-center gap-3">
                                 <div className="p-2 bg-gray-100 dark:bg-gray-800 rounded-lg text-gray-500">
                                     <Database className="w-5 h-5" />
@@ -868,7 +868,7 @@ export default function SettingsPage() {
                             </div>
                             <Eye className="w-4 h-4 text-muted group-hover:text-primary transition-colors" />
                         </Link>
-                        <Link href="/legal/user-commitment" className="flex items-center justify-between p-4 hover:bg-background rounded-lg transition-colors group">
+                        <Link prefetch={false} href="/legal/user-commitment" className="flex items-center justify-between p-4 hover:bg-background rounded-lg transition-colors group">
                             <div className="flex items-center gap-3">
                                 <div className="p-2 bg-gray-100 dark:bg-gray-800 rounded-lg text-gray-500">
                                     <User className="w-5 h-5" />
@@ -877,7 +877,7 @@ export default function SettingsPage() {
                             </div>
                             <Eye className="w-4 h-4 text-muted group-hover:text-primary transition-colors" />
                         </Link>
-                        <Link href="/legal/privacy" className="flex items-center justify-between p-4 hover:bg-background rounded-lg transition-colors group">
+                        <Link prefetch={false} href="/legal/privacy" className="flex items-center justify-between p-4 hover:bg-background rounded-lg transition-colors group">
                             <div className="flex items-center gap-3">
                                 <div className="p-2 bg-gray-100 dark:bg-gray-800 rounded-lg text-gray-500">
                                     <Shield className="w-5 h-5" />
@@ -898,7 +898,7 @@ export default function SettingsPage() {
 
                         <hr className="border-surface-border my-2" />
 
-                        <Link href="/legal/open-source" className="flex items-center justify-between p-4 hover:bg-background rounded-lg transition-colors group">
+                        <Link prefetch={false} href="/legal/open-source" className="flex items-center justify-between p-4 hover:bg-background rounded-lg transition-colors group">
                             <div className="flex items-center gap-3">
                                 <div className="p-2 bg-gray-100 dark:bg-gray-800 rounded-lg text-gray-500">
                                     <Scale className="w-5 h-5" />
@@ -908,7 +908,7 @@ export default function SettingsPage() {
                             <Eye className="w-4 h-4 text-muted group-hover:text-primary transition-colors" />
                         </Link>
 
-                        <Link href="/legal/about" className="flex items-center justify-between p-4 hover:bg-background rounded-lg transition-colors group">
+                        <Link prefetch={false} href="/legal/about" className="flex items-center justify-between p-4 hover:bg-background rounded-lg transition-colors group">
                             <div className="flex items-center gap-3">
                                 <div className="p-2 bg-gray-100 dark:bg-gray-800 rounded-lg text-gray-500">
                                     <Info className="w-5 h-5" />
@@ -917,7 +917,7 @@ export default function SettingsPage() {
                             </div>
                             <Eye className="w-4 h-4 text-muted group-hover:text-primary transition-colors" />
                         </Link>
-                        <Link href="/legal/contact" className="flex items-center justify-between p-4 hover:bg-background rounded-lg transition-colors group">
+                        <Link prefetch={false} href="/legal/contact" className="flex items-center justify-between p-4 hover:bg-background rounded-lg transition-colors group">
                             <div className="flex items-center gap-3">
                                 <div className="p-2 bg-gray-100 dark:bg-gray-800 rounded-lg text-gray-500">
                                     <Mail className="w-5 h-5" />
@@ -1070,10 +1070,15 @@ export default function SettingsPage() {
                                         if (user?.uid) {
                                             const userRef = doc(db, "users", user.uid);
                                             await deleteDoc(userRef);
+                                            
+                                            if (auth.currentUser) {
+                                                // Exclui completamente do Auth limitando a sessão de recriar documento
+                                                await deleteUser(auth.currentUser);
+                                            }
                                         }
                                         await authLogout();
                                         toast.success("Conta excluída com sucesso.");
-                                        router.push('/login');
+                                        window.location.href = '/login';
                                     } catch (error: any) {
                                         console.error("Delete error:", error);
                                         toast.error("Erro ao excluir conta: " + error.message);

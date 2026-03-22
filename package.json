@@ -1,6 +1,6 @@
 {
   "name": "campobranco",
-  "version": "0.8.55-beta",
+  "version": "0.8.59-beta",
   "private": true,
   "scripts": {
     "dev": "next dev",
@@ -12,11 +12,8 @@
     "test:int": "jest __tests__/integration",
     "test:e2e": "playwright test",
     "test:all": "npm run lint && npm run test:unit && npm run test:int && npm run test:e2e",
-    "rules:dev": "firebase deploy --only firestore:rules --project campobrancodev",
-    "rules:prod": "firebase deploy --only firestore:rules --project campo-branco",
-    "rules:deploy": "npm run rules:dev && npm run rules:prod",
-    "deploy:staging": "firebase deploy --only hosting --project campobrancodev",
-    "deploy:production": "firebase deploy --only hosting --project campo-branco"
+    "deploy:rules": "firebase deploy --only firestore:rules",
+    "deploy:hosting": "firebase deploy --only hosting"
   },
   "dependencies": {
     "@ducanh2912/next-pwa": "^10.2.9",

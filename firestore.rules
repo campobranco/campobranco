@@ -157,7 +157,12 @@ service cloud.firestore {
     match /witnessing_points/{pointId} {
       allow read: if isAuthenticated();
       allow create: if isAuthenticated() && isModerator();
-      allow update, delete: if isModerator();
+      allow update: if isAuthenticated() && (
+        isModerator() ||
+        request.resource.data.diff(resource.data).affectedKeys()
+          .hasOnly(['activeUsers', 'status', 'updatedAt', 'currentPublishers'])
+      );
+      allow delete: if isModerator();
     }
 
     // 9. Miscelânea (Logs, Reports, etc)
