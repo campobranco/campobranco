@@ -460,204 +460,217 @@ export default function RegistryPage() {
                     </div>
                 ) : (
                     <div className="flex flex-col gap-8 print:block">
-                        {/* Loop de cidades filtradas */}
-                        {availableCities
-                            .filter(city => selectedCities.includes(city))
-                            .map((city, cityIndex) => {
-                                const cityRows = rows.filter(r => (r.territory.cityName || 'Sem Cidade') === city);
+                        {/* Verifica se existem linhas para exibir; se não houver, mostra um estado vazio amigável */}
+                        {rows.length === 0 ? (
+                            <div className="text-center py-20 bg-surface dark:bg-gray-900 border border-surface-border dark:border-gray-800 rounded-2xl shadow-sm animate-in fade-in slide-in-from-bottom-4 duration-500">
+                                <div className="bg-gray-100 dark:bg-gray-800 w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-4 border border-transparent dark:border-gray-700">
+                                    <Building2 className="w-8 h-8 text-muted" />
+                                </div>
+                                <h3 className="text-lg font-bold text-main mb-1">Nenhum território encontrado</h3>
+                                <p className="text-muted max-w-xs mx-auto text-sm leading-relaxed">
+                                    Não há territórios cadastrados ou designações neste ano de serviço para gerar o registro.
+                                </p>
+                            </div>
+                        ) : (
+                            <>
+                                {/* Loop de cidades filtradas */}
+                                {availableCities
+                                    .filter(city => selectedCities.includes(city))
+                                    .map((city, cityIndex) => {
+                                        const cityRows = rows.filter(r => (r.territory.cityName || 'Sem Cidade') === city);
 
-                                // Determina quantas páginas são necessárias para esta cidade (designações por página baseado em columnsPerPage)
-                                const currentMinColumns = minColumns[city] || 4;
-                                const maxAssignments = Math.max(...cityRows.map(r => r.assignments.length), currentMinColumns);
-                                const totalPages = Math.ceil(maxAssignments / COLUMNS_PER_PAGE) || 1;
+                                        // Determina quantas páginas são necessárias para esta cidade (designações por página baseado em columnsPerPage)
+                                        const currentMinColumns = minColumns[city] || 4;
+                                        const maxAssignments = Math.max(...cityRows.map(r => r.assignments.length), currentMinColumns);
+                                        const totalPages = Math.ceil(maxAssignments / COLUMNS_PER_PAGE) || 1;
 
-                                return Array.from({ length: totalPages }).map((_, pageIndex) => {
-                                    const isFirstCity = cityIndex === 0;
-                                    const isFirstPageOfCity = pageIndex === 0;
-                                    const isLastPageOfCity = pageIndex === totalPages - 1;
+                                        return Array.from({ length: totalPages }).map((_, pageIndex) => {
+                                            const isFirstCity = cityIndex === 0;
+                                            const isFirstPageOfCity = pageIndex === 0;
+                                            const isLastPageOfCity = pageIndex === totalPages - 1;
 
-                                    const isPageBreakMode = printMode === 'page-break';
-                                    const isStrictFirst = isFirstCity && isFirstPageOfCity;
-                                    const shouldBreak = isPageBreakMode && (!isStrictFirst);
+                                            const isPageBreakMode = printMode === 'page-break';
+                                            const isStrictFirst = isFirstCity && isFirstPageOfCity;
+                                            const shouldBreak = isPageBreakMode && (!isStrictFirst);
 
-                                    const showMainHeader = isStrictFirst || shouldBreak;
-                                    const showTableHeaders = isPageBreakMode || pageIndex === 0;
-                                    const showFooter = isPageBreakMode || (cityIndex === availableCities.length - 1 && isLastPageOfCity);
-                                    const showCityName = selectedCities.length > 1;
+                                            const showMainHeader = isStrictFirst || shouldBreak;
+                                            const showTableHeaders = isPageBreakMode || pageIndex === 0;
+                                            const showFooter = isPageBreakMode || (cityIndex === availableCities.length - 1 && isLastPageOfCity);
+                                            const showCityName = selectedCities.length > 1;
 
-                                    const startIndex = pageIndex * COLUMNS_PER_PAGE;
+                                            const startIndex = pageIndex * COLUMNS_PER_PAGE;
 
-                                    return (
-                                        <div key={`${city}-${pageIndex}`} className={`flex flex-col break-inside-avoid ${shouldBreak ? 'print:break-before-page' : ''} ${!isStrictFirst && !shouldBreak ? 'mt-8 print:mt-8' : ''}`}>
+                                            return (
+                                                <div key={`${city}-${pageIndex}`} className={`flex flex-col break-inside-avoid ${shouldBreak ? 'print:break-before-page' : ''} ${!isStrictFirst && !shouldBreak ? 'mt-8 print:mt-8' : ''}`}>
 
-                                            {/* Cabeçalho global somente na impressão */}
-                                            {showMainHeader && (
-                                                <div className={`mb-2 hidden print:block ${isStrictFirst || isPageBreakMode ? 'pt-2' : 'pt-8 border-t border-black mt-8'}`}>
-                                                    <h1 className="text-center text-[18px] font-bold uppercase mb-6 font-sans text-black tracking-wide">REGISTRO DE DESIGNAÇÃO DE TERRITÓRIO</h1>
-                                                    <div className="font-bold font-sans text-[14px] text-black text-left pl-0.5 mb-1">
-                                                        Ano de Serviço: <span className="border-b border-black min-w-[150px] inline-block pl-2">{getServiceYearLabel(currentServiceYear)}</span>
-                                                    </div>
-                                                </div>
-                                            )}
-
-                                            <div className={`border border-black bg-white dark:bg-transparent shadow-sm print:shadow-none min-w-[700px] print:min-w-full print:border-black print:bg-white ${!showMainHeader && !isPageBreakMode && isFirstPageOfCity ? 'border-t-0' : ''}`}>
-                                                {/* Cabeçalhos das colunas */}
-                                                {showTableHeaders && (
-                                                    <div className="flex border-b border-black bg-gray-200 dark:bg-gray-900 print:bg-gray-200 font-bold text-[9px] text-center tracking-tight font-sans text-black dark:text-gray-300 print:text-black print:border-black">
-                                                        <div className="w-[50px] border-r border-black print:border-black flex items-center justify-center p-1 flex-col leading-tight">
-                                                            <span>Terr.</span>
-                                                            <span>n.º</span>
+                                                    {/* Cabeçalho global somente na impressão */}
+                                                    {showMainHeader && (
+                                                        <div className={`mb-2 hidden print:block ${isStrictFirst || isPageBreakMode ? 'pt-2' : 'pt-8 border-t border-black mt-8'}`}>
+                                                            <h1 className="text-center text-[18px] font-bold uppercase mb-6 font-sans text-black tracking-wide">REGISTRO DE DESIGNAÇÃO DE TERRITÓRIO</h1>
+                                                            <div className="font-bold font-sans text-[14px] text-black text-left pl-0.5 mb-1">
+                                                                Ano de Serviço: <span className="border-b border-black min-w-[150px] inline-block pl-2">{getServiceYearLabel(currentServiceYear)}</span>
+                                                            </div>
                                                         </div>
-                                                        <div className="w-[80px] border-r border-black print:border-black flex items-center justify-center p-1 leading-tight">
-                                                            Última data concluída*
-                                                        </div>
+                                                    )}
 
-                                                        {Array.from({ length: 4 }).map((_, i) => (
-                                                            <div key={i} className="flex-1 flex flex-col border-r border-black print:border-black last:border-r-0">
-                                                                <div className="h-6 flex items-center justify-center border-b border-black print:border-black w-full text-black dark:text-gray-300 print:text-black bg-gray-200 dark:bg-gray-900 print:bg-gray-200">
-                                                                    Designado para
+                                                    <div className={`border border-black bg-white dark:bg-transparent shadow-sm print:shadow-none min-w-[700px] print:min-w-full print:border-black print:bg-white ${!showMainHeader && !isPageBreakMode && isFirstPageOfCity ? 'border-t-0' : ''}`}>
+                                                        {/* Cabeçalhos das colunas */}
+                                                        {showTableHeaders && (
+                                                            <div className="flex border-b border-black bg-gray-200 dark:bg-gray-900 print:bg-gray-200 font-bold text-[9px] text-center tracking-tight font-sans text-black dark:text-gray-300 print:text-black print:border-black">
+                                                                <div className="w-[50px] border-r border-black print:border-black flex items-center justify-center p-1 flex-col leading-tight">
+                                                                    <span>Terr.</span>
+                                                                    <span>n.º</span>
                                                                 </div>
-                                                                <div className="flex flex-1 h-8">
-                                                                    <div className="w-1/2 p-1 border-r border-black print:border-black flex items-center justify-center leading-tight text-black dark:text-gray-300 print:text-black bg-gray-200 dark:bg-gray-900 print:bg-gray-200 text-[8px]">
-                                                                        Data da designação
-                                                                    </div>
-                                                                    <div className="w-1/2 p-1 flex items-center justify-center leading-tight text-black dark:text-gray-300 print:text-black bg-gray-200 dark:bg-gray-900 print:bg-gray-200 text-[8px]">
-                                                                        Data da conclusão
-                                                                    </div>
+                                                                <div className="w-[80px] border-r border-black print:border-black flex items-center justify-center p-1 leading-tight">
+                                                                    Última data concluída*
                                                                 </div>
-                                                            </div>
-                                                        ))}
-                                                        {/* Espaçador para alinhar o botão de ação à direita */}
-                                                        <div className="w-8 bg-transparent no-print"></div>
-                                                    </div>
-                                                )}
 
-                                                {/* Linha do nome da cidade */}
-                                                {showCityName && (
-                                                    <div className={`bg-gray-100 dark:bg-gray-800 print:bg-gray-100 border-b border-black print:border-black p-1 font-bold text-xs text-center tracking-wide text-black dark:text-gray-200 print:text-black relative group/header ${showTableHeaders ? 'border-t-black print:border-t-black' : ''}`}>
-                                                        {city} {totalPages > 1 && `(Parte ${pageIndex + 1})`}
-
-                                                        {/* Botão de impressão individual - apenas na primeira página para indicar impressão do grupo */}
-                                                        {pageIndex === 0 && (
-                                                            <button
-                                                                onClick={(e) => { e.stopPropagation(); handlePrintSingleCity(city); }}
-                                                                className="absolute right-1 top-1/2 -translate-y-1/2 p-0.5 rounded hover:bg-white/50 text-gray-500 hover:text-black dark:text-gray-400 dark:hover:text-white transition-colors no-print"
-                                                                title={`Imprimir arquivo de ${city}`}
-                                                            >
-                                                                <Printer className="w-3.5 h-3.5" />
-                                                            </button>
-                                                        )}
-                                                    </div>
-                                                )}
-
-                                                {/* Linhas */}
-                                                {cityRows.map((row) => {
-                                                    let referenceDate = row.lastCompletedDate;
-
-                                                    if (pageIndex > 0) {
-                                                        const prevBatchLastAssign = row.assignments[startIndex - 1];
-                                                        if (prevBatchLastAssign?.completedDate) {
-                                                            referenceDate = prevBatchLastAssign.completedDate;
-                                                        } else {
-                                                            referenceDate = undefined;
-                                                        }
-                                                    }
-
-                                                    return (
-                                                        <div key={row.territory.id} className="flex border-b border-black print:border-black text-xs h-[40px] hover:bg-yellow-50/30 dark:hover:bg-white/5 transition-colors group/row font-sans page-break-inside-avoid text-black dark:text-gray-200 print:text-black print:bg-white">
-                                                            {/* Nome do território */}
-                                                            <div className="w-[50px] border-r border-black print:border-black flex flex-col items-center justify-center bg-gray-50 dark:bg-gray-900 print:bg-white p-1 font-bold text-sm text-black dark:text-gray-100 print:text-black">
-                                                                {row.territory.name}
-                                                            </div>
-
-                                                            {/* Última conclusão (clicável) */}
-                                                            <div
-                                                                onClick={() => {
-                                                                    if (pageIndex === 0) {
-                                                                        setEditingLegacy({
-                                                                            territoryId: row.territory.id,
-                                                                            name: row.territory.name,
-                                                                            date: row.lastCompletedDate
-                                                                        });
-                                                                        setIsLegacyModalOpen(true);
-                                                                    }
-                                                                }}
-                                                                className={`w-[80px] border-r border-black print:border-black flex items-center justify-center text-center p-1 font-medium bg-white dark:bg-transparent print:bg-white ${pageIndex === 0 ? 'cursor-pointer hover:bg-primary-light/50 dark:hover:bg-blue-900/20 group/legacy-cell' : ''} transition-colors relative text-[10px] text-black dark:text-gray-200 print:text-black`}
-                                                            >
-                                                                {formatDate(referenceDate)}
-                                                                {pageIndex === 0 && <Edit2 className="w-3 h-3 absolute top-1 right-1 opacity-0 group-hover/legacy-cell:opacity-50 text-primary-light/500 no-print" />}
-                                                            </div>
-
-                                                            {/* Designações (campos) */}
-                                                            {Array.from({ length: 4 }).map((_, i) => {
-                                                                const assign = row.assignments[startIndex + i];
-                                                                return (
-                                                                    <div key={i} className="flex-1 border-r border-black print:border-black last:border-r-0 relative group/cell flex flex-col print:bg-white">
-                                                                        {assign ? (
-                                                                            <>
-                                                                                <div className="h-[20px] flex items-center justify-center border-b border-black print:border-black px-1 text-center relative bg-white dark:bg-transparent print:bg-white overflow-hidden">
-                                                                                    <span className="font-semibold text-black dark:text-gray-200 print:text-black line-clamp-1 text-[10px] leading-none w-full">
-                                                                                        {assign.publisherName}
-                                                                                    </span>
-                                                                                    {/* Camada de ações */}
-                                                                                    <div className="absolute right-1 top-[1px] hidden group-hover/cell:flex gap-1 no-print bg-white dark:bg-gray-800 shadow-sm border border-gray-100 dark:border-gray-700 p-0.5 rounded-md z-10">
-                                                                                        <button onClick={() => { setSelectedTerritoryId(row.territory.id); setEditingAssignment(assign); setIsModalOpen(true); }} className="text-primary hover:text-blue-800 dark:text-blue-400 dark:hover:text-blue-300 p-0.5 rounded"><Edit2 className="w-3 h-3" /></button>
-                                                                                        <button onClick={() => handleDeleteAssignment(assign.id)} className="text-red-500 hover:text-red-700 dark:text-red-400 dark:hover:text-red-300 p-0.5 rounded"><Trash2 className="w-3 h-3" /></button>
-                                                                                    </div>
-                                                                                </div>
-                                                                                <div className="flex-1 flex min-h-0 print:bg-white">
-                                                                                    <div className="w-1/2 border-r border-black print:border-black flex items-center justify-center text-[9px] text-black dark:text-gray-300 print:text-black bg-white dark:bg-transparent print:bg-white">{formatDate(assign.assignedDate)}</div>
-                                                                                    <div className="w-1/2 flex items-center justify-center text-[9px] text-black dark:text-gray-300 print:text-black bg-white dark:bg-transparent print:bg-white">{formatDate(assign.completedDate)}</div>
-                                                                                </div>
-                                                                            </>
-                                                                        ) : (
-                                                                            <div className="w-full h-full flex flex-col print:bg-white">
-                                                                                <div className="h-[20px] border-b border-black print:border-black w-full relative group/btn-helper bg-white dark:bg-transparent print:bg-white">
-                                                                                    <div className="absolute inset-0 flex items-center justify-center opacity-0 group-hover/cell:opacity-100 cursor-pointer no-print" onClick={() => { setSelectedTerritoryId(row.territory.id); setEditingAssignment({ assignedDate: new Date() }); setIsModalOpen(true); }}><Plus className="w-4 h-4 text-primary-light/500" /></div>
-                                                                                </div>
-                                                                                <div className="flex-1 flex min-h-0 print:bg-white">
-                                                                                    <div className="w-1/2 border-r border-black print:border-black h-full bg-white dark:bg-transparent print:bg-white"></div>
-                                                                                    <div className="w-1/2 h-full bg-white dark:bg-transparent print:bg-white"></div>
-                                                                                </div>
+                                                                {Array.from({ length: 4 }).map((_, i) => (
+                                                                    <div key={i} className="flex-1 flex flex-col border-r border-black print:border-black last:border-r-0">
+                                                                        <div className="h-6 flex items-center justify-center border-b border-black print:border-black w-full text-black dark:text-gray-300 print:text-black bg-gray-200 dark:bg-gray-900 print:bg-gray-200">
+                                                                            Designado para
+                                                                        </div>
+                                                                        <div className="flex flex-1 h-8">
+                                                                            <div className="w-1/2 p-1 border-r border-black print:border-black flex items-center justify-center leading-tight text-black dark:text-gray-300 print:text-black bg-gray-200 dark:bg-gray-900 print:bg-gray-200 text-[8px]">
+                                                                                Data da designação
                                                                             </div>
-                                                                        )}
+                                                                            <div className="w-1/2 p-1 flex items-center justify-center leading-tight text-black dark:text-gray-300 print:text-black bg-gray-200 dark:bg-gray-900 print:bg-gray-200 text-[8px]">
+                                                                                Data da conclusão
+                                                                            </div>
+                                                                        </div>
                                                                     </div>
-                                                                );
-                                                            })}
+                                                                ))}
+                                                                {/* Espaçador para alinhar o botão de ação à direita */}
+                                                                <div className="w-8 bg-transparent no-print"></div>
+                                                            </div>
+                                                        )}
 
-                                                            {/* Gatilho para adicionar página (borda direita) - apenas na última página */}
-                                                            {isLastPageOfCity && (
-                                                                <div
-                                                                    className="w-8 hover:w-10 transition-all duration-200 bg-transparent hover:bg-green-50 dark:hover:bg-green-900/30 flex items-center justify-center cursor-pointer no-print group/add-col border-l border-transparent hover:border-green-200 dark:hover:border-green-800 shrink-0"
-                                                                    onClick={() => setMinColumns(prev => ({
-                                                                        ...prev,
-                                                                        [city]: Math.max(prev[city] || 4, maxAssignments) + 4
-                                                                    }))}
-                                                                    title="Adicionar Página (Mais 4 Colunas)"
-                                                                >
-                                                                    <Plus className="w-4 h-4 text-green-500 opacity-0 group-hover/add-col:opacity-100 transition-opacity" />
+                                                        {/* Linha do nome da cidade */}
+                                                        {showCityName && (
+                                                            <div className={`bg-gray-100 dark:bg-gray-800 print:bg-gray-100 border-b border-black print:border-black p-1 font-bold text-xs text-center tracking-wide text-black dark:text-gray-200 print:text-black relative group/header ${showTableHeaders ? 'border-t-black print:border-t-black' : ''}`}>
+                                                                {city} {totalPages > 1 && `(Parte ${pageIndex + 1})`}
+
+                                                                {/* Botão de impressão individual - apenas na primeira página para indicar impressão do grupo */}
+                                                                {pageIndex === 0 && (
+                                                                    <button
+                                                                        onClick={(e) => { e.stopPropagation(); handlePrintSingleCity(city); }}
+                                                                        className="absolute right-1 top-1/2 -translate-y-1/2 p-0.5 rounded hover:bg-white/50 text-gray-500 hover:text-black dark:text-gray-400 dark:hover:text-white transition-colors no-print"
+                                                                        title={`Imprimir arquivo de ${city}`}
+                                                                    >
+                                                                        <Printer className="w-3.5 h-3.5" />
+                                                                    </button>
+                                                                )}
+                                                            </div>
+                                                        )}
+
+                                                        {/* Linhas */}
+                                                        {cityRows.map((row) => {
+                                                            let referenceDate = row.lastCompletedDate;
+
+                                                            if (pageIndex > 0) {
+                                                                const prevBatchLastAssign = row.assignments[startIndex - 1];
+                                                                if (prevBatchLastAssign?.completedDate) {
+                                                                    referenceDate = prevBatchLastAssign.completedDate;
+                                                                } else {
+                                                                    referenceDate = undefined;
+                                                                }
+                                                            }
+
+                                                            return (
+                                                                <div key={row.territory.id} className="flex border-b border-black print:border-black text-xs h-[40px] hover:bg-yellow-50/30 dark:hover:bg-white/5 transition-colors group/row font-sans page-break-inside-avoid text-black dark:text-gray-200 print:text-black print:bg-white">
+                                                                    {/* Nome do território */}
+                                                                    <div className="w-[50px] border-r border-black print:border-black flex flex-col items-center justify-center bg-gray-50 dark:bg-gray-900 print:bg-white p-1 font-bold text-sm text-black dark:text-gray-100 print:text-black">
+                                                                        {row.territory.name}
+                                                                    </div>
+
+                                                                    {/* Última conclusão (clicável) */}
+                                                                    <div
+                                                                        onClick={() => {
+                                                                            if (pageIndex === 0) {
+                                                                                setEditingLegacy({
+                                                                                    territoryId: row.territory.id,
+                                                                                    name: row.territory.name,
+                                                                                    date: row.lastCompletedDate
+                                                                                });
+                                                                                setIsLegacyModalOpen(true);
+                                                                            }
+                                                                        }}
+                                                                        className={`w-[80px] border-r border-black print:border-black flex items-center justify-center text-center p-1 font-medium bg-white dark:bg-transparent print:bg-white ${pageIndex === 0 ? 'cursor-pointer hover:bg-primary-light/50 dark:hover:bg-blue-900/20 group/legacy-cell' : ''} transition-colors relative text-[10px] text-black dark:text-gray-200 print:text-black`}
+                                                                    >
+                                                                        {formatDate(referenceDate)}
+                                                                        {pageIndex === 0 && <Edit2 className="w-3 h-3 absolute top-1 right-1 opacity-0 group-hover/legacy-cell:opacity-50 text-primary-light/500 no-print" />}
+                                                                    </div>
+
+                                                                    {/* Designações (campos) */}
+                                                                    {Array.from({ length: 4 }).map((_, i) => {
+                                                                        const assign = row.assignments[startIndex + i];
+                                                                        return (
+                                                                            <div key={i} className="flex-1 border-r border-black print:border-black last:border-r-0 relative group/cell flex flex-col print:bg-white">
+                                                                                {assign ? (
+                                                                                    <>
+                                                                                        <div className="h-[20px] flex items-center justify-center border-b border-black print:border-black px-1 text-center relative bg-white dark:bg-transparent print:bg-white overflow-hidden">
+                                                                                            <span className="font-semibold text-black dark:text-gray-200 print:text-black line-clamp-1 text-[10px] leading-none w-full">
+                                                                                                {assign.publisherName}
+                                                                                            </span>
+                                                                                            {/* Camada de ações */}
+                                                                                            <div className="absolute right-1 top-[1px] hidden group-hover/cell:flex gap-1 no-print bg-white dark:bg-gray-800 shadow-sm border border-gray-100 dark:border-gray-700 p-0.5 rounded-md z-10">
+                                                                                                <button onClick={() => { setSelectedTerritoryId(row.territory.id); setEditingAssignment(assign); setIsModalOpen(true); }} className="text-primary hover:text-blue-800 dark:text-blue-400 dark:hover:text-blue-300 p-0.5 rounded"><Edit2 className="w-3 h-3" /></button>
+                                                                                                <button onClick={() => handleDeleteAssignment(assign.id)} className="text-red-500 hover:text-red-700 dark:text-red-400 dark:hover:text-red-300 p-0.5 rounded"><Trash2 className="w-3 h-3" /></button>
+                                                                                            </div>
+                                                                                        </div>
+                                                                                        <div className="flex-1 flex min-h-0 print:bg-white">
+                                                                                            <div className="w-1/2 border-r border-black print:border-black flex items-center justify-center text-[9px] text-black dark:text-gray-300 print:text-black bg-white dark:bg-transparent print:bg-white">{formatDate(assign.assignedDate)}</div>
+                                                                                            <div className="w-1/2 flex items-center justify-center text-[9px] text-black dark:text-gray-300 print:text-black bg-white dark:bg-transparent print:bg-white">{formatDate(assign.completedDate)}</div>
+                                                                                        </div>
+                                                                                    </>
+                                                                                ) : (
+                                                                                    <div className="w-full h-full flex flex-col print:bg-white">
+                                                                                        <div className="h-[20px] border-b border-black print:border-black w-full relative group/btn-helper bg-white dark:bg-transparent print:bg-white">
+                                                                                            <div className="absolute inset-0 flex items-center justify-center opacity-0 group-hover/cell:opacity-100 cursor-pointer no-print" onClick={() => { setSelectedTerritoryId(row.territory.id); setEditingAssignment({ assignedDate: new Date() }); setIsModalOpen(true); }}><Plus className="w-4 h-4 text-primary-light/500" /></div>
+                                                                                        </div>
+                                                                                        <div className="flex-1 flex min-h-0 print:bg-white">
+                                                                                            <div className="w-1/2 border-r border-black print:border-black h-full bg-white dark:bg-transparent print:bg-white"></div>
+                                                                                            <div className="w-1/2 h-full bg-white dark:bg-transparent print:bg-white"></div>
+                                                                                        </div>
+                                                                                    </div>
+                                                                                )}
+                                                                            </div>
+                                                                        );
+                                                                    })}
+
+                                                                    {/* Gatilho para adicionar página (borda direita) - apenas na última página */}
+                                                                    {isLastPageOfCity && (
+                                                                        <div
+                                                                            className="w-8 hover:w-10 transition-all duration-200 bg-transparent hover:bg-green-50 dark:hover:bg-green-900/30 flex items-center justify-center cursor-pointer no-print group/add-col border-l border-transparent hover:border-green-200 dark:hover:border-green-800 shrink-0"
+                                                                            onClick={() => setMinColumns(prev => ({
+                                                                                ...prev,
+                                                                                [city]: Math.max(prev[city] || 4, maxAssignments) + 4
+                                                                            }))}
+                                                                            title="Adicionar Página (Mais 4 Colunas)"
+                                                                        >
+                                                                            <Plus className="w-4 h-4 text-green-500 opacity-0 group-hover/add-col:opacity-100 transition-opacity" />
+                                                                        </div>
+                                                                    )}
                                                                 </div>
-                                                            )}
-                                                        </div>
-                                                    );
-                                                })}
-                                            </div>
-
-                                            {
-                                                showFooter && (
-                                                    <div className="mt-1 text-[14px] text-black font-sans hidden print:block text-left leading-tight font-medium">
-                                                        *Ao iniciar uma nova folha, use esta coluna para registrar a data em que cada território foi concluído pela última vez.
-                                                        <br />
-                                                        S-13-T 01/22
+                                                            );
+                                                        })}
                                                     </div>
-                                                )
-                                            }
-                                        </div>
-                                    );
-                                });
-                            })}
 
-                        {/* Placeholder do rodapé contínuo - lógica controlada por showFooter */}
+                                                    {
+                                                        showFooter && (
+                                                            <div className="mt-1 text-[14px] text-black font-sans hidden print:block text-left leading-tight font-medium">
+                                                                *Ao iniciar uma nova folha, use esta coluna para registrar a data em que cada território foi concluído pela última vez.
+                                                                <br />
+                                                                S-13-T 01/22
+                                                            </div>
+                                                        )
+                                                    }
+                                                </div>
+                                            );
+                                        });
+                                    })}
+                            </>
+                        )}
                     </div>
                 )
                 }
