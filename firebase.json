@@ -1,5 +1,6 @@
 {
   "hosting": {
+    "site": "campobranco",
     "source": ".",
     "ignore": [
       "firebase.json",

@@ -26,7 +26,7 @@ export const APP_CONFIG = {
     description: process.env.NEXT_PUBLIC_APP_DESCRIPTION || 'Gestão de Territórios',
     version: process.env.NEXT_PUBLIC_APP_VERSION || '0.8.0-beta',
     url: process.env.NEXT_PUBLIC_APP_URL || 'campobranco.web.app',
-    supportEmail: process.env.NEXT_PUBLIC_SUPPORT_EMAIL || 'campobrancojw@gmail.com',
+    supportEmail: process.env.NEXT_PUBLIC_SUPPORT_EMAIL || 'suporte@dominio.com',
 };
 
 // --- Segurança & Redirecionamento ---

@@ -5,6 +5,12 @@ rules_version = '2';
 //    /databases/default/documents/users/$(request.auth.uid)).data.isAdmin;
 service firebase.storage {
   match /b/{bucket}/o {
+    // Helper para buscar o papel do usuário no Firestore (banco default)
+    function isAdmin() {
+      return request.auth != null && 
+             firestore.get(/databases/default/documents/users/$(request.auth.uid)).data.role == 'ADMIN';
+    }
+
     // Perfis de usuário: cada usuário pode ler e escrever apenas no seu próprio diretório
     match /profiles/{userId}/{allPaths=**} {
       allow read, write: if request.auth != null && request.auth.uid == userId;
@@ -13,7 +19,7 @@ service firebase.storage {
     // Arquivos públicos (ex: ícones do app, logos das congregações)
     match /public/{allPaths=**} {
       allow read: if true;
-      allow write: if request.auth != null && (request.auth.token.role == 'ADMIN' || request.auth.token.email == 'campobrancojw@gmail.com');
+      allow write: if isAdmin();
     }
 
     // Negação padrão para o restante

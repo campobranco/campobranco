@@ -42,7 +42,7 @@ env:
       - BUILD
       - RUNTIME
   - variable: NEXT_PUBLIC_MASTER_EMAIL
-    value: "campobrancojw@gmail.com"
+    secret: MASTER_EMAIL
     availability:
       - BUILD
       - RUNTIME

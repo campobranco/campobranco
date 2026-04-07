@@ -27,6 +27,7 @@ jobs:
           repoToken: ${{ secrets.GITHUB_TOKEN }}
           firebaseServiceAccount: ${{ secrets.FIREBASE_SERVICE_ACCOUNT_CAMPO_BRANCO }}
           projectId: campo-branco
+          target: campobranco
           channelId: live
         env:
           # Habilita o suporte ao deploy de web frameworks (Next.js) via Firebase CLI
