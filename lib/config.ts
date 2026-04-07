@@ -19,6 +19,7 @@ export const FIREBASE_CONFIG = {
 // --- Firestore Config ---
 // Novo padrão pós-migração: o banco 'default' é o oficial.
 export const FIRESTORE_DATABASE_ID = process.env.NEXT_PUBLIC_FIREBASE_DATABASE_ID || 'default';
+export const DEFAULT_CONGREGATION_ID = process.env.NEXT_PUBLIC_DEFAULT_CONGREGATION_ID || 'ls-catanduva';
 
 // --- App Metadata ---
 export const APP_CONFIG = {
