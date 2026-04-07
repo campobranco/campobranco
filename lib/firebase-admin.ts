@@ -139,8 +139,10 @@ const createFirestoreMock = (collectionName: string) => {
     return mock;
 };
 
+import { FIRESTORE_DATABASE_ID } from './config';
+
 export const adminDb: Firestore = !isMock
-    ? getFirestore(adminApp, process.env.NEXT_PUBLIC_FIREBASE_DATABASE_ID || 'default')
+    ? getFirestore(adminApp, FIRESTORE_DATABASE_ID)
     : {
         collection: (name: string) => createFirestoreMock(name),
         app: { name: '[mock]', options: { projectId: 'N/A' } }
