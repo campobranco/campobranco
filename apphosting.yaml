@@ -53,7 +53,7 @@ env:
       - RUNTIME
   
   - variable: NEXT_PUBLIC_FIREBASE_DATABASE_ID
-    value: "(default)"
+    value: "default"
     availability:
       - BUILD
       - RUNTIME
