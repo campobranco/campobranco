@@ -134,7 +134,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
                         name: user.displayName || (isMaster ? 'Admin' : 'Membro'),
                         email: user.email,
                         role: (isMaster ? 'ADMIN' : 'PUBLICADOR'),
-                        // Admin MASTER inicia sem congregação (será vinculada via UI)
+                        // O perfil inicia sem vínculo; a congregação será selecionada via interface
                         congregationId: null,
                         updatedAt: serverTimestamp(),
                         createdAt: serverTimestamp()
