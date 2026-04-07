@@ -20,9 +20,6 @@ interface AuthContextType {
     isElder: boolean;
     isServant: boolean;
     isAdmin: boolean;
-    simulateRole: (role: string | null) => void;
-    isSimulating: boolean;
-    actualRole: string | null;
     termType: 'city' | 'neighborhood';
     congregationType: 'TRADITIONAL' | 'SIGN_LANGUAGE' | 'FOREIGN_LANGUAGE' | null;
     notificationsEnabled: boolean;
@@ -43,9 +40,6 @@ const AuthContext = createContext<AuthContextType>({
     isElder: false,
     isServant: false,
     isAdmin: false,
-    simulateRole: () => { },
-    isSimulating: false,
-    actualRole: null,
     termType: 'city',
     congregationType: null,
     notificationsEnabled: true,
@@ -57,16 +51,12 @@ const AuthContext = createContext<AuthContextType>({
 export function AuthProvider({ children }: { children: React.ReactNode }) {
     const [user, setUser] = useState<User | null>(null);
     const [loading, setLoading] = useState(true);
-    const [actualRole, setActualRole] = useState<string | null>(null);
-    const [simulatedRole, setSimulatedRole] = useState<string | null>(null);
+    const [role, setRole] = useState<string | null>(null);
     const [congregationId, setCongregationId] = useState<string | null>(null);
     const [profileName, setProfileName] = useState<string | null>(null);
     const [termType, setTermType] = useState<'city' | 'neighborhood'>('city');
     const [congregationType, setCongregationType] = useState<'TRADITIONAL' | 'SIGN_LANGUAGE' | 'FOREIGN_LANGUAGE' | null>(null);
     const [notificationsEnabled, setNotificationsEnabledInternal] = useState(true);
-
-    // Papel efetivo: simulado (se ativo) ou real do banco
-    const role = simulatedRole || actualRole;
 
     // Timeout de segurança para evitar loading infinito
     useEffect(() => {
@@ -94,8 +84,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
                 }
             } else {
                 setUser(null);
-                setActualRole(null);
-                setSimulatedRole(null);
+                setRole(null);
                 setCongregationId(null);
                 setProfileName(null);
                 document.cookie = '__session=; path=/; expires=Thu, 01 Jan 1970 00:00:00 GMT; SameSite=Lax';
@@ -127,7 +116,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
                         }, { merge: true });
                         // O próximo snapshot disparará com os dados atualizados
                     } else {
-                        setActualRole(data.role || 'PUBLICADOR');
+                        setRole(data.role || 'PUBLICADOR');
                         const resolvedCongId = data.congregationId || null;
                         setCongregationId(resolvedCongId);
                         setProfileName(data.name || user.displayName || user.email);
@@ -214,13 +203,6 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         }
     };
 
-    // Permite que Admins simulem outros papéis para testar permissões
-    const simulateRole = (newRole: string | null) => {
-        if (actualRole === 'ADMIN') {
-            setSimulatedRole(newRole);
-        }
-    };
-
     // Flags de permissão derivadas do papel atual
     const isAdminRoleGlobal = role === 'ADMIN';
     const isElder = role === 'ANCIAO' || isAdminRoleGlobal;
@@ -241,9 +223,6 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
             isElder,
             isServant,
             isAdmin,
-            simulateRole,
-            isSimulating: !!simulatedRole,
-            actualRole,
             termType,
             congregationType,
             notificationsEnabled,

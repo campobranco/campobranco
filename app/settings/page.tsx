@@ -66,7 +66,7 @@ import ConfirmationModal from '@/app/components/ConfirmationModal';
 
 
 export default function SettingsPage() {
-    const { user, isAdmin, isAdminRoleGlobal, isElder, isServant, congregationId, loading, profileName, role, simulateRole, isSimulating, notificationsEnabled, logout: authLogout, canManageMembers, canInviteMembers } = useAuth();
+    const { user, isAdmin, isAdminRoleGlobal, isElder, isServant, congregationId, loading, profileName, role, notificationsEnabled, logout: authLogout, canManageMembers, canInviteMembers } = useAuth();
     const router = useRouter();
     const { textSize, displayScale, themeMode, updatePreferences } = useTheme();
 
@@ -747,50 +747,6 @@ export default function SettingsPage() {
                                     )}
                                 </div>
                             </div>
-
-                            {/* Simulation Mode (Admin Only) */}
-                            {isAdminRoleGlobal && (
-                                <div className="bg-gradient-to-br from-primary-light/20 to-surface dark:from-primary-dark/10 dark:to-surface p-6 rounded-lg shadow-sm border border-primary-light/30 dark:border-primary-dark/30 mb-6 relative overflow-hidden">
-                                    <div className="flex items-center gap-3 mb-4">
-                                        <div className="p-2 bg-primary-light/50 rounded-lg text-primary dark:bg-primary-dark/50 dark:text-primary-light">
-                                            <Eye className="w-5 h-5" />
-                                        </div>
-                                        <div>
-                                            <h3 className="font-bold text-main">Modo de Simulação</h3>
-                                            <p className="text-xs text-muted">Visualize o sistema com outras permissões</p>
-                                        </div>
-                                    </div>
-
-                                    <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-                                        {[
-                                            { label: 'Ancião', role: 'ANCIAO' },
-                                            { label: 'Servo', role: 'SERVO' },
-                                            { label: 'Publicador', role: 'PUBLICADOR' }
-                                        ].map((sim) => (
-                                            <button
-                                                key={sim.role}
-                                                onClick={() => simulateRole(sim.role)}
-                                                className={`py-3 px-4 rounded-lg text-sm font-bold transition-all border ${role === sim.role && isSimulating
-                                                    ? 'bg-primary text-white border-primary shadow-lg shadow-primary-light/30'
-                                                    : 'bg-surface text-muted border-surface-border hover:border-primary-light hover:text-primary'
-                                                    }`}
-                                            >
-                                                {sim.label}
-                                            </button>
-                                        ))}
-                                        <button
-                                            onClick={() => simulateRole(null)}
-                                            className={`py-3 px-4 rounded-lg text-sm font-bold transition-all border flex items-center justify-center gap-2 ${!isSimulating
-                                                ? 'bg-gray-800 text-white border-gray-800'
-                                                : 'bg-surface text-muted border-surface-border hover:bg-background'
-                                                }`}
-                                        >
-                                            <X className="w-4 h-4" />
-                                            Original
-                                        </button>
-                                    </div>
-                                </div>
-                            )}
 
                             {/* Admin - All Congregations */}
                             {isAdminRoleGlobal && (
