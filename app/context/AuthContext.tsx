@@ -7,7 +7,7 @@ import { createContext, useContext, useEffect, useState } from "react";
 import { User, onAuthStateChanged, signOut } from "firebase/auth";
 import { doc, getDoc, updateDoc, setDoc, serverTimestamp, onSnapshot } from "firebase/firestore";
 import { auth, db } from "@/lib/firebase";
-import { FIREBASE_CONFIG, FIRESTORE_DATABASE_ID, DEFAULT_CONGREGATION_ID } from "@/lib/config";
+import { FIREBASE_CONFIG, FIRESTORE_DATABASE_ID } from "@/lib/config";
 
 // Tipagem do contexto de autenticação
 interface AuthContextType {
@@ -134,9 +134,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
                         name: user.displayName || (isMaster ? 'Admin' : 'Membro'),
                         email: user.email,
                         role: (isMaster ? 'ADMIN' : 'PUBLICADOR'),
-                        // Após a migração, vinculamos o master email automaticamente à congregação padrão
-                        // se ele for o criador do sistema, para evitar que fique órfão.
-                        congregationId: isMaster ? DEFAULT_CONGREGATION_ID : null,
+                        // Admin MASTER inicia sem congregação (será vinculada via UI)
+                        congregationId: null,
                         updatedAt: serverTimestamp(),
                         createdAt: serverTimestamp()
                     };

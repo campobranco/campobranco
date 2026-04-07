@@ -58,12 +58,6 @@ env:
       - BUILD
       - RUNTIME
   
-  - variable: NEXT_PUBLIC_DEFAULT_CONGREGATION_ID
-    value: "ls-catanduva"
-    availability:
-      - BUILD
-      - RUNTIME
-  
   - variable: NEXT_PUBLIC_ENVIRONMENT
     value: "production"
     availability:
