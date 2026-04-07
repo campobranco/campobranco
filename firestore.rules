@@ -11,8 +11,9 @@ service cloud.firestore {
     }
 
     function isMasterAdmin() {
-      return request.auth != null && 
-             request.auth.token.email == 'campobrancojw@gmail.com';
+      // O Admin Principal agora é validado exclusivamente pelo seu papel (role) no Firestore.
+      // O AuthContext garante que o MASTER_EMAIL receba este papel na criação.
+      return isAuthenticated() && getAuthRole() == 'ADMIN';
     }
 
     // Busca o papel do usuário (padrão: PUBLICADOR) de forma robusta
@@ -56,7 +57,7 @@ service cloud.firestore {
 
     // 1. Congregações
     match /congregations/{congregation_id} {
-      allow read: if true; // Permitir leitura pública para exibir nome da congregação em listas compartilhadas
+      allow read: if isAuthenticated(); // Restrito a usuários logados (Privacidade)
       allow create, delete: if isAdmin();
       allow update: if isAuthenticated() && (isAdmin() || (isServant() && (congregation_id == getCongId(get(/databases/$(database)/documents/users/$(request.auth.uid)).data))));
     }
@@ -187,7 +188,7 @@ service cloud.firestore {
     }
 
     match /security_logs/{id} {
-      allow create: if true; // Permite que o client SDK crie logs (mas o middleware/adminSDK também usa)
+      allow create: if isAuthenticated(); // Requer autenticação (Prevenção de Spam/DoW)
       allow read, update: if isAdmin();
     }
 
