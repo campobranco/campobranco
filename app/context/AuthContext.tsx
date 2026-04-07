@@ -133,7 +133,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
                         name: user.displayName || (isMaster ? 'Admin' : 'Membro'),
                         email: user.email,
                         role: (isMaster ? 'ADMIN' : 'PUBLICADOR'),
-                        congregationId: null,
+                        // Após a migração, vinculamos o master email automaticamente à congregação LS Catanduva
+                        // se ele for o criador do sistema, para evitar que fique órfão.
+                        congregationId: isMaster ? 'ls-catanduva' : null,
                         updatedAt: serverTimestamp(),
                         createdAt: serverTimestamp()
                     };
