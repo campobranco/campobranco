@@ -65,6 +65,11 @@ export default function RootLayout({
         <meta charSet="utf-8" />
         <script dangerouslySetInnerHTML={{
           __html: `
+          // Redirecionamento de Domínio (campo-branco.web.app -> campobranco.web.app)
+          if (window.location.hostname === 'campo-branco.web.app') {
+            window.location.replace('https://campobranco.web.app' + window.location.pathname + window.location.search);
+          }
+
           // Injetando versão do app para o script
           const CURRENT_VERSION = "${appVersion}";
           

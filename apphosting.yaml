@@ -65,7 +65,7 @@ env:
       - RUNTIME
   
   - variable: VAPID_SUBJECT
-    value: "mailto:admin@campo-branco.web.app"
+    value: "mailto:admin@campobranco.web.app"
   - variable: FB_ADMIN_CLIENT_EMAIL
     secret: FIREBASE_CLIENT_EMAIL
   - variable: VAPID_PRIVATE_KEY
