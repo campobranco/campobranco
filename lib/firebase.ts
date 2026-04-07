@@ -34,8 +34,8 @@ if (typeof window !== 'undefined') {
 }
 
 // O DATABASE_ID vem da variável de ambiente (.env.development em dev, .env.production em prod).
-// Neste projeto o banco foi criado com o ID 'default' (sem parênteses).
-const databaseId = process.env.NEXT_PUBLIC_FIREBASE_DATABASE_ID || 'default';
+// Se não houver variável, o Firebase SDK usa '(default)' por padrão.
+const databaseId = process.env.NEXT_PUBLIC_FIREBASE_DATABASE_ID || '(default)';
 
 export const db: Firestore = getFirestore(app, databaseId);
 export { app, auth };
