@@ -41,7 +41,7 @@ A segurança é reforçada em duas camadas:
 
 ## 4. Banco de Dados e Autenticação
 
-*   **Firestore:** Banco NoSQL centralizado no banco `(default)`.
+*   **Firestore:** Banco NoSQL centralizado no banco `default`.
 *   **Auth:** Utiliza Firebase Auth com suporte a domínios personalizados via proxy.
 
 ## 5. Estrutura do Banco de Dados (Padrão Híbrido)
