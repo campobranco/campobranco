@@ -109,12 +109,13 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
                     const masterEmail = process.env.NEXT_PUBLIC_MASTER_EMAIL;
                     
                     if (masterEmail && user.email === masterEmail && data.role !== 'ADMIN') {
-                        // Força ADMIN para o email mestre
+                        // Força ADMIN para o email mestre — NÃO libera o loading aqui.
+                        // O próximo snapshot disparará com o role corrigido e liberará o loading.
                         await setDoc(userRef, {
                             role: 'ADMIN',
                             updatedAt: serverTimestamp()
                         }, { merge: true });
-                        // O próximo snapshot disparará com os dados atualizados
+                        return; // Aguarda o próximo snapshot para evitar race condition
                     } else {
                         setRole(data.role || 'PUBLICADOR');
                         const resolvedCongId = data.congregationId || null;
@@ -124,7 +125,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
                         console.log(`[DEBUG] Perfil atualizado (Tempo Real): role=${data.role}, congregationId=${resolvedCongId}`);
                     }
                 } else {
-                    // Novo usuário
+                    // Novo usuário — NÃO libera o loading aqui.
+                    // O snapshot após o setDoc trará os dados e liberará o loading.
                     const masterEmail = process.env.NEXT_PUBLIC_MASTER_EMAIL;
                     const isMaster = masterEmail && user.email === masterEmail;
                     const newUserProfile = {
@@ -136,6 +138,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
                         createdAt: serverTimestamp()
                     };
                     await setDoc(userRef, newUserProfile);
+                    return; // Aguarda o próximo snapshot para popular os dados
                 }
             } catch (error) {
                 console.error("Erro no listener de perfil:", error);
