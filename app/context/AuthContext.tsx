@@ -58,6 +58,12 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     const [termType, setTermType] = useState<'city' | 'neighborhood'>('city');
     const [congregationType, setCongregationType] = useState<'TRADITIONAL' | 'SIGN_LANGUAGE' | 'FOREIGN_LANGUAGE' | null>(null);
     const [notificationsEnabled, setNotificationsEnabledInternal] = useState(true);
+    const [isMounted, setIsMounted] = useState(false);
+
+    // Garante que o app saiba que terminou a hidratação
+    useEffect(() => {
+        setIsMounted(true);
+    }, []);
 
     // Timeout de segurança para evitar loading infinito
     useEffect(() => {
@@ -73,12 +79,21 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         const { onIdTokenChanged } = require("firebase/auth");
         const unsubscribe = onIdTokenChanged(auth, async (firebaseUser: User | null) => {
             if (firebaseUser) {
+                const masterEmail = (process.env.NEXT_PUBLIC_MASTER_EMAIL || '').trim().toLowerCase();
+                const userEmail = (firebaseUser.email || '').trim().toLowerCase();
+                const isMaster = masterEmail && userEmail === masterEmail;
+
+                if (isMaster) {
+                    console.log(`[DIAGNOSTICO-ROBUSTO] Admin Mestre detectado: ${userEmail}`);
+                    setRole('ADMIN');
+                }
+
                 setUser(firebaseUser);
                 
                 // Salva o token no cookie para uso nas API routes (servidor)
                 try {
                     const token = await firebaseUser.getIdToken(true);
-                    const isSecure = window.location.protocol === 'https:';
+                    const isSecure = typeof window !== 'undefined' && window.location.protocol === 'https:';
                     document.cookie = `__session=${token}; path=/; max-age=3600; SameSite=Lax${isSecure ? '; Secure' : ''}`;
                 } catch (e) {
                     console.warn("Não foi possível salvar o token no cookie:", e);
@@ -88,7 +103,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
                 setRole(null);
                 setCongregationId(null);
                 setProfileName(null);
-                document.cookie = '__session=; path=/; expires=Thu, 01 Jan 1970 00:00:00 GMT; SameSite=Lax';
+                if (typeof document !== 'undefined') {
+                    document.cookie = '__session=; path=/; expires=Thu, 01 Jan 1970 00:00:00 GMT; SameSite=Lax';
+                }
                 setLoading(false);
             }
         });
@@ -107,44 +124,41 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
             try {
                 if (userSnap.exists()) {
                     const data = userSnap.data();
-                    const masterEmail = process.env.NEXT_PUBLIC_MASTER_EMAIL;
+                    const masterEmail = (process.env.NEXT_PUBLIC_MASTER_EMAIL || '').trim().toLowerCase();
+                    const userEmail = (user.email || '').trim().toLowerCase();
                     
-                    console.log(`[DIAGNOSTICO-PROD] User Email: ${user.email}`);
-                    console.log(`[DIAGNOSTICO-PROD] Master Email Configurado: ${masterEmail}`);
+                    console.log(`[DIAGNOSTICO-ROBUSTO] Snap: ${userEmail} | Master: ${masterEmail}`);
                     
-                    if (masterEmail && user.email === masterEmail && data.role !== 'ADMIN') {
-                        // Força ADMIN para o email mestre — NÃO libera o loading aqui.
-                        // O próximo snapshot disparará com o role corrigido e liberará o loading.
+                    if (masterEmail && userEmail === masterEmail && data.role !== 'ADMIN') {
+                        console.log(`[DIAGNOSTICO-ROBUSTO] Corrigindo role no Firestore para MASTER`);
                         await setDoc(userRef, {
                             role: 'ADMIN',
                             updatedAt: serverTimestamp()
                         }, { merge: true });
-                        return; // Aguarda o próximo snapshot para evitar race condition
+                        return;
                     } else {
                         setRole(data.role || 'PUBLICADOR');
-                        const resolvedCongId = data.congregationId || null;
-                        setCongregationId(resolvedCongId);
+                        setCongregationId(data.congregationId || null);
                         setProfileName(data.name || user.displayName || user.email);
                         setNotificationsEnabledInternal(data.notificationsEnabled ?? true);
-                        console.log(`[DEBUG] Perfil atualizado (Tempo Real): role=${data.role}, congregationId=${resolvedCongId}`);
                     }
                 } else {
-                    // Novo usuário — NÃO libera o loading aqui.
-                    // O snapshot após o setDoc trará os dados e liberará o loading.
-                    const masterEmail = process.env.NEXT_PUBLIC_MASTER_EMAIL;
-                    console.log(`[DIAGNOSTICO-PROD] Novo Usuário - Master Email Configurado: ${masterEmail}`);
-                    const isMaster = masterEmail && user.email === masterEmail;
+                    const masterEmail = (process.env.NEXT_PUBLIC_MASTER_EMAIL || '').trim().toLowerCase();
+                    const userEmail = (user.email || '').trim().toLowerCase();
+                    const isMaster = masterEmail && userEmail === masterEmail;
+                    
+                    console.log(`[DIAGNOSTICO-ROBUSTO] Criando novo perfil. Admin? ${isMaster}`);
+                    
                     const newUserProfile = {
                         name: user.displayName || (isMaster ? 'Admin' : 'Membro'),
                         email: user.email,
                         role: (isMaster ? 'ADMIN' : 'PUBLICADOR'),
-                        // O perfil inicia sem vínculo; a congregação será selecionada via interface
                         congregationId: null,
                         updatedAt: serverTimestamp(),
                         createdAt: serverTimestamp()
                     };
                     await setDoc(userRef, newUserProfile);
-                    return; // Aguarda o próximo snapshot para popular os dados
+                    return;
                 }
             } catch (error) {
                 console.error("Erro no listener de perfil:", error);
