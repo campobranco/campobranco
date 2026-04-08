@@ -109,6 +109,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
                     const data = userSnap.data();
                     const masterEmail = process.env.NEXT_PUBLIC_MASTER_EMAIL;
                     
+                    console.log(`[DIAGNOSTICO-PROD] User Email: ${user.email}`);
+                    console.log(`[DIAGNOSTICO-PROD] Master Email Configurado: ${masterEmail}`);
+                    
                     if (masterEmail && user.email === masterEmail && data.role !== 'ADMIN') {
                         // Força ADMIN para o email mestre — NÃO libera o loading aqui.
                         // O próximo snapshot disparará com o role corrigido e liberará o loading.
@@ -129,6 +132,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
                     // Novo usuário — NÃO libera o loading aqui.
                     // O snapshot após o setDoc trará os dados e liberará o loading.
                     const masterEmail = process.env.NEXT_PUBLIC_MASTER_EMAIL;
+                    console.log(`[DIAGNOSTICO-PROD] Novo Usuário - Master Email Configurado: ${masterEmail}`);
                     const isMaster = masterEmail && user.email === masterEmail;
                     const newUserProfile = {
                         name: user.displayName || (isMaster ? 'Admin' : 'Membro'),

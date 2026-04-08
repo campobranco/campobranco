@@ -31,7 +31,10 @@ import {
     UserMinus,
     Bell,
     History as HistoryIcon,
-    CheckCircle as CheckCircleIcon
+    CheckCircle as CheckCircleIcon,
+    Building2,
+    ArrowRight,
+    Database
 } from "lucide-react";
 import { toast } from 'sonner';
 import { getServiceYear, getServiceYearRange } from "@/lib/serviceYearUtils";
@@ -229,15 +232,15 @@ export default function DashboardPage() {
                 const visitsRef = collection(db, 'visits');
                 const historyRef = collection(db, 'shared_lists');
 
-                const qCities = targetCong ? query(citiesRef, where('congregationId', '==', targetCong)) : citiesRef;
-                const qTerritories = targetCong ? query(territoriesRef, where('congregationId', '==', targetCong)) : territoriesRef;
+                const qCities = targetCong ? query(citiesRef, where('congregationId', '==', targetCong)) : query(citiesRef, where('congregationId', '==', null));
+                const qTerritories = targetCong ? query(territoriesRef, where('congregationId', '==', targetCong)) : query(territoriesRef, where('congregationId', '==', null));
                 const qAddresses = targetCong
                     ? query(addressesRef, and(where('congregationId', '==', targetCong), where('isActive', '==', true)))
-                    : query(addressesRef, where('isActive', '==', true));
+                    : query(addressesRef, and(where('congregationId', '==', null), where('isActive', '==', true)));
 
-                const qPoints = targetCong ? query(pointsRef, where('congregationId', '==', targetCong)) : pointsRef;
-                const qVisits = targetCong ? query(visitsRef, where('congregationId', '==', targetCong)) : visitsRef;
-                const qHistory = targetCong ? query(historyRef, where('congregationId', '==', targetCong)) : historyRef;
+                const qPoints = targetCong ? query(pointsRef, where('congregationId', '==', targetCong)) : query(pointsRef, where('congregationId', '==', null));
+                const qVisits = targetCong ? query(visitsRef, where('congregationId', '==', targetCong)) : query(visitsRef, where('congregationId', '==', null));
+                const qHistory = targetCong ? query(historyRef, where('congregationId', '==', targetCong)) : query(historyRef, where('congregationId', '==', null));
 
                 const [citiesSnap, territoriesSnap, addressesSnap, pointsSnap, visitsSnap, historySnap] = await Promise.all([
                     getDocs(qCities), getDocs(qTerritories), getDocs(qAddresses),
@@ -466,8 +469,36 @@ export default function DashboardPage() {
             <main className="px-6 py-6 max-w-xl mx-auto space-y-10">
                 <div>
                     <h1 className="text-2xl font-bold text-main tracking-tight">Olá, {(profileName || user?.displayName || user?.email)?.split(' ')[0] || 'Irmão'}</h1>
-                    <p className="text-muted text-sm">Aqui está o resumo para sua função.</p>
+                    <p className="text-muted text-sm">
+                        {role === 'ADMIN' && !congregationId 
+                            ? 'Você está em modo de gestão global (sem congregação vinculada).' 
+                            : 'Aqui está o resumo para sua função.'}
+                    </p>
                 </div>
+
+                {role === 'ADMIN' && !congregationId && (
+                    <section className="bg-primary/5 border border-primary/20 rounded-2xl p-6 space-y-4 animate-in fade-in slide-in-from-top-4 duration-500">
+                        <div className="flex items-center gap-3">
+                            <div className="w-12 h-12 bg-primary/10 rounded-xl flex items-center justify-center text-primary">
+                                <Building2 className="w-6 h-6" />
+                            </div>
+                            <div>
+                                <h3 className="font-bold text-main">Configuração Inicial</h3>
+                                <p className="text-xs text-muted">Como administrador, você pode gerenciar todas as unidades ou escolher uma para trabalhar.</p>
+                            </div>
+                        </div>
+                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-2">
+                            <Link href="/admin/congregations" className="bg-primary text-white p-4 rounded-xl font-bold text-sm flex items-center justify-between hover:bg-primary-dark transition-all shadow-lg shadow-primary/20">
+                                <span>Selecionar Congregação</span>
+                                <ArrowRight className="w-4 h-4" />
+                            </Link>
+                            <Link href="/orphaned-data" className="bg-surface border border-surface-border p-4 rounded-xl font-bold text-sm flex items-center justify-between hover:bg-background transition-all group">
+                                <span className="text-main">Gerenciar Dados Órfãos</span>
+                                <Database className="w-4 h-4 text-orange-500 group-hover:scale-110 transition-transform" />
+                            </Link>
+                        </div>
+                    </section>
+                )}
 
                 <section className="space-y-6">
                     <div className="flex items-center gap-2 px-1"><div className="w-1 h-6 bg-primary rounded-full" /><h2 className="text-lg font-bold text-main uppercase text-[12px]">Ministério</h2></div>
