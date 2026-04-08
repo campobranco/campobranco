@@ -21,6 +21,9 @@ jobs:
       - name: Install Dependencies
         run: npm install
 
+      - name: Apply Firebase Hosting Target
+        run: npx firebase-tools target:apply hosting dev campobrancodev --project campobrancodev
+
       - name: Deploy to Firebase Hosting (Staging)
         uses: FirebaseExtended/action-hosting-deploy@v0
         with:
