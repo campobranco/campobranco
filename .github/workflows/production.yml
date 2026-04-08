@@ -28,6 +28,7 @@ jobs:
           firebaseServiceAccount: ${{ secrets.FIREBASE_SERVICE_ACCOUNT_CAMPO_BRANCO }}
           projectId: campo-branco
           channelId: live
+          target: prod
         env:
           # Habilita o suporte ao deploy de web frameworks (Next.js) via Firebase CLI
           FIREBASE_CLI_EXPERIMENTS: webframeworks
