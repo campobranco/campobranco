@@ -585,7 +585,7 @@ export default function OrphanedDataPage() {
 
                                 {(fixingItem.type === 'address' || fixingItem.type === 'territory' || fixingItem.type === 'witnessing') && (
                                     <div className="space-y-1">
-                                        <label className="text-xs font-bold text-muted uppercase">Cidade</label>
+                                        <label className="text-xs font-bold text-muted uppercase">Cidade ou Bairro</label>
                                         <select
                                             className="w-full bg-background border border-surface-border text-main rounded-md p-3 font-bold text-sm focus:border-primary-light/500 transition-colors"
                                             value={selCity}

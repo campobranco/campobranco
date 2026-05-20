@@ -690,7 +690,8 @@ function SharedPreviewContent() {
             {type === 'territory' && items.length > 0 && (
                 <div className="h-[40vh] w-full relative border-t border-surface-border mt-4">
                     <MapView
-                        items={items.filter(i => i.isActive !== false).map(a => {
+                        isTraditional={isTraditional}
+                        items={items.filter(i => i.isActive !== false).map((a, idx) => {
                             let streetClean = a.street?.split('-')[0].trim() || '';
                             if (a.number && a.number !== 'S/N') {
                                 const numberRegex = new RegExp(`[\\s,]+${a.number}$`);
@@ -712,6 +713,8 @@ function SharedPreviewContent() {
                                 subtitle: a.complement || '',
                                 status: mapStatus,
                                 number: a.number,
+                                variant: 'numbered' as const,
+                                index: idx + 1,
                                 residentName: a.residentName, // Pass resident name for display
                                 fullAddress: `${streetClean}, ${a.number}, Brasil`,
                                 googleMapsLink: a.googleMapsLink,

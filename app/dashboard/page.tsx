@@ -93,6 +93,7 @@ export default function DashboardPage() {
     const [cityCompletion, setCityCompletion] = useState<{ cityName: string; percentage: number } | undefined>();
     const [expiringMaps, setExpiringMaps] = useState<{ id: string, title: string, daysLeft: number }[]>([]);
     const [openMenuId, setOpenMenuId] = useState<string | null>(null);
+    const [menuPosition, setMenuPosition] = useState<{ top: number; right: number } | null>(null);
     const [confirmModal, setConfirmModal] = useState<{
         title: string;
         message: string;
@@ -329,8 +330,20 @@ export default function DashboardPage() {
 
     const handleDeleteShare = async (id: string) => {
         setConfirmModal(null);
-        try { await deleteDoc(doc(db, 'shared_lists', id)); toast.success("Cartão removido."); setSharedHistory(prev => prev.filter(item => item.id !== id)); }
-        catch (err) { toast.error("Erro ao excluir."); }
+        try {
+            await deleteDoc(doc(db, 'shared_lists', id));
+            toast.success("Cartão removido.");
+            setSharedHistory(prev => prev.filter(item => item.id !== id));
+            setMyAssignments(prev => {
+                const updated = prev.filter(item => item.id !== id);
+                setPendingMapsCount(updated.length);
+                return updated;
+            });
+            setExpiringMaps(prev => prev.filter(item => item.id !== id));
+        }
+        catch (err) {
+            toast.error("Erro ao excluir.");
+        }
     };
 
     const handleRemoveResponsible = async (id: string) => {
@@ -342,9 +355,17 @@ export default function DashboardPage() {
                 updatedAt: serverTimestamp()
             });
             fetchSharedHistory();
+            setMyAssignments(prev => {
+                const updated = prev.filter(item => item.id !== id);
+                setPendingMapsCount(updated.length);
+                return updated;
+            });
+            setExpiringMaps(prev => prev.filter(item => item.id !== id));
             toast.success("Responsável removido.");
         }
-        catch (err) { toast.error("Erro ao remover."); }
+        catch (err) {
+            toast.error("Erro ao remover.");
+        }
     };
 
     const SharedHistoryListComponent = ({ title, items, icon: Icon = HistoryIcon }: { title: string, items: any[], icon?: any }) => {
@@ -398,12 +419,12 @@ export default function DashboardPage() {
                                             </div>
                                         )}
                                     </div>
-                                    <div className="relative">
-                                        <button onClick={(e) => { e.stopPropagation(); setOpenMenuId(openMenuId === list.id ? null : list.id); }} className="p-1.5 text-muted hover:text-main hover:bg-gray-100 rounded-lg transition-colors"><MoreVertical className="w-4 h-4" /></button>
-                                        {openMenuId === list.id && (
+                                    <div>
+                                        <button onClick={(e) => { e.stopPropagation(); const rect = (e.currentTarget as HTMLElement).getBoundingClientRect(); const BOTTOM_NAV_HEIGHT = 80; const MENU_HEIGHT = 160; const spaceBelow = window.innerHeight - rect.bottom - BOTTOM_NAV_HEIGHT; const top = spaceBelow >= MENU_HEIGHT ? rect.bottom + 4 : rect.top - MENU_HEIGHT - 4; setMenuPosition({ top, right: window.innerWidth - rect.right }); setOpenMenuId(openMenuId === list.id ? null : list.id); }} className="p-1.5 text-muted hover:text-main hover:bg-gray-100 rounded-lg transition-colors"><MoreVertical className="w-4 h-4" /></button>
+                                        {openMenuId === list.id && menuPosition && (
                                             <>
-                                                <div className="fixed inset-0 z-40" onClick={(e) => { e.stopPropagation(); setOpenMenuId(null); }} />
-                                                <div className="absolute right-0 top-8 w-52 bg-surface rounded-xl shadow-2xl border border-surface-border p-1 z-50 animate-in fade-in zoom-in-95 duration-200">
+                                                <div className="fixed inset-0 z-[199]" onClick={(e) => { e.stopPropagation(); setOpenMenuId(null); }} />
+                                                <div className="fixed w-52 bg-surface rounded-xl shadow-2xl border border-surface-border p-1 z-[200] animate-in fade-in zoom-in-95 duration-200" style={{ top: menuPosition.top, right: menuPosition.right }}>
                                                     <DropDownItem 
                                                         icon={ExternalLink} 
                                                         label="Abrir" 

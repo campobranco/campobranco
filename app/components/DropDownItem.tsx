@@ -5,7 +5,7 @@ import { LucideIcon } from 'lucide-react';
 
 interface DropDownItemProps {
     onClick: (e: React.MouseEvent) => void;
-    icon: LucideIcon;
+    icon: any;
     label: string;
     variant?: 'primary' | 'success' | 'warning' | 'danger' | 'neutral' | 'indigo' | 'orange';
     className?: string;

@@ -83,6 +83,10 @@ export default function AdminUsersPage() {
     const [userToDelete, setUserToDelete] = useState<UserProfile | null>(null);
     const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
     const [isDeleting, setIsDeleting] = useState(false);
+    const [congSearchCreate, setCongSearchCreate] = useState('');
+    const [congSearchEdit, setCongSearchEdit] = useState('');
+    const [showCongDropCreate, setShowCongDropCreate] = useState(false);
+    const [showCongDropEdit, setShowCongDropEdit] = useState(false);
     const router = useRouter();
 
     useEffect(() => {
@@ -411,6 +415,9 @@ export default function AdminUsersPage() {
                                                         setEditName(u.name || '');
                                                         setEditRoles(u.roles || [u.role] || ['PUBLICADOR']);
                                                         setEditCongId(u.congregationId || '');
+                                                        const congName = congregations.find(c => c.id === u.congregationId)?.name || '';
+                                                        setCongSearchEdit(congName);
+                                                        setShowCongDropEdit(false);
                                                         setShowEditModal(true);
                                                         setOpenMenuId(null);
                                                     }}
@@ -478,18 +485,46 @@ export default function AdminUsersPage() {
                             </div>
 
                             {isAdminRoleGlobal && (
-                                <div>
+                                <div className="relative">
                                     <label className="block text-xs font-bold text-gray-500 uppercase tracking-wider mb-2 text-left">Congregação</label>
-                                    <select
-                                        value={newUser.congregationId}
-                                        onChange={(e) => setNewUser({ ...newUser, congregationId: e.target.value })}
-                                        className="w-full bg-gray-50 border-none rounded-lg p-4 font-bold text-gray-900 focus:ring-2 focus:ring-emerald-500/20 outline-none appearance-none cursor-pointer"
-                                    >
-                                        <option value="">Sem vínculo inicial</option>
-                                        {congregations.map(c => (
-                                            <option key={c.id} value={c.id}>{c.name}</option>
-                                        ))}
-                                    </select>
+                                    <div className="relative">
+                                        <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400 pointer-events-none" />
+                                        <input
+                                            type="text"
+                                            value={congSearchCreate}
+                                            onChange={(e) => { setCongSearchCreate(e.target.value); setShowCongDropCreate(true); if (!e.target.value) { setNewUser({ ...newUser, congregationId: '' }); } }}
+                                            onFocus={() => setShowCongDropCreate(true)}
+                                            placeholder={newUser.congregationId ? (congregations.find(c => c.id === newUser.congregationId)?.name || 'Buscar congregação...') : 'Buscar congregação...'}
+                                            className="w-full bg-gray-50 border-none rounded-lg py-3 pl-10 pr-4 font-bold text-gray-900 focus:ring-2 focus:ring-emerald-500/20 outline-none text-sm"
+                                        />
+                                    </div>
+                                    {showCongDropCreate && (
+                                        <>
+                                            <div className="fixed inset-0 z-10" onClick={() => setShowCongDropCreate(false)} />
+                                            <div className="absolute left-0 right-0 top-full mt-1 bg-white rounded-xl shadow-2xl border border-gray-100 z-20 max-h-48 overflow-y-auto">
+                                                <button
+                                                    type="button"
+                                                    onClick={() => { setNewUser({ ...newUser, congregationId: '' }); setCongSearchCreate(''); setShowCongDropCreate(false); }}
+                                                    className="w-full text-left px-4 py-2.5 text-sm text-gray-400 hover:bg-gray-50 font-medium border-b border-gray-50"
+                                                >
+                                                    Sem vínculo inicial
+                                                </button>
+                                                {congregations.filter(c => c.name.toLowerCase().includes(congSearchCreate.toLowerCase())).map(c => (
+                                                    <button
+                                                        key={c.id}
+                                                        type="button"
+                                                        onClick={() => { setNewUser({ ...newUser, congregationId: c.id }); setCongSearchCreate(c.name); setShowCongDropCreate(false); }}
+                                                        className={`w-full text-left px-4 py-2.5 text-sm font-bold hover:bg-emerald-50 hover:text-emerald-700 transition-colors ${ newUser.congregationId === c.id ? 'bg-emerald-50 text-emerald-700' : 'text-gray-800'}`}
+                                                    >
+                                                        {c.name}
+                                                    </button>
+                                                ))}
+                                                {congregations.filter(c => c.name.toLowerCase().includes(congSearchCreate.toLowerCase())).length === 0 && (
+                                                    <p className="px-4 py-3 text-xs text-gray-400 text-center">Nenhuma congregação encontrada</p>
+                                                )}
+                                            </div>
+                                        </>
+                                    )}
                                 </div>
                             )}
 
@@ -529,18 +564,46 @@ export default function AdminUsersPage() {
                             </div>
 
                             {isAdminRoleGlobal && (
-                                <div>
+                                <div className="relative">
                                     <label className="block text-xs font-bold text-gray-500 uppercase tracking-wider mb-2 text-left">Congregação</label>
-                                    <select
-                                        value={editCongId}
-                                        onChange={(e) => setEditCongId(e.target.value)}
-                                        className="w-full bg-gray-50 border-none rounded-lg p-4 font-bold text-gray-900 focus:ring-2 focus:ring-emerald-500/20 outline-none appearance-none cursor-pointer"
-                                    >
-                                        <option value="">Sem vínculo</option>
-                                        {congregations.map(c => (
-                                            <option key={c.id} value={c.id}>{c.name}</option>
-                                        ))}
-                                    </select>
+                                    <div className="relative">
+                                        <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400 pointer-events-none" />
+                                        <input
+                                            type="text"
+                                            value={congSearchEdit}
+                                            onChange={(e) => { setCongSearchEdit(e.target.value); setShowCongDropEdit(true); if (!e.target.value) { setEditCongId(''); } }}
+                                            onFocus={() => setShowCongDropEdit(true)}
+                                            placeholder={editCongId ? (congregations.find(c => c.id === editCongId)?.name || 'Buscar congregação...') : 'Buscar congregação...'}
+                                            className="w-full bg-gray-50 border-none rounded-lg py-3 pl-10 pr-4 font-bold text-gray-900 focus:ring-2 focus:ring-emerald-500/20 outline-none text-sm"
+                                        />
+                                    </div>
+                                    {showCongDropEdit && (
+                                        <>
+                                            <div className="fixed inset-0 z-10" onClick={() => setShowCongDropEdit(false)} />
+                                            <div className="absolute left-0 right-0 top-full mt-1 bg-white rounded-xl shadow-2xl border border-gray-100 z-20 max-h-48 overflow-y-auto">
+                                                <button
+                                                    type="button"
+                                                    onClick={() => { setEditCongId(''); setCongSearchEdit(''); setShowCongDropEdit(false); }}
+                                                    className="w-full text-left px-4 py-2.5 text-sm text-gray-400 hover:bg-gray-50 font-medium border-b border-gray-50"
+                                                >
+                                                    Sem vínculo
+                                                </button>
+                                                {congregations.filter(c => c.name.toLowerCase().includes(congSearchEdit.toLowerCase())).map(c => (
+                                                    <button
+                                                        key={c.id}
+                                                        type="button"
+                                                        onClick={() => { setEditCongId(c.id); setCongSearchEdit(c.name); setShowCongDropEdit(false); }}
+                                                        className={`w-full text-left px-4 py-2.5 text-sm font-bold hover:bg-emerald-50 hover:text-emerald-700 transition-colors ${ editCongId === c.id ? 'bg-emerald-50 text-emerald-700' : 'text-gray-800'}`}
+                                                    >
+                                                        {c.name}
+                                                    </button>
+                                                ))}
+                                                {congregations.filter(c => c.name.toLowerCase().includes(congSearchEdit.toLowerCase())).length === 0 && (
+                                                    <p className="px-4 py-3 text-xs text-gray-400 text-center">Nenhuma congregação encontrada</p>
+                                                )}
+                                            </div>
+                                        </>
+                                    )}
                                 </div>
                             )}
 

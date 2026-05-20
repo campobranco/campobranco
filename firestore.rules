@@ -39,6 +39,18 @@ service cloud.firestore {
       return isAdmin() || isServant();
     }
 
+    function getUserData() {
+      return get(/databases/$(database)/documents/users/$(request.auth.uid)).data;
+    }
+
+    function hasPermission(domain, action) {
+      return isAuthenticated() &&
+             exists(/databases/$(database)/documents/users/$(request.auth.uid)) &&
+             getUserData().keys().hasAll(['permissions']) &&
+             ((getUserData().permissions[domain] && getUserData().permissions[domain][action] == true) ||
+              (getUserData().permissions[domain + action.charAt(0).toUpperCase() + action.slice(1)] == true));
+    }
+
     // --- HELPERS DE CONGREGAÇÃO (ROBUSTOS) ---
     
     // Obtém o ID da congregação de um mapa de dados (exclusivo camelCase)
@@ -77,21 +89,26 @@ service cloud.firestore {
 
     // 3. Cidades
     match /cities/{id} {
-      allow read: if isAuthenticated() && (isAdmin() || isServant() || getAuthRole() == 'PUBLICADOR' || getAuthRole() == 'PUBLICADOR_SEM_ACESSO');
-      allow create, update, delete: if isAdmin() || isServant();
+      allow read: if isAuthenticated() && (isAdmin() || isServant() || hasPermission('maps', 'view') || getAuthRole() == 'PUBLICADOR' || getAuthRole() == 'PUBLICADOR_SEM_ACESSO');
+      allow create: if isAdmin() || isServant() || hasPermission('maps', 'create');
+      allow update: if isAdmin() || isServant() || hasPermission('maps', 'edit');
+      allow delete: if isAdmin() || isServant() || hasPermission('maps', 'delete');
     }
 
     // 4. Territórios e Endereços
     match /territories/{id} {
-      allow read, list: if isAuthenticated() && (isAdmin() || isServant() || getAuthRole() == 'PUBLICADOR' || getAuthRole() == 'PUBLICADOR_SEM_ACESSO');
-      allow create, update, delete: if isAdmin() || isServant();
+      allow read, list: if isAuthenticated() && (isAdmin() || isServant() || hasPermission('maps', 'view') || getAuthRole() == 'PUBLICADOR' || getAuthRole() == 'PUBLICADOR_SEM_ACESSO');
+      allow create: if isAdmin() || isServant() || hasPermission('maps', 'create');
+      allow update: if isAdmin() || isServant() || hasPermission('maps', 'edit');
+      allow delete: if isAdmin() || isServant() || hasPermission('maps', 'delete');
     }
 
     match /addresses/{id} {
       allow read: if isAuthenticated();
-      allow create, delete: if isAdmin() || isServant();
+      allow create: if isAdmin() || isServant() || hasPermission('maps', 'create');
+      allow delete: if isAdmin() || isServant() || hasPermission('maps', 'delete');
       allow update: if isAuthenticated() && (
-        isAdmin() || isServant() || 
+        isAdmin() || isServant() || hasPermission('maps', 'edit') || 
         request.resource.data.diff(resource.data).affectedKeys()
           .hasOnly(['visit_status', 'visit_notes', 'last_visited_at', 'last_visited_by', 'notes', 'tagsSnapshot'])
       );
@@ -112,20 +129,27 @@ service cloud.firestore {
 
     // 6. Listas Compartilhadas (Cartões)
     match /shared_lists/{id} {
-      allow read: if true; // Permitir leitura pública via link direto (GUID)
-      allow create: if isAuthenticated();
-      allow update: if isAuthenticated() && (
-        isAdmin() || 
-        isServant() || 
-        resource.data.get('createdBy', null) == request.auth.uid ||
-        // Permite que qualquer usuário autenticado aceite se estiver vago ou se for o designado
-        (isAuthenticated() && (
-          resource.data.get('assignedTo', null) == null || 
-          resource.data.get('assignedTo', "") == "" || 
-          resource.data.get('assignedTo', null) == request.auth.uid
-        ))
+      // Regras específicas para registros S-13 (title == 'Registro Manual')
+      allow read: if true; // Leitura pública via link
+      allow create: if isAuthenticated() && (
+        request.resource.data.get('title', '') == 'Registro Manual' ? (
+          isAdmin() || isServant() || hasPermission('s13', 'create')
+        ) : true
       );
-      allow delete: if isAdmin() || isServant() || resource.data.get('createdBy', null) == request.auth.uid;
+      allow update: if isAuthenticated() && (
+        resource.data.get('title', '') == 'Registro Manual' ? (
+          isAdmin() || isServant() || hasPermission('s13', 'edit')
+        ) : (
+          isAdmin() || isServant() || resource.data.get('createdBy', null) == request.auth.uid
+        )
+      );
+      allow delete: if isAuthenticated() && (
+        resource.data.get('title', '') == 'Registro Manual' ? (
+          isAdmin() || isServant() || hasPermission('s13', 'delete')
+        ) : (
+          isAdmin() || isServant() || resource.data.get('createdBy', null) == request.auth.uid
+        )
+      );
 
       // Subcoleções de Listas
       match /items/{item_id} {
@@ -157,18 +181,19 @@ service cloud.firestore {
     // 8. Pontos de Testemunho
     match /witnessing_points/{pointId} {
       allow read: if isAuthenticated();
-      allow create: if isAuthenticated() && isModerator();
-      allow update: if isAuthenticated() && (
-        isModerator() ||
-        request.resource.data.diff(resource.data).affectedKeys()
-          .hasOnly(['activeUsers', 'status', 'updatedAt', 'currentPublishers'])
-      );
-      allow delete: if isModerator();
+      allow create: if isAdmin() || isServant() || hasPermission('witnessing', 'create');
+      allow update: if isAuthenticated() && (isModerator() || hasPermission('witnessing', 'edit') || request.resource.data.diff(resource.data).affectedKeys().hasOnly(['activeUsers', 'status', 'updatedAt', 'currentPublishers']));
+      allow delete: if isModerator() || hasPermission('witnessing', 'delete');
     }
 
     // 9. Miscelânea (Logs, Reports, etc)
     match /notification_templates/{id} {
       allow read: if isAuthenticated();
+      allow write: if isAdmin();
+    }
+
+    match /reports/{id} {
+      allow read: if true;
       allow write: if isAdmin();
     }
 

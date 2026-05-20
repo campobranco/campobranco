@@ -7,7 +7,7 @@ import { BarChart3, Map as MapIcon, FileText, User, Settings, Home, Store } from
 
 export default function BottomNav() {
     const pathname = usePathname();
-    const { congregationId, isAdminRoleGlobal, isElder, isServant } = useAuth();
+    const { congregationId, isAdminRoleGlobal, isElder, isServant, canViewReports, canManageMaps, canManageWitnessing } = useAuth();
 
     // Determine path for Maps link
     // Admins go to the Congregation List (/my-maps)
@@ -33,10 +33,13 @@ export default function BottomNav() {
         { id: 'config', label: 'CONFIG', icon: Settings, path: '/settings' },
     ];
 
-    // Filter reports and maps for pure Publishers (not Elder, not Servant, not Admin)
-    if (!isServant) {
-        menuItems = menuItems.filter(item => item.id !== 'reports' && item.id !== 'maps');
-    }
+    // Filter menu items based on fine-grained permissions
+    menuItems = menuItems.filter(item => {
+        if (item.id === 'reports' && !canViewReports) return false;
+        if (item.id === 'maps' && !canManageMaps) return false;
+        if (item.id === 'witnessing' && !canManageWitnessing) return false;
+        return true;
+    });
 
     return (
         <div className="fixed bottom-0 left-0 right-0 bg-surface border-t border-surface-border pb-safe pt-2 z-50 flex justify-center shadow-[0_-4px_20px_rgba(0,0,0,0.03)]">

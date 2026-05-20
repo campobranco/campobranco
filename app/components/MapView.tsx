@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState } from 'react';
-import { Loader2, MapPin, ThumbsUp, Home, Navigation, Ban, Truck, User, Maximize2, Minimize2, Map as MapIcon, Lock, Unlock } from 'lucide-react';
+import { Loader2, MapPin, ThumbsUp, Home, Navigation, Ban, Truck, User, Maximize2, Minimize2, Map as MapIcon, Lock, Unlock, Store } from 'lucide-react';
 import { renderToStaticMarkup } from 'react-dom/server';
 import { geocodeAddress } from '@/lib/services/geocoding';
 
@@ -18,7 +18,7 @@ export interface MapItem {
     fullAddress?: string;   // Endereço completo para geocodificação
     googleMapsLink?: string; // Link opcional para extrair coordenadas
     gender?: 'HOMEM' | 'MULHER' | 'CASAL';
-    variant?: 'default' | 'city' | 'numbered';
+    variant?: 'default' | 'city' | 'numbered' | 'store';
     index?: number;         // Índice usado na variante numerada
     lastVisit?: string;     // Data formatada da última visita
     isDeaf?: boolean;
@@ -48,6 +48,7 @@ interface MapViewProps {
     showLegend?: boolean;
     disableGeocoding?: boolean;
     disableInteractionLock?: boolean;
+    isTraditional?: boolean;
 }
 
 const defaultCenter = {
@@ -77,7 +78,7 @@ const extractCoordsFromUrl = (url?: string): { lat: number, lng: number } | null
     return null;
 };
 
-export default function MapView({ items, center = defaultCenter, zoom = 15, onGeocodeSuccess, onMapClick, onMarkerDragEnd, onMarkerClick, showLegend = true, disableGeocoding = false, disableInteractionLock = false }: MapViewProps) {
+export default function MapView({ items, center = defaultCenter, zoom = 15, onGeocodeSuccess, onMapClick, onMarkerDragEnd, onMarkerClick, showLegend = true, disableGeocoding = false, disableInteractionLock = false, isTraditional = true }: MapViewProps) {
     const mapContainerRef = useRef<HTMLDivElement>(null);
     const mapInstanceRef = useRef<any>(null);
     const markersRef = useRef<any[]>([]); // Keep track of Leaflet markers
@@ -86,6 +87,9 @@ export default function MapView({ items, center = defaultCenter, zoom = 15, onGe
     const onGeocodeSuccessRef = useRef(onGeocodeSuccess);
     const onMarkerDragEndRef = useRef(onMarkerDragEnd);
     const onMarkerClickRef = useRef(onMarkerClick);
+    const prevCenterRef = useRef<{ lat: number; lng: number } | undefined>(undefined);
+    const prevZoomRef = useRef<number | undefined>(undefined);
+    const prevMarkerFingerprintRef = useRef<string>('');
 
     // Interaction State
     const [isInteractionEnabled, setIsInteractionEnabled] = useState(disableInteractionLock);
@@ -175,7 +179,7 @@ export default function MapView({ items, center = defaultCenter, zoom = 15, onGe
                         maxZoom: 20
                     }).addTo(map);
 
-                    L.control.zoom({ position: 'topright' }).addTo(map);
+                    L.control.zoom({ position: 'bottomright' }).addTo(map);
 
                     // Click Listener
                     map.on('click', (e: any) => {
@@ -233,7 +237,27 @@ export default function MapView({ items, center = defaultCenter, zoom = 15, onGe
                 mapInstanceRef.current = null;
             }
         };
-    }, [center.lat, center.lng, zoom]);
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, []);
+
+    // 2.2. DYNAMIC CENTER & ZOOM SYNC
+    useEffect(() => {
+        if (!isMapReady || !mapInstanceRef.current || !center) return;
+
+        const map = mapInstanceRef.current;
+        
+        // Verifica se houve mudança real na PROP center ou zoom desde o último render
+        const centerChanged = !prevCenterRef.current || 
+                              prevCenterRef.current.lat !== center.lat || 
+                              prevCenterRef.current.lng !== center.lng;
+        const zoomChanged = prevZoomRef.current !== zoom;
+
+        if (centerChanged || zoomChanged) {
+            map.setView([center.lat, center.lng], zoom);
+            prevCenterRef.current = center;
+            prevZoomRef.current = zoom;
+        }
+    }, [center, zoom, isMapReady]);
 
     // 3. MARKER RENDERING & UPDATES
     useEffect(() => {
@@ -260,21 +284,47 @@ export default function MapView({ items, center = defaultCenter, zoom = 15, onGe
             const config = STATUS_CONFIG[statusKey] || STATUS_CONFIG['LIVRE'];
             const color = config.color;
 
+            // Custom labels and colors for public witnessing (store variant)
+            let statusLabel = config.label;
+            let displayColor = color;
+            if (item.variant === 'store') {
+                if (statusKey === 'OCUPADO') {
+                    statusLabel = 'Ocupado';
+                    displayColor = '#ef4444'; // Vermelho se ocupado
+                } else if (statusKey === 'LIVRE' || statusKey === 'AGUARDANDO') {
+                    statusLabel = 'Disponível';
+                    displayColor = '#22c55e'; // Verde se disponível
+                }
+            }
+
             // Determine content inside the circle
-            // City: MapIcon. Address: item.number
+            // City: MapIcon. Address: item.number/index
             const isCity = item.variant === 'city';
+            const isStore = item.variant === 'store';
+            const genderNormalized = item.gender ? item.gender.toUpperCase() : undefined;
             const innerContent = isCity ? (
                 <MapIcon size={18} strokeWidth={2.5} />
-            ) : (
+            ) : isStore ? (
+                <Store size={18} strokeWidth={2.5} />
+            ) : isTraditional ? (
                 <span className="text-xs font-bold leading-none tracking-tighter">
-                    {item.number && item.number !== 'S/N' ? item.number : ''}
+                    {item.index ?? item.number ?? ''}
                 </span>
+            ) : (
+                genderNormalized === 'CASAL' ? (
+                    <div className="flex -space-x-1.5 justify-center items-center">
+                        <User size={14} className="stroke-white shrink-0" strokeWidth={2.5} />
+                        <User size={14} className="stroke-white shrink-0" strokeWidth={2.5} />
+                    </div>
+                ) : (
+                    <User size={16} className="stroke-white shrink-0" strokeWidth={2.5} />
+                )
             );
 
             // Determina a cor de fundo e borda baseada no status
             // Para cidades, sempre azul? User said: "Cidades deve mostrar a bolinha azul"
             // Se LIVRE (Aguardando), usar Cinza? Sim, config.color resolve isso.
-            const circleColor = isCity ? '#3b82f6' : color;
+            const circleColor = isCity ? '#3b82f6' : displayColor;
             const borderColor = '#ffffff';
 
             // Label Content
@@ -350,7 +400,7 @@ export default function MapView({ items, center = defaultCenter, zoom = 15, onGe
                     // --- Header: Address (Full) ---
                     const header = document.createElement('div');
                     header.className = 'border-l-4 pl-3 py-1 mb-4';
-                    header.style.borderColor = color;
+                    header.style.borderColor = displayColor;
 
                     const title = document.createElement('h3');
                     title.className = 'font-black text-lg text-gray-900 leading-tight';
@@ -436,19 +486,19 @@ export default function MapView({ items, center = defaultCenter, zoom = 15, onGe
                     const infoStack = document.createElement('div');
                     infoStack.className = 'flex flex-col gap-1.5 pb-1';
 
-                    if (item.lastVisit || config.label) {
+                    if (item.lastVisit || statusLabel) {
                         const stLabel = document.createElement('span');
                         stLabel.className = 'text-[10px] font-bold uppercase tracking-wider text-gray-400';
                         stLabel.textContent = 'Status';
                         infoStack.appendChild(stLabel);
 
                         // 1. Status Badge
-                        if (config.label) {
+                        if (statusLabel) {
                             const stBadge = document.createElement('span');
                             stBadge.className = 'inline-flex items-center px-2 py-1 rounded-md text-[10px] font-bold uppercase mb-1 w-fit';
-                            stBadge.style.backgroundColor = `${color}20`;
-                            stBadge.style.color = color;
-                            stBadge.textContent = config.label;
+                            stBadge.style.backgroundColor = `${displayColor}20`;
+                            stBadge.style.color = displayColor;
+                            stBadge.textContent = statusLabel;
                             infoStack.appendChild(stBadge);
                         }
 
@@ -488,8 +538,12 @@ export default function MapView({ items, center = defaultCenter, zoom = 15, onGe
             markersRef.current.push(marker);
         });
 
-        if (hasValidMarkers) {
+        const currentFingerprint = displayItems.map(item => `${item.id}:${item.lat}:${item.lng}`).join('|');
+        const fingerprintChanged = prevMarkerFingerprintRef.current !== currentFingerprint;
+
+        if (hasValidMarkers && fingerprintChanged) {
             map.fitBounds(bounds, { padding: [50, 50], maxZoom: 18 });
+            prevMarkerFingerprintRef.current = currentFingerprint;
         }
 
     }, [displayItems, isMapReady, onMarkerDragEnd]);
@@ -598,45 +652,68 @@ export default function MapView({ items, center = defaultCenter, zoom = 15, onGe
                 </div>
             )}
 
-            {/* My Location Button */}
-            <button
-                onClick={() => {
-                    if (mapInstanceRef.current) {
-                        mapInstanceRef.current.locate({ setView: true, maxZoom: 16 });
-                    }
-                }}
-                type="button"
-                className="absolute top-4 left-4 bg-white p-3 rounded-lg shadow-lg z-20 text-gray-600 hover:text-emerald-600 hover:bg-gray-50 transition-all border border-gray-100 active:scale-95"
-                title="Minha Localização"
-            >
-                <Navigation className="w-5 h-5 transition-transform" />
-            </button>
-
-            {/* Interaction Lock Button - Hide if lock is disabled by prop */}
-            {!disableInteractionLock && (
+            {/* Map Action Controls Bar */}
+            <div className="absolute top-4 left-4 flex gap-2.5 z-20">
+                {/* My Location Button */}
                 <button
-                    onClick={() => setIsInteractionEnabled(!isInteractionEnabled)}
+                    onClick={() => {
+                        if (mapInstanceRef.current) {
+                            mapInstanceRef.current.locate({ setView: true, maxZoom: 16 });
+                        }
+                    }}
                     type="button"
-                    className={`absolute top-4 left-16 p-3 rounded-lg shadow-lg z-20 transition-all border active:scale-95 ${isInteractionEnabled
-                        ? 'bg-emerald-600 text-white border-emerald-700 shadow-emerald-500/20'
-                        : 'bg-white text-gray-600 border-gray-100 hover:bg-emerald-50 hover:text-emerald-600'
-                        }`}
-                    title={isInteractionEnabled ? "Travar Mapa" : "Destravar Mapa"}
+                    className="flex flex-col items-center justify-center bg-white dark:bg-gray-800 text-gray-600 dark:text-gray-300 w-14 h-14 rounded-xl shadow-lg border border-gray-100 dark:border-gray-700 active:scale-95 transition-all"
+                    title="Minha Localização"
                 >
-                    {isInteractionEnabled ? <Unlock className="w-5 h-5 fill-current" /> : <Lock className="w-5 h-5" />}
+                    <Navigation className="w-4 h-4 text-gray-700 dark:text-gray-200" />
+                    <span className="text-[9px] font-bold uppercase tracking-wider text-gray-500 dark:text-gray-400 mt-1">Focar</span>
                 </button>
-            )}
 
-            {/* Fullscreen Button - Adjust position if lock is hidden */}
-            <button
-                onClick={toggleFullscreen}
-                type="button"
-                className={`absolute top-4 bg-white p-3 rounded-lg shadow-lg z-20 text-gray-600 hover:text-emerald-600 hover:bg-gray-50 transition-all border border-gray-100 active:scale-95 ${disableInteractionLock ? 'left-16' : 'left-28'
-                    }`}
-                title={isFullscreen ? "Sair da Tela Cheia" : "Tela Cheia"}
-            >
-                {isFullscreen ? <Minimize2 className="w-5 h-5" /> : <Maximize2 className="w-5 h-5" />}
-            </button>
+                {/* Interaction Lock Button - Hide if lock is disabled by prop */}
+                {!disableInteractionLock && (
+                    <button
+                        onClick={() => setIsInteractionEnabled(!isInteractionEnabled)}
+                        type="button"
+                        className={`flex flex-col items-center justify-center w-14 h-14 rounded-xl shadow-lg border active:scale-95 transition-all ${isInteractionEnabled
+                            ? 'bg-emerald-600 text-white border-emerald-700 shadow-emerald-500/20'
+                            : 'bg-white dark:bg-gray-800 text-gray-600 dark:text-gray-300 border-gray-100 dark:border-gray-700 hover:bg-emerald-50/50 dark:hover:bg-emerald-950/20'
+                            }`}
+                        title={isInteractionEnabled ? "Travar Mapa" : "Destravar Mapa"}
+                    >
+                        {isInteractionEnabled ? (
+                            <>
+                                <Unlock className="w-4 h-4 fill-current text-white" />
+                                <span className="text-[9px] font-bold uppercase tracking-wider text-emerald-100 mt-1">Travar</span>
+                            </>
+                        ) : (
+                            <>
+                                <Lock className="w-4 h-4 text-gray-700 dark:text-gray-200" />
+                                <span className="text-[9px] font-bold uppercase tracking-wider text-gray-500 dark:text-gray-400 mt-1">Mover</span>
+                            </>
+                        )}
+                    </button>
+                )}
+
+                {/* Fullscreen Button */}
+                <button
+                    onClick={toggleFullscreen}
+                    type="button"
+                    className="flex flex-col items-center justify-center bg-white dark:bg-gray-800 text-gray-600 dark:text-gray-300 w-14 h-14 rounded-xl shadow-lg border border-gray-100 dark:border-gray-700 active:scale-95 transition-all"
+                    title={isFullscreen ? "Sair da Tela Cheia" : "Tela Cheia"}
+                >
+                    {isFullscreen ? (
+                        <>
+                            <Minimize2 className="w-4 h-4 text-gray-700 dark:text-gray-200" />
+                            <span className="text-[9px] font-bold uppercase tracking-wider text-gray-500 dark:text-gray-400 mt-1">Sair</span>
+                        </>
+                    ) : (
+                        <>
+                            <Maximize2 className="w-4 h-4 text-gray-700 dark:text-gray-200" />
+                            <span className="text-[9px] font-bold uppercase tracking-wider text-gray-500 dark:text-gray-400 mt-1">Expandir</span>
+                        </>
+                    )}
+                </button>
+            </div>
 
 
             {/* Global Styles for Leaflet Overrides */}

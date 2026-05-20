@@ -66,7 +66,7 @@ function CityListContent() {
     const searchParams = useSearchParams();
     const congregationId = searchParams.get('congregationId');
     const currentView = searchParams.get('view') || 'grid';
-    const { user, isAdmin, isAdminRoleGlobal, isElder, isServant, loading: authLoading, logout } = useAuth();
+    const { user, isAdmin, isAdminRoleGlobal, isElder, isServant, loading: authLoading, logout, canManageMaps, canCreateMaps, canEditMaps, canDeleteMaps } = useAuth();
     const router = useRouter();
     const [cities, setCities] = useState<City[]>([]);
     const [loading, setLoading] = useState(true);
@@ -79,7 +79,7 @@ function CityListContent() {
     const [newParentCity, setNewParentCity] = useState('');
     const [localTermType, setLocalTermType] = useState<'city' | 'neighborhood'>('city');
     const [isMapPickerOpen, setIsMapPickerOpen] = useState(false);
-    const [isSelectionMode, setIsSelectionMode] = useState(true);
+    const [isSelectionMode, setIsSelectionMode] = useState(false);
     const [tempCoords, setTempCoords] = useState<{ lat: number; lng: number } | null>(null);
     const [searchQuery, setSearchQuery] = useState('');
     const [isSearching, setIsSearching] = useState(false);
@@ -373,7 +373,7 @@ function CityListContent() {
             if (!resData.success) {
                 throw new Error(resData.error || 'Erro ao excluir');
             }
-            toast.success(`${localTermType === 'neighborhood' ? 'Bairro' : 'Cidade'} excluÃ­do(a) com sucesso!`);
+            toast.success(`${localTermType === 'neighborhood' ? 'Bairro' : 'Cidade'} excluído(a) com sucesso!`);
             fetchCities();
             setIsDeleteDialogOpen(false);
             setCityToDelete(null);
@@ -408,8 +408,8 @@ function CityListContent() {
         );
     }
 
-    // Role Guard: Only Servants, Elders and Admins can see this page
-    if (user && !isServant) {
+    // Role Guard: Only authorized users can see this page
+    if (user && !canManageMaps) {
         router.replace('/dashboard');
         return null;
     }
@@ -441,7 +441,7 @@ function CityListContent() {
 
 
                 <div className="flex items-center gap-2">
-                    {(isAdmin || isServant || isElder || isAdminRoleGlobal) && (
+                    {canCreateMaps && (
                         <>
                             <CSVActionButtons
                                 congregationId={congregationId}
@@ -648,7 +648,7 @@ function CityListContent() {
 
 
                                             <div className="flex items-center gap-2">
-                                                {(isElder || isServant) && (
+                                                {(canEditMaps || canDeleteMaps) && (
                                                     <div className="relative">
                                                         <button
                                                             onClick={(e) => {
@@ -674,27 +674,31 @@ function CityListContent() {
                                                                         variant="primary" 
                                                                         onClick={() => router.push(`/my-maps/territory?congregationId=${congregationId}&cityId=${city.id}`)} 
                                                                     />
-                                                                    <DropDownItem 
-                                                                        icon={Pencil} 
-                                                                        label="Editar" 
-                                                                        variant="neutral" 
-                                                                        onClick={(e) => {
-                                                                            e.stopPropagation();
-                                                                            setEditingCity(city);
-                                                                            setIsEditModalOpen(true);
-                                                                            setOpenMenuId(null);
-                                                                        }} 
-                                                                    />
-                                                                    <DropDownItem 
-                                                                        icon={Trash2} 
-                                                                        label="Excluir" 
-                                                                        variant="danger" 
-                                                                        onClick={(e) => {
-                                                                            e.stopPropagation();
-                                                                            handleDeleteCity(city.id, city.name);
-                                                                            setOpenMenuId(null);
-                                                                        }} 
-                                                                    />
+                                                                    {canEditMaps && (
+                                                                        <DropDownItem 
+                                                                            icon={Pencil} 
+                                                                            label="Editar" 
+                                                                            variant="neutral" 
+                                                                            onClick={(e) => {
+                                                                                e.stopPropagation();
+                                                                                setEditingCity(city);
+                                                                                setIsEditModalOpen(true);
+                                                                                setOpenMenuId(null);
+                                                                            }} 
+                                                                        />
+                                                                    )}
+                                                                    {canDeleteMaps && (
+                                                                        <DropDownItem 
+                                                                            icon={Trash2} 
+                                                                            label="Excluir" 
+                                                                            variant="danger" 
+                                                                            onClick={(e) => {
+                                                                                e.stopPropagation();
+                                                                                handleDeleteCity(city.id, city.name);
+                                                                                setOpenMenuId(null);
+                                                                            }} 
+                                                                        />
+                                                                    )}
                                                                 </div>
                                                             </>
                                                         )}
@@ -750,9 +754,9 @@ function CityListContent() {
             {/* Bottom Nav */}
             <BottomNav />
 
-            {/* Create City Modal (Admin/Elder/Servant) */}
+            {/* Create City Modal (Authorized Users) */}
             {
-                isCreateModalOpen && (isElder || isServant) && (
+                isCreateModalOpen && canCreateMaps && (
                     <div className="fixed inset-0 z-[1000] flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm animate-in fade-in duration-200">
                         <div className="bg-white dark:bg-slate-900 rounded-3xl p-6 w-full max-w-sm shadow-2xl relative animate-in zoom-in-95 duration-200 border border-transparent dark:border-slate-800">
                             <button
@@ -939,7 +943,9 @@ function CityListContent() {
                         <div className="flex justify-between items-center">
                             <div>
                                 <h2 className="text-lg font-bold text-main">Selecionar Localização</h2>
-                                <p className="text-xs text-muted font-medium">Busque o endereço ou clique no mapa para marcar</p>
+                                <p className="text-xs text-muted font-medium">
+                                    {isSelectionMode ? 'Clique no mapa para marcar a localização' : 'Busque o endereço ou mude para o Modo Seleção para marcar'}
+                                </p>
                             </div>
                             <div className="flex gap-2">
                                 <button
@@ -996,7 +1002,27 @@ function CityListContent() {
                         </form>
                     </div>
 
-                    <div className="flex-1 relative cursor-crosshair h-full">
+                    <div className={`flex-1 relative h-full ${isSelectionMode ? 'cursor-crosshair' : ''}`}>
+                        {/* Map Mode Selectors */}
+                        <div className="absolute top-4 right-4 z-[1000] flex flex-col gap-2">
+                            <button
+                                type="button"
+                                onClick={() => setIsSelectionMode(true)}
+                                className={`p-3 rounded-2xl shadow-xl transition-all active:scale-95 ${isSelectionMode ? 'bg-primary text-white scale-110' : 'bg-surface text-muted hover:text-main border border-surface-border'}`}
+                                title="Modo Seleção"
+                            >
+                                <MousePointer2 className="w-6 h-6" />
+                            </button>
+                            <button
+                                type="button"
+                                onClick={() => setIsSelectionMode(false)}
+                                className={`p-3 rounded-2xl shadow-xl transition-all active:scale-95 ${!isSelectionMode ? 'bg-primary text-white scale-110' : 'bg-surface text-muted hover:text-main border border-surface-border'}`}
+                                title="Modo Navegação"
+                            >
+                                <Navigation className="w-6 h-6" />
+                            </button>
+                        </div>
+
                         <MapView
                             items={tempCoords ? [{
                                 id: 'temp-marker',
@@ -1012,7 +1038,9 @@ function CityListContent() {
                                 status: 'LIVRE'
                             }] : []}
                             onMapClick={(lat, lng) => {
-                                setTempCoords({ lat, lng });
+                                if (isSelectionMode) {
+                                    setTempCoords({ lat, lng });
+                                }
                             }}
                             onMarkerDragEnd={(id, lat, lng) => {
                                 setTempCoords({ lat, lng });
@@ -1027,11 +1055,14 @@ function CityListContent() {
                                             : undefined
                             }
                             zoom={tempCoords ? 18 : 15}
-                            disableInteractionLock={true}
                         />
                         {/* Center Marker Help */}
                         <div className="absolute top-4 left-1/2 -translate-x-1/2 bg-black/60 backdrop-blur-md text-white px-4 py-2 rounded-full text-xs font-bold pointer-events-none shadow-xl border border-white/10 z-10 whitespace-nowrap">
-                            {tempCoords ? 'Arraste o marcador ou clique em Confirmar.' : 'Busque um endereço ou clique no mapa'}
+                            {tempCoords 
+                                ? 'Arraste o marcador ou clique em Confirmar.' 
+                                : isSelectionMode 
+                                    ? 'Clique no mapa para marcar a localização.' 
+                                    : 'Navegue no mapa e ative o Modo Seleção para marcar.'}
                         </div>
                     </div>
                 </div>

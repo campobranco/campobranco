@@ -313,13 +313,14 @@ export default function BugReportsAdminPage() {
                                                         <Monitor className="w-4 h-4" />
                                                         <h3 className="text-[10px] font-bold uppercase tracking-widest">Informações do Dispositivo</h3>
                                                     </div>
-                                                    <div className="grid grid-cols-2 gap-y-2">
+                                                    <div className="grid grid-cols-2 gap-y-2 gap-x-3">
                                                         {Object.entries(selectedReport.deviceInfo).map(([key, value]: [string, any]) => {
                                                             if (key === 'consoleLogs') return null;
+                                                            if (key === 'screenshot') return null;
                                                             return (
-                                                                <div key={key}>
-                                                                    <p className="text-[10px] text-muted uppercase font-bold">{key}</p>
-                                                                    <p className="text-xs font-mono font-bold text-main">{String(value)}</p>
+                                                                <div key={key} className="min-w-0">
+                                                                    <p className="text-[10px] text-muted uppercase font-bold mb-0.5">{key}</p>
+                                                                    <p className="text-xs font-mono font-bold text-main break-all">{String(value)}</p>
                                                                 </div>
                                                             );
                                                         })}

@@ -13,7 +13,8 @@ import {
     query, 
     where, 
     orderBy,
-    serverTimestamp
+    serverTimestamp,
+    writeBatch
 } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
 
@@ -128,12 +129,49 @@ export async function updateTerritory(id: string, data: any) {
     }
 }
 
+/**
+ * Exclui um território e todos os seus filhos em cascata:
+ * Território → Endereços → Visitas
+ */
 export async function deleteTerritory(id: string) {
     try {
+        const batchDelete = async (refs: any[]) => {
+            let batch = writeBatch(db);
+            let ops = 0;
+            for (const ref of refs) {
+                batch.delete(ref);
+                ops++;
+                if (ops === 499) {
+                    await batch.commit();
+                    batch = writeBatch(db);
+                    ops = 0;
+                }
+            }
+            if (ops > 0) await batch.commit();
+        };
+
+        // 1. Endereços do território
+        const addressesSnap = await getDocs(
+            query(collection(db, 'addresses'), where('territoryId', '==', id))
+        );
+
+        // 2. Visitas de cada endereço
+        for (const addrDoc of addressesSnap.docs) {
+            const visitsSnap = await getDocs(
+                query(collection(db, 'visits'), where('addressId', '==', addrDoc.id))
+            );
+            await batchDelete(visitsSnap.docs.map(d => d.ref));
+        }
+
+        // 3. Deletar endereços
+        await batchDelete(addressesSnap.docs.map(d => d.ref));
+
+        // 4. Deletar território
         await deleteDoc(doc(db, TABLE, id));
+
         return { success: true };
     } catch (error: any) {
-        console.error('Error deleting territory:', error);
+        console.error('Error deleting territory (cascade):', error);
         return { success: false, error: error.message };
     }
 }

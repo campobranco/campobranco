@@ -69,6 +69,7 @@ interface Territory {
     id: string;
     name: string;
     notes?: string;
+    description?: string;
     cityId: string;
     congregationId: string;
     createdAt?: string;
@@ -81,7 +82,7 @@ function TerritoryListContent() {
     const searchParams = useSearchParams();
     const congregationId = searchParams.get('congregationId');
     const cityId = searchParams.get('cityId');
-    const { user, isAdmin, isAdminRoleGlobal, isElder, isServant, loading: authLoading } = useAuth();
+    const { user, isAdmin, isAdminRoleGlobal, isElder, isServant, loading: authLoading, canManageMaps, canCreateMaps, canEditMaps, canDeleteMaps } = useAuth();
     const router = useRouter();
     const [currentView, setCurrentView] = useState(searchParams.get('view') || 'grid');
     const [error, setError] = useState<string | null>(null);
@@ -131,6 +132,7 @@ function TerritoryListContent() {
 
     // UI
     const [activeMenu, setActiveMenu] = useState<string | null>(null);
+    const [menuPosition, setMenuPosition] = useState<{ top: number; right: number } | null>(null);
     const [searchInItems, setSearchInItems] = useState(false);
 
 
@@ -374,10 +376,11 @@ function TerritoryListContent() {
             const resData = await createTerritory({
                 name: newTerritoryName.trim(),
                 description: newTerritoryDesc.trim(),
+                notes: newTerritoryDesc.trim(),
                 cityId: cityId,
                 congregationId: congregationId,
                 // Adicionando lat/lng se necessário, mas o serviço atual prioriza campos padrão
-            });
+            } as any);
 
             if (!resData.success) {
                 throw new Error(resData.error || 'Erro ao criar território');
@@ -403,7 +406,8 @@ function TerritoryListContent() {
         try {
             const resData = await updateTerritory(editingTerritory.id, {
                 name: editName,
-                notes: editDescription
+                description: editDescription.trim(),
+                notes: editDescription.trim()
             });
 
             if (!resData.success) {
@@ -488,8 +492,8 @@ function TerritoryListContent() {
         return null;
     }
 
-    // Role Guard: Only Servants, Elders and Admins can see this page
-    if (user && !isServant) {
+    // Role Guard: Only authorized users can see this page
+    if (user && !canManageMaps) {
         router.replace('/dashboard');
         return null;
     }
@@ -515,7 +519,7 @@ function TerritoryListContent() {
                 </div>
                 <div className="flex items-center gap-2">
                     <RoleBasedSwitcher />
-                    {(isElder || isServant || isAdmin || isAdminRoleGlobal) && (
+                    {canCreateMaps && (
                         <>
                             <CSVActionButtons
                                 congregationId={congregationId}
@@ -618,7 +622,7 @@ function TerritoryListContent() {
                                                 <tr className="hover:bg-surface-highlight/50 transition-colors group bg-surface">
                                                     <td className="px-6 py-4">
                                                         <div className="flex items-center justify-start gap-2">
-                                                            {(isAdmin || isServant) && (
+                                                            {canEditMaps && (
                                                                 <input
                                                                     type="checkbox"
                                                                     checked={selectedIds.has(t.id)}
@@ -753,7 +757,7 @@ function TerritoryListContent() {
                                                                                         <div className="flex items-center gap-2 shrink-0">
                                                                                             {/* Ícones de ação - Menu completo */}
                                                                                             <div className="flex items-center gap-1">
-                                                                                                {(isElder || isServant) ? (
+                                                                                                {canManageMaps ? (
                                                                                                     <>
                                                                                                         <button
                                                                                                             onClick={(e) => {
@@ -799,7 +803,7 @@ function TerritoryListContent() {
                                                                                             toast.info("Histórico do endereço em desenvolvimento");
                                                                                         }}
                                                                                     />
-                                                                                    {isServant && (
+                                                                                    {canEditMaps && (
                                                                                         <DropDownItem
                                                                                             icon={Pencil}
                                                                                             label="Editar"
@@ -810,7 +814,7 @@ function TerritoryListContent() {
                                                                                             }}
                                                                                         />
                                                                                     )}
-                                                                                    {(isElder || isServant) && (
+                                                                                    {canDeleteMaps && (
                                                                                         <DropDownItem
                                                                                             icon={Trash2}
                                                                                             label="Excluir"
@@ -886,7 +890,7 @@ function TerritoryListContent() {
                                     className={`group bg-surface rounded-lg p-3 border border-surface-border shadow-sm hover:shadow-md transition-all relative ${isSelected ? 'ring-2 ring-primary bg-primary-light/10' : ''}`}
                                 >
                                     <div className="flex items-start gap-3">
-                                        {(isAdmin || isServant) && (
+                                        {canEditMaps && (
                                             <div onClick={(e) => e.stopPropagation()} className="pt-1">
                                                 <input
                                                     type="checkbox"
@@ -907,7 +911,7 @@ function TerritoryListContent() {
                                                 </div>
                                                 <div className="min-w-0 flex-1 pt-0.5">
                                                     <h3 className="font-bold text-main text-base leading-tight truncate pr-1">{t.name}</h3>
-                                                    <p className="text-xs text-muted font-medium line-clamp-2 mt-0.5 leading-snug">{t.notes || 'Sem descrição'}</p>
+                                                    <p className="text-xs text-muted font-medium line-clamp-2 mt-0.5 leading-snug">{t.notes || t.description || 'Sem descrição'}</p>
                                                 </div>
                                             </div>
 
@@ -943,15 +947,27 @@ function TerritoryListContent() {
                                         </Link>
 
                                         <div className="flex flex-col items-end gap-2 shrink-0">
-                                            {(isElder || isServant) && (
+                                            {canManageMaps && (
                                                 <div className="relative" onClick={(e) => e.stopPropagation()}>
-                                                    <button onClick={() => setActiveMenu(activeMenu === t.id ? null : t.id)} className={`p-1.5 rounded-lg transition-colors ${activeMenu === t.id ? 'bg-primary-100 text-primary-600 dark:bg-primary-900/50' : 'text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-800'}`}>
+                                                    <button 
+                                                        onClick={(e) => {
+                                                            e.stopPropagation();
+                                                            const rect = (e.currentTarget as HTMLElement).getBoundingClientRect();
+                                                            const BOTTOM_NAV_HEIGHT = 80;
+                                                            const MENU_HEIGHT = 180;
+                                                            const spaceBelow = window.innerHeight - rect.bottom - BOTTOM_NAV_HEIGHT;
+                                                            const top = spaceBelow >= MENU_HEIGHT ? rect.bottom + 4 : rect.top - MENU_HEIGHT - 4;
+                                                            setMenuPosition({ top, right: window.innerWidth - rect.right });
+                                                            setActiveMenu(activeMenu === t.id ? null : t.id);
+                                                        }} 
+                                                        className={`p-1.5 rounded-lg transition-colors ${activeMenu === t.id ? 'bg-primary-100 text-primary-600 dark:bg-primary-900/50' : 'text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-800'}`}
+                                                    >
                                                         <MoreVertical className="w-4.5 h-4.5" />
                                                     </button>
-                                                    {activeMenu === t.id && (
+                                                    {activeMenu === t.id && menuPosition && (
                                                         <>
-                                                            <div className="fixed inset-0 z-40" onClick={() => setActiveMenu(null)} />
-                                                            <div className="absolute right-0 mt-2 w-52 bg-surface rounded-xl shadow-2xl border border-surface-border p-1 z-50 animate-in fade-in zoom-in-95 duration-200">
+                                                            <div className="fixed inset-0 z-[199]" onClick={() => setActiveMenu(null)} />
+                                                            <div className="fixed w-52 bg-surface rounded-xl shadow-2xl border border-surface-border p-1 z-[200] animate-in fade-in zoom-in-95 duration-200" style={{ top: menuPosition.top, right: menuPosition.right }}>
                                                                 <DropDownItem 
                                                                     icon={ArrowRight} 
                                                                     label="Abrir Território" 
@@ -964,7 +980,7 @@ function TerritoryListContent() {
                                                                     variant="indigo" 
                                                                     onClick={() => { setSelectedTerritoryForHistory({ id: t.id, name: t.name }); setActiveMenu(null); }} 
                                                                 />
-                                                                {(isAdmin || isServant) && (
+                                                                {canEditMaps && (
                                                                     <DropDownItem 
                                                                         icon={Pencil} 
                                                                         label="Editar Configurações" 
@@ -972,13 +988,13 @@ function TerritoryListContent() {
                                                                         onClick={() => {
                                                                             setEditingTerritory(t);
                                                                             setEditName(t.name);
-                                                                            setEditDescription(t.notes || '');
+                                                                            setEditDescription(t.notes || t.description || '');
                                                                             setIsEditModalOpen(true);
                                                                             setActiveMenu(null);
                                                                         }} 
                                                                     />
                                                                 )}
-                                                                {(isElder || isServant) && (
+                                                                {canDeleteMaps && (
                                                                     <DropDownItem 
                                                                         icon={Trash2} 
                                                                         label="Excluir Território" 
@@ -1021,7 +1037,7 @@ function TerritoryListContent() {
                 )}
 
                 {/* Floating Action Bar (Admin/Leaders) - for sharing multiple maps selection */}
-                {(isAdmin || isServant) && selectedIds.size > 0 && (
+                {canEditMaps && selectedIds.size > 0 && (
                     <div className="fixed bottom-24 left-6 right-6 z-40 bg-gray-900 text-white rounded-lg p-4 flex items-center justify-between shadow-lg">
                         <div className="flex items-center gap-3">
                             <span className="bg-primary px-3 py-1 rounded-lg text-xs font-bold">{selectedIds.size}</span>
