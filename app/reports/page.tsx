@@ -34,7 +34,7 @@ import { getRegistryData } from "@/lib/services/reports";
 
 export default function ReportsPage() {
     const router = useRouter();
-    const { user, role, isElder, isServant, isAdminRoleGlobal, congregationId: userCongregationId, loading: authLoading } = useAuth();
+    const { user, role, isElder, isServant, isAdminRoleGlobal, congregationId: userCongregationId, loading: authLoading, canViewReports, canViewS13 } = useAuth();
     const [loading, setLoading] = useState(true);
     const [selectedCongregationId, setSelectedCongregationId] = useState<string | null>(null);
 
@@ -45,11 +45,11 @@ export default function ReportsPage() {
                 router.replace('/admin/congregations');
             } else if (!userCongregationId) {
                 router.push('/sem-congregacao');
-            } else if (!isElder && !isServant) {
+            } else if (!canViewReports) {
                 router.replace('/dashboard');
             }
         }
-    }, [user, authLoading, isElder, isServant, isAdminRoleGlobal, userCongregationId, router]);
+    }, [user, authLoading, isElder, isServant, isAdminRoleGlobal, userCongregationId, router, canViewReports]);
     const [selectedServiceYear, setSelectedServiceYear] = useState<number>(getServiceYear());
     const [error, setError] = useState<string | null>(null);
 
@@ -84,7 +84,7 @@ export default function ReportsPage() {
 
     useEffect(() => {
         const targetCongId = selectedCongregationId || userCongregationId;
-        if (!targetCongId || (!isElder && !isServant && !isAdminRoleGlobal)) {
+        if (!targetCongId || !canViewReports) {
             setLoading(false);
             return;
         }
@@ -318,10 +318,10 @@ export default function ReportsPage() {
         };
 
         fetchData();
-    }, [selectedCongregationId, userCongregationId, isElder, isServant, isAdminRoleGlobal, selectedServiceYear]);
+    }, [selectedCongregationId, userCongregationId, isElder, isServant, isAdminRoleGlobal, selectedServiceYear, canViewReports]);
 
     // Role Guard
-    if (!loading && !isElder && !isServant && role !== 'ADMIN') {
+    if (!loading && !canViewReports) {
         return (
             <div className="bg-background min-h-screen pb-24 font-sans text-main flex flex-col items-center justify-center p-6 text-center">
                 <div className="bg-gray-100 dark:bg-gray-800 p-4 rounded-full mb-4">
@@ -592,25 +592,27 @@ export default function ReportsPage() {
                         </div>
 
                         {/* Registry Section */}
-                        <div>
-                            <h2 className="font-bold text-main text-lg mb-4 px-1">Registros</h2>
-                            <a href="/reports/registry" className="block bg-surface p-6 rounded-lg shadow-sm border border-surface-border hover:border-primary-light dark:hover:border-primary-dark transition-all group">
-                                <div className="flex items-center justify-between">
-                                    <div className="flex items-center gap-3">
-                                        <div className="p-2 bg-primary-light/50 rounded-lg text-primary dark:bg-primary-dark/30 dark:text-primary-light group-hover:scale-110 transition-transform">
-                                            <FileText className="w-5 h-5" />
+                        {canViewS13 && (
+                            <div>
+                                <h2 className="font-bold text-main text-lg mb-4 px-1">Registros</h2>
+                                <a href="/reports/registry" className="block bg-surface p-6 rounded-lg shadow-sm border border-surface-border hover:border-primary-light dark:hover:border-primary-dark transition-all group">
+                                    <div className="flex items-center justify-between">
+                                        <div className="flex items-center gap-3">
+                                            <div className="p-2 bg-primary-light/50 rounded-lg text-primary dark:bg-primary-dark/30 dark:text-primary-light group-hover:scale-110 transition-transform">
+                                                <FileText className="w-5 h-5" />
+                                            </div>
+                                            <div>
+                                                <h3 className="font-bold text-main group-hover:text-primary dark:group-hover:text-primary-light transition-colors">Registro de Designação de Território</h3>
+                                                <p className="text-xs text-muted">Acesse o formulário S-13 com histórico de designações.</p>
+                                            </div>
                                         </div>
-                                        <div>
-                                            <h3 className="font-bold text-main group-hover:text-primary dark:group-hover:text-primary-light transition-colors">Registro de Designação de Território</h3>
-                                            <p className="text-xs text-muted">Acesse o formulário S-13 com histórico de designações.</p>
+                                        <div className="bg-gray-100 dark:bg-gray-800 p-2 rounded-full">
+                                            <ArrowRight className="w-5 h-5 text-gray-400" />
                                         </div>
                                     </div>
-                                    <div className="bg-gray-100 dark:bg-gray-800 p-2 rounded-full">
-                                        <ArrowRight className="w-5 h-5 text-gray-400" />
-                                    </div>
-                                </div>
-                            </a>
-                        </div>
+                                </a>
+                            </div>
+                        )}
                     </>
                 )}
             </main>

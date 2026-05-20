@@ -57,6 +57,8 @@ export async function createWitnessingPoint(data: {
     longitude: number;
     schedule: string;
     congregationId: string;
+    googleMapsLink?: string;
+    wazeLink?: string;
 }) {
     try {
         const pointData = {
@@ -68,6 +70,8 @@ export async function createWitnessingPoint(data: {
             schedule: data.schedule,
             status: 'AVAILABLE',
             congregationId: data.congregationId,
+            googleMapsLink: data.googleMapsLink || '',
+            wazeLink: data.wazeLink || '',
             createdAt: serverTimestamp(),
             updatedAt: serverTimestamp(),
         };
@@ -105,16 +109,23 @@ export async function updateWitnessingPointDetails(id: string, data: {
     longitude: number;
     latitude: number;
     schedule: string;
+    googleMapsLink?: string;
+    wazeLink?: string;
 }) {
     try {
-        await updateDoc(doc(db, TABLE, id), {
+        const updateData: any = {
             name: data.name,
             address: data.address,
             lng: data.longitude,
             lat: data.latitude,
             schedule: data.schedule,
             updatedAt: serverTimestamp(),
-        });
+        };
+        
+        if (data.googleMapsLink !== undefined) updateData.googleMapsLink = data.googleMapsLink;
+        if (data.wazeLink !== undefined) updateData.wazeLink = data.wazeLink;
+
+        await updateDoc(doc(db, TABLE, id), updateData);
 
         return { success: true };
     } catch (error: any) {

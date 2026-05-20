@@ -30,6 +30,7 @@ jest.mock('../../lib/firebase-admin', () => {
             })
         },
         adminAuth: {
+            verifyIdToken: jest.fn().mockResolvedValue({ uid: 'test-user-id', email: 'test@example.com' }),
             verifySessionCookie: jest.fn().mockResolvedValue({ uid: 'test-user-id', email: 'test@example.com' })
         }
     };

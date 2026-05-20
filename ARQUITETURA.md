@@ -86,6 +86,8 @@ Para eliminar custos e dependência de cartão de crédito, o sistema utiliza um
 
 ---
 ### 📝 Registro de Melhorias Recentes:
+- **v0.9.1-beta**: **Sincronização de Exclusão no Dashboard**. (20/05/2026)
+  - **Correção**: Atualizados os estados locais `myAssignments`, `pendingMapsCount` e `expiringMaps` nas funções `handleDeleteShare` e `handleRemoveResponsible` no dashboard principal, garantindo que o cartão seja removido da visualização "Meus Cartões" sem a necessidade de refresh.
 - **v0.8.55-beta**: **Sincronização com GitHub Dev**. (22/03/2026)
   - **Entrega**: Sincronização do estado atual do projeto com o repositório remoto na branch `dev`.
 - **v0.8.54-beta**: **Sincronização Final da Automação**. (20/03/2026)

@@ -27,7 +27,7 @@ function WitnessingCityListContent() {
     const searchParams = useSearchParams();
     const router = useRouter();
     const congregationId = searchParams.get('congregationId');
-    const { congregationId: userCongregationId, loading: authLoading } = useAuth();
+    const { congregationId: userCongregationId, loading: authLoading, termType } = useAuth();
     const [cities, setCities] = useState<City[]>([]);
     const [loading, setLoading] = useState(true);
     const [hasError, setHasError] = useState(false);
@@ -126,10 +126,30 @@ function WitnessingCityListContent() {
                         <Store className="w-5 h-5 fill-current" />
                     </div>
                     <div>
-                        <span className="font-bold text-lg text-main tracking-tight block leading-tight">Cidades</span>
+                        <span className="font-bold text-lg text-main tracking-tight block leading-tight">
+                            {termType === 'neighborhood' ? 'Bairros' : 'Cidades'}
+                        </span>
                         <span className="text-[10px] text-muted font-bold uppercase tracking-widest block">Selecione para T. Público</span>
                     </div>
                 </div>
+                {congregationId && (
+                    <div className="bg-gray-100 dark:bg-slate-800 p-1 rounded-lg flex items-center border border-gray-200 dark:border-slate-700">
+                        <button
+                            disabled
+                            className="flex items-center gap-2 px-3 py-1.5 rounded-md text-xs font-bold transition-all bg-white dark:bg-slate-700 text-amber-600 dark:text-amber-400 shadow-sm"
+                        >
+                            <Store className="w-3.5 h-3.5" />
+                            <span>{termType === 'neighborhood' ? 'Bairros' : 'Cidades'}</span>
+                        </button>
+                        <Link
+                            href={`/witnessing/city?congregationId=${congregationId}`}
+                            className="flex items-center gap-2 px-3 py-1.5 rounded-md text-xs font-bold transition-all text-gray-500 hover:text-gray-900 dark:hover:text-gray-300"
+                        >
+                            <MapIcon className="w-3.5 h-3.5" />
+                            <span>Todos</span>
+                        </Link>
+                    </div>
+                )}
             </header>
 
             {/* Search */}
@@ -138,7 +158,7 @@ function WitnessingCityListContent() {
                     <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-muted w-5 h-5 group-focus-within:text-amber-500 transition-colors" />
                     <input
                         type="text"
-                        placeholder="Buscar cidade..."
+                        placeholder={termType === 'neighborhood' ? "Buscar bairro..." : "Buscar cidade..."}
                         value={searchTerm}
                         onChange={(e) => setSearchTerm(e.target.value)}
                         className="w-full bg-surface border-0 text-main text-sm font-medium rounded-lg py-4 pl-12 pr-4 shadow-[0_4px_30px_rgba(0,0,0,0.03)] focus:ring-2 focus:ring-amber-500/20 focus:outline-none transition-all placeholder:text-muted"
@@ -171,7 +191,9 @@ function WitnessingCityListContent() {
                 ) : filteredCities.length === 0 ? (
                     <div className="text-center py-12 opacity-50">
                         <MapIcon className="w-12 h-12 mx-auto mb-3 text-muted" />
-                        <p className="text-muted font-medium">Nenhuma cidade encontrada</p>
+                        <p className="text-muted font-medium">
+                            {termType === 'neighborhood' ? 'Nenhum bairro encontrado' : 'Nenhuma cidade encontrada'}
+                        </p>
                     </div>
                 ) : (
                     filteredCities.map(city => (

@@ -29,7 +29,7 @@ interface Congregation {
 }
 
 export default function CongregationListPage() {
-    const { user, isAdminRoleGlobal, isElder, isServant, loading: authLoading, congregationId } = useAuth();
+    const { user, isAdminRoleGlobal, isElder, isServant, loading: authLoading, congregationId, canManageMaps } = useAuth();
     const router = useRouter();
 
     // Redirect Unassigned Users
@@ -39,25 +39,25 @@ export default function CongregationListPage() {
         }
     }, [user, authLoading, congregationId, isAdminRoleGlobal, router]);
 
-    // Redirect Non-Servants
+    // Redirect Non-authorized Users
     useEffect(() => {
-        if (!authLoading && user && !isServant) {
+        if (!authLoading && user && !canManageMaps) {
             router.replace('/dashboard');
         }
-    }, [user, authLoading, isServant, router]);
+    }, [user, authLoading, canManageMaps, router]);
 
-    // Automatic Redirection for Admins or Servants
+    // Automatic Redirection for Admins or Authorized Users
     useEffect(() => {
-        if (!authLoading && user && isServant) {
+        if (!authLoading && user && canManageMaps) {
             if (isAdminRoleGlobal && !congregationId) {
                 // Admin sem congregação vai para o painel de gestão
                 router.replace('/admin/congregations');
             } else {
-                // Admin com congregação ou Servos/Anciãos vão para a lista de cidades
+                // Admin com congregação ou usuários autorizados vão para a lista de cidades
                 router.replace(`/my-maps/city?congregationId=${congregationId || ''}`);
             }
         }
-    }, [user, authLoading, congregationId, isAdminRoleGlobal, isServant, router]);
+    }, [user, authLoading, congregationId, isAdminRoleGlobal, canManageMaps, router]);
 
     return (
         <div className="bg-background min-h-screen pb-32 font-sans flex items-center justify-center">

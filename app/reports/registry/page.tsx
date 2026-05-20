@@ -39,7 +39,7 @@ interface RegistryRow {
 }
 
 export default function RegistryPage() {
-    const { user, congregationId, isElder, isServant, isAdminRoleGlobal, loading } = useAuth();
+    const { user, congregationId, isElder, isServant, isAdminRoleGlobal, loading, canViewReports, canViewS13, canCreateS13, canEditS13, canDeleteS13 } = useAuth();
     const router = useRouter();
 
     const [currentServiceYear, setCurrentServiceYear] = useState<number>(getServiceYear());
@@ -66,10 +66,10 @@ export default function RegistryPage() {
     const [editingLegacy, setEditingLegacy] = useState<{ territoryId: string; name: string; date?: Date } | null>(null);
 
     useEffect(() => {
-        if (!loading && !isElder && !isServant && !isAdminRoleGlobal) {
+        if (!loading && !canViewS13) {
             router.push('/dashboard');
         }
-    }, [loading, isElder, isServant, isAdminRoleGlobal, router]);
+    }, [loading, canViewS13, router]);
 
     // Inicializa selectedCongregationId
     useEffect(() => {
@@ -586,7 +586,7 @@ export default function RegistryPage() {
                                                                     {/* Última conclusão (clicável) */}
                                                                     <div
                                                                         onClick={() => {
-                                                                            if (pageIndex === 0) {
+                                                                            if (pageIndex === 0 && canEditS13) {
                                                                                 setEditingLegacy({
                                                                                     territoryId: row.territory.id,
                                                                                     name: row.territory.name,
@@ -595,10 +595,10 @@ export default function RegistryPage() {
                                                                                 setIsLegacyModalOpen(true);
                                                                             }
                                                                         }}
-                                                                        className={`w-[80px] border-r border-black print:border-black flex items-center justify-center text-center p-1 font-medium bg-white dark:bg-transparent print:bg-white ${pageIndex === 0 ? 'cursor-pointer hover:bg-primary-light/50 dark:hover:bg-blue-900/20 group/legacy-cell' : ''} transition-colors relative text-[10px] text-black dark:text-gray-200 print:text-black`}
+                                                                        className={`w-[80px] border-r border-black print:border-black flex items-center justify-center text-center p-1 font-medium bg-white dark:bg-transparent print:bg-white ${pageIndex === 0 && canEditS13 ? 'cursor-pointer hover:bg-primary-light/50 dark:hover:bg-blue-900/20 group/legacy-cell' : ''} transition-colors relative text-[10px] text-black dark:text-gray-200 print:text-black`}
                                                                     >
                                                                         {formatDate(referenceDate)}
-                                                                        {pageIndex === 0 && <Edit2 className="w-3 h-3 absolute top-1 right-1 opacity-0 group-hover/legacy-cell:opacity-50 text-primary-light/500 no-print" />}
+                                                                        {pageIndex === 0 && canEditS13 && <Edit2 className="w-3 h-3 absolute top-1 right-1 opacity-0 group-hover/legacy-cell:opacity-50 text-primary-light/500 no-print" />}
                                                                     </div>
 
                                                                     {/* Designações (campos) */}
@@ -613,10 +613,16 @@ export default function RegistryPage() {
                                                                                                 {assign.publisherName}
                                                                                             </span>
                                                                                             {/* Camada de ações */}
-                                                                                            <div className="absolute right-1 top-[1px] hidden group-hover/cell:flex gap-1 no-print bg-white dark:bg-gray-800 shadow-sm border border-gray-100 dark:border-gray-700 p-0.5 rounded-md z-10">
-                                                                                                <button onClick={() => { setSelectedTerritoryId(row.territory.id); setEditingAssignment(assign); setIsModalOpen(true); }} className="text-primary hover:text-blue-800 dark:text-blue-400 dark:hover:text-blue-300 p-0.5 rounded"><Edit2 className="w-3 h-3" /></button>
-                                                                                                <button onClick={() => handleDeleteAssignment(assign.id)} className="text-red-500 hover:text-red-700 dark:text-red-400 dark:hover:text-red-300 p-0.5 rounded"><Trash2 className="w-3 h-3" /></button>
-                                                                                            </div>
+                                                                                            {(canEditS13 || canDeleteS13) && (
+                                                                                                <div className="absolute right-1 top-[1px] hidden group-hover/cell:flex gap-1 no-print bg-white dark:bg-gray-800 shadow-sm border border-gray-100 dark:border-gray-700 p-0.5 rounded-md z-10">
+                                                                                                    {canEditS13 && (
+                                                                                                        <button onClick={() => { setSelectedTerritoryId(row.territory.id); setEditingAssignment(assign); setIsModalOpen(true); }} className="text-primary hover:text-blue-800 dark:text-blue-400 dark:hover:text-blue-300 p-0.5 rounded"><Edit2 className="w-3 h-3" /></button>
+                                                                                                    )}
+                                                                                                    {canDeleteS13 && (
+                                                                                                        <button onClick={() => handleDeleteAssignment(assign.id)} className="text-red-500 hover:text-red-700 dark:text-red-400 dark:hover:text-red-300 p-0.5 rounded"><Trash2 className="w-3 h-3" /></button>
+                                                                                                    )}
+                                                                                                </div>
+                                                                                            )}
                                                                                         </div>
                                                                                         <div className="flex-1 flex min-h-0 print:bg-white">
                                                                                             <div className="w-1/2 border-r border-black print:border-black flex items-center justify-center text-[9px] text-black dark:text-gray-300 print:text-black bg-white dark:bg-transparent print:bg-white">{formatDate(assign.assignedDate)}</div>
@@ -626,7 +632,9 @@ export default function RegistryPage() {
                                                                                 ) : (
                                                                                     <div className="w-full h-full flex flex-col print:bg-white">
                                                                                         <div className="h-[20px] border-b border-black print:border-black w-full relative group/btn-helper bg-white dark:bg-transparent print:bg-white">
-                                                                                            <div className="absolute inset-0 flex items-center justify-center opacity-0 group-hover/cell:opacity-100 cursor-pointer no-print" onClick={() => { setSelectedTerritoryId(row.territory.id); setEditingAssignment({ assignedDate: new Date() }); setIsModalOpen(true); }}><Plus className="w-4 h-4 text-primary-light/500" /></div>
+                                                                                            {canCreateS13 && (
+                                                                                                <div className="absolute inset-0 flex items-center justify-center opacity-0 group-hover/cell:opacity-100 cursor-pointer no-print" onClick={() => { setSelectedTerritoryId(row.territory.id); setEditingAssignment({ assignedDate: new Date() }); setIsModalOpen(true); }}><Plus className="w-4 h-4 text-primary-light/500" /></div>
+                                                                                            )}
                                                                                         </div>
                                                                                         <div className="flex-1 flex min-h-0 print:bg-white">
                                                                                             <div className="w-1/2 border-r border-black print:border-black h-full bg-white dark:bg-transparent print:bg-white"></div>
@@ -639,7 +647,7 @@ export default function RegistryPage() {
                                                                     })}
 
                                                                     {/* Gatilho para adicionar página (borda direita) - apenas na última página */}
-                                                                    {isLastPageOfCity && (
+                                                                    {isLastPageOfCity && (canCreateS13 || canEditS13) && (
                                                                         <div
                                                                             className="w-8 hover:w-10 transition-all duration-200 bg-transparent hover:bg-green-50 dark:hover:bg-green-900/30 flex items-center justify-center cursor-pointer no-print group/add-col border-l border-transparent hover:border-green-200 dark:hover:border-green-800 shrink-0"
                                                                             onClick={() => setMinColumns(prev => ({

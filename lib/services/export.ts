@@ -9,31 +9,104 @@ export async function exportDataToCSV(congregationId: string, cityId?: string | 
     try {
         let addrQuery = query(collection(db, 'addresses'), where('congregationId', '==', congregationId));
 
-        if (territoryId) {
-            addrQuery = query(addrQuery, where('territoryId', '==', territoryId));
-        } else if (cityId) {
-            addrQuery = query(addrQuery, where('cityId', '==', cityId));
-        }
-
-        const addrSnap = await getDocs(addrQuery);
-        const addresses = addrSnap.docs.map(doc => ({ id: doc.id, ...doc.data() }));
-
-        const territoryIds = Array.from(new Set(addresses.map((a: any) => a.territoryId).filter(Boolean)));
-        const cityIds = Array.from(new Set(addresses.map((a: any) => a.cityId).filter(Boolean)));
-
         const territoryMap: Record<string, any> = {};
         const cityMap: Record<string, any> = {};
 
-        await Promise.all([
-            ...territoryIds.map(async (tid: any) => {
-                const docSnap = await getDoc(doc(db, 'territories', tid));
-                if (docSnap.exists()) territoryMap[tid] = docSnap.data();
-            }),
-            ...cityIds.map(async (cid: any) => {
-                const docSnap = await getDoc(doc(db, 'cities', cid));
-                if (docSnap.exists()) cityMap[cid] = docSnap.data();
-            })
-        ]);
+        if (territoryId) {
+            addrQuery = query(addrQuery, where('territoryId', '==', territoryId));
+            
+            const tDoc = await getDoc(doc(db, 'territories', territoryId));
+            if (tDoc.exists()) {
+                territoryMap[tDoc.id] = { id: tDoc.id, ...tDoc.data() };
+                if (tDoc.data().cityId) {
+                    const cDoc = await getDoc(doc(db, 'cities', tDoc.data().cityId));
+                    if (cDoc.exists()) cityMap[cDoc.id] = { id: cDoc.id, ...cDoc.data() };
+                }
+            }
+        } else if (cityId) {
+            addrQuery = query(addrQuery, where('cityId', '==', cityId));
+            
+            const cDoc = await getDoc(doc(db, 'cities', cityId));
+            if (cDoc.exists()) cityMap[cDoc.id] = { id: cDoc.id, ...cDoc.data() };
+            
+            const tQ = query(collection(db, 'territories'), where('cityId', '==', cityId));
+            const tSnap = await getDocs(tQ);
+            tSnap.docs.forEach(d => territoryMap[d.id] = { id: d.id, ...d.data() });
+        } else {
+            const cQ = query(collection(db, 'cities'), where('congregationId', '==', congregationId));
+            const cSnap = await getDocs(cQ);
+            cSnap.docs.forEach(d => cityMap[d.id] = { id: d.id, ...d.data() });
+
+            const tQ = query(collection(db, 'territories'), where('congregationId', '==', congregationId));
+            const tSnap = await getDocs(tQ);
+            tSnap.docs.forEach(d => territoryMap[d.id] = { id: d.id, ...d.data() });
+        }
+
+        const addrSnap = await getDocs(addrQuery);
+        const addresses = addrSnap.docs.map(doc => ({ id: doc.id, ...doc.data() } as any));
+
+        const rowsData: any[] = [];
+        const validCityIds = Object.keys(cityMap);
+        const validTerritoryIds = Object.keys(territoryMap);
+        const usedAddresses = new Set<string>();
+
+        for (const cid of validCityIds) {
+            const city = cityMap[cid];
+            const cityTerritories = validTerritoryIds.filter(tid => territoryMap[tid].cityId === cid);
+
+            if (cityTerritories.length === 0) {
+                rowsData.push({ city, territory: null, address: null });
+            } else {
+                for (const tid of cityTerritories) {
+                    const territory = territoryMap[tid];
+                    const territoryAddresses = addresses.filter(a => a.territoryId === tid);
+
+                    if (territoryAddresses.length === 0) {
+                        rowsData.push({ city, territory, address: null });
+                    } else {
+                        for (const address of territoryAddresses) {
+                            usedAddresses.add(address.id);
+                            rowsData.push({ city, territory, address });
+                        }
+                    }
+                }
+            }
+        }
+
+        // Add any orphaned addresses just in case
+        for (const address of addresses) {
+            if (!usedAddresses.has(address.id)) {
+                const city = cityMap[address.cityId] || null;
+                const territory = territoryMap[address.territoryId] || null;
+                rowsData.push({ city, territory, address });
+            }
+        }
+
+        rowsData.sort((a, b) => {
+            const cityNameA = a.city?.name || '';
+            const cityNameB = b.city?.name || '';
+            const cityComp = cityNameA.localeCompare(cityNameB);
+            if (cityComp !== 0) return cityComp;
+
+            const terrNameA = a.territory?.name || '';
+            const terrNameB = b.territory?.name || '';
+            const numA = parseInt(terrNameA, 10);
+            const numB = parseInt(terrNameB, 10);
+            
+            if (!isNaN(numA) && !isNaN(numB) && numA !== numB) {
+                return numA - numB;
+            }
+            const terrComp = terrNameA.localeCompare(terrNameB);
+            if (terrComp !== 0) return terrComp;
+
+            const orderA = a.address?.sortOrder || 0;
+            const orderB = b.address?.sortOrder || 0;
+            if (orderA !== orderB) return orderA - orderB;
+
+            const addrNameA = a.address?.street || '';
+            const addrNameB = b.address?.street || '';
+            return addrNameA.localeCompare(addrNameB);
+        });
 
         const headers = [
             'Cidade', 'UF', 'Número do Mapa', 'Descrição', 'Endereço',
@@ -42,9 +115,10 @@ export async function exportDataToCSV(congregationId: string, cityId?: string | 
             'Gênero', 'Observações', 'Resultado da ultima visita', 'Ordem na listagem'
         ];
 
-        const rows = addresses.map((addr: any) => {
-            const city = cityMap[addr.cityId] || { name: '', uf: '' };
-            const territory = territoryMap[addr.territoryId] || { name: '', notes: '' };
+        const rows = rowsData.map((row) => {
+            const city = row.city || { name: '', uf: '' };
+            const territory = row.territory || { name: '', notes: '' };
+            const addr = row.address || {};
 
             return [
                 city.name || '',
@@ -52,19 +126,19 @@ export async function exportDataToCSV(congregationId: string, cityId?: string | 
                 territory.name || '',
                 territory.notes || '',
                 addr.street || '',
-                addr.residentsCount || 1,
+                row.address ? (addr.residentsCount || 1) : '',
                 addr.residentName || '',
                 addr.googleMapsLink || '',
                 addr.wazeLink || '',
-                (addr.isActive ?? true) ? 'true' : 'false',
-                addr.isDeaf ? 'true' : 'false',
-                addr.isMinor ? 'true' : 'false',
-                addr.isStudent ? 'true' : 'false',
-                addr.isNeurodivergent ? 'true' : 'false',
+                row.address ? ((addr.isActive ?? true) ? 'true' : 'false') : '',
+                row.address ? (addr.isDeaf ? 'true' : 'false') : '',
+                row.address ? (addr.isMinor ? 'true' : 'false') : '',
+                row.address ? (addr.isStudent ? 'true' : 'false') : '',
+                row.address ? (addr.isNeurodivergent ? 'true' : 'false') : '',
                 addr.gender || '',
                 addr.observations || addr.notes || '',
                 addr.lastVisitResult || '',
-                addr.sortOrder || 0
+                row.address ? (addr.sortOrder || 0) : ''
             ];
         });
 

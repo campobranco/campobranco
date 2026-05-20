@@ -15,7 +15,8 @@ import {
     where,
     getDocs,
     getDoc,
-    deleteDoc
+    deleteDoc,
+    addDoc
 } from 'firebase/firestore';
 import { db, auth } from '@/lib/firebase';
 import {
@@ -53,6 +54,8 @@ import {
     Trash2,
     Bug,
     AlertCircle,
+    Key,
+    Store,
 } from 'lucide-react';
 import Link from 'next/link';
 // import NotificationToggle from '@/app/components/NotificationToggle'; // Removed
@@ -97,6 +100,216 @@ export default function SettingsPage() {
     const [generatingToken, setGeneratingToken] = useState(false);
     const [openMenuId, setOpenMenuId] = useState<string | null>(null);
     const [showDangerZone, setShowDangerZone] = useState(false);
+
+    // Custom Permissions States
+    const [selectedMemberForPermissions, setSelectedMemberForPermissions] = useState<any | null>(null);
+    const [editingPermissions, setEditingPermissions] = useState<Record<string, boolean>>({});
+    const [savingPermissions, setSavingPermissions] = useState(false);
+
+    // Converte o objeto de permissões estruturado/flat do Firestore para o estado plano da UI
+    const flattenPermissions = (raw: any): Record<string, boolean> => {
+        const flat: Record<string, boolean> = {};
+        if (!raw) return flat;
+
+        // Maps
+        if (raw.maps && typeof raw.maps === 'object') {
+            flat.mapsView = !!raw.maps.view;
+            flat.mapsCreate = !!raw.maps.create;
+            flat.mapsEdit = !!raw.maps.edit;
+            flat.mapsDelete = !!raw.maps.delete;
+        } else {
+            flat.mapsView = !!raw.mapsView;
+            flat.mapsCreate = !!raw.mapsCreate;
+            flat.mapsEdit = !!raw.mapsEdit;
+            flat.mapsDelete = !!raw.mapsDelete;
+        }
+
+        // Witnessing
+        if (raw.witnessing && typeof raw.witnessing === 'object') {
+            flat.witnessingView = !!raw.witnessing.view;
+            flat.witnessingCreate = !!raw.witnessing.create;
+            flat.witnessingEdit = !!raw.witnessing.edit;
+            flat.witnessingDelete = !!raw.witnessing.delete;
+        } else {
+            flat.witnessingView = !!raw.witnessingView;
+            flat.witnessingCreate = !!raw.witnessingCreate;
+            flat.witnessingEdit = !!raw.witnessingEdit;
+            flat.witnessingDelete = !!raw.witnessingDelete;
+        }
+
+        // S13
+        if (raw.s13 && typeof raw.s13 === 'object') {
+            flat.s13View = !!raw.s13.view;
+            flat.s13Create = !!raw.s13.create;
+            flat.s13Edit = !!raw.s13.edit;
+            flat.s13Delete = !!raw.s13.delete;
+        } else {
+            flat.s13View = !!raw.s13View;
+            flat.s13Create = !!raw.s13Create;
+            flat.s13Edit = !!raw.s13Edit;
+            flat.s13Delete = !!raw.s13Delete;
+        }
+
+        // Reports
+        if (raw.reports && typeof raw.reports === 'object') {
+            flat.reportsView = !!raw.reports.view;
+        } else {
+            flat.reportsView = !!raw.reportsView;
+        }
+
+        return flat;
+    };
+
+    // Converte o estado plano da UI para o objeto de permissões estruturado
+    const bundlePermissions = (flat: Record<string, boolean>) => {
+        return {
+            maps: {
+                view: !!flat.mapsView,
+                create: !!flat.mapsCreate,
+                edit: !!flat.mapsEdit,
+                delete: !!flat.mapsDelete
+            },
+            witnessing: {
+                view: !!flat.witnessingView,
+                create: !!flat.witnessingCreate,
+                edit: !!flat.witnessingEdit,
+                delete: !!flat.witnessingDelete
+            },
+            s13: {
+                view: !!flat.s13View,
+                create: !!flat.s13Create,
+                edit: !!flat.s13Edit,
+                delete: !!flat.s13Delete
+            },
+            reports: {
+                view: !!flat.reportsView
+            }
+        };
+    };
+
+    // Aplica um preset de permissões predefinido
+    const applyPermissionsPreset = (presetType: 'maps_pub' | 'witness_support' | 'view_only' | 'local_admin' | 'clear') => {
+        const defaultPermissions: Record<string, boolean> = {
+            mapsView: false, mapsCreate: false, mapsEdit: false, mapsDelete: false,
+            witnessingView: false, witnessingCreate: false, witnessingEdit: false, witnessingDelete: false,
+            s13View: false, s13Create: false, s13Edit: false, s13Delete: false,
+            reportsView: false
+        };
+
+        switch (presetType) {
+            case 'maps_pub':
+                setEditingPermissions({
+                    ...defaultPermissions,
+                    mapsView: true,
+                    witnessingView: true,
+                    s13View: true
+                });
+                break;
+            case 'witness_support':
+                setEditingPermissions({
+                    ...defaultPermissions,
+                    mapsView: true,
+                    witnessingView: true,
+                    witnessingCreate: true,
+                    witnessingEdit: true,
+                    s13View: true
+                });
+                break;
+            case 'view_only':
+                setEditingPermissions({
+                    ...defaultPermissions,
+                    mapsView: true,
+                    witnessingView: true,
+                    s13View: true,
+                    reportsView: true
+                });
+                break;
+            case 'local_admin':
+                setEditingPermissions({
+                    mapsView: true, mapsCreate: true, mapsEdit: true, mapsDelete: true,
+                    witnessingView: true, witnessingCreate: true, witnessingEdit: true, witnessingDelete: true,
+                    s13View: true, s13Create: true, s13Edit: true, s13Delete: true,
+                    reportsView: true
+                });
+                break;
+            case 'clear':
+                setEditingPermissions(defaultPermissions);
+                break;
+        }
+    };
+
+    const handleOpenPermissions = (member: any) => {
+        setSelectedMemberForPermissions(member);
+        setEditingPermissions(flattenPermissions(member.permissions));
+        setOpenMenuId(null);
+    };
+
+    const handleSavePermissions = async () => {
+        if (!selectedMemberForPermissions || !user) return;
+        
+        // Bloqueio de auto-edição de permissões
+        if (selectedMemberForPermissions.id === user.uid) {
+            toast.error("Você não pode editar suas próprias permissões!");
+            return;
+        }
+
+        setSavingPermissions(true);
+        const structuredPermissions = bundlePermissions(editingPermissions);
+
+        try {
+            const userRef = doc(db, 'users', selectedMemberForPermissions.id);
+            await updateDoc(userRef, {
+                permissions: structuredPermissions,
+                updatedAt: serverTimestamp()
+            });
+
+            // Registrar Log de Auditoria de Segurança no Firestore
+            try {
+                await addDoc(collection(db, 'security_logs'), {
+                    timestamp: new Date().toISOString(),
+                    type: 'SENSITIVE_DATA_ACCESS',
+                    severity: 'INFO',
+                    uid: user.uid,
+                    email: user.email || 'N/A',
+                    resource: `users/${selectedMemberForPermissions.id}`,
+                    action: 'UPDATE_PERMISSIONS',
+                    success: true,
+                    details: {
+                        targetUid: selectedMemberForPermissions.id,
+                        targetEmail: selectedMemberForPermissions.email || 'N/A',
+                        targetName: selectedMemberForPermissions.name || 'N/A',
+                        previousPermissions: selectedMemberForPermissions.permissions || {},
+                        newPermissions: structuredPermissions
+                    }
+                });
+            } catch (logErr) {
+                console.warn("[SETTINGS] Falha ao registrar log de auditoria:", logErr);
+            }
+
+            // Atualiza localmente na lista de membros para refletir imediatamente
+            setMembers(prev => prev.map(m => 
+                m.id === selectedMemberForPermissions.id 
+                    ? { ...m, permissions: structuredPermissions } 
+                    : m
+            ));
+            
+            toast.success("Permissões atualizadas com sucesso!");
+            setSelectedMemberForPermissions(null);
+            setEditingPermissions({});
+        } catch (error) {
+            console.error("Error saving permissions:", error);
+            toast.error("Erro ao salvar permissões.");
+        } finally {
+            setSavingPermissions(false);
+        }
+    };
+
+    const togglePermissionField = (field: string) => {
+        setEditingPermissions((prev: any) => ({
+            ...prev,
+            [field]: !prev[field]
+        }));
+    };
 
 
 
@@ -709,8 +922,15 @@ export default function SettingsPage() {
                                                     {openMenuId === member.id && (
                                                         <div className="absolute right-0 top-10 bg-surface rounded-lg shadow-xl border border-surface-border p-1 z-50 min-w-[180px] animate-in fade-in zoom-in-95 duration-200">
                                                             <button
+                                                                onClick={() => handleOpenPermissions(member)}
+                                                                className="flex items-center gap-2 px-3 py-2.5 text-sm font-bold text-main hover:bg-background rounded-lg transition-colors w-full text-left"
+                                                            >
+                                                                <Key className="w-4 h-4 text-primary" />
+                                                                Permissões
+                                                            </button>
+                                                            <button
                                                                 onClick={() => handlePromote(member.id, member.role)}
-                                                                className={`flex items-center gap-2 px-3 py-2.5 text-sm font-bold rounded-lg transition-colors w-full text-left ${member.role === 'SERVO' ? 'text-orange-600 hover:bg-orange-50 dark:hover:bg-orange-900/20' : 'text-primary hover:bg-primary-light/50 dark:hover:bg-primary-dark/30'}`}
+                                                                className={`flex items-center gap-2 px-3 py-2.5 text-sm font-bold rounded-lg transition-colors w-full text-left border-t border-surface-border ${member.role === 'SERVO' ? 'text-orange-600 hover:bg-orange-50 dark:hover:bg-orange-900/20' : 'text-primary hover:bg-primary-light/50 dark:hover:bg-primary-dark/30'}`}
                                                             >
                                                                 <Shield className="w-4 h-4" />
                                                                 {member.role === 'ANCIAO' ? "Rebaixar a Servo" :
@@ -1056,6 +1276,258 @@ export default function SettingsPage() {
                                 ) : (
                                     "Excluir Agora"
                                 )}
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            )}
+
+            {/* Modal de Configuração de Permissões */}
+            {selectedMemberForPermissions && (
+                <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm animate-in fade-in duration-200">
+                    <div className="bg-surface rounded-2xl w-full max-w-2xl p-6 sm:p-8 shadow-2xl border border-surface-border animate-in zoom-in-95 duration-200 flex flex-col max-h-[90vh]">
+                        <div className="flex justify-between items-start mb-6 border-b border-surface-border pb-4">
+                            <div className="flex items-center gap-3">
+                                <div className="p-2.5 bg-primary-light/50 dark:bg-primary-dark/30 text-primary dark:text-primary-light rounded-xl">
+                                    <Key className="w-5 h-5" />
+                                </div>
+                                <div>
+                                    <h2 className="text-xl font-bold text-main tracking-tight">Permissões Detalhadas</h2>
+                                    <p className="text-xs text-muted font-medium">Configurando acessos para {selectedMemberForPermissions.name || selectedMemberForPermissions.email}</p>
+                                </div>
+                            </div>
+                            <button 
+                                onClick={() => { setSelectedMemberForPermissions(null); setEditingPermissions({}); }} 
+                                className="p-2 hover:bg-background rounded-full transition-colors"
+                            >
+                                <X className="w-5 h-5 text-muted" />
+                            </button>
+                        </div>
+
+                        {/* Aviso de Auto-Edição */}
+                        {selectedMemberForPermissions.id === user?.uid && (
+                            <div className="mb-6 bg-red-50 dark:bg-red-950/20 border border-red-200 dark:border-red-900/30 p-4 rounded-xl flex items-start gap-3">
+                                <AlertCircle className="w-5 h-5 text-red-600 dark:text-red-400 shrink-0 mt-0.5" />
+                                <div>
+                                    <h4 className="text-xs font-bold text-red-800 dark:text-red-400 uppercase tracking-wider">Edição Bloqueada</h4>
+                                    <p className="text-xs text-red-700/80 dark:text-red-400/80 mt-1">
+                                        Você não pode alterar suas próprias permissões de acesso para evitar a perda acidental de privilégios de administração.
+                                    </p>
+                                </div>
+                            </div>
+                        )}
+
+                        {/* Presets Rápidos */}
+                        {selectedMemberForPermissions.id !== user?.uid && (
+                            <div className="mb-6 p-4 bg-background/50 dark:bg-background/25 border border-surface-border rounded-xl">
+                                <span className="block text-[10px] font-bold text-muted uppercase tracking-wider mb-2.5">Configurações Rápidas (Presets)</span>
+                                <div className="flex flex-wrap gap-2">
+                                    <button
+                                        type="button"
+                                        onClick={() => applyPermissionsPreset('maps_pub')}
+                                        className="px-3 py-1.5 bg-surface hover:bg-surface-hover border border-surface-border rounded-lg text-xs font-bold text-main transition-colors active:scale-95"
+                                    >
+                                        Publicador de Mapas
+                                    </button>
+                                    <button
+                                        type="button"
+                                        onClick={() => applyPermissionsPreset('witness_support')}
+                                        className="px-3 py-1.5 bg-surface hover:bg-surface-hover border border-surface-border rounded-lg text-xs font-bold text-main transition-colors active:scale-95"
+                                    >
+                                        Apoio de Testemunho
+                                    </button>
+                                    <button
+                                        type="button"
+                                        onClick={() => applyPermissionsPreset('view_only')}
+                                        className="px-3 py-1.5 bg-surface hover:bg-surface-hover border border-surface-border rounded-lg text-xs font-bold text-main transition-colors active:scale-95"
+                                    >
+                                        Somente Visualizar
+                                    </button>
+                                    <button
+                                        type="button"
+                                        onClick={() => applyPermissionsPreset('local_admin')}
+                                        className="px-3 py-1.5 bg-primary/10 hover:bg-primary/20 border border-primary/20 rounded-lg text-xs font-bold text-primary transition-colors active:scale-95"
+                                    >
+                                        Acesso Total
+                                    </button>
+                                    <button
+                                        type="button"
+                                        onClick={() => applyPermissionsPreset('clear')}
+                                        className="px-3 py-1.5 bg-red-500/10 hover:bg-red-500/20 border border-red-500/20 rounded-lg text-xs font-bold text-red-600 dark:text-red-400 transition-colors active:scale-95"
+                                    >
+                                        Limpar Tudo
+                                    </button>
+                                </div>
+                            </div>
+                        )}
+
+                        <div className="overflow-y-auto pr-1 space-y-6 flex-1 py-1">
+                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
+                                {/* Seção Mapas e Territórios */}
+                                <div className="space-y-3 bg-background/50 dark:bg-background/25 p-4 rounded-xl border border-surface-border">
+                                    <div className="flex items-center gap-2 font-bold text-main text-xs uppercase tracking-wider">
+                                        <MapIcon className="w-4 h-4 text-primary" />
+                                        <span>Mapas e Territórios</span>
+                                    </div>
+                                    <div className="flex flex-col gap-2">
+                                        {[
+                                            { key: 'mapsView', label: 'Visualizar' },
+                                            { key: 'mapsCreate', label: 'Criar' },
+                                            { key: 'mapsEdit', label: 'Editar' },
+                                            { key: 'mapsDelete', label: 'Excluir' }
+                                        ].map((p) => {
+                                            const isChecked = !!editingPermissions[p.key];
+                                            const isDisabled = selectedMemberForPermissions.id === user?.uid;
+                                            return (
+                                                <label
+                                                    key={p.key}
+                                                    className={`flex items-center p-2.5 rounded-lg border text-xs font-semibold cursor-pointer transition-all hover:bg-surface/50
+                                                        ${isChecked ? 'bg-primary-light/35 border-primary-light/75 text-primary-dark font-bold dark:bg-primary-dark/20 dark:border-primary-dark/40 dark:text-primary-light' : 'bg-surface border-surface-border text-muted'}
+                                                        ${isDisabled ? 'opacity-65 cursor-not-allowed' : ''}
+                                                    `}
+                                                >
+                                                    <input
+                                                        type="checkbox"
+                                                        checked={isChecked}
+                                                        disabled={isDisabled}
+                                                        onChange={() => togglePermissionField(p.key)}
+                                                        className="w-4 h-4 rounded text-primary focus:ring-primary-light/50 border-surface-border mr-2.5 animate-none disabled:opacity-50 disabled:cursor-not-allowed"
+                                                    />
+                                                    {p.label}
+                                                </label>
+                                            );
+                                        })}
+                                    </div>
+                                </div>
+
+                                {/* Seção Testemunho Público */}
+                                <div className="space-y-3 bg-background/50 dark:bg-background/25 p-4 rounded-xl border border-surface-border">
+                                    <div className="flex items-center gap-2 font-bold text-main text-xs uppercase tracking-wider">
+                                        <Store className="w-4 h-4 text-green-600 dark:text-green-400" />
+                                        <span>Testemunho Público</span>
+                                    </div>
+                                    <div className="flex flex-col gap-2">
+                                        {[
+                                            { key: 'witnessingView', label: 'Visualizar' },
+                                            { key: 'witnessingCreate', label: 'Criar Ponto' },
+                                            { key: 'witnessingEdit', label: 'Editar Ponto' },
+                                            { key: 'witnessingDelete', label: 'Excluir Ponto' }
+                                        ].map((p) => {
+                                            const isChecked = !!editingPermissions[p.key];
+                                            const isDisabled = selectedMemberForPermissions.id === user?.uid;
+                                            return (
+                                                <label
+                                                    key={p.key}
+                                                    className={`flex items-center p-2.5 rounded-lg border text-xs font-semibold cursor-pointer transition-all hover:bg-surface/50
+                                                        ${isChecked ? 'bg-green-50/50 border-green-200 text-green-700 font-bold dark:bg-green-950/20 dark:border-green-900/40 dark:text-green-400' : 'bg-surface border-surface-border text-muted'}
+                                                        ${isDisabled ? 'opacity-65 cursor-not-allowed' : ''}
+                                                    `}
+                                                >
+                                                    <input
+                                                        type="checkbox"
+                                                        checked={isChecked}
+                                                        disabled={isDisabled}
+                                                        onChange={() => togglePermissionField(p.key)}
+                                                        className="w-4 h-4 rounded text-green-600 focus:ring-green-200 border-surface-border mr-2.5 animate-none disabled:opacity-50 disabled:cursor-not-allowed"
+                                                    />
+                                                    {p.label}
+                                                </label>
+                                            );
+                                        })}
+                                    </div>
+                                </div>
+
+                                {/* Seção Relatórios */}
+                                <div className="space-y-3 bg-background/50 dark:bg-background/25 p-4 rounded-xl border border-surface-border">
+                                    <div className="flex items-center gap-2 font-bold text-main text-xs uppercase tracking-wider">
+                                        <FileText className="w-4 h-4 text-purple-600 dark:text-purple-400" />
+                                        <span>Relatórios</span>
+                                    </div>
+                                    <div className="flex flex-col gap-2">
+                                        {[
+                                            { key: 'reportsView', label: 'Visualizar Relatórios' }
+                                        ].map((p) => {
+                                            const isChecked = !!editingPermissions[p.key];
+                                            const isDisabled = selectedMemberForPermissions.id === user?.uid;
+                                            return (
+                                                <label
+                                                    key={p.key}
+                                                    className={`flex items-center p-2.5 rounded-lg border text-xs font-semibold cursor-pointer transition-all hover:bg-surface/50
+                                                        ${isChecked ? 'bg-purple-50/50 border-purple-200 text-purple-700 font-bold dark:bg-purple-950/20 dark:border-purple-900/40 dark:text-purple-400' : 'bg-surface border-surface-border text-muted'}
+                                                        ${isDisabled ? 'opacity-65 cursor-not-allowed' : ''}
+                                                    `}
+                                                >
+                                                    <input
+                                                        type="checkbox"
+                                                        checked={isChecked}
+                                                        disabled={isDisabled}
+                                                        onChange={() => togglePermissionField(p.key)}
+                                                        className="w-4 h-4 rounded text-purple-600 focus:ring-purple-200 border-surface-border mr-2.5 animate-none disabled:opacity-50 disabled:cursor-not-allowed"
+                                                    />
+                                                    {p.label}
+                                                </label>
+                                            );
+                                        })}
+                                    </div>
+                                </div>
+
+                                {/* Seção S-13 (Registro de Designações) */}
+                                <div className="space-y-3 bg-background/50 dark:bg-background/25 p-4 rounded-xl border border-surface-border">
+                                    <div className="flex items-center gap-2 font-bold text-main text-xs uppercase tracking-wider">
+                                        <Clock className="w-4 h-4 text-orange-600 dark:text-orange-400" />
+                                        <span>S-13 (Designações)</span>
+                                    </div>
+                                    <div className="flex flex-col gap-2">
+                                        {[
+                                            { key: 's13View', label: 'Visualizar' },
+                                            { key: 's13Create', label: 'Criar' },
+                                            { key: 's13Edit', label: 'Editar' },
+                                            { key: 's13Delete', label: 'Excluir' }
+                                        ].map((p) => {
+                                            const isChecked = !!editingPermissions[p.key];
+                                            const isDisabled = selectedMemberForPermissions.id === user?.uid;
+                                            return (
+                                                <label
+                                                    key={p.key}
+                                                    className={`flex items-center p-2.5 rounded-lg border text-xs font-semibold cursor-pointer transition-all hover:bg-surface/50
+                                                        ${isChecked ? 'bg-orange-50/50 border-orange-200 text-orange-700 font-bold dark:bg-orange-950/20 dark:border-orange-900/40 dark:text-orange-400' : 'bg-surface border-surface-border text-muted'}
+                                                        ${isDisabled ? 'opacity-65 cursor-not-allowed' : ''}
+                                                    `}
+                                                >
+                                                    <input
+                                                        type="checkbox"
+                                                        checked={isChecked}
+                                                        disabled={isDisabled}
+                                                        onChange={() => togglePermissionField(p.key)}
+                                                        className="w-4 h-4 rounded text-orange-600 focus:ring-orange-200 border-surface-border mr-2.5 animate-none disabled:opacity-50 disabled:cursor-not-allowed"
+                                                    />
+                                                    {p.label}
+                                                </label>
+                                            );
+                                        })}
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div className="mt-6 flex justify-end gap-3 border-t border-surface-border pt-4">
+                            <button
+                                onClick={() => { setSelectedMemberForPermissions(null); setEditingPermissions({}); }}
+                                className="px-4 py-2.5 border border-surface-border text-muted rounded-xl text-xs font-bold hover:bg-background transition-colors"
+                            >
+                                Cancelar
+                            </button>
+                            <button
+                                onClick={handleSavePermissions}
+                                disabled={savingPermissions || selectedMemberForPermissions.id === user?.uid}
+                                className="bg-primary hover:bg-primary-dark disabled:bg-primary-light/50 text-white px-5 py-2.5 rounded-xl text-xs font-bold shadow-lg shadow-primary-light/20 transition-all flex items-center gap-1.5 active:scale-95 disabled:scale-100 disabled:opacity-50 disabled:cursor-not-allowed"
+                            >
+                                {savingPermissions ? (
+                                    <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                                ) : (
+                                    <Save className="w-3.5 h-3.5" />
+                                )}
+                                Salvar Permissões
                             </button>
                         </div>
                     </div>

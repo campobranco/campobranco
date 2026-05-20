@@ -128,7 +128,7 @@ export default function FloatingReportButton() {
 
     if (success) {
         return (
-            <div id="floating-report-button" className="fixed bottom-24 right-6 z-[9999] animate-in slide-in-from-bottom duration-300">
+            <div id="floating-report-button" className="fixed top-1/2 -translate-y-1/2 right-6 z-[9999] animate-in slide-in-from-bottom duration-300">
                 <div className="bg-green-500 text-white p-4 rounded-full shadow-lg flex items-center justify-center">
                     <CheckCircle2 className="w-6 h-6" />
                 </div>
@@ -196,7 +196,7 @@ export default function FloatingReportButton() {
             id="floating-report-button"
             onClick={handleOpen}
             disabled={loading}
-            className={`fixed bottom-24 right-6 z-50 p-3 rounded-full shadow-lg border transition-all group print:hidden
+            className={`fixed top-1/2 -translate-y-1/2 right-6 z-50 p-3 rounded-full shadow-lg border transition-all group print:hidden
                 ${isPulsing
                     ? 'bg-red-500 text-white border-red-600 shadow-red-500/40 animate-pulse scale-110'
                     : 'bg-white dark:bg-slate-800 text-red-500 hover:text-red-600 border-gray-200 dark:border-slate-700 hover:scale-110'
@@ -219,4 +219,3 @@ export default function FloatingReportButton() {
         </button>
     );
 }
-

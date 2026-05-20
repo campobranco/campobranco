@@ -20,20 +20,29 @@ export default function PointMap({ points }: PointMapProps) {
     const mapInstanceRef = useRef<any>(null);
     const markersRef = useRef<any[]>([]);
     const [isMapReady, setIsMapReady] = useState(false);
+    const pointsRef = useRef(points);
+
+    // Manter a ref de points atualizada para a inicialização assíncrona
+    useEffect(() => {
+        pointsRef.current = points;
+    }, [points]);
 
     useEffect(() => {
-        // Inicialização do Leaflet (Mesma lógica do MapView principal)
-        const initMap = async () => {
+        let checkForLeaflet: NodeJS.Timeout | null = null;
+
+        // Inicialização do Leaflet
+        const initMap = () => {
             if (typeof window === 'undefined' || !mapContainerRef.current) return;
 
-            // Esperar o Leaflet estar disponível globalmente (carregado via layout.tsx)
-            const checkForLeaflet = setInterval(() => {
+            // Esperar o Leaflet estar disponível globalmente
+            checkForLeaflet = setInterval(() => {
                 if ((window as any).L && mapContainerRef.current && !mapInstanceRef.current) {
-                    clearInterval(checkForLeaflet);
+                    if (checkForLeaflet) clearInterval(checkForLeaflet);
                     const L = (window as any).L;
 
-                    const center = points.length > 0
-                        ? [points[0].latitude, points[0].longitude]
+                    const currentPoints = pointsRef.current;
+                    const center = currentPoints.length > 0
+                        ? [currentPoints[0].latitude, currentPoints[0].longitude]
                         : [-23.5505, -46.6333];
 
                     const map = L.map(mapContainerRef.current, {
@@ -50,34 +59,52 @@ export default function PointMap({ points }: PointMapProps) {
                     setIsMapReady(true);
                 }
             }, 200);
-
-            return () => clearInterval(checkForLeaflet);
         };
 
         initMap();
 
         return () => {
+            if (checkForLeaflet) {
+                clearInterval(checkForLeaflet);
+            }
             if (mapInstanceRef.current) {
-                mapInstanceRef.current.remove();
+                try {
+                    mapInstanceRef.current.remove();
+                } catch (e) {
+                    console.warn("[PointMap] Erro ao destruir o mapa Leaflet:", e);
+                }
                 mapInstanceRef.current = null;
             }
         };
-    }, [points]);
+    }, []); // Inicializa apenas uma vez no mount
 
-    // Atualizar marcadores quando os pontos mudarem
+    // Atualizar marcadores quando os pontos mudarem ou o mapa estiver pronto
     useEffect(() => {
         if (!isMapReady || !mapInstanceRef.current) return;
 
         const L = (window as any).L;
         const map = mapInstanceRef.current;
 
-        // Limpar marcadores antigos
-        markersRef.current.forEach(m => m.remove());
+        // Limpar marcadores antigos com segurança
+        markersRef.current.forEach(m => {
+            try {
+                m.remove();
+            } catch (e) {
+                console.warn("[PointMap] Erro ao remover marcador:", e);
+            }
+        });
         markersRef.current = [];
+
+        if (points.length === 0) return;
 
         const bounds = L.latLngBounds([]);
         
         points.forEach(point => {
+            // Garantir que temos coordenadas válidas
+            if (typeof point.latitude !== 'number' || typeof point.longitude !== 'number' || isNaN(point.latitude) || isNaN(point.longitude)) {
+                return;
+            }
+
             const isOccupied = point.status === 'OCCUPIED';
             const color = isOccupied ? "#fbbf24" : "#34d399";
             const borderColor = isOccupied ? "#d97706" : "#059669";
@@ -100,16 +127,24 @@ export default function PointMap({ points }: PointMapProps) {
                 iconAnchor: [7, 7]
             });
 
-            const marker = L.marker([point.latitude, point.longitude], { icon })
-                .bindPopup(`<b style="font-family: sans-serif; font-size: 12px;">${point.name}</b>`)
-                .addTo(map);
+            try {
+                const marker = L.marker([point.latitude, point.longitude], { icon })
+                    .bindPopup(`<b style="font-family: sans-serif; font-size: 12px;">${point.name}</b>`)
+                    .addTo(map);
 
-            markersRef.current.push(marker);
-            bounds.extend([point.latitude, point.longitude]);
+                markersRef.current.push(marker);
+                bounds.extend([point.latitude, point.longitude]);
+            } catch (e) {
+                console.error("[PointMap] Erro ao adicionar marcador no ponto:", point, e);
+            }
         });
 
-        if (points.length > 0) {
-            map.fitBounds(bounds, { padding: [30, 30], maxZoom: 16 });
+        if (markersRef.current.length > 0) {
+            try {
+                map.fitBounds(bounds, { padding: [30, 30], maxZoom: 16 });
+            } catch (e) {
+                console.warn("[PointMap] Erro ao ajustar bounds:", e);
+            }
         }
     }, [points, isMapReady]);
 

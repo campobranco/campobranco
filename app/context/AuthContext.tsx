@@ -4,10 +4,25 @@
 
 "use client";
 import { createContext, useContext, useEffect, useState } from "react";
-import { User, onAuthStateChanged, signOut } from "firebase/auth";
-import { doc, getDoc, updateDoc, setDoc, serverTimestamp, onSnapshot } from "firebase/firestore";
+import { User, signOut } from "firebase/auth";
+import { doc, getDoc, updateDoc, setDoc, serverTimestamp, onSnapshot, addDoc, collection } from "firebase/firestore";
 import { auth, db } from "@/lib/firebase";
-import { FIREBASE_CONFIG, FIRESTORE_DATABASE_ID } from "@/lib/config";
+
+// --- INTERFACES DE PERMISSÃO ---
+
+interface PermissionDomain {
+    view?: boolean;
+    create?: boolean;
+    edit?: boolean;
+    delete?: boolean;
+}
+
+interface UserPermissions {
+    maps?: PermissionDomain;
+    reports?: { view?: boolean };
+    witnessing?: PermissionDomain;
+    s13?: PermissionDomain;
+}
 
 // Tipagem do contexto de autenticação
 interface AuthContextType {
@@ -27,6 +42,51 @@ interface AuthContextType {
     setNotificationsEnabled: (enabled: boolean) => Promise<void>;
     canManageMembers: boolean;
     canInviteMembers: boolean;
+    permissions: UserPermissions | null;
+    // Helper centralizado: 'domain.action' e.g. 'maps.view', 's13.create'
+    can: (perm: string) => boolean;
+    // Flags computadas (retrocompatibilidade)
+    canViewReports: boolean;
+    canManageMaps: boolean;
+    canCreateMaps: boolean;
+    canEditMaps: boolean;
+    canDeleteMaps: boolean;
+    canManageWitnessing: boolean;
+    canCreateWitnessing: boolean;
+    canEditWitnessing: boolean;
+    canDeleteWitnessing: boolean;
+    canViewS13: boolean;
+    canCreateS13: boolean;
+    canEditS13: boolean;
+    canDeleteS13: boolean;
+}
+
+// Normaliza permissões do Firestore (flat ou agrupado) para o formato agrupado
+function normalizePermissions(raw: any): UserPermissions {
+    if (!raw) return {};
+    return {
+        maps: {
+            view:   raw.maps?.view   ?? raw.mapsView   ?? undefined,
+            create: raw.maps?.create ?? raw.mapsCreate ?? undefined,
+            edit:   raw.maps?.edit   ?? raw.mapsEdit   ?? undefined,
+            delete: raw.maps?.delete ?? raw.mapsDelete ?? undefined,
+        },
+        witnessing: {
+            view:   raw.witnessing?.view   ?? raw.witnessingView   ?? undefined,
+            create: raw.witnessing?.create ?? raw.witnessingCreate ?? undefined,
+            edit:   raw.witnessing?.edit   ?? raw.witnessingEdit   ?? undefined,
+            delete: raw.witnessing?.delete ?? raw.witnessingDelete ?? undefined,
+        },
+        s13: {
+            view:   raw.s13?.view   ?? raw.s13View   ?? undefined,
+            create: raw.s13?.create ?? raw.s13Create ?? undefined,
+            edit:   raw.s13?.edit   ?? raw.s13Edit   ?? undefined,
+            delete: raw.s13?.delete ?? raw.s13Delete ?? undefined,
+        },
+        reports: {
+            view: raw.reports?.view ?? raw.reportsView ?? undefined,
+        },
+    };
 }
 
 // Valores padrão do contexto (estado inicial antes de carregar)
@@ -35,7 +95,7 @@ const AuthContext = createContext<AuthContextType>({
     loading: true,
     role: null,
     congregationId: null,
-    logout: async () => { },
+    logout: async () => {},
     profileName: null,
     isAdminRoleGlobal: false,
     isElder: false,
@@ -44,37 +104,44 @@ const AuthContext = createContext<AuthContextType>({
     termType: 'city',
     congregationType: null,
     notificationsEnabled: true,
-    setNotificationsEnabled: async () => { },
+    setNotificationsEnabled: async () => {},
     canManageMembers: false,
     canInviteMembers: false,
+    permissions: null,
+    can: () => false,
+    canViewReports: false,
+    canManageMaps: false,
+    canCreateMaps: false,
+    canEditMaps: false,
+    canDeleteMaps: false,
+    canManageWitnessing: false,
+    canCreateWitnessing: false,
+    canEditWitnessing: false,
+    canDeleteWitnessing: false,
+    canViewS13: false,
+    canCreateS13: false,
+    canEditS13: false,
+    canDeleteS13: false,
 });
 
 export function AuthProvider({ children }: { children: React.ReactNode }) {
     const [user, setUser] = useState<User | null>(null);
     const [loading, setLoading] = useState(true);
     const [role, setRole] = useState<string | null>(null);
+    const [permissions, setPermissions] = useState<UserPermissions | null>(null);
     const [congregationId, setCongregationId] = useState<string | null>(null);
     const [profileName, setProfileName] = useState<string | null>(null);
     const [termType, setTermType] = useState<'city' | 'neighborhood'>('city');
     const [congregationType, setCongregationType] = useState<'TRADITIONAL' | 'SIGN_LANGUAGE' | 'FOREIGN_LANGUAGE' | null>(null);
     const [notificationsEnabled, setNotificationsEnabledInternal] = useState(true);
-    const [isMounted, setIsMounted] = useState(false);
-
-    // Garante que o app saiba que terminou a hidratação
-    useEffect(() => {
-        setIsMounted(true);
-    }, []);
 
     // Timeout de segurança para evitar loading infinito
     useEffect(() => {
-        const safetyTimeout = setTimeout(() => {
-            setLoading(false);
-        }, 10000);
-
+        const safetyTimeout = setTimeout(() => setLoading(false), 10000);
         return () => clearTimeout(safetyTimeout);
     }, []);
 
-    // Ouve mudanças de estado de autenticação
+    // Ouve mudanças de estado de autenticação (token renovação)
     useEffect(() => {
         const { onIdTokenChanged } = require("firebase/auth");
         const unsubscribe = onIdTokenChanged(auth, async (firebaseUser: User | null) => {
@@ -84,23 +151,24 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
                 const isMaster = masterEmail && userEmail === masterEmail;
 
                 if (isMaster) {
-                    console.log(`[DIAGNOSTICO-ROBUSTO] Admin Mestre detectado: ${userEmail}`);
+                    console.log(`[AUTH] Admin Mestre detectado: ${userEmail}`);
                     setRole('ADMIN');
                 }
 
                 setUser(firebaseUser);
-                
-                // Salva o token no cookie para uso nas API routes (servidor)
+
+                // Salva o token no cookie para uso nas API routes
                 try {
                     const token = await firebaseUser.getIdToken(true);
                     const isSecure = typeof window !== 'undefined' && window.location.protocol === 'https:';
                     document.cookie = `__session=${token}; path=/; max-age=3600; SameSite=Lax${isSecure ? '; Secure' : ''}`;
                 } catch (e) {
-                    console.warn("Não foi possível salvar o token no cookie:", e);
+                    console.warn("[AUTH] Não foi possível salvar o token no cookie:", e);
                 }
             } else {
                 setUser(null);
                 setRole(null);
+                setPermissions(null);
                 setCongregationId(null);
                 setProfileName(null);
                 if (typeof document !== 'undefined') {
@@ -117,63 +185,56 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     useEffect(() => {
         if (!user) return;
 
-        console.log(`[DEBUG] Iniciando listener de perfil: users/${user.uid}`);
+        console.log(`[AUTH] Iniciando listener de perfil: users/${user.uid}`);
         const userRef = doc(db, 'users', user.uid);
-        
+
         const unsubscribe = onSnapshot(userRef, async (userSnap) => {
             try {
                 if (userSnap.exists()) {
                     const data = userSnap.data();
                     const masterEmail = (process.env.NEXT_PUBLIC_MASTER_EMAIL || '').trim().toLowerCase();
                     const userEmail = (user.email || '').trim().toLowerCase();
-                    
-                    console.log(`[DIAGNOSTICO-ROBUSTO] Snap: ${userEmail} | Master: ${masterEmail}`);
-                    
+
                     if (masterEmail && userEmail === masterEmail && data.role !== 'ADMIN') {
-                        console.log(`[DIAGNOSTICO-ROBUSTO] Corrigindo role no Firestore para MASTER`);
-                        await setDoc(userRef, {
-                            role: 'ADMIN',
-                            updatedAt: serverTimestamp()
-                        }, { merge: true });
+                        console.log(`[AUTH] Corrigindo role do Master para ADMIN`);
+                        await setDoc(userRef, { role: 'ADMIN', updatedAt: serverTimestamp() }, { merge: true });
                         return;
-                    } else {
-                        setRole(data.role || 'PUBLICADOR');
-                        setCongregationId(data.congregationId || null);
-                        setProfileName(data.name || user.displayName || user.email);
-                        setNotificationsEnabledInternal(data.notificationsEnabled ?? true);
                     }
+
+                    setRole(data.role || 'PUBLICADOR');
+                    // Normaliza permissões suportando ambos os formatos (flat e agrupado)
+                    setPermissions(normalizePermissions(data.permissions ?? null));
+                    setCongregationId(data.congregationId || null);
+                    setProfileName(data.name || user.displayName || user.email);
+                    setNotificationsEnabledInternal(data.notificationsEnabled ?? true);
                 } else {
                     const masterEmail = (process.env.NEXT_PUBLIC_MASTER_EMAIL || '').trim().toLowerCase();
                     const userEmail = (user.email || '').trim().toLowerCase();
                     const isMaster = masterEmail && userEmail === masterEmail;
-                    
-                    console.log(`[DIAGNOSTICO-ROBUSTO] Criando novo perfil. Admin? ${isMaster}`);
-                    
-                    const newUserProfile = {
+
+                    console.log(`[AUTH] Criando novo perfil. Admin? ${isMaster}`);
+                    await setDoc(userRef, {
                         name: user.displayName || (isMaster ? 'Admin' : 'Membro'),
                         email: user.email,
-                        role: (isMaster ? 'ADMIN' : 'PUBLICADOR'),
+                        role: isMaster ? 'ADMIN' : 'PUBLICADOR',
                         congregationId: null,
                         updatedAt: serverTimestamp(),
-                        createdAt: serverTimestamp()
-                    };
-                    await setDoc(userRef, newUserProfile);
+                        createdAt: serverTimestamp(),
+                    });
                     return;
                 }
             } catch (error) {
-                console.error("Erro no listener de perfil:", error);
+                console.error("[AUTH] Erro no listener de perfil:", error);
             } finally {
                 setLoading(false);
             }
         }, (error) => {
-            console.error("Erro fatal no listener de perfil:", error);
+            console.error("[AUTH] Erro fatal no listener de perfil:", error);
             setLoading(false);
         });
 
         return () => unsubscribe();
     }, [user]);
-
-
 
     // Busca configurações da congregação (tipo de termo, categoria)
     useEffect(() => {
@@ -183,29 +244,65 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
             return;
         }
 
-        let isMounted = true;
+        let active = true;
         const fetchCong = async () => {
             try {
                 const congRef = doc(db, 'congregations', congregationId);
                 const congSnap = await getDoc(congRef);
-
-                if (isMounted && congSnap.exists()) {
+                if (active && congSnap.exists()) {
                     const data = congSnap.data();
                     setTermType(data.termType || 'city');
-
                     const cat = (data.category || '').toLowerCase();
                     if (cat.includes('sinais')) setCongregationType('SIGN_LANGUAGE');
                     else if (cat.includes('estrangeiro')) setCongregationType('FOREIGN_LANGUAGE');
                     else setCongregationType('TRADITIONAL');
                 }
             } catch (err) {
-                console.error("Erro ao buscar configurações da congregação:", err);
+                console.error("[AUTH] Erro ao buscar configurações da congregação:", err);
             }
         };
 
         fetchCong();
-        return () => { isMounted = false; };
+        return () => { active = false; };
     }, [congregationId]);
+
+    // --- FLAGS DE CARGO ---
+    const isAdminRoleGlobal = role === 'ADMIN';
+    const isElder           = role === 'ANCIAO' || isAdminRoleGlobal;
+    const isServant         = role === 'SERVO'  || isElder;
+    const isAdmin           = isElder;
+    const canManageMembers  = isElder;
+    const canInviteMembers  = isServant;
+
+    // --- HELPER CENTRALIZADO DE PERMISSÃO ---
+    // Formato: 'domain.action' — ex: 'maps.view', 's13.create', 'reports.view'
+    // Precedência: ADMIN > ANCIAO > herança SERVO > permissão customizada
+    const can = (perm: string): boolean => {
+        const [domain, action] = perm.split('.');
+        // Papéis com acesso total
+        if (isAdminRoleGlobal || isElder) return true;
+        // SERVO herda acesso completo a mapas e testemunho, mas NÃO a relatórios ou S-13
+        if (isServant && (domain === 'maps' || domain === 'witnessing')) return true;
+        // Consultar permissão customizada no objeto estruturado
+        const domainPerms = permissions?.[domain as keyof UserPermissions];
+        if (!domainPerms || typeof domainPerms !== 'object') return false;
+        return !!(domainPerms as Record<string, boolean | undefined>)[action];
+    };
+
+    // --- FLAGS COMPUTADAS (retrocompatibilidade com o restante do código) ---
+    const canViewReports       = can('reports.view');
+    const canManageMaps        = can('maps.view') || can('maps.create') || can('maps.edit') || can('maps.delete');
+    const canCreateMaps        = can('maps.create');
+    const canEditMaps          = can('maps.edit');
+    const canDeleteMaps        = can('maps.delete');
+    const canManageWitnessing  = can('witnessing.view') || can('witnessing.create') || can('witnessing.edit') || can('witnessing.delete');
+    const canCreateWitnessing  = can('witnessing.create');
+    const canEditWitnessing    = can('witnessing.edit');
+    const canDeleteWitnessing  = can('witnessing.delete');
+    const canViewS13           = can('s13.view') || can('s13.create') || can('s13.edit') || can('s13.delete');
+    const canCreateS13         = can('s13.create');
+    const canEditS13           = can('s13.edit');
+    const canDeleteS13         = can('s13.delete');
 
     // Realiza logout do Firebase
     const logout = async () => {
@@ -221,18 +318,10 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
             await updateDoc(doc(db, 'users', user.uid), { notificationsEnabled: enabled });
             setNotificationsEnabledInternal(enabled);
         } catch (error) {
-            console.error("Erro ao atualizar notificações:", error);
+            console.error("[AUTH] Erro ao atualizar notificações:", error);
             throw error;
         }
     };
-
-    // Flags de permissão derivadas do papel atual
-    const isAdminRoleGlobal = role === 'ADMIN';
-    const isElder = role === 'ANCIAO' || isAdminRoleGlobal;
-    const isServant = role === 'SERVO' || isElder;
-    const isAdmin = isElder;
-    const canManageMembers = isElder;
-    const canInviteMembers = isServant;
 
     return (
         <AuthContext.Provider value={{
@@ -251,7 +340,22 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
             notificationsEnabled,
             setNotificationsEnabled: updateNotificationsEnabled,
             canManageMembers,
-            canInviteMembers
+            canInviteMembers,
+            permissions,
+            can,
+            canViewReports,
+            canManageMaps,
+            canCreateMaps,
+            canEditMaps,
+            canDeleteMaps,
+            canManageWitnessing,
+            canCreateWitnessing,
+            canEditWitnessing,
+            canDeleteWitnessing,
+            canViewS13,
+            canCreateS13,
+            canEditS13,
+            canDeleteS13,
         }}>
             {children}
         </AuthContext.Provider>

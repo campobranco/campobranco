@@ -28,10 +28,9 @@ interface AddressActionsMenuProps {
     territoryId: string;
     onImportSuccess: () => void;
     onCreateClick: () => void;
-    isElder: boolean;
-    isServant: boolean;
-    isAdmin: boolean;
-    isAdminRoleGlobal: boolean;
+    canCreateMaps?: boolean;
+    canEditMaps?: boolean;
+    canDeleteMaps?: boolean;
 }
 
 export default function AddressActionsMenu({
@@ -40,6 +39,9 @@ export default function AddressActionsMenu({
     territoryId,
     onImportSuccess,
     onCreateClick,
+    canCreateMaps = false,
+    canEditMaps = false,
+    canDeleteMaps = false
 }: AddressActionsMenuProps) {
     const [isImportModalOpen, setIsImportModalOpen] = useState(false);
     const [isCSVMenuOpen, setIsCSVMenuOpen] = useState(false);
@@ -203,15 +205,17 @@ export default function AddressActionsMenu({
                              <p className="text-[10px] font-black text-muted uppercase tracking-[0.15em] opacity-50">Dados & CSV</p>
                         </div>
 
-                        <DropDownItem 
-                            icon={Upload} 
-                            label="Importar CSV" 
-                            variant="primary" 
-                            onClick={() => {
-                                setIsImportModalOpen(true);
-                                setIsCSVMenuOpen(false);
-                            }} 
-                        />
+                        {canCreateMaps && (
+                            <DropDownItem 
+                                icon={Upload} 
+                                label="Importar CSV" 
+                                variant="primary" 
+                                onClick={() => {
+                                    setIsImportModalOpen(true);
+                                    setIsCSVMenuOpen(false);
+                                }} 
+                            />
+                        )}
                         <DropDownItem 
                             icon={Download} 
                             label="Exportar para CSV" 
@@ -229,13 +233,15 @@ export default function AddressActionsMenu({
             </div>
 
             {/* 3. Create Button (Verde sólido solicitado #16A34A) */}
-            <button
-                onClick={onCreateClick}
-                className="p-2.5 bg-[#16A34A] text-white rounded-xl hover:bg-[#15803d] hover:scale-105 active:scale-95 transition-all shadow-md border border-[#16A34A]"
-                title="Novo Endereço"
-            >
-                <Plus className="w-5 h-5" />
-            </button>
+            {canCreateMaps && (
+                <button
+                    onClick={onCreateClick}
+                    className="p-2.5 bg-[#16A34A] text-white rounded-xl hover:bg-[#15803d] hover:scale-105 active:scale-95 transition-all shadow-md border border-[#16A34A]"
+                    title="Novo Endereço"
+                >
+                    <Plus className="w-5 h-5" />
+                </button>
+            )}
 
             <CSVImportModal
                 isOpen={isImportModalOpen}

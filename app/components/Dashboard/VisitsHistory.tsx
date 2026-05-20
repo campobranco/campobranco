@@ -43,6 +43,7 @@ export default function VisitsHistory({ scope = 'all', showViewAll = true }: { s
     const [hasError, setHasError] = useState(false);
     const [editingId, setEditingId] = useState<string | null>(null);
     const [openMenuId, setOpenMenuId] = useState<string | null>(null);
+    const [menuPosition, setMenuPosition] = useState<{ top: number; right: number } | null>(null);
 
     // Edit Form State
     const [editForm, setEditForm] = useState({
@@ -407,10 +408,18 @@ export default function VisitsHistory({ scope = 'all', showViewAll = true }: { s
                                             <h4 className="font-bold text-main text-sm">{visit.addressStreet}, {visit.addressNumber}</h4>
                                         </div>
 
-                                        <div className="relative">
+                                        <div>
                                             <button
                                                 onClick={(e) => {
                                                     e.stopPropagation();
+                                                    const rect = (e.currentTarget as HTMLElement).getBoundingClientRect();
+                                                    const BOTTOM_NAV_HEIGHT = 80;
+                                                    const MENU_HEIGHT = 100;
+                                                    const spaceBelow = window.innerHeight - rect.bottom - BOTTOM_NAV_HEIGHT;
+                                                    const top = spaceBelow >= MENU_HEIGHT
+                                                        ? rect.bottom + 4
+                                                        : rect.top - MENU_HEIGHT - 4;
+                                                    setMenuPosition({ top, right: window.innerWidth - rect.right });
                                                     setOpenMenuId(openMenuId === visit.id ? null : visit.id);
                                                 }}
                                                 className="p-1.5 text-muted hover:text-main hover:bg-surface rounded-lg transition-all shadow-sm"
@@ -418,10 +427,10 @@ export default function VisitsHistory({ scope = 'all', showViewAll = true }: { s
                                                 <MoreVertical className="w-4 h-4" />
                                             </button>
 
-                                            {openMenuId === visit.id && (
+                                            {openMenuId === visit.id && menuPosition && (
                                                 <>
-                                                    <div className="fixed inset-0 z-40" onClick={() => setOpenMenuId(null)} />
-                                                    <div className="absolute right-0 top-full mt-2 w-48 bg-surface rounded-xl shadow-2xl border border-surface-border p-1 z-50 animate-in fade-in zoom-in-95 duration-200 origin-top-right">
+                                                    <div className="fixed inset-0 z-[199]" onClick={() => setOpenMenuId(null)} />
+                                                    <div className="fixed w-48 bg-surface rounded-xl shadow-2xl border border-surface-border p-1 z-[200] animate-in fade-in zoom-in-95 duration-200 origin-top-right" style={{ top: menuPosition.top, right: menuPosition.right }}>
                                                         <DropDownItem
                                                             icon={Pencil}
                                                             label="Editar Registro"

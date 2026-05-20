@@ -63,8 +63,7 @@ function WitnessingPointListContent() {
     const router = useRouter();
     const congregationId = searchParams.get('congregationId');
     const cityId = searchParams.get('cityId');
-    const { user, isAdmin, isAdminRoleGlobal, isElder, isServant, loading: authLoading, profileName, congregationId: userCongregationId } = useAuth();
-    const canEdit = isElder || isServant;
+    const { user, isAdmin, isAdminRoleGlobal, isElder, isServant, loading: authLoading, profileName, congregationId: userCongregationId, canCreateWitnessing, canEditWitnessing, canDeleteWitnessing, termType } = useAuth();
     const [points, setPoints] = useState<WitnessingPoint[]>([]);
 
     const [loading, setLoading] = useState(true);
@@ -169,20 +168,25 @@ function WitnessingPointListContent() {
 
     // fetchPoints: buscada manualmente para atualizações pontuais (ex: após criar/editar)
     const fetchPoints = useCallback(async () => {
-        if (!congregationId || !cityId) {
+        if (!congregationId) {
             setLoading(false);
             return;
         }
 
         try {
             const snap = await (async () => {
-                // Nome correto da coleção no Firestore é 'witnessing_points'
-                const q = query(
-                    collection(db, 'witnessing_points'),
-                    where('congregationId', '==', congregationId),
-                    where('cityId', '==', cityId),
-                    orderBy('name')
-                );
+                const q = cityId 
+                    ? query(
+                        collection(db, 'witnessing_points'),
+                        where('congregationId', '==', congregationId),
+                        where('cityId', '==', cityId),
+                        orderBy('name')
+                    )
+                    : query(
+                        collection(db, 'witnessing_points'),
+                        where('congregationId', '==', congregationId),
+                        orderBy('name')
+                    );
                 const { getDocs } = await import('firebase/firestore');
                 return getDocs(q);
             })();
@@ -199,30 +203,38 @@ function WitnessingPointListContent() {
 
         // Verificacao de seguranca
         if (userCongregationId && congregationId && congregationId !== userCongregationId) {
-            router.replace(`/witnessing/city?congregationId=${userCongregationId}&cityId=${cityId}`);
+            router.replace(`/witnessing/city?congregationId=${userCongregationId}${cityId ? `&cityId=${cityId}` : ''}`);
             return;
         }
 
         if (!congregationId && userCongregationId) {
-            router.replace(`/witnessing/city?congregationId=${userCongregationId}&cityId=${cityId}`);
+            router.replace(`/witnessing/city?congregationId=${userCongregationId}${cityId ? `&cityId=${cityId}` : ''}`);
             return;
         }
 
-        if (!congregationId || !cityId) {
+        if (!congregationId) {
             setLoading(false);
             return;
         }
 
+        if (!cityId) {
+            setCityName('Todas as Cidades');
+        }
+
         fetchPoints();
 
-        // onSnapshot: Firestore escuta mudanças em tempo real nos pontos de testemunho
-        // Nome correto da coleção no Firestore é 'witnessing_points'
-        const pointsQuery = query(
-            collection(db, 'witnessing_points'),
-            where('congregationId', '==', congregationId),
-            where('cityId', '==', cityId),
-            orderBy('name')
-        );
+        const pointsQuery = cityId 
+            ? query(
+                collection(db, 'witnessing_points'),
+                where('congregationId', '==', congregationId),
+                where('cityId', '==', cityId),
+                orderBy('name')
+            )
+            : query(
+                collection(db, 'witnessing_points'),
+                where('congregationId', '==', congregationId),
+                orderBy('name')
+            );
 
         const unsubscribe = onSnapshot(pointsQuery, (snap) => {
             setPoints(snap.docs.map(d => normalizarPonto(d.id, d.data())));
@@ -426,7 +438,7 @@ function WitnessingPointListContent() {
 
     if (authLoading) return <div className="min-h-screen flex items-center justify-center bg-background"><Loader2 className="w-8 h-8 animate-spin text-amber-500" /></div>;
 
-    if (!congregationId || !cityId) {
+    if (!congregationId) {
         return <div className="p-8 text-center text-muted">Parâmetros inválidos.</div>;
     }
 
@@ -440,17 +452,38 @@ function WitnessingPointListContent() {
                     </Link>
                     <div>
                         <h1 className="font-bold text-lg text-main tracking-tight leading-tight">Pontos</h1>
-                        <p className="text-[10px] text-muted font-bold uppercase tracking-widest">{cityName}</p>
+                        <p className="text-[10px] text-muted font-bold uppercase tracking-widest">
+                            {cityId ? cityName : (termType === 'neighborhood' ? 'Todos os Bairros' : 'Todas as Cidades')}
+                        </p>
                     </div>
                 </div>
                 <div className="flex items-center gap-2">
-                    {canEdit && (
-                        <button
-                            onClick={() => setIsCreateModalOpen(true)}
-                            className="bg-primary hover:bg-primary-dark dark:bg-primary dark:hover:bg-primary-dark text-white p-2 rounded-lg shadow-lg transition-all active:scale-95"
-                        >
-                            <Plus className="w-5 h-5" />
-                        </button>
+                    {!cityId ? (
+                        <div className="bg-gray-100 dark:bg-slate-800 p-1 rounded-lg flex items-center border border-gray-200 dark:border-slate-700">
+                            <Link
+                                href={`/witnessing/congregation?congregationId=${congregationId}`}
+                                className="flex items-center gap-2 px-3 py-1.5 rounded-md text-xs font-bold transition-all text-gray-500 hover:text-gray-900 dark:hover:text-gray-300"
+                            >
+                                <Store className="w-3.5 h-3.5" />
+                                <span>{termType === 'neighborhood' ? 'Bairros' : 'Cidades'}</span>
+                            </Link>
+                            <button
+                                disabled
+                                className="flex items-center gap-2 px-3 py-1.5 rounded-md text-xs font-bold transition-all bg-white dark:bg-slate-700 text-amber-600 dark:text-amber-400 shadow-sm"
+                            >
+                                <MapIcon className="w-3.5 h-3.5" />
+                                <span>Todos</span>
+                            </button>
+                        </div>
+                    ) : (
+                        canCreateWitnessing && (
+                            <button
+                                onClick={() => setIsCreateModalOpen(true)}
+                                className="bg-primary hover:bg-primary-dark dark:bg-primary dark:hover:bg-primary-dark text-white p-2 rounded-lg shadow-lg transition-all active:scale-95"
+                            >
+                                <Plus className="w-5 h-5" />
+                            </button>
+                        )
                     )}
                 </div>
             </header>
@@ -521,62 +554,56 @@ function WitnessingPointListContent() {
                                                     </p>
                                                 </div>
                                             </div>
-                                            {/* Botões de navegação */}
-                                            <div className="flex gap-1 mr-1">
-                                                {point.googleMapsLink && (
-                                                    <button
-                                                        onClick={(e) => {
-                                                            e.stopPropagation();
-                                                            window.open(point.googleMapsLink, '_blank');
-                                                        }}
-                                                        className="p-2 text-blue-500 hover:bg-blue-50 dark:hover:bg-blue-900/20 rounded-lg transition-all"
-                                                        title="Google Maps"
-                                                    >
-                                                        <Navigation className="w-5 h-5" />
-                                                    </button>
-                                                )}
-                                                {point.wazeLink && (
-                                                    <button
-                                                        onClick={(e) => {
-                                                            e.stopPropagation();
-                                                            window.open(point.wazeLink, '_blank');
-                                                        }}
-                                                        className="p-2 text-amber-500 hover:bg-amber-50 dark:hover:bg-amber-900/20 rounded-lg transition-all"
-                                                        title="Waze"
-                                                    >
-                                                        <Navigation className="w-5 h-5" />
-                                                    </button>
-                                                )}
-                                                {!point.googleMapsLink && !point.wazeLink && (
-                                                    <button
-                                                        onClick={(e) => {
-                                                            e.stopPropagation();
-                                                            handleOpenPointMap(point);
-                                                        }}
-                                                        className="p-2 text-primary hover:text-primary-dark hover:bg-primary-light/50 dark:hover:bg-primary-dark/20 rounded-lg transition-all"
-                                                        title="Navegar"
-                                                    >
-                                                        <Navigation className="w-5 h-5" />
-                                                    </button>
-                                                )}
-                                            </div>
+                                            {/* Navigation & Actions Menu */}
+                                            <div className="relative">
+                                                <button
+                                                    onClick={(e) => {
+                                                        e.stopPropagation();
+                                                        setOpenMenuId(openMenuId === point.id ? null : point.id);
+                                                    }}
+                                                    className="p-2 text-muted hover:text-main hover:bg-gray-50 dark:hover:bg-gray-800 rounded-lg transition-all"
+                                                >
+                                                    <MoreVertical className="w-5 h-5" />
+                                                </button>
 
-                                            {canEdit && (
-                                                <div className="relative">
-                                                    <button
-                                                        onClick={(e) => {
-                                                            e.stopPropagation();
-                                                            setOpenMenuId(openMenuId === point.id ? null : point.id);
-                                                        }}
-                                                        className="p-2 text-muted hover:text-main hover:bg-gray-50 dark:hover:bg-gray-800 rounded-lg transition-all"
-                                                    >
-                                                        <MoreVertical className="w-5 h-5" />
-                                                    </button>
-
-                                                    {openMenuId === point.id && (
-                                                        <>
-                                                            <div className="fixed inset-0 z-40" onClick={() => setOpenMenuId(null)} />
-                                                            <div className="absolute right-0 top-full mt-2 w-48 bg-surface rounded-xl shadow-2xl border border-surface-border p-1 z-50 animate-in fade-in zoom-in-95 duration-200 origin-top-right">
+                                                {openMenuId === point.id && (
+                                                    <>
+                                                        <div className="fixed inset-0 z-40" onClick={() => setOpenMenuId(null)} />
+                                                        <div className="absolute right-0 top-full mt-2 w-48 bg-surface rounded-xl shadow-2xl border border-surface-border p-1 z-50 animate-in fade-in zoom-in-95 duration-200 origin-top-right">
+                                                            {point.googleMapsLink && (
+                                                                <DropDownItem
+                                                                    icon={() => <img src="/icons/google-maps.svg" alt="Google Maps" className="w-4 h-4 object-contain" />}
+                                                                    label="Google Maps"
+                                                                    variant="neutral"
+                                                                    onClick={() => {
+                                                                        window.open(point.googleMapsLink, '_blank');
+                                                                        setOpenMenuId(null);
+                                                                    }}
+                                                                />
+                                                            )}
+                                                            {point.wazeLink && (
+                                                                <DropDownItem
+                                                                    icon={() => <img src="/icons/waze.svg" alt="Waze" className="w-4 h-4 object-contain" />}
+                                                                    label="Waze"
+                                                                    variant="neutral"
+                                                                    onClick={() => {
+                                                                        window.open(point.wazeLink, '_blank');
+                                                                        setOpenMenuId(null);
+                                                                    }}
+                                                                />
+                                                            )}
+                                                            {!point.googleMapsLink && !point.wazeLink && (
+                                                                <DropDownItem
+                                                                    icon={Navigation}
+                                                                    label="Navegar"
+                                                                    variant="neutral"
+                                                                    onClick={() => {
+                                                                        handleOpenPointMap(point);
+                                                                        setOpenMenuId(null);
+                                                                    }}
+                                                                />
+                                                            )}
+                                                            {canEditWitnessing && (
                                                                 <DropDownItem
                                                                     icon={Pencil}
                                                                     label="Editar"
@@ -586,6 +613,8 @@ function WitnessingPointListContent() {
                                                                         setOpenMenuId(null);
                                                                     }}
                                                                 />
+                                                            )}
+                                                            {canDeleteWitnessing && (
                                                                 <DropDownItem
                                                                     icon={Trash2}
                                                                     label="Excluir"
@@ -595,11 +624,11 @@ function WitnessingPointListContent() {
                                                                         setOpenMenuId(null);
                                                                     }}
                                                                 />
-                                                            </div>
-                                                        </>
-                                                    )}
-                                                </div>
-                                            )}
+                                                            )}
+                                                        </div>
+                                                    </>
+                                                )}
+                                            </div>
                                         </div>
 
                                         {point.schedule && (
@@ -659,12 +688,13 @@ function WitnessingPointListContent() {
                 <div className="h-96 w-full relative border-t border-surface-border">
                     <MapView
                         disableGeocoding={true}
+                        showLegend={false}
                         items={filteredPoints.map(p => ({
                             id: p.id,
                             lat: p.lat || 0,
                             lng: p.lng || 0,
                             title: p.name,
-                            number: p.name,
+                            variant: 'store',
                             subtitle: p.activeUsers && p.activeUsers.length > 0
                                 ? `Ocupado por: ${p.activeUsers.map(u => u.name || 'Publicador').join(', ')}`
                                 : 'Livre',
