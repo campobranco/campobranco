@@ -14,7 +14,8 @@ import {
     where, 
     orderBy,
     serverTimestamp,
-    writeBatch
+    writeBatch,
+    increment
 } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
 
@@ -103,13 +104,29 @@ export async function createTerritory(data: {
     type?: string;
 }) {
     try {
-        const docRef = await addDoc(collection(db, TABLE), {
+        const batch = writeBatch(db);
+        
+        // 1. Cria nova referência do território
+        const newTerritoryRef = doc(collection(db, TABLE));
+        
+        batch.set(newTerritoryRef, {
             ...data,
             isActive: true,
             createdAt: serverTimestamp(),
             updatedAt: serverTimestamp(),
         });
-        return { success: true, id: docRef.id };
+
+        // 2. Incrementa o totalTerritories no stats da cidade correspondente
+        const cityRef = doc(db, 'cities', data.cityId);
+        batch.set(cityRef, {
+            stats: {
+                totalTerritories: increment(1)
+            }
+        }, { merge: true });
+
+        await batch.commit();
+
+        return { success: true, id: newTerritoryRef.id };
     } catch (error: any) {
         console.error('Error creating territory:', error);
         return { success: false, error: error.message };
@@ -135,6 +152,14 @@ export async function updateTerritory(id: string, data: any) {
  */
 export async function deleteTerritory(id: string) {
     try {
+        // 0. Busca prévia do território para obter o cityId correspondente
+        const terrSnap = await getDoc(doc(db, TABLE, id));
+        if (!terrSnap.exists()) {
+            throw new Error('Território não encontrado');
+        }
+        const terrData = terrSnap.data();
+        const cityId = terrData.cityId;
+
         const batchDelete = async (refs: any[]) => {
             let batch = writeBatch(db);
             let ops = 0;
@@ -150,12 +175,17 @@ export async function deleteTerritory(id: string) {
             if (ops > 0) await batch.commit();
         };
 
-        // 1. Endereços do território
+        // 1. Busca endereços vinculados ao território
         const addressesSnap = await getDocs(
             query(collection(db, 'addresses'), where('territoryId', '==', id))
         );
 
-        // 2. Visitas de cada endereço
+        // 2. Filtra em memória a contagem de endereços ativos sendo excluídos em cascata
+        const activeAddressesCount = addressesSnap.docs.filter(
+            d => d.data().isActive === true
+        ).length;
+
+        // 3. Busca e deleta as visitas de cada endereço
         for (const addrDoc of addressesSnap.docs) {
             const visitsSnap = await getDocs(
                 query(collection(db, 'visits'), where('addressId', '==', addrDoc.id))
@@ -163,11 +193,40 @@ export async function deleteTerritory(id: string) {
             await batchDelete(visitsSnap.docs.map(d => d.ref));
         }
 
-        // 3. Deletar endereços
-        await batchDelete(addressesSnap.docs.map(d => d.ref));
+        // 4. Executa a deleção de endereços, território e atualiza estatísticas no lote final
+        let batch = writeBatch(db);
+        let ops = 0;
 
-        // 4. Deletar território
-        await deleteDoc(doc(db, TABLE, id));
+        // Deleta o documento do território
+        batch.delete(doc(db, TABLE, id));
+        ops++;
+
+        // Decrementa as estatísticas de territórios e endereços ativos no bairro
+        if (cityId) {
+            const cityRef = doc(db, 'cities', cityId);
+            batch.set(cityRef, {
+                stats: {
+                    totalTerritories: increment(-1),
+                    totalAddresses: increment(-activeAddressesCount)
+                }
+            }, { merge: true });
+            ops++;
+        }
+
+        // Deleta os documentos de endereços
+        for (const addrDoc of addressesSnap.docs) {
+            batch.delete(addrDoc.ref);
+            ops++;
+            if (ops === 499) {
+                await batch.commit();
+                batch = writeBatch(db);
+                ops = 0;
+            }
+        }
+
+        if (ops > 0) {
+            await batch.commit();
+        }
 
         return { success: true };
     } catch (error: any) {
