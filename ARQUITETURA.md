@@ -79,6 +79,31 @@ Para eliminar custos e dependência de cartão de crédito, o sistema utiliza um
 - **Zero Trust Security:** A segurança foi movida inteiramente para o **Firestore Security Rules**, validando permissões diretamente no banco de dados.
 - **Client-Side Logic:** Toda a lógica foi migrada para serviços de cliente (`lib/services/**`) utilizando o Firebase Client SDK.
 
+### 📊 Desnormalização de Estatísticas de Bairro (Fase 2 - Jun/2026)
+Para otimizar o carregamento do Dashboard inicial e eliminar queries massivas client-side (que causavam alta latência e exibiam cartões zerados `0/0`), implementamos contadores desnormalizados nos bairros (`cities/{cityId}`).
+
+#### Estrutura do Documento:
+Os contadores são armazenados em um objeto aninhado `stats` no documento de cada bairro:
+```javascript
+// Documento em cities/{cityId}
+{
+  name: "Centro",
+  congregationId: "cong-123",
+  stats: {
+    totalTerritories: 15,  // Total de territórios vinculados ao bairro
+    totalAddresses: 320    // Total APENAS de endereços ATIVOS (isActive == true)
+  }
+}
+```
+
+#### Invariantes de Consistência:
+1. **Regras de Escrita Granular (Firestore Rules)**: As regras de segurança garantem que apenas a chave raiz `stats` seja modificada em operações transacionais de contadores, prevenindo modificações maliciosas diretas em outros campos do bairro.
+2. **Filtro de Atividade**: O contador `totalAddresses` computa exclusivamente endereços ativos (`isActive == true`). Mutações que alteram a atividade (`isActive: true <-> false`) ou excluem endereços realizam o incremento/decremento atômico via `FieldValue.increment()`.
+3. **Escrita em Lote (WriteBatch)**: Todas as criações, deleções (incluindo exclusão em cascata de território) e modificações de status de atividade são executadas via `writeBatch` no client-side para garantir atomicidade.
+4. **Resiliência e Recálculo**: A edição que altera o `cityId` de um endereço existente está fora do escopo de atualização transacional automática client-side. Em vez disso, a integridade é garantida pela rotina utilitária `recalculateCityStats` que realiza o recálculo administrativo via contagens nativas do servidor (`getCountFromServer`).
+
+---
+
 ## 8. Instalação e Primeiro Acesso (Zero Configuration Admin)
 
 *   **Master Admin**: O primeiro acesso administrativo é definido pela variável `NEXT_PUBLIC_MASTER_EMAIL`.
@@ -86,6 +111,14 @@ Para eliminar custos e dependência de cartão de crédito, o sistema utiliza um
 
 ---
 ### 📝 Registro de Melhorias Recentes:
+- **v0.9.9-beta**: **Desnormalização de Estatísticas de Bairro**. (15/06/2026)
+  - **Fase 2**: Implementada a contagem desnormalizada de territórios (`totalTerritories`) e endereços ativos (`totalAddresses`) no documento de cada bairro/cidade.
+  - **Mutações**: Adicionado controle transacional atômico direto no cliente via `writeBatch` e `increment()` na criação, edição (inativação/reativação) e exclusão (em cascata) de entidades.
+  - **Resiliência**: Criada rotina `recalculateCityStats` para manutenção e recálculo baseada no `getCountFromServer()`.
+- **v0.9.8-beta**: **Ajuste de Gênero Gramatical em Mensagens de Cidade/Bairro**. (15/06/2026)
+  - **Refinamento**: Corrigida a concordância nominal de gênero nas mensagens de feedback (toasts) de criação, edição e exclusão. Agora o sistema exibe corretamente "Bairro excluído/criado/atualizado" ou "Cidade excluída/criada/atualizada" de acordo com o tipo de termo da congregação, eliminando o sufixo genérico "excluído(a)".
+- **v0.9.7-beta**: **Correção de Vazamento de Memória e Erro Leaflet no Mapa**. (15/06/2026)
+  - **Correção**: Implementado o rastreamento correto de marcadores de cidades, bairros e endereços no `markersRef` em `MapView.tsx`, limpando-os durante as re-renderizações e no desmonte. Isso previne o erro `Cannot read properties of undefined (reading '_leaflet_pos')` do Leaflet ao alterar ou invalidar o tamanho do mapa.
 - **v0.9.1-beta**: **Sincronização de Exclusão no Dashboard**. (20/05/2026)
   - **Correção**: Atualizados os estados locais `myAssignments`, `pendingMapsCount` e `expiringMaps` nas funções `handleDeleteShare` e `handleRemoveResponsible` no dashboard principal, garantindo que o cartão seja removido da visualização "Meus Cartões" sem a necessidade de refresh.
 - **v0.8.55-beta**: **Sincronização com GitHub Dev**. (22/03/2026)

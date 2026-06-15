@@ -26,7 +26,7 @@ import {
 import MapView from '@/app/components/MapView';
 import { geocodeAddress } from '@/lib/services/geocoding';
 import { getCityStats } from '@/lib/services/stats';
-import { getCities, createCity, updateCity, deleteCity } from '@/lib/services/cities';
+import { createCity, updateCity, deleteCity } from '@/lib/services/cities';
 import CongregationSelector from '@/app/components/CongregationSelector';
 import BottomNav from '@/app/components/BottomNav';
 import ConfirmationModal from '@/app/components/ConfirmationModal';
@@ -127,24 +127,7 @@ function CityListContent() {
         }
     };
 
-    const fetchCities = async () => {
-        if (!congregationId) return;
-        setLoading(true);
-        try {
-            const data = await getCities(congregationId);
 
-            if (!data.success) {
-                throw new Error(data.error || 'Erro ao buscar dados');
-            }
-
-            setCities(data.cities as City[] || []);
-        } catch (error: any) {
-            console.error("Error fetching cities:", error);
-            setError(error?.message || "Erro desconhecido ao carregar cidades.");
-        } finally {
-            setLoading(false);
-        }
-    };
 
     useEffect(() => {
         if (!congregationId) return;
@@ -350,8 +333,7 @@ function CityListContent() {
             setNewCityLng('');
             setNewParentCity('');
             setIsCreateModalOpen(false);
-            fetchCities(); // Adicionado para atualizar a lista
-            toast.success(`${localTermType === 'neighborhood' ? 'Bairro' : 'Cidade'} criado(a) com sucesso!`);
+            toast.success(localTermType === 'neighborhood' ? 'Bairro criado com sucesso!' : 'Cidade criada com sucesso!');
         } catch (error) {
             console.error("Error creating city:", error);
             toast.error(`Erro ao criar ${localTermType === 'neighborhood' ? 'bairro' : 'cidade'}.`);
@@ -374,8 +356,7 @@ function CityListContent() {
                 throw new Error(resData.error || `Erro ao atualizar ${localTermType === 'neighborhood' ? 'bairro' : 'cidade'}`);
             }
 
-            toast.success(`${localTermType === 'neighborhood' ? 'Bairro' : 'Cidade'} atualizado(a) com sucesso!`);
-            fetchCities();
+            toast.success(localTermType === 'neighborhood' ? 'Bairro atualizado com sucesso!' : 'Cidade atualizada com sucesso!');
             setIsEditModalOpen(false);
             setEditingCity(null);
         } catch (error: any) {
@@ -397,8 +378,7 @@ function CityListContent() {
             if (!resData.success) {
                 throw new Error(resData.error || 'Erro ao excluir');
             }
-            toast.success(`${localTermType === 'neighborhood' ? 'Bairro' : 'Cidade'} excluído(a) com sucesso!`);
-            fetchCities();
+            toast.success(localTermType === 'neighborhood' ? 'Bairro excluído com sucesso!' : 'Cidade excluída com sucesso!');
             setIsDeleteDialogOpen(false);
             setCityToDelete(null);
             setOpenMenuId(null);
@@ -469,7 +449,7 @@ function CityListContent() {
                         <>
                             <CSVActionButtons
                                 congregationId={congregationId}
-                                onImportSuccess={fetchCities}
+                                onImportSuccess={() => {}}
                             />
                             <button
                                 onClick={() => setIsCreateModalOpen(true)}

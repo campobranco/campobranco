@@ -5,9 +5,11 @@ const compat = new FlatCompat({
 });
 
 const eslintConfig = [
+  {
+    ignores: [".next/**", "out/**", "build/**", "next-env.d.ts", "node_modules/**"]
+  },
   ...compat.extends("next"),
   {
-    ignores: [".next/**", "out/**", "build/**", "next-env.d.ts"],
     rules: {
       "@next/next/no-img-element": "off",
       "react-hooks/exhaustive-deps": "warn",

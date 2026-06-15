@@ -544,6 +544,7 @@ export default function MapView({ items, center = defaultCenter, zoom = 15, onGe
                     className: 'custom-popup-clean'
                 });
 
+            markersRef.current.push(marker);
         });
 
         // 3.1. RENDER REFERENCE POINTS (Orange Markers)
@@ -645,6 +646,11 @@ export default function MapView({ items, center = defaultCenter, zoom = 15, onGe
             map.fitBounds(bounds, { padding: [50, 50], maxZoom: 18 });
             prevMarkerFingerprintRef.current = currentFingerprint;
         }
+
+        return () => {
+            markersRef.current.forEach(m => m.remove());
+            markersRef.current = [];
+        };
 
     }, [displayItems, isMapReady, onMarkerDragEnd, referencePoints, isTraditional]);
 
