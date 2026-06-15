@@ -95,7 +95,10 @@ function buildPreview(text: string): { cities: Record<string, PreviewCity>; tota
     };
 
     const COLS = {
-        city: idx(['Cidade', 'Nome da cidade (Cities name)', 'Nome da cidade']),
+        city: idx([
+            'Cidade', 'Nome da cidade (Cities name)', 'Nome da cidade',
+            'Bairro', 'Nome do bairro (Neighborhoods name)', 'Nome do bairro', 'Bairros'
+        ]),
         uf: idx(['UF (Cities uf)', 'UF']),
         mapNum: idx(['Número do Mapa (Territories name)', 'Número do Mapa']),
         mapDesc: idx(['Descrição (Territories notes)', 'Descrição']),
@@ -156,7 +159,7 @@ function buildPreview(text: string): { cities: Record<string, PreviewCity>; tota
 export default function CSVImportModal({
     isOpen, onClose, congregationId, cityId, territoryId, onSuccess
 }: CSVImportModalProps) {
-    const { user } = useAuth(); // Para obter o token do Firebase
+    const { user, termType } = useAuth(); // Para obter o token do Firebase
     const [isMounted, setIsMounted] = useState(false);
     useEffect(() => {
         setIsMounted(true);
@@ -369,7 +372,7 @@ export default function CSVImportModal({
                     <div>
                         <h2 className="text-xl font-bold text-main tracking-tight">Importação de Dados</h2>
                         <p className="text-[10px] text-muted font-bold uppercase tracking-widest mt-1">
-                            {preview ? `${Object.keys(preview.cities).length} cidades · ${Object.values(preview.cities).reduce((a, c) => a + Object.keys(c.territories).length, 0)} territórios · ${preview.totalAddresses} endereços` : 'Selecione o arquivo CSV'}
+                            {preview ? `${Object.keys(preview.cities).length} ${termType === 'neighborhood' ? 'bairros' : 'cidades'} · ${Object.values(preview.cities).reduce((a, c) => a + Object.keys(c.territories).length, 0)} territórios · ${preview.totalAddresses} endereços` : 'Selecione o arquivo CSV'}
                         </p>
                     </div>
                     <button onClick={onClose} className="p-2 hover:bg-gray-100 rounded-full transition-colors">
@@ -478,7 +481,7 @@ export default function CSVImportModal({
                                 <div className="bg-emerald-50 border border-emerald-100 p-4 rounded-2xl">
                                     <p className="text-[10px] font-bold text-emerald-600 uppercase tracking-wider mb-2">Criados</p>
                                     <div className="space-y-1">
-                                        {[['Cidades', results.created.cities], ['Territórios', results.created.territories], ['Endereços', results.created.addresses]].map(([label, val]) => (
+                                        {[[termType === 'neighborhood' ? 'Bairros' : 'Cidades', results.created.cities], ['Territórios', results.created.territories], ['Endereços', results.created.addresses]].map(([label, val]) => (
                                             <div key={label} className="flex justify-between text-xs">
                                                 <span className="text-emerald-700">{label}</span>
                                                 <span className="font-black text-emerald-700">{val}</span>
