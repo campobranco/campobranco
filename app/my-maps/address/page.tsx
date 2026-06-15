@@ -14,6 +14,9 @@ import dynamic from 'next/dynamic';
 const VisitHistoryModal = dynamic(() => import('@/app/components/VisitHistoryModal'), {
     loading: () => <div className="p-4 text-center"><Loader2 className="w-6 h-6 animate-spin mx-auto text-primary-500" /></div>
 });
+const ReferencePointsModal = dynamic(() => import('@/app/components/ReferencePointsModal'), {
+    loading: () => <div className="p-4 text-center"><Loader2 className="w-6 h-6 animate-spin mx-auto text-primary-500" /></div>
+});
 const BottomNav = dynamic(() => import('@/app/components/BottomNav'), { ssr: false });
 import ConfirmationModal from '@/app/components/ConfirmationModal';
 import { MapSkeleton } from '@/app/components/Skeleton';
@@ -90,7 +93,7 @@ function AddressListContent() {
     const territoryId = searchParams.get('territoryId') || '';
     const editAddressId = searchParams.get('edit');
 
-    const { user, isAdmin, isAdminRoleGlobal, isElder, isServant, loading: authLoading, congregationType: authCongregationType, termType } = useAuth();
+    const { user, isAdmin, isAdminRoleGlobal, isElder, isServant, loading: authLoading, congregationType: authCongregationType, termType, canManageReferencePoints } = useAuth();
     const [localCongregationType, setLocalCongregationType] = useState<'TRADITIONAL' | 'SIGN_LANGUAGE' | 'FOREIGN_LANGUAGE' | null>(null);
     const isTraditional = (localCongregationType || authCongregationType) === 'TRADITIONAL';
     const [addresses, setAddresses] = useState<Address[]>([]);
@@ -201,6 +204,10 @@ function AddressListContent() {
     // View Mode
     const [viewMode, setViewMode] = useState<'list' | 'map'>('list');
 
+    // Reference Points States
+    const [referencePoints, setReferencePoints] = useState<any[]>([]);
+    const [isReferencePointsModalOpen, setIsReferencePointsModalOpen] = useState(false);
+
     // Multi-select state
     const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
     const [confirmModal, setConfirmModal] = useState({
@@ -292,12 +299,10 @@ function AddressListContent() {
 
         fetchData();
     }, [congregationId, cityId, territoryId]);
-
-
+    
     // Fetch Addresses
     const fetchAddresses = useCallback(async () => {
         if (!congregationId || !territoryId) return;
-
         try {
             const resData = await getAddresses(congregationId, cityId, territoryId);
             console.log("[Debug] Endereços recebidos:", resData);
@@ -327,8 +332,25 @@ function AddressListContent() {
         }
     }, [congregationId, cityId, territoryId]);
 
+    const fetchReferencePoints = useCallback(async () => {
+        if (!congregationId || !cityId) return;
+        try {
+            const { getReferencePoints } = await import('@/lib/services/reference_points');
+            const res = await getReferencePoints(congregationId, cityId);
+            if (res.success) {
+                setReferencePoints(res.data || []);
+            }
+        } catch (error) {
+            console.warn("Erro ao buscar pontos de referência:", error);
+        }
+    }, [congregationId, cityId]);
+
     useEffect(() => {
         fetchAddresses();
+        fetchReferencePoints();
+
+        let unsubscribeAddresses = () => {};
+        let unsubscribeRefPoints = () => {};
 
         if (territoryId && congregationId && db) {
             const addressesRef = collection(db, 'addresses');
@@ -338,22 +360,39 @@ function AddressListContent() {
                 where('territoryId', '==', territoryId)
             );
 
-            const unsubscribe = onSnapshot(q, {
+            unsubscribeAddresses = onSnapshot(q, {
                 next: () => {
                     fetchAddresses();
                 },
                 error: (error) => {
-                    // Usamos warn para não disparar o bug report, já que temos fallback via API
                     console.warn("[SnapShot] Listener de endereços limitado:", error.message);
-                    if (error.code === 'permission-denied') {
-                        // Silencioso: fallback já está em ação
-                    }
                 }
             });
-
-            return () => unsubscribe();
         }
-    }, [congregationId, territoryId, fetchAddresses]);
+
+        if (cityId && congregationId && db) {
+            const refCollection = collection(db, 'reference_points');
+            const qRef = query(
+                refCollection,
+                where('congregationId', '==', congregationId),
+                where('cityId', '==', cityId)
+            );
+
+            unsubscribeRefPoints = onSnapshot(qRef, {
+                next: () => {
+                    fetchReferencePoints();
+                },
+                error: (error) => {
+                    console.warn("[SnapShot] Listener de pontos de referência limitado:", error.message);
+                }
+            });
+        }
+
+        return () => {
+            unsubscribeAddresses();
+            unsubscribeRefPoints();
+        };
+    }, [congregationId, cityId, territoryId, fetchAddresses, fetchReferencePoints]);
 
     // Fetch Available Options for Edit Modal
     useEffect(() => {
@@ -1040,7 +1079,7 @@ function AddressListContent() {
                 </div>
 
                 <div className="flex items-center gap-2">
-                    {(isElder || isServant || isAdmin || isAdminRoleGlobal) && (
+                    {(isElder || isServant || isAdmin || isAdminRoleGlobal || canManageReferencePoints) && (
                         <AddressActionsMenu
                             congregationId={congregationId}
                             cityId={cityId}
@@ -1050,6 +1089,7 @@ function AddressListContent() {
                             canCreateMaps={isElder || isServant || isAdmin || isAdminRoleGlobal}
                             canEditMaps={isElder || isServant || isAdmin || isAdminRoleGlobal}
                             canDeleteMaps={isElder || isServant || isAdmin || isAdminRoleGlobal}
+                            onReferencePointsClick={() => setIsReferencePointsModalOpen(true)}
                         />
                     )}
                 </div>
@@ -1117,6 +1157,13 @@ function AddressListContent() {
                         onMapClick={handleMapClick}
                         disableGeocoding={true}
                         isTraditional={isTraditional}
+                        referencePoints={referencePoints.map(p => ({
+                            id: p.id,
+                            lat: p.lat,
+                            lng: p.lng,
+                            title: p.name,
+                            observations: p.observations || ''
+                        }))}
                         items={[
                             ...activeAddresses.map((a, idx) => ({
                                 id: a.id,
@@ -1528,6 +1575,16 @@ function AddressListContent() {
                 isOpen={!!mapAppSelect?.isOpen}
                 onClose={() => setMapAppSelect(null)}
                 address={mapAppSelect?.address || {}}
+            />
+
+            {/* Reference Points Modal */}
+            <ReferencePointsModal
+                isOpen={isReferencePointsModalOpen}
+                onClose={() => setIsReferencePointsModalOpen(false)}
+                congregationId={congregationId}
+                cityId={cityId}
+                cityName={contextNames.city}
+                onSuccess={fetchReferencePoints}
             />
 
             <BottomNav />

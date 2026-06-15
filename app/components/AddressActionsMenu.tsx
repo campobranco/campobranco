@@ -12,7 +12,8 @@ import {
     FileSpreadsheet,
     UserMinus,
     History as HistoryIcon,
-    Trash2
+    Trash2,
+    Compass
 } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import { toast } from 'sonner';
@@ -31,6 +32,7 @@ interface AddressActionsMenuProps {
     canCreateMaps?: boolean;
     canEditMaps?: boolean;
     canDeleteMaps?: boolean;
+    onReferencePointsClick?: () => void;
 }
 
 export default function AddressActionsMenu({
@@ -41,7 +43,8 @@ export default function AddressActionsMenu({
     onCreateClick,
     canCreateMaps = false,
     canEditMaps = false,
-    canDeleteMaps = false
+    canDeleteMaps = false,
+    onReferencePointsClick
 }: AddressActionsMenuProps) {
     const [isImportModalOpen, setIsImportModalOpen] = useState(false);
     const [isCSVMenuOpen, setIsCSVMenuOpen] = useState(false);
@@ -127,6 +130,20 @@ export default function AddressActionsMenu({
 
     return (
         <div className="flex items-center gap-1.5">
+            {/* Ponto de Referência Button */}
+            {onReferencePointsClick && (
+                <button
+                    onClick={(e) => {
+                        e.stopPropagation();
+                        onReferencePointsClick();
+                    }}
+                    className="p-2.5 rounded-xl transition-all shadow-sm border bg-orange-50 dark:bg-orange-950/20 text-orange-600 dark:text-orange-400 border-orange-100 dark:border-orange-900/30 hover:bg-orange-100 dark:hover:bg-orange-900/40 flex items-center justify-center"
+                    title="Pontos de Referência"
+                >
+                    <Compass className="w-5 h-5" />
+                </button>
+            )}
+
             {/* 1. Share Menu */}
             <div className="relative">
                 <button

@@ -42,6 +42,7 @@ import { toast } from 'sonner';
 
 import { getSharedListWithData } from '@/lib/services/shared_lists';
 import { reportVisit, deleteVisitByAddressAndShare } from '@/lib/services/visits';
+import { getReferencePoints } from '@/lib/services/reference_points';
 
 interface PreviewItem {
     id: string;
@@ -84,6 +85,7 @@ function SharedPreviewContent() {
     const [cityName, setCityName] = useState('');
     const [items, setItems] = useState<PreviewItem[]>([]);
     const [pageCongregationId, setPageCongregationId] = useState<string | null>(null);
+    const [referencePoints, setReferencePoints] = useState<any[]>([]);
     const [error, setError] = useState('');
 
     // Modals State
@@ -212,6 +214,23 @@ function SharedPreviewContent() {
             }
 
             setItems(mergedItems);
+
+            // Carrega pontos de referência de forma assíncrona
+            const congregationIdToUse = listData.congregationId;
+            const cityIdToUse = type === 'city' ? id : mainData.cityId;
+            if (congregationIdToUse && cityIdToUse) {
+                try {
+                    const pointsRes = await getReferencePoints(congregationIdToUse, cityIdToUse);
+                    if (pointsRes.success && pointsRes.data) {
+                        setReferencePoints(pointsRes.data);
+                    } else {
+                        console.warn("Erro retornado ao carregar pontos de referência públicos:", pointsRes.error);
+                    }
+                } catch (pointsErr) {
+                    console.error("Erro ao carregar pontos de referência públicos:", pointsErr);
+                }
+            }
+
             setLoading(false);
 
         } catch (err) {
@@ -691,6 +710,13 @@ function SharedPreviewContent() {
                 <div className="h-[40vh] w-full relative border-t border-surface-border mt-4">
                     <MapView
                         isTraditional={isTraditional}
+                        referencePoints={referencePoints.map(p => ({
+                            id: p.id,
+                            lat: p.lat,
+                            lng: p.lng,
+                            title: p.name,
+                            observations: p.observations
+                        }))}
                         items={items.filter(i => i.isActive !== false).map((a, idx) => {
                             let streetClean = a.street?.split('-')[0].trim() || '';
                             if (a.number && a.number !== 'S/N') {

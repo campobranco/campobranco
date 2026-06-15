@@ -101,6 +101,9 @@ function CityListContent() {
     const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
     const [isDeleting, setIsDeleting] = useState(false);
 
+    // Reference Points
+    const [referencePoints, setReferencePoints] = useState<any[]>([]);
+
     const handleSearchAddress = async (e: React.FormEvent) => {
         e.preventDefault();
         if (!searchQuery || searchQuery.length < 3) return;
@@ -168,6 +171,27 @@ function CityListContent() {
         });
 
         return () => unsubscribe();
+    }, [congregationId]);
+
+    // Fetch Reference Points (Realtime)
+    useEffect(() => {
+        if (!congregationId) return;
+
+        const qRef = query(
+            collection(db, 'reference_points'),
+            where('congregationId', '==', congregationId)
+        );
+
+        const unsubscribeRef = onSnapshot(qRef, (snapshot) => {
+            setReferencePoints(snapshot.docs.map(doc => ({
+                id: doc.id,
+                ...doc.data()
+            })));
+        }, (err) => {
+            console.warn("[SnapShot] Listener de pontos de referência limitado na página de cidade:", err.message);
+        });
+
+        return () => unsubscribeRef();
     }, [congregationId]);
 
     // Fetch Congregation Settings (TermType)
@@ -728,6 +752,13 @@ function CityListContent() {
                             status: 'LIVRE',
                             fullAddress: `${c.name}, ${c.uf}, Brasil`,
                             variant: 'city' as const
+                        }))}
+                        referencePoints={referencePoints.map(p => ({
+                            id: p.id,
+                            lat: p.lat,
+                            lng: p.lng,
+                            title: p.name,
+                            observations: p.observations || ''
                         }))}
                         showLegend={false}
                     />
