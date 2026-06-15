@@ -30,9 +30,17 @@ interface VisitHistoryModalProps {
     address?: string;
     isSharedView?: boolean;
     shareId?: string;
+    congregationType?: 'TRADITIONAL' | 'SIGN_LANGUAGE' | 'FOREIGN_LANGUAGE' | null;
 }
 
-export default function VisitHistoryModal({ addressId, onClose, address, isSharedView = false, shareId }: VisitHistoryModalProps) {
+export default function VisitHistoryModal({ 
+    addressId, 
+    onClose, 
+    address, 
+    isSharedView = false, 
+    shareId,
+    congregationType 
+}: VisitHistoryModalProps) {
     const [loading, setLoading] = useState(true);
     const [visits, setVisits] = useState<any[]>([]);
     const { user, congregationId } = useAuth();
@@ -118,7 +126,7 @@ export default function VisitHistoryModal({ addressId, onClose, address, isShare
 
     const getStatusLabel = (status: string) => {
         switch (status) {
-            case 'contacted': return 'Contatado';
+            case 'contacted': return congregationType === 'TRADITIONAL' ? 'Concluído' : 'Contatado';
             case 'notContacted': return 'Não Contatado';
             case 'moved': return 'Mudou-se';
             case 'doNotVisit': return 'Não Visitar';

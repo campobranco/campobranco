@@ -48,6 +48,7 @@ export default function VisitReportModal({
 }: VisitReportModalProps) {
     const { congregationType: authType } = useAuth();
     // Resolve type: Prop > Forced > Auth > Default
+    // CRITICAL: If forcedCongregationType is provided, it MUST take precedence over authType to avoid showing 4 buttons on traditional links for Sinais users.
     const congregationType = propType || forcedCongregationType || authType || 'TRADITIONAL';
 
     const [loading, setLoading] = useState(false);
@@ -190,25 +191,25 @@ export default function VisitReportModal({
                         {congregationType === 'TRADITIONAL' ? (
                             <button
                                 onClick={() => setStatus(status === 'contacted' ? '' : 'contacted')}
-                                className={`col-span-2 w-full p-6 rounded-lg flex flex-col items-center gap-3 transition-all border-2
+                                className={`col-span-2 w-full p-6 rounded-2xl flex flex-col items-center gap-3 transition-all border-2
                                     ${status === 'contacted'
-                                        ? 'bg-green-600 border-green-600 text-white shadow-lg shadow-green-500/30'
-                                        : 'bg-white dark:bg-slate-800 border-gray-200 dark:border-slate-700 text-gray-400 hover:border-blue-300 dark:hover:border-blue-700'}`}
+                                        ? 'bg-green-600 border-green-600 text-white shadow-xl shadow-green-500/30 active:scale-95'
+                                        : 'bg-white dark:bg-slate-800 border-gray-200 dark:border-slate-700 text-gray-400 hover:border-green-300 dark:hover:border-green-700'}`}
                             >
                                 {status === 'contacted' ? (
                                     <>
-                                        <CheckCircle2 className="w-12 h-12" />
+                                        <CheckCircle2 className="w-16 h-16 animate-in zoom-in duration-300" />
                                         <div className="flex flex-col items-center">
-                                            <span className="text-lg font-black uppercase tracking-widest">Concluído</span>
-                                            <span className="text-xs font-medium opacity-90">Visita realizada com sucesso</span>
+                                            <span className="text-xl font-black uppercase tracking-widest">Concluído</span>
+                                            <span className="text-xs font-medium opacity-90 text-green-50">Visita registrada</span>
                                         </div>
                                     </>
                                 ) : (
                                     <>
-                                        <CheckCircle className="w-12 h-12" />
+                                        <CheckCircle className="w-16 h-16 text-gray-200 dark:text-slate-700" />
                                         <div className="flex flex-col items-center">
-                                            <span className="text-lg font-black uppercase tracking-widest">Concluído</span>
-                                            <span className="text-xs font-medium opacity-60">Marcar rua como trabalhada</span>
+                                            <span className="text-xl font-black uppercase tracking-widest">Concluído</span>
+                                            <span className="text-xs font-medium opacity-60">Toque para marcar como trabalhado</span>
                                         </div>
                                     </>
                                 )}
