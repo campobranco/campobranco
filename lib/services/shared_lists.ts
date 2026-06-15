@@ -207,13 +207,16 @@ export async function getSharedListWithData(id: string) {
         const items = snapshotsSnap.docs.map(d => ({ id: d.id, ...d.data() }));
         const visits = visitsSnap.docs.map(d => ({ id: d.id, ...d.data() }));
 
-        // Busca categoria da congregação
-        let congregationCategory = 'TRADITIONAL';
+        // Busca categoria da congregação e normaliza para o tipo usado no App
+        let congregationType: 'TRADITIONAL' | 'SIGN_LANGUAGE' | 'FOREIGN_LANGUAGE' = 'TRADITIONAL';
         const congregationId = list.congregationId;
         if (congregationId) {
             const congSnap = await getDoc(doc(db, 'congregations', congregationId));
             if (congSnap.exists()) {
-                congregationCategory = (congSnap.data() as any).category || 'TRADITIONAL';
+                const category = ((congSnap.data() as any).category || '').toLowerCase();
+                if (category.includes('sinais')) congregationType = 'SIGN_LANGUAGE';
+                else if (category.includes('estrangeiro')) congregationType = 'FOREIGN_LANGUAGE';
+                else congregationType = 'TRADITIONAL';
             }
         }
 
@@ -222,7 +225,7 @@ export async function getSharedListWithData(id: string) {
             list,
             items,
             visits,
-            congregationCategory
+            congregationType // Retorna o tipo normalizado
         };
 
     } catch (error: any) {

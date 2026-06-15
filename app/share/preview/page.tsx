@@ -122,10 +122,10 @@ function SharedPreviewContent() {
                 return;
             }
 
-            const { list: listData, items: fetchedItems, visits: visitsData, congregationCategory } = res;
+            const { list: listData, items: fetchedItems, visits: visitsData, congregationType: fetchedType } = res;
 
             setPageCongregationId(listData.congregationId || null);
-            setCongregationType(congregationCategory as any);
+            setCongregationType(fetchedType as any);
 
             // 2. Identify "Main Data" (The Territory or City being previewed)
             // The items from the API contain all snapshots. One of them is our main territory/city.

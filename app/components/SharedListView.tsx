@@ -88,6 +88,7 @@ export default function SharedListView({ id: propId }: SharedListViewProps) {
         variant?: 'danger' | 'info';
     }>({ isOpen: false, title: '', message: '', onConfirm: () => { } });
     const [mapSelectionItem, setMapSelectionItem] = useState<any | null>(null);
+    const [congregationType, setCongregationType] = useState<'TRADITIONAL' | 'SIGN_LANGUAGE' | 'FOREIGN_LANGUAGE' | null>(null);
 
     // Stats
     const [addressCounts, setAddressCounts] = useState<Record<string, number>>({});
@@ -122,9 +123,10 @@ export default function SharedListView({ id: propId }: SharedListViewProps) {
                     return;
                 }
 
-                const { list, items: fetchedItems, visits } = resData as any;
+                const { list, items: fetchedItems, visits, congregationType: type } = resData as any;
 
                 setListData(list as any);
+                setCongregationType(type || 'TRADITIONAL');
 
                 // Show responsibility modal if no one is assigned, list is active, and user IS logged in
                 const hasResponsible = list.assignedTo || list.assignedName;
@@ -161,19 +163,25 @@ export default function SharedListView({ id: propId }: SharedListViewProps) {
 
                 setItems(mergedItems);
 
-                // 4. Calculate Counts and Stats (if Territory)
-                if (list.type === 'territory') {
+                // 4. Calculate Counts and Stats
+                if (list.type === 'territory' || list.type === 'address') {
                     let allAddresses: any[] = [];
-                    if (fetchedItems && fetchedItems.length > 0) {
-                        const territoryIds = (list.items || []);
-                        allAddresses = fetchedItems.filter((item: any) => {
-                            const sourceData = item.data || item;
-                            const tId = sourceData.territoryId;
-                            return tId && (territoryIds.includes(tId) || tId === list.territoryId);
-                        }).map((item: any) => ({
-                            ...(item.data || item),
-                            id: item.itemId || item.id
-                        }));
+                    
+                    if (list.type === 'territory') {
+                        if (fetchedItems && fetchedItems.length > 0) {
+                            const territoryIds = (list.items || []);
+                            allAddresses = fetchedItems.filter((item: any) => {
+                                const sourceData = item.data || item;
+                                const tId = sourceData.territoryId;
+                                return tId && (territoryIds.includes(tId) || tId === list.territoryId);
+                            }).map((item: any) => ({
+                                ...(item.data || item),
+                                id: item.itemId || item.id
+                            }));
+                        }
+                    } else {
+                        // For 'address' type, the items themselves are the addresses
+                        allAddresses = mergedItems;
                     }
 
                     const counts: Record<string, number> = {};
@@ -191,7 +199,7 @@ export default function SharedListView({ id: propId }: SharedListViewProps) {
                     allAddresses.forEach((addr: any) => {
                         if (addr.isActive !== false) {
                             const tId = addr.territoryId;
-                            if (tId) counts[tId] = (counts[tId] || 0) + 1;
+                            if (tId && list.type === 'territory') counts[tId] = (counts[tId] || 0) + 1;
                             stats.total++;
 
                             const result = linkResults[addr.id];
@@ -199,7 +207,8 @@ export default function SharedListView({ id: propId }: SharedListViewProps) {
 
                             if (currentStatus && currentStatus !== 'none') {
                                 stats.processed++;
-                                if (tId) procCounts[tId] = (procCounts[tId] || 0) + 1;
+                                if (tId && list.type === 'territory') procCounts[tId] = (procCounts[tId] || 0) + 1;
+                                
                                 if (currentStatus === 'contacted') stats.contacted++;
                                 else if (currentStatus === 'notContacted') stats.notContacted++;
                                 else if (currentStatus === 'moved') stats.moved++;
@@ -209,8 +218,10 @@ export default function SharedListView({ id: propId }: SharedListViewProps) {
                         }
                     });
 
-                    setAddressCounts(counts);
-                    setProcessedCounts(procCounts);
+                    if (list.type === 'territory') {
+                        setAddressCounts(counts);
+                        setProcessedCounts(procCounts);
+                    }
                     setGlobalStats(stats);
                 }
             } catch (err) {
@@ -469,20 +480,33 @@ export default function SharedListView({ id: propId }: SharedListViewProps) {
                         {globalStats.total > 0 && (
                             <div className="space-y-2">
                                 <div className="h-4 w-full bg-gray-100 dark:bg-gray-800 rounded-full overflow-hidden flex">
-                                    <div style={{ width: `${(globalStats.contacted / globalStats.total) * 100}%` }} className="bg-green-600 h-full transition-all duration-500" title={`Contatados: ${globalStats.contacted}`} />
-                                    <div style={{ width: `${(globalStats.notContacted / globalStats.total) * 100}%` }} className="bg-orange-500 h-full transition-all duration-500" title={`Não Contatados: ${globalStats.notContacted}`} />
-                                    <div style={{ width: `${(globalStats.moved / globalStats.total) * 100}%` }} className="bg-blue-500 h-full transition-all duration-500" title={`Mudou-se: ${globalStats.moved}`} />
-                                    <div style={{ width: `${(globalStats.doNotVisit / globalStats.total) * 100}%` }} className="bg-red-500 h-full transition-all duration-500" title={`Não Visitar: ${globalStats.doNotVisit}`} />
+                                    <div style={{ width: `${(globalStats.contacted / globalStats.total) * 100}%` }} className="bg-green-600 h-full transition-all duration-500" title={`Concluído: ${globalStats.contacted}`} />
+                                    {congregationType !== 'TRADITIONAL' && (
+                                        <>
+                                            <div style={{ width: `${(globalStats.notContacted / globalStats.total) * 100}%` }} className="bg-orange-500 h-full transition-all duration-500" title={`Não Contatados: ${globalStats.notContacted}`} />
+                                            <div style={{ width: `${(globalStats.moved / globalStats.total) * 100}%` }} className="bg-blue-500 h-full transition-all duration-500" title={`Mudou-se: ${globalStats.moved}`} />
+                                            <div style={{ width: `${(globalStats.doNotVisit / globalStats.total) * 100}%` }} className="bg-red-500 h-full transition-all duration-500" title={`Não Visitar: ${globalStats.doNotVisit}`} />
+                                        </>
+                                    )}
                                 </div>
                                 <div className="flex justify-between text-xs font-bold text-muted">
                                     <span>{globalStats.processed} de {globalStats.total} visitas concluídas</span>
                                     <span>{Math.round((globalStats.processed / globalStats.total) * 100)}%</span>
                                 </div>
                                 <div className="flex flex-wrap gap-3 pt-2">
-                                    <div className="flex items-center gap-1.5"><div className="w-2 h-2 rounded-full bg-green-600" /><span className="text-[10px] text-muted font-bold uppercase">Contatado</span></div>
-                                    <div className="flex items-center gap-1.5"><div className="w-2 h-2 rounded-full bg-orange-500" /><span className="text-[10px] text-muted font-bold uppercase">Não Contatado</span></div>
-                                    <div className="flex items-center gap-1.5"><div className="w-2 h-2 rounded-full bg-blue-500" /><span className="text-[10px] text-muted font-bold uppercase">Mudou</span></div>
-                                    <div className="flex items-center gap-1.5"><div className="w-2 h-2 rounded-full bg-red-500" /><span className="text-[10px] text-muted font-bold uppercase">Não Visitar</span></div>
+                                    <div className="flex items-center gap-1.5">
+                                        <div className="w-2 h-2 rounded-full bg-green-600" />
+                                        <span className="text-[10px] text-muted font-bold uppercase">
+                                            {congregationType === 'TRADITIONAL' ? 'Concluído' : 'Contatado'}
+                                        </span>
+                                    </div>
+                                    {congregationType !== 'TRADITIONAL' && (
+                                        <>
+                                            <div className="flex items-center gap-1.5"><div className="w-2 h-2 rounded-full bg-orange-500" /><span className="text-[10px] text-muted font-bold uppercase">Não Contatado</span></div>
+                                            <div className="flex items-center gap-1.5"><div className="w-2 h-2 rounded-full bg-blue-500" /><span className="text-[10px] text-muted font-bold uppercase">Mudou</span></div>
+                                            <div className="flex items-center gap-1.5"><div className="w-2 h-2 rounded-full bg-red-500" /><span className="text-[10px] text-muted font-bold uppercase">Não Visitar</span></div>
+                                        </>
+                                    )}
                                     <div className="flex items-center gap-1.5"><div className="w-2 h-2 rounded-full bg-gray-300 dark:bg-gray-600" /><span className="text-[10px] text-muted font-bold uppercase">Não Trabalhado</span></div>
                                 </div>
                             </div>
@@ -560,7 +584,11 @@ export default function SharedListView({ id: propId }: SharedListViewProps) {
                                         }}
                                         className={`absolute inset-0 z-0 ${listData?.type === 'address' ? 'cursor-pointer' : ''}`}
                                     />
-                                    <div className={`w-12 h-12 rounded-lg flex items-center justify-center shrink-0 transition-colors shadow-sm ${listData?.type === 'address' ? (item.visitStatus === 'contacted' ? 'bg-[#21832B] text-white' : item.visitStatus === 'notContacted' ? 'bg-orange-500 text-white' : item.visitStatus === 'moved' ? 'bg-blue-500 text-white' : item.visitStatus === 'doNotVisit' ? 'bg-red-500 text-white' : 'bg-primary-light/50 dark:bg-primary-dark/30 text-primary-dark dark:text-primary-light group-hover:bg-primary-light/80 dark:group-hover:bg-primary-dark/50 group-hover:text-primary-dark dark:group-hover:text-primary-light') : listData?.type === 'territory' && (addressCounts[item.id] > 0 && addressCounts[item.id] === processedCounts[item.id]) ? 'bg-green-600 text-white shadow-lg shadow-green-500/20' : 'bg-gray-50 dark:bg-gray-800 text-gray-400 dark:text-gray-500 border border-gray-100 dark:border-gray-700 group-hover:bg-primary-light/50 dark:group-hover:bg-primary-dark/30 group-hover:text-primary dark:group-hover:text-primary-light'}`}>
+                                    <div className={`w-12 h-12 rounded-lg flex items-center justify-center shrink-0 transition-colors shadow-sm ${listData?.type === 'address' ? (
+                                        item.visitStatus && item.visitStatus !== 'none' 
+                                            ? (congregationType === 'TRADITIONAL' ? 'bg-[#21832B] text-white' : (item.visitStatus === 'contacted' ? 'bg-[#21832B] text-white' : item.visitStatus === 'notContacted' ? 'bg-orange-500 text-white' : item.visitStatus === 'moved' ? 'bg-blue-500 text-white' : item.visitStatus === 'doNotVisit' ? 'bg-red-500 text-white' : 'bg-primary-light/50 dark:bg-primary-dark/30 text-primary-dark dark:text-primary-light'))
+                                            : 'bg-primary-light/50 dark:bg-primary-dark/30 text-primary-dark dark:text-primary-light group-hover:bg-primary-light/80 dark:group-hover:bg-primary-dark/50 group-hover:text-primary-dark dark:group-hover:text-primary-light'
+                                    ) : listData?.type === 'territory' && (addressCounts[item.id] > 0 && addressCounts[item.id] === processedCounts[item.id]) ? 'bg-green-600 text-white shadow-lg shadow-green-500/20' : 'bg-gray-50 dark:bg-gray-800 text-gray-400 dark:text-gray-500 border border-gray-100 dark:border-gray-700 group-hover:bg-primary-light/50 dark:group-hover:bg-primary-dark/30 group-hover:text-primary dark:group-hover:text-primary-light'}`}>
                                         {listData?.type === 'city' && <Building2 className="w-6 h-6" />}
                                         {listData?.type === 'territory' && <MapIcon className="w-6 h-6" />}
                                         {listData?.type === 'address' && (
@@ -676,6 +704,7 @@ export default function SharedListView({ id: propId }: SharedListViewProps) {
                     onClose={() => setVisitingItem(null)}
                     onSave={handleSaveVisit}
                     onDelete={handleDeleteVisit}
+                    forcedCongregationType={congregationType || undefined}
                     onViewHistory={() => { setViewingHistoryItem(visitingItem); setVisitingItem(null); }}
                 />
             )}
@@ -692,6 +721,7 @@ export default function SharedListView({ id: propId }: SharedListViewProps) {
                         onClose={() => setViewingHistoryItem(null)}
                         addressId={viewingHistoryItem.id}
                         address={viewingHistoryItem.street || viewingHistoryItem.name}
+                        congregationType={congregationType}
                     />
                 )
             )}
