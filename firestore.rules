@@ -10,12 +10,6 @@ service cloud.firestore {
       return request.auth != null;
     }
 
-    function isMasterAdmin() {
-      // O Admin Principal agora é validado exclusivamente pelo seu papel (role) no Firestore.
-      // O AuthContext garante que o MASTER_EMAIL receba este papel na criação.
-      return isAuthenticated() && getAuthRole() == 'ADMIN';
-    }
-
     // Busca o papel do usuário (padrão: PUBLICADOR) de forma robusta
     function getAuthRole() {
       return exists(/databases/$(database)/documents/users/$(request.auth.uid))
@@ -24,19 +18,19 @@ service cloud.firestore {
     }
 
     function isAdmin() {
-      return isAuthenticated() && (getAuthRole() == 'ADMIN' || isMasterAdmin());
+      return isAuthenticated() && getAuthRole() == 'ADMIN';
     }
 
     function isElder() {
-      return isAuthenticated() && (getAuthRole() == 'ANCIAO' || isAdmin());
+      return isAuthenticated() && (getAuthRole() == 'ANCIAO' || getAuthRole() == 'ADMIN');
     }
     
     function isServant() {
-      return isAuthenticated() && (getAuthRole() == 'SERVO' || isElder());
+      return isAuthenticated() && (getAuthRole() == 'SERVO' || getAuthRole() == 'ANCIAO' || getAuthRole() == 'ADMIN');
     }
 
     function isModerator() {
-      return isAdmin() || isServant();
+      return isAuthenticated() && (getAuthRole() == 'SERVO' || getAuthRole() == 'ANCIAO' || getAuthRole() == 'ADMIN');
     }
 
     function getUserData() {
@@ -48,7 +42,13 @@ service cloud.firestore {
              exists(/databases/$(database)/documents/users/$(request.auth.uid)) &&
              getUserData().keys().hasAll(['permissions']) &&
              ((getUserData().permissions[domain] && getUserData().permissions[domain][action] == true) ||
-              (getUserData().permissions[domain + action.charAt(0).toUpperCase() + action.slice(1)] == true));
+              (getUserData().permissions[domain + (
+                action == 'view' ? 'View' :
+                action == 'create' ? 'Create' :
+                action == 'edit' ? 'Edit' :
+                action == 'delete' ? 'Delete' :
+                action == 'manage' ? 'Manage' : ''
+              )] == true));
     }
 
     // --- HELPERS DE CONGREGAÇÃO (ROBUSTOS) ---
@@ -56,13 +56,6 @@ service cloud.firestore {
     // Obtém o ID da congregação de um mapa de dados (exclusivo camelCase)
     function getCongId(data) {
       return data.get('congregationId', null);
-    }
-
-    // Verifica se o documento pertence à congregação do usuário logado
-    function isSameCongregation(data) {
-      return exists(/databases/$(database)/documents/users/$(request.auth.uid)) && 
-             getCongId(get(/databases/$(database)/documents/users/$(request.auth.uid)).data) != null &&
-             getCongId(get(/databases/$(database)/documents/users/$(request.auth.uid)).data) == getCongId(data);
     }
 
     // --- REGRAS POR COLEÇÃO ---
@@ -184,6 +177,14 @@ service cloud.firestore {
       allow create: if isAdmin() || isServant() || hasPermission('witnessing', 'create');
       allow update: if isAuthenticated() && (isModerator() || hasPermission('witnessing', 'edit') || request.resource.data.diff(resource.data).affectedKeys().hasOnly(['activeUsers', 'status', 'updatedAt', 'currentPublishers']));
       allow delete: if isModerator() || hasPermission('witnessing', 'delete');
+    }
+
+    // 8.1. Pontos de Referência
+    match /reference_points/{pointId} {
+      allow read: if true; // Permitir leitura pública para que apareça em links compartilhados públicos
+      allow create: if isAdmin() || isServant() || hasPermission('referencePoints', 'manage');
+      allow update: if isAdmin() || isServant() || hasPermission('referencePoints', 'manage');
+      allow delete: if isAdmin() || isServant() || hasPermission('referencePoints', 'manage');
     }
 
     // 9. Miscelânea (Logs, Reports, etc)

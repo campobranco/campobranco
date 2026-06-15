@@ -22,6 +22,7 @@ interface UserPermissions {
     reports?: { view?: boolean };
     witnessing?: PermissionDomain;
     s13?: PermissionDomain;
+    referencePoints?: { manage?: boolean };
 }
 
 // Tipagem do contexto de autenticação
@@ -59,6 +60,7 @@ interface AuthContextType {
     canCreateS13: boolean;
     canEditS13: boolean;
     canDeleteS13: boolean;
+    canManageReferencePoints: boolean;
 }
 
 // Normaliza permissões do Firestore (flat ou agrupado) para o formato agrupado
@@ -85,6 +87,9 @@ function normalizePermissions(raw: any): UserPermissions {
         },
         reports: {
             view: raw.reports?.view ?? raw.reportsView ?? undefined,
+        },
+        referencePoints: {
+            manage: raw.referencePoints?.manage ?? raw.referencePointsManage ?? undefined,
         },
     };
 }
@@ -122,6 +127,7 @@ const AuthContext = createContext<AuthContextType>({
     canCreateS13: false,
     canEditS13: false,
     canDeleteS13: false,
+    canManageReferencePoints: false,
 });
 
 export function AuthProvider({ children }: { children: React.ReactNode }) {
@@ -281,8 +287,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         const [domain, action] = perm.split('.');
         // Papéis com acesso total
         if (isAdminRoleGlobal || isElder) return true;
-        // SERVO herda acesso completo a mapas e testemunho, mas NÃO a relatórios ou S-13
-        if (isServant && (domain === 'maps' || domain === 'witnessing')) return true;
+        // SERVO herda acesso completo a mapas, testemunho e pontos de referência, mas NÃO a relatórios ou S-13
+        if (isServant && (domain === 'maps' || domain === 'witnessing' || domain === 'referencePoints')) return true;
         // Consultar permissão customizada no objeto estruturado
         const domainPerms = permissions?.[domain as keyof UserPermissions];
         if (!domainPerms || typeof domainPerms !== 'object') return false;
@@ -303,6 +309,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     const canCreateS13         = can('s13.create');
     const canEditS13           = can('s13.edit');
     const canDeleteS13         = can('s13.delete');
+    const canManageReferencePoints = can('referencePoints.manage');
 
     // Realiza logout do Firebase
     const logout = async () => {
@@ -356,6 +363,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
             canCreateS13,
             canEditS13,
             canDeleteS13,
+            canManageReferencePoints,
         }}>
             {children}
         </AuthContext.Provider>

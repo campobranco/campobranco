@@ -32,11 +32,6 @@ import dynamic from 'next/dynamic';
 
 import RoleBasedSwitcher from '@/app/components/RoleBasedSwitcher';
 import CSVActionButtons from '@/app/components/CSVActionButtons';
-import { MapSkeleton } from '@/app/components/Skeleton';
-const MapView = dynamic(() => import('@/app/components/MapView'), {
-    loading: () => <MapSkeleton />,
-    ssr: false
-});
 const BottomNav = dynamic(() => import('@/app/components/BottomNav'), { ssr: false });
 import ConfirmationModal from '@/app/components/ConfirmationModal';
 const TerritoryHistoryModal = dynamic(() => import('@/app/components/TerritoryHistoryModal'));

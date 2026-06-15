@@ -37,6 +37,14 @@ const STATUS_CONFIG = {
     'PENDENTE': { color: '#eab308', icon: MapPin, label: 'Pendente' }          // Yellow-500
 };
 
+export interface ReferencePointItem {
+    id: string;
+    lat: number;
+    lng: number;
+    title: string;
+    observations?: string;
+}
+
 interface MapViewProps {
     items: MapItem[];
     center?: { lat: number; lng: number };
@@ -49,6 +57,7 @@ interface MapViewProps {
     disableGeocoding?: boolean;
     disableInteractionLock?: boolean;
     isTraditional?: boolean;
+    referencePoints?: ReferencePointItem[];
 }
 
 const defaultCenter = {
@@ -78,7 +87,7 @@ const extractCoordsFromUrl = (url?: string): { lat: number, lng: number } | null
     return null;
 };
 
-export default function MapView({ items, center = defaultCenter, zoom = 15, onGeocodeSuccess, onMapClick, onMarkerDragEnd, onMarkerClick, showLegend = true, disableGeocoding = false, disableInteractionLock = false, isTraditional = true }: MapViewProps) {
+export default function MapView({ items, center = defaultCenter, zoom = 15, onGeocodeSuccess, onMapClick, onMarkerDragEnd, onMarkerClick, showLegend = true, disableGeocoding = false, disableInteractionLock = false, isTraditional = true, referencePoints = [] }: MapViewProps) {
     const mapContainerRef = useRef<HTMLDivElement>(null);
     const mapInstanceRef = useRef<any>(null);
     const markersRef = useRef<any[]>([]); // Keep track of Leaflet markers
@@ -535,8 +544,99 @@ export default function MapView({ items, center = defaultCenter, zoom = 15, onGe
                     className: 'custom-popup-clean'
                 });
 
-            markersRef.current.push(marker);
         });
+
+        // 3.1. RENDER REFERENCE POINTS (Orange Markers)
+        if (referencePoints && referencePoints.length > 0) {
+            referencePoints.forEach(point => {
+                if (!point.lat || !point.lng) return;
+
+                // Não adicionamos point.lat e point.lng em bounds.extend para não afetar a centralização!
+                const circleColor = '#f97316'; // Laranja-500
+                const borderColor = '#ffffff';
+
+                // Lógica de ícone personalizado
+                const innerContent = (
+                    <MapPin size={18} className="stroke-white fill-transparent" strokeWidth={2.5} />
+                );
+
+                const iconHtml = renderToStaticMarkup(
+                    <div className="relative flex flex-col items-center justify-center transform transition-transform hover:scale-110 hover:z-50 cursor-pointer group" style={{ width: 'auto', minWidth: '40px', height: 'auto' }}>
+                        {/* Main Circle */}
+                        <div
+                            className="w-9 h-9 rounded-full border-[3px] shadow-md flex items-center justify-center text-white mb-1 transition-colors"
+                            style={{ backgroundColor: circleColor, borderColor: borderColor }}
+                        >
+                            {innerContent}
+                        </div>
+
+                        {/* Label/Chip Below */}
+                        {point.title && (
+                            <div
+                                className="px-2 py-0.5 bg-white/95 backdrop-blur-sm border border-gray-200 rounded-lg shadow-sm z-30 max-w-[120px]"
+                            >
+                                <span className="text-[10px] font-bold whitespace-nowrap leading-none block text-gray-800 truncate text-center">
+                                    {point.title}
+                                </span>
+                            </div>
+                        )}
+
+                        {/* Hover Tooltip (Full Info) */}
+                        <div className="absolute bottom-full mb-1 opacity-0 group-hover:opacity-100 transition-opacity bg-black/80 text-white text-[10px] px-2 py-1 rounded whitespace-nowrap pointer-events-none z-40">
+                            {point.title}
+                        </div>
+                    </div>
+                );
+
+                const displayIcon = L.divIcon({
+                    html: iconHtml,
+                    className: 'custom-map-marker',
+                    iconSize: [40, 60],
+                    iconAnchor: [20, 20],
+                    popupAnchor: [0, -20]
+                });
+
+                // Create Marker
+                const marker = L.marker([point.lat, point.lng], {
+                    icon: displayIcon,
+                    draggable: false
+                })
+                    .addTo(map)
+                    .bindPopup((() => {
+                        const container = document.createElement('div');
+                        container.className = 'font-sans min-w-[200px]';
+
+                        const header = document.createElement('div');
+                        header.className = 'border-l-4 pl-3 py-1 mb-2';
+                        header.style.borderColor = circleColor;
+
+                        const title = document.createElement('h3');
+                        title.className = 'font-black text-base text-gray-900 leading-tight';
+                        title.textContent = point.title;
+                        header.appendChild(title);
+                        container.appendChild(header);
+
+                        const tag = document.createElement('span');
+                        tag.className = 'inline-flex items-center px-2 py-0.5 rounded-md text-[9px] font-bold uppercase mb-3 bg-orange-100 text-orange-700';
+                        tag.textContent = 'Ponto de Referência';
+                        container.appendChild(tag);
+
+                        if (point.observations) {
+                            const obsDiv = document.createElement('div');
+                            obsDiv.className = 'text-xs text-gray-600 bg-gray-50 p-2.5 rounded-lg border border-gray-100';
+                            obsDiv.textContent = point.observations;
+                            container.appendChild(obsDiv);
+                        }
+
+                        return container;
+                    })(), {
+                        closeButton: false,
+                        className: 'custom-popup-clean'
+                    });
+
+                markersRef.current.push(marker);
+            });
+        }
 
         const currentFingerprint = displayItems.map(item => `${item.id}:${item.lat}:${item.lng}`).join('|');
         const fingerprintChanged = prevMarkerFingerprintRef.current !== currentFingerprint;
@@ -546,7 +646,7 @@ export default function MapView({ items, center = defaultCenter, zoom = 15, onGe
             prevMarkerFingerprintRef.current = currentFingerprint;
         }
 
-    }, [displayItems, isMapReady, onMarkerDragEnd]);
+    }, [displayItems, isMapReady, onMarkerDragEnd, referencePoints, isTraditional]);
 
 
     // Fullscreen Toggle Logic

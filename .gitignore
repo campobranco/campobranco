@@ -42,6 +42,8 @@
 *.key
 *.crt
 service-account.json
+campo-branco-firebase-adminsdk-prod.json
+campobrancodev-firebase-adminsdk-fbsvc-c56157d231.json
 
 # =====================
 # Misc
