@@ -17,6 +17,9 @@ jobs:
 
       - run: npm ci
 
+      - name: Check Internal API Contracts
+        run: npm run contracts:check
+
       - name: Start Firebase Emulator
         run: |
           npx firebase emulators:start --only firestore,auth --project demo-test &

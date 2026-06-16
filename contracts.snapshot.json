@@ -1,0 +1,158 @@
+{
+  "EnsureUserProfileInput": {
+    "input": [
+      "uid",
+      "email",
+      "displayName",
+      "masterEmail",
+      "existingData"
+    ],
+    "output": [
+      "success",
+      "code",
+      "message",
+      "error",
+      "data"
+    ]
+  },
+  "UpdateUserNotificationsInput": {
+    "input": [
+      "uid",
+      "enabled"
+    ],
+    "output": [
+      "success",
+      "code",
+      "message",
+      "error",
+      "data"
+    ]
+  },
+  "AssignTerritoryInput": {
+    "input": [
+      "title",
+      "type",
+      "items",
+      "congregationId",
+      "assignedTo",
+      "assignedName",
+      "expiresInHours",
+      "territories"
+    ],
+    "output": [
+      "success",
+      "code",
+      "message",
+      "error",
+      "data"
+    ]
+  },
+  "ReturnTerritoryInput": {
+    "input": [
+      "shareId",
+      "territoryId",
+      "userId",
+      "userName",
+      "userCongregationId",
+      "currentUserRole",
+      "undo"
+    ],
+    "output": [
+      "success",
+      "code",
+      "message",
+      "error",
+      "data"
+    ]
+  },
+  "ReturnMapInput": {
+    "input": [
+      "shareId",
+      "userId",
+      "userName",
+      "userCongregationId",
+      "currentUserRole"
+    ],
+    "output": [
+      "success",
+      "code",
+      "message",
+      "error",
+      "data"
+    ]
+  },
+  "AcceptResponsibilityInput": {
+    "input": [
+      "shareId",
+      "userId",
+      "userName",
+      "userCongregationId"
+    ],
+    "output": [
+      "success",
+      "code",
+      "message",
+      "error",
+      "data"
+    ]
+  },
+  "ReportVisitInput": {
+    "input": [
+      "sharedListId",
+      "congregationId",
+      "territoryId",
+      "addressId",
+      "status",
+      "notes",
+      "visitDate",
+      "tagsSnapshot",
+      "userName"
+    ],
+    "output": [
+      "success",
+      "code",
+      "message",
+      "error",
+      "data"
+    ]
+  },
+  "DeleteVisitInput": {
+    "input": [
+      "addressId",
+      "sharedListId"
+    ],
+    "output": [
+      "success",
+      "code",
+      "message",
+      "error",
+      "data"
+    ]
+  },
+  "UpdateVisitHistoryInput": {
+    "input": [
+      "visitId",
+      "notes",
+      "status"
+    ],
+    "output": [
+      "success",
+      "code",
+      "message",
+      "error",
+      "data"
+    ]
+  },
+  "DeleteVisitHistoryInput": {
+    "input": [
+      "visitId"
+    ],
+    "output": [
+      "success",
+      "code",
+      "message",
+      "error",
+      "data"
+    ]
+  }
+}
