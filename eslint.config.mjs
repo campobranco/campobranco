@@ -16,6 +16,29 @@ const eslintConfig = [
       "react/no-unescaped-entities": "off"
     }
   },
+  {
+    files: ["app/**/*.{js,ts,jsx,tsx}"],
+    rules: {
+      "no-restricted-imports": [
+        "error",
+        {
+          "paths": [
+            {
+              "name": "firebase/firestore",
+              "importNames": ["updateDoc", "setDoc", "deleteDoc", "addDoc"],
+              "message": "❌ UI NÃO PODE ESCREVER NO FIREBASE: Use a Mutation Layer (lib/contracts/mutations) para todas as operações de escrita."
+            }
+          ],
+          "patterns": [
+            {
+              "group": ["@/lib/services/*", "@/lib/services/**"],
+              "message": "❌ UI NÃO PODE ACESSAR SERVICES DIRETOS: Use a Mutation Layer (lib/contracts/mutations) para invocar regras de negócio e integrações de banco."
+            }
+          ]
+        }
+      ]
+    }
+  }
 ];
 
 export default eslintConfig;
