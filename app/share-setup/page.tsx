@@ -28,6 +28,7 @@ import {
 } from 'lucide-react';
 import { useAuth } from '@/app/context/AuthContext';
 import { toast } from 'sonner';
+import { AuthReadyGate } from '@/app/components/AuthReadyGate';
 
 // TODO(mutations): migrate to mutation layer - legacy module (admin/report/dashboard)
 // eslint-disable-next-line no-restricted-imports
@@ -518,8 +519,10 @@ function ShareSetupContent() {
 
 export default function ShareSetupPage() {
     return (
-        <Suspense fallback={<div className="min-h-screen flex items-center justify-center bg-background"><Loader2 className="w-8 h-8 animate-spin text-primary" /></div>}>
-            <ShareSetupContent />
-        </Suspense>
+        <AuthReadyGate requireRole={true} requireCongregation={true}>
+            <Suspense fallback={<div className="min-h-screen flex items-center justify-center bg-background"><Loader2 className="w-8 h-8 animate-spin text-primary" /></div>}>
+                <ShareSetupContent />
+            </Suspense>
+        </AuthReadyGate>
     );
 }
