@@ -243,7 +243,7 @@ export default function SharedListView({ id: propId }: SharedListViewProps) {
     }, [id, user]);
 
     const handleReturnMap = async () => {
-        if (!id) return;
+        if (!id || !user) return;
         setConfirmModal({
             isOpen: true,
             title: "Devolver Mapa",

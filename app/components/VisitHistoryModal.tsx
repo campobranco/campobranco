@@ -118,7 +118,7 @@ export default function VisitHistoryModal({
         };
 
         fetchHistory();
-    }, [addressId, isSharedView, user, congregationId]);
+    }, [addressId, isSharedView, user, congregationId, sharedVisits]);
 
     const getStatusIcon = (status: string) => {
         switch (status) {
