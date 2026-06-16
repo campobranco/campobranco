@@ -111,6 +111,9 @@ Os contadores são armazenados em um objeto aninhado `stats` no documento de cad
 
 ---
 ### 📝 Registro de Melhorias Recentes:
+- **v0.9.11-beta**: **Padronização Open Source**. (16/06/2026)
+  - Remoção de redirecionamentos fixos de domínio legados via código (`layout.tsx`) para garantir que *forks* funcionem sem acoplamento.
+  - Limpeza de variáveis obsoletas de ambiente (`NEXT_PUBLIC_LEGACY_HOST`) e de configuração (`DOMAIN_REDESIGN`).
 - **v0.9.10-beta**: **Limpeza de Dívida Técnica e Auditoria Documental**. (16/06/2026)
   - **Limpeza**: Remoção de arquivos legados do Firebase Admin SDK (`lib/auth.ts`, `lib/firebase-admin.ts`, etc.) após consolidação da arquitetura Static-First.
   - **Testes**: Exclusão de testes de integração antigos baseados no backend removido e sincronização do `package.json` com o `README.md`.
