@@ -6,7 +6,11 @@ export interface ReportVisitInput {
     congregationId: string;
     territoryId: string;
     addressId: string;
-    status: 'none' | 'completed' | 'doNotVisit';
+    status: string;
+    notes?: string;
+    visitDate?: any;
+    tagsSnapshot?: Record<string, boolean>;
+    userName?: string;
 }
 
 export interface DeleteVisitInput {
@@ -20,7 +24,8 @@ export async function reportVisitMutation(input: ReportVisitInput): Promise<Muta
     }
 
     try {
-        await reportVisit(input.sharedListId, input.congregationId, input.territoryId, input.addressId, input.status);
+        const { sharedListId, ...visitData } = input;
+        await reportVisit(sharedListId, visitData);
         return { success: true };
     } catch (error: any) {
         return { success: false, message: error.message };

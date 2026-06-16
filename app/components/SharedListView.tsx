@@ -402,7 +402,7 @@ export default function SharedListView({ id: propId }: SharedListViewProps) {
             };
             const resData = await reportVisitMutation({
                 sharedListId: id as string,
-                congregationId: listData.congregationId,
+                congregationId: listData?.congregationId || '',
                 territoryId: visitData.territoryId,
                 addressId: visitData.addressId,
                 status: visitData.status,

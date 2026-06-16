@@ -206,7 +206,7 @@ function ShareSetupContent() {
                 title: title,
                 type: 'territory',
                 items: territories.map(t => t.id),
-                congregationId: authCongregationId,
+                congregationId: authCongregationId || '',
                 assignedTo: selectedUser ? selectedUser.id : '',
                 assignedName: selectedUser ? selectedUser.name : '',
                 expiresInHours: expiresAt ? (expiresAt.getTime() - now.getTime()) / (1000 * 60 * 60) : undefined,
