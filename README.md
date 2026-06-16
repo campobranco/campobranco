@@ -75,22 +75,32 @@ npm run dev
 # Acesse http://localhost:3000
 ```
 
-## 🔥 Firebase Hosting & App Hosting
+## 🔥 Firebase Hosting
 
 O **Firebase** é utilizado de forma integral:
-- **Hosting**: Hospedagem estática para o PWA (pasta `out/`).
-- **App Hosting**: Para deploys server-side automáticos (se aplicável).
-- **Firestore**: Banco de dados NoSQL.
-- **Auth**: Autenticação segura.
+- **Hosting**: Hospedagem estática da aplicação (pasta `out/`).
+- **Firestore**: Banco de dados NoSQL com segurança baseada em regras (Zero Trust).
+- **Auth**: Autenticação segura de usuários.
 
 1.  Certifique-se de estar logado: `firebase login`
-2.  Faça o deploy: `npm run deploy:production` (ou o comando correspondente no `package.json`).
+2.  Faça o deploy do frontend: `npm run deploy:hosting`
+3.  Faça o deploy das regras de segurança: `npm run deploy:rules`
+
+### 🐙 Deploy Automático (GitHub Actions para Forks)
+
+Se você fez um *Fork* deste repositório e deseja configurar o deploy contínuo (CI/CD) no seu próprio GitHub, execute o comando abaixo no diretório raiz do projeto:
+
+```bash
+firebase init hosting:github
+```
+
+O CLI do Firebase fará a autenticação com seu GitHub, injetará as chaves de segurança necessárias nos *Secrets* do seu repositório e irá **sobrescrever** os arquivos dentro da pasta `.github/workflows/`, vinculando a automação de deploy ao seu projeto do Firebase.
 
 ### Redirects Customizados
 
 Se desejar configurar redirecionamentos de domínio (ex: de um domínio antigo para o novo), você deve editar o arquivo `firebase.json` manualmente. Adicione a chave `redirects` dentro de `hosting`. Consulte a [documentação do Firebase](https://firebase.google.com/docs/hosting/full-config#redirects) para mais detalhes.
 
-##  Testes e QA
+## Testes e QA
 
 O projeto possui scripts automatizados para garantir a qualidade do código.
 
@@ -98,9 +108,11 @@ O projeto possui scripts automatizados para garantir a qualidade do código.
 
 | Comando | Descrição |
 |---------|-----------|
+| `npm run lint` | Executa a validação de sintaxe e regras de estilo do código (ESLint). |
+| `npm run test` | Roda sequencialmente os testes unitários e de integração E2E. |
 | `npm run test:unit` | Executa testes unitários (Jest). Valida lógica isolada. |
 | `npm run test:e2e` | Executa testes End-to-End (Playwright). Simula o usuário real. |
-| `npm run test:all` | Roda Lint, Unitários e E2E em sequência. |
+| `npm run test:all` | Roda Lint, Unitários e E2E em sequência completa. |
 
 ### 🔍 Recomendação para QA Manual
 Para validação completa antes de releases:
@@ -111,7 +123,7 @@ Para validação completa antes de releases:
     *   Devolver Território
 3.  **Mobile**: Verifique a responsividade e o modo offline (PWA).
 
-## �🤝 Contribuição e Suporte
+## 🤝 Contribuição e Suporte
 
 Desenvolvido por **Paulo Jacomelli**.
 - E-mail: `campobrancojw@gmail.com`
