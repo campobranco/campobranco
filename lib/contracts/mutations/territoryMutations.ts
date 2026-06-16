@@ -37,8 +37,8 @@ export interface ReturnMapInput {
 
 export async function assignTerritoryMutation(input: AssignTerritoryInput): Promise<MutationResult<{ id: string, shareData: any }>> {
     // Validação sintática super leve
-    if (!input.assignedTo || !input.congregationId) {
-        return { success: false, message: 'Faltam dados do publicador ou congregação.' };
+    if (!input.congregationId) {
+        return { success: false, message: 'Faltam dados da congregação.' };
     }
     if (input.type === 'territory' && (!input.territories || input.territories.length === 0)) {
         return { success: false, message: 'Nenhum território selecionado.' };
