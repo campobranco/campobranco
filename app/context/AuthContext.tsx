@@ -5,9 +5,10 @@
 "use client";
 import { createContext, useContext, useEffect, useState } from "react";
 import { User, signOut } from "firebase/auth";
-import { doc, getDoc, updateDoc, setDoc, serverTimestamp, onSnapshot, addDoc, collection } from "firebase/firestore";
+import { doc, onSnapshot, getDoc } from "firebase/firestore";
 import { auth, db } from "@/lib/firebase";
 import { UserPermissions, getRoleFlags, checkPermission } from "@/lib/rbac";
+import { ensureUserProfileMutation, updateUserNotificationsMutation } from "@/lib/contracts/mutations/authMutations";
 
 // Tipagem do contexto de autenticação
 interface AuthContextType {
@@ -180,39 +181,23 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
         const unsubscribe = onSnapshot(userRef, async (userSnap) => {
             try {
-                if (userSnap.exists()) {
-                    const data = userSnap.data();
-                    const masterEmail = (process.env.NEXT_PUBLIC_MASTER_EMAIL || '').trim().toLowerCase();
-                    const userEmail = (user.email || '').trim().toLowerCase();
+                const data = userSnap.exists() ? userSnap.data() : null;
+                // Chamar a mutação de garantia do perfil
+                ensureUserProfileMutation({
+                    uid: user.uid,
+                    email: user.email,
+                    displayName: user.displayName,
+                    masterEmail: process.env.NEXT_PUBLIC_MASTER_EMAIL || '',
+                    existingData: data
+                });
 
-                    if (masterEmail && userEmail === masterEmail && data.role !== 'ADMIN') {
-                        console.log(`[AUTH] Corrigindo role do Master para ADMIN`);
-                        await setDoc(userRef, { role: 'ADMIN', updatedAt: serverTimestamp() }, { merge: true });
-                        return;
+                if (userSnap.exists() && data) {
+                        setRole(data.role || 'PUBLICADOR');
+                        setPermissions(normalizePermissions(data.permissions ?? null));
+                        setCongregationId(data.congregationId || null);
+                        setProfileName(data.name || user.displayName || user.email);
+                        setNotificationsEnabledInternal(data.notificationsEnabled ?? true);
                     }
-
-                    setRole(data.role || 'PUBLICADOR');
-                    // Normaliza permissões suportando ambos os formatos (flat e agrupado)
-                    setPermissions(normalizePermissions(data.permissions ?? null));
-                    setCongregationId(data.congregationId || null);
-                    setProfileName(data.name || user.displayName || user.email);
-                    setNotificationsEnabledInternal(data.notificationsEnabled ?? true);
-                } else {
-                    const masterEmail = (process.env.NEXT_PUBLIC_MASTER_EMAIL || '').trim().toLowerCase();
-                    const userEmail = (user.email || '').trim().toLowerCase();
-                    const isMaster = masterEmail && userEmail === masterEmail;
-
-                    console.log(`[AUTH] Criando novo perfil. Admin? ${isMaster}`);
-                    await setDoc(userRef, {
-                        name: user.displayName || (isMaster ? 'Admin' : 'Membro'),
-                        email: user.email,
-                        role: isMaster ? 'ADMIN' : 'PUBLICADOR',
-                        congregationId: null,
-                        updatedAt: serverTimestamp(),
-                        createdAt: serverTimestamp(),
-                    });
-                    return;
-                }
             } catch (error) {
                 console.error("[AUTH] Erro no listener de perfil:", error);
             } finally {
@@ -291,7 +276,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     const updateNotificationsEnabled = async (enabled: boolean) => {
         if (!user) return;
         try {
-            await updateDoc(doc(db, 'users', user.uid), { notificationsEnabled: enabled });
+            const res = await updateUserNotificationsMutation({ uid: user.uid, enabled });
+            if (!res.success) throw new Error(res.message);
             setNotificationsEnabledInternal(enabled);
         } catch (error) {
             console.error("[AUTH] Erro ao atualizar notificações:", error);

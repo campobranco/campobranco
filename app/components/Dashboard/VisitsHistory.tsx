@@ -11,12 +11,11 @@ import {
     where,
     orderBy,
     limit,
-    deleteDoc,
-    updateDoc,
     serverTimestamp,
     documentId
 } from "firebase/firestore";
 import { db } from "@/lib/firebase";
+import { deleteVisitHistoryMutation, updateVisitHistoryMutation } from "@/lib/contracts/mutations/visitMutations";
 import {
     History,
     Calendar,
@@ -217,8 +216,8 @@ export default function VisitsHistory({ scope = 'all', showViewAll = true }: { s
             onConfirm: async () => {
                 setConfirmModal(prev => ({ ...prev, isOpen: false }));
                 try {
-                    const visitRef = doc(db, 'visits', visit.id);
-                    await deleteDoc(visitRef);
+                    const res = await deleteVisitHistoryMutation({ visitId: visit.id });
+                    if (!res.success) throw new Error(res.message);
 
                     // Remove from state
                     setVisits(prev => prev.filter(v => v.id !== visit.id));
@@ -246,12 +245,12 @@ export default function VisitsHistory({ scope = 'all', showViewAll = true }: { s
 
     const saveEdit = async (visit: any) => {
         try {
-            const visitRef = doc(db, 'visits', visit.id);
-            await updateDoc(visitRef, {
+            const res = await updateVisitHistoryMutation({
+                visitId: visit.id,
                 notes: editForm.observations,
-                status: editForm.status,
-                updatedAt: serverTimestamp()
+                status: editForm.status
             });
+            if (!res.success) throw new Error(res.message);
 
             // Update State
             setVisits(prev => prev.map(v => {

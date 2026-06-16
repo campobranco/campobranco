@@ -31,7 +31,7 @@ import { toast } from 'sonner';
 
 import { getTerritoriesDetails } from '@/lib/services/territories';
 import { getCongregationUsers } from '@/lib/services/users';
-import { createSharedList } from '@/lib/services/shared_lists';
+import { assignTerritoryMutation } from '@/lib/contracts/mutations/territoryMutations';
 
 function ShareSetupContent() {
     const router = useRouter();
@@ -198,11 +198,11 @@ function ShareSetupContent() {
                 title = `${territories.length} Territórios - ${cityName || territories[0].city || 'Vários'}`;
             }
 
-            const resData = await createSharedList({
+            const resData = await assignTerritoryMutation({
                 title: title,
                 type: 'territory',
                 items: territories.map(t => t.id),
-                congregationId: territories[0].congregationId,
+                congregationId: authCongregationId,
                 assignedTo: selectedUser ? selectedUser.id : '',
                 assignedName: selectedUser ? selectedUser.name : '',
                 expiresInHours: expiresAt ? (expiresAt.getTime() - now.getTime()) / (1000 * 60 * 60) : undefined,
