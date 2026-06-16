@@ -25,12 +25,7 @@ export const APP_CONFIG = {
     name: process.env.NEXT_PUBLIC_APP_NAME || 'Campo Branco',
     description: process.env.NEXT_PUBLIC_APP_DESCRIPTION || 'Gestão de Territórios',
     version: process.env.NEXT_PUBLIC_APP_VERSION || '0.8.0-beta',
-    url: process.env.NEXT_PUBLIC_APP_URL || 'campobranco.web.app',
+    url: process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000',
     supportEmail: process.env.NEXT_PUBLIC_SUPPORT_EMAIL || 'suporte@dominio.com',
 };
 
-// --- Segurança & Redirecionamento ---
-export const DOMAIN_REDESIGN = {
-    legacy: 'campo-branco.web.app',
-    current: 'campobranco.web.app',
-};
