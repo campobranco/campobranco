@@ -365,16 +365,7 @@ export default function SharedListView({ id: propId }: SharedListViewProps) {
             if (!resData.success) {
                 throw new Error(resData.message || 'Erro ao aceitar responsabilidade.');
             }
-            if (resData.reloadRequired) {
-                window.location.reload();
-                return;
-            }
-            setIsResponsibilityModalOpen(false);
-            setListData(prev => prev ? {
-                ...prev,
-                assignedTo: user.uid,
-                assignedName: profileName || 'Irmão sem Nome'
-            } : null);
+            window.location.reload();
         } catch (e: any) {
             console.error("Error accepting responsibility:", e);
             toast.error(e.message || "Erro ao aceitar responsabilidade.");
