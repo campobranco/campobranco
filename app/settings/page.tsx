@@ -157,6 +157,17 @@ export default function SettingsPage() {
             flat.reportsView = !!raw.reportsView;
         }
 
+        // Management (Gestão)
+        if (raw.management && typeof raw.management === 'object') {
+            flat.managementPromote = !!raw.management.promote;
+            flat.managementDemote = !!raw.management.demote;
+            flat.managementRemove = !!raw.management.remove;
+        } else {
+            flat.managementPromote = !!raw.managementPromote;
+            flat.managementDemote = !!raw.managementDemote;
+            flat.managementRemove = !!raw.managementRemove;
+        }
+
         return flat;
     };
 
@@ -183,6 +194,11 @@ export default function SettingsPage() {
             },
             reports: {
                 view: !!flat.reportsView
+            },
+            management: {
+                promote: !!flat.managementPromote,
+                demote: !!flat.managementDemote,
+                remove: !!flat.managementRemove
             }
         };
     };
@@ -193,26 +209,24 @@ export default function SettingsPage() {
             mapsView: false, mapsCreate: false, mapsEdit: false, mapsDelete: false,
             witnessingView: false, witnessingCreate: false, witnessingEdit: false, witnessingDelete: false,
             s13View: false, s13Create: false, s13Edit: false, s13Delete: false,
-            reportsView: false
+            reportsView: false,
+            managementPromote: false, managementDemote: false, managementRemove: false
         };
 
         switch (presetType) {
             case 'maps_pub':
                 setEditingPermissions({
                     ...defaultPermissions,
-                    mapsView: true,
-                    witnessingView: true,
-                    s13View: true
+                    witnessingView: true
                 });
                 break;
             case 'witness_support':
                 setEditingPermissions({
                     ...defaultPermissions,
-                    mapsView: true,
                     witnessingView: true,
                     witnessingCreate: true,
                     witnessingEdit: true,
-                    s13View: true
+                    witnessingDelete: true
                 });
                 break;
             case 'view_only':
@@ -229,7 +243,8 @@ export default function SettingsPage() {
                     mapsView: true, mapsCreate: true, mapsEdit: true, mapsDelete: true,
                     witnessingView: true, witnessingCreate: true, witnessingEdit: true, witnessingDelete: true,
                     s13View: true, s13Create: true, s13Edit: true, s13Delete: true,
-                    reportsView: true
+                    reportsView: true,
+                    managementPromote: true, managementDemote: true, managementRemove: true
                 });
                 break;
             case 'clear':
@@ -240,7 +255,33 @@ export default function SettingsPage() {
 
     const handleOpenPermissions = (member: any) => {
         setSelectedMemberForPermissions(member);
-        setEditingPermissions(flattenPermissions(member.permissions));
+        
+        let initialPermissions = flattenPermissions(member.permissions);
+
+        // Auto-preenchimento inteligente (Cenário 1: apenas se não tiver salvo antes)
+        const hasSavedPermissions = member.permissions && Object.keys(member.permissions).length > 0;
+
+        if (!hasSavedPermissions) {
+            if (member.role === 'ANCIAO' || member.role === 'ADMIN') {
+                initialPermissions = {
+                    mapsView: true, mapsCreate: true, mapsEdit: true, mapsDelete: true,
+                    witnessingView: true, witnessingCreate: true, witnessingEdit: true, witnessingDelete: true,
+                    s13View: true, s13Create: true, s13Edit: true, s13Delete: true,
+                    reportsView: true,
+                    managementPromote: true, managementDemote: true, managementRemove: true
+                };
+            } else if (member.role === 'SERVO') {
+                initialPermissions = {
+                    mapsView: true, mapsCreate: true, mapsEdit: true, mapsDelete: true,
+                    witnessingView: true, witnessingCreate: true, witnessingEdit: true, witnessingDelete: true,
+                    s13View: true, s13Create: true, s13Edit: true, s13Delete: true,
+                    reportsView: true,
+                    managementPromote: false, managementDemote: false, managementRemove: false
+                };
+            }
+        }
+
+        setEditingPermissions(initialPermissions);
         setOpenMenuId(null);
     };
 
@@ -305,10 +346,42 @@ export default function SettingsPage() {
     };
 
     const togglePermissionField = (field: string) => {
-        setEditingPermissions((prev: any) => ({
-            ...prev,
-            [field]: !prev[field]
-        }));
+        setEditingPermissions((prev: any) => {
+            const newValue = !prev[field];
+            const updates: any = { [field]: newValue };
+
+            // Se habilitou alguma edição/criação/exclusão, liga a visualização correspondente
+            if (newValue) {
+                if (['mapsCreate', 'mapsEdit', 'mapsDelete'].includes(field)) {
+                    updates.mapsView = true;
+                }
+                if (['witnessingCreate', 'witnessingEdit', 'witnessingDelete'].includes(field)) {
+                    updates.witnessingView = true;
+                }
+                if (['s13Create', 's13Edit', 's13Delete'].includes(field)) {
+                    updates.s13View = true;
+                }
+            } else {
+                // Se desabilitou a visualização, desliga criação/edição/exclusão da mesma categoria
+                if (field === 'mapsView') {
+                    updates.mapsCreate = false;
+                    updates.mapsEdit = false;
+                    updates.mapsDelete = false;
+                }
+                if (field === 'witnessingView') {
+                    updates.witnessingCreate = false;
+                    updates.witnessingEdit = false;
+                    updates.witnessingDelete = false;
+                }
+                if (field === 's13View') {
+                    updates.s13Create = false;
+                    updates.s13Edit = false;
+                    updates.s13Delete = false;
+                }
+            }
+
+            return { ...prev, ...updates };
+        });
     };
 
 
@@ -1327,14 +1400,14 @@ export default function SettingsPage() {
                                         onClick={() => applyPermissionsPreset('maps_pub')}
                                         className="px-3 py-1.5 bg-surface hover:bg-surface-hover border border-surface-border rounded-lg text-xs font-bold text-main transition-colors active:scale-95"
                                     >
-                                        Publicador de Mapas
+                                        Publicador
                                     </button>
                                     <button
                                         type="button"
                                         onClick={() => applyPermissionsPreset('witness_support')}
                                         className="px-3 py-1.5 bg-surface hover:bg-surface-hover border border-surface-border rounded-lg text-xs font-bold text-main transition-colors active:scale-95"
                                     >
-                                        Apoio de Testemunho
+                                        Ajudante de TP
                                     </button>
                                     <button
                                         type="button"
@@ -1507,6 +1580,43 @@ export default function SettingsPage() {
                                         })}
                                     </div>
                                 </div>
+
+                                {/* Seção Gestão (Usuários) */}
+                                <div className="space-y-3 bg-background/50 dark:bg-background/25 p-4 rounded-xl border border-surface-border">
+                                    <div className="flex items-center gap-2 font-bold text-main text-xs uppercase tracking-wider">
+                                        <Shield className="w-4 h-4 text-blue-600 dark:text-blue-400" />
+                                        <span>Gestão (Usuários)</span>
+                                    </div>
+                                    <div className="flex flex-col gap-2">
+                                        {[
+                                            { key: 'managementPromote', label: 'Promover Usuário' },
+                                            { key: 'managementDemote', label: 'Rebaixar Usuário' },
+                                            { key: 'managementRemove', label: 'Remover Usuário' }
+                                        ].map((p) => {
+                                            const isChecked = !!editingPermissions[p.key];
+                                            const isDisabled = selectedMemberForPermissions.id === user?.uid;
+                                            return (
+                                                <label
+                                                    key={p.key}
+                                                    className={`flex items-center p-2.5 rounded-lg border text-xs font-semibold cursor-pointer transition-all hover:bg-surface/50
+                                                        ${isChecked ? 'bg-blue-50/50 border-blue-200 text-blue-700 font-bold dark:bg-blue-950/20 dark:border-blue-900/40 dark:text-blue-400' : 'bg-surface border-surface-border text-muted'}
+                                                        ${isDisabled ? 'opacity-65 cursor-not-allowed' : ''}
+                                                    `}
+                                                >
+                                                    <input
+                                                        type="checkbox"
+                                                        checked={isChecked}
+                                                        disabled={isDisabled}
+                                                        onChange={() => togglePermissionField(p.key)}
+                                                        className="w-4 h-4 rounded text-blue-600 focus:ring-blue-200 border-surface-border mr-2.5 animate-none disabled:opacity-50 disabled:cursor-not-allowed"
+                                                    />
+                                                    {p.label}
+                                                </label>
+                                            );
+                                        })}
+                                    </div>
+                                </div>
+
                             </div>
                         </div>
 
