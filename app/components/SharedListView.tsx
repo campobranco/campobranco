@@ -68,7 +68,7 @@ interface SharedListViewProps {
 export default function SharedListView({ id: propId }: SharedListViewProps) {
     const searchParams = useSearchParams();
     const id = propId || searchParams.get('id');
-    const { user, profileName } = useAuth();
+    const { user, profileName, role } = useAuth();
     const router = useRouter();
 
     const [loading, setLoading] = useState(true);
@@ -260,7 +260,7 @@ export default function SharedListView({ id: propId }: SharedListViewProps) {
                         userId: user.uid,
                         userName: profileName || 'Irmão sem Nome',
                         userCongregationId: listData?.congregationId || '',
-                        currentUserRole: userRole || null
+                        currentUserRole: role || null
                     });
                     if (!resData.success) throw new Error(resData.message || 'Erro ao devolver mapa');
                     toast.success("Mapa devolvido com sucesso! O acesso será encerrado em 24 horas.");
@@ -292,7 +292,7 @@ export default function SharedListView({ id: propId }: SharedListViewProps) {
                         userId: user?.uid || '',
                         userName: profileName || '',
                         userCongregationId: listData?.congregationId || '',
-                        currentUserRole: userRole || null,
+                        currentUserRole: role || null,
                         undo: false 
                     });
                     if (!resData.success) throw new Error(resData.message || 'Erro ao devolver território');
@@ -326,7 +326,7 @@ export default function SharedListView({ id: propId }: SharedListViewProps) {
                         userId: user?.uid || '',
                         userName: profileName || '',
                         userCongregationId: listData?.congregationId || '',
-                        currentUserRole: userRole || null,
+                        currentUserRole: role || null,
                         undo: true 
                     });
                     if (!resData.success) throw new Error(resData.error || 'Erro ao desfazer');
