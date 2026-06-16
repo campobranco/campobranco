@@ -20,7 +20,7 @@ O sistema utiliza **GitHub Actions** para automação de deploy, segregando as i
 | Ambiente | Branch | URL Hosting | Projeto Firebase | Banco (Firestore) |
 | :--- | :--- | :--- | :--- | :--- |
 | **Local** | N/A | `localhost:3000` | `campobrancodev` | `campobrancodev` (Test) |
-| **Staging** | `dev` | `campobrancodev.web.app` | `campobrancodev` | `campo-branco` (Prod) |
+| **Staging** | `dev` | `campobrancodev.web.app` | `campobrancodev` | `campobrancodev` (Test) |
 | **Produção** | `main` | `campo-branco.web.app` | `campo-branco` | `campo-branco` (Prod) |
 
 ### 2.1 Workflows

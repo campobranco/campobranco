@@ -2,8 +2,9 @@
 
 import { useEffect, useState, Suspense } from 'react';
 // Supabase removido — operações agora passam pelos serviços de cliente
-import { getSharedListWithData, processSharedListAction } from '@/lib/services/shared_lists';
-import { reportVisit, deleteVisitByAddressAndShare } from '@/lib/services/visits';
+import { getSharedListWithData } from '@/lib/services/shared_lists';
+import { returnMapMutation, returnTerritoryMutation, acceptResponsibilityMutation } from '@/lib/contracts/mutations/territoryMutations';
+import { reportVisitMutation, deleteVisitMutation } from '@/lib/contracts/mutations/visitMutations';
 import {
     Map as MapIcon,
     Loader2,
@@ -252,8 +253,14 @@ export default function SharedListView({ id: propId }: SharedListViewProps) {
                 setConfirmModal(prev => ({ ...prev, isOpen: false }));
                 setReturning(true);
                 try {
-                    const resData = await processSharedListAction(id, 'returnMap');
-                    if (!resData.success) throw new Error(resData.error || 'Erro ao devolver mapa');
+                    const resData = await returnMapMutation({ 
+                        shareId: id as string,
+                        userId: user.uid,
+                        userName: profileName || 'Irmão sem Nome',
+                        userCongregationId: listData?.congregationId || '',
+                        currentUserRole: userRole || null
+                    });
+                    if (!resData.success) throw new Error(resData.message || 'Erro ao devolver mapa');
                     toast.success("Mapa devolvido com sucesso! O acesso será encerrado em 24 horas.");
                     window.location.reload();
                 } catch (e: any) {
@@ -277,8 +284,16 @@ export default function SharedListView({ id: propId }: SharedListViewProps) {
                     item.id === territoryId ? { ...item, visitStatus: 'completed' } : item
                 ));
                 try {
-                    const resData = await processSharedListAction(id as string, 'returnTerritory', { territoryId, undo: false });
-                    if (!resData.success) throw new Error(resData.error || 'Erro ao devolver território');
+                    const resData = await returnTerritoryMutation({ 
+                        shareId: id as string, 
+                        territoryId, 
+                        userId: user?.uid || '',
+                        userName: profileName || '',
+                        userCongregationId: listData?.congregationId || '',
+                        currentUserRole: userRole || null,
+                        undo: false 
+                    });
+                    if (!resData.success) throw new Error(resData.message || 'Erro ao devolver território');
                     toast.success(`Território ${territoryName} devolvido.`);
                 } catch (e: any) {
                     console.error(e);
@@ -303,7 +318,15 @@ export default function SharedListView({ id: propId }: SharedListViewProps) {
                     item.id === territoryId ? { ...item, visitStatus: 'active' } : item
                 ));
                 try {
-                    const resData = await processSharedListAction(id as string, 'returnTerritory', { territoryId, undo: true });
+                    const resData = await returnTerritoryMutation({ 
+                        shareId: id as string, 
+                        territoryId, 
+                        userId: user?.uid || '',
+                        userName: profileName || '',
+                        userCongregationId: listData?.congregationId || '',
+                        currentUserRole: userRole || null,
+                        undo: true 
+                    });
                     if (!resData.success) throw new Error(resData.error || 'Erro ao desfazer');
                     if (listData?.status === 'completed') {
                         setListData(prev => prev ? { ...prev, status: 'active' } : null);
@@ -330,12 +353,16 @@ export default function SharedListView({ id: propId }: SharedListViewProps) {
         if (!id) return;
         setAccepting(true);
         try {
-            const resData = await processSharedListAction(id, 'acceptResponsibility', {
+            const resData = await acceptResponsibilityMutation({
+                shareId: id,
                 userId: user.uid,
                 userName: profileName || 'Irmão sem Nome',
                 userCongregationId: listData?.congregationId
             });
-            if (!resData.success) throw new Error(resData.error || 'Erro ao aceitar responsabilidade');
+            
+            if (!resData.success) {
+                throw new Error(resData.message || 'Erro ao aceitar responsabilidade.');
+            }
             if (resData.reloadRequired) {
                 window.location.reload();
                 return;
@@ -380,7 +407,17 @@ export default function SharedListView({ id: propId }: SharedListViewProps) {
                     isNeurodivergent: data.isNeurodivergent || false
                 }
             };
-            const resData = await reportVisit(id, visitData);
+            const resData = await reportVisitMutation({
+                sharedListId: id as string,
+                congregationId: listData.congregationId,
+                territoryId: visitData.territoryId,
+                addressId: visitData.addressId,
+                status: visitData.status,
+                notes: visitData.notes,
+                visitDate: visitData.visitDate,
+                tagsSnapshot: visitData.tagsSnapshot,
+                userName: visitData.userName
+            });
             if (!resData.success) throw new Error(resData.error || 'Erro ao salvar visita');
         } catch (e: any) {
             console.error("Error saving visit:", e);
@@ -396,7 +433,7 @@ export default function SharedListView({ id: propId }: SharedListViewProps) {
     const handleDeleteVisit = async () => {
         if (!visitingItem || !id) return;
         try {
-            const resData = await deleteVisitByAddressAndShare(visitingItem.id, id);
+            const resData = await deleteVisitMutation({ addressId: visitingItem.id, sharedListId: id as string });
             if (!resData.success) throw new Error(resData.error || 'Erro ao remover visita');
             setItems(prev => prev.map(item =>
                 item.id === visitingItem.id

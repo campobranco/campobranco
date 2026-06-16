@@ -37,7 +37,7 @@ export function canAssignTerritory(
     const s = (territory.status || "disponível").toLowerCase();
 
     // Cenário: Status inválido
-    if (s !== "disponível" && s !== "available" && s !== "emprestado" && s !== "assigned") {
+    if (s !== "disponível" && s !== "available" && s !== "emprestado" && s !== "assigned" && s !== "livre" && s !== "free") {
         return { valid: false, code: "INVALID_STATUS", message: `Status do território não é reconhecido: ${territory.status}` };
     }
 
