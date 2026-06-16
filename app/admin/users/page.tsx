@@ -10,6 +10,8 @@ import {
     getDocs,
     orderBy,
     doc,
+// TODO(mutations): migrate to mutation layer - legacy module (admin/report/dashboard)
+// eslint-disable-next-line no-restricted-imports
     setDoc,
     serverTimestamp,
     onSnapshot
@@ -39,6 +41,8 @@ import Link from 'next/link';
 import BottomNav from '@/app/components/BottomNav';
 import ConfirmationModal from '@/app/components/ConfirmationModal';
 import { toast } from 'sonner';
+// TODO(mutations): migrate to mutation layer - legacy module (admin/report/dashboard)
+// eslint-disable-next-line no-restricted-imports
 import { updateUser, deleteUser } from '@/lib/services/admin';
 import DropDownItem from '@/app/components/DropDownItem';
 

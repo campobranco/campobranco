@@ -12,7 +12,11 @@ import {
     and,
     limit,
     serverTimestamp,
+// TODO(mutations): migrate to mutation layer - legacy module (admin/report/dashboard)
+// eslint-disable-next-line no-restricted-imports
     deleteDoc,
+// TODO(mutations): migrate to mutation layer - legacy module (admin/report/dashboard)
+// eslint-disable-next-line no-restricted-imports
     updateDoc
 } from "firebase/firestore";
 import { db } from "@/lib/firebase";

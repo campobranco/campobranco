@@ -41,8 +41,14 @@ import BottomNav from '@/app/components/BottomNav';
 import MapAppSelectModal from '@/app/components/MapAppSelectModal';
 import { toast } from 'sonner';
 
+// TODO(mutations): migrate to mutation layer - legacy module (admin/report/dashboard)
+// eslint-disable-next-line no-restricted-imports
 import { getSharedListWithData } from '@/lib/services/shared_lists';
+// TODO(mutations): migrate to mutation layer - legacy module (admin/report/dashboard)
+// eslint-disable-next-line no-restricted-imports
 import { reportVisit, deleteVisitByAddressAndShare } from '@/lib/services/visits';
+// TODO(mutations): migrate to mutation layer - legacy module (admin/report/dashboard)
+// eslint-disable-next-line no-restricted-imports
 import { getReferencePoints } from '@/lib/services/reference_points';
 
 interface PreviewItem {

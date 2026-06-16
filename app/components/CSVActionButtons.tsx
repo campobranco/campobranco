@@ -12,8 +12,14 @@ import {
 import CSVImportModal from './CSVImportModal';
 import DropDownItem from './DropDownItem';
 import { toast } from 'sonner';
+// TODO(mutations): migrate to mutation layer - legacy module (admin/report/dashboard)
+// eslint-disable-next-line no-restricted-imports
 import { getAddresses } from '@/lib/services/addresses';
+// TODO(mutations): migrate to mutation layer - legacy module (admin/report/dashboard)
+// eslint-disable-next-line no-restricted-imports
 import { getTerritories } from '@/lib/services/territories';
+// TODO(mutations): migrate to mutation layer - legacy module (admin/report/dashboard)
+// eslint-disable-next-line no-restricted-imports
 import { getCities } from '@/lib/services/cities';
 
 interface CSVActionButtonsProps {

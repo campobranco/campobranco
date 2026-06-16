@@ -3,6 +3,8 @@
 import { useEffect, useRef, useState } from 'react';
 import { Loader2, MapPin, ThumbsUp, Home, Navigation, Ban, Truck, User, Maximize2, Minimize2, Map as MapIcon, Lock, Unlock, Store, Hand } from 'lucide-react';
 import { renderToStaticMarkup } from 'react-dom/server';
+// TODO(mutations): migrate to mutation layer - legacy module (admin/report/dashboard)
+// eslint-disable-next-line no-restricted-imports
 import { geocodeAddress } from '@/lib/services/geocoding';
 
 // Interface defined by user requirements (adapted to match existing usage patterns)

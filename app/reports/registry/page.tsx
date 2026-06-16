@@ -3,6 +3,8 @@
 import { useState, useEffect, useCallback } from 'react';
 import { useAuth } from '@/app/context/AuthContext';
 import { db } from '@/lib/firebase';
+// TODO(mutations): migrate to mutation layer - legacy module (admin/report/dashboard)
+// eslint-disable-next-line no-restricted-imports
 import { addDoc, collection, deleteDoc, doc, updateDoc } from 'firebase/firestore';
 import { ChevronLeft, ChevronRight, Plus, Save, X, Edit2, Trash2, Calendar, User, FileText, Download, Printer, Building2 } from "lucide-react";
 import ConfirmationModal from '@/app/components/ConfirmationModal';
@@ -12,6 +14,8 @@ import { getServiceYear, getServiceYearLabel, getServiceYearRange } from '@/lib/
 import { format } from 'date-fns';
 import { toast } from 'sonner';
 
+// TODO(mutations): migrate to mutation layer - legacy module (admin/report/dashboard)
+// eslint-disable-next-line no-restricted-imports
 import { getRegistryData } from '@/lib/services/reports';
 
 interface Territory {

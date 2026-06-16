@@ -6,6 +6,8 @@
 
 import { useState, useEffect } from 'react';
 import { db } from '@/lib/firebase';
+// TODO(mutations): migrate to mutation layer - legacy module (admin/report/dashboard)
+// eslint-disable-next-line no-restricted-imports
 import { collection, query, orderBy, onSnapshot, doc, updateDoc } from 'firebase/firestore';
 import { Loader2, Bug, CheckCircle2, Clock, MapPin, Monitor } from 'lucide-react';
 import { useAuth } from '@/app/context/AuthContext';

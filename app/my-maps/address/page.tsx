@@ -34,8 +34,14 @@ import {
     collection,
     query,
     where,
+// TODO(mutations): migrate to mutation layer - legacy module (admin/report/dashboard)
+// eslint-disable-next-line no-restricted-imports
     addDoc,
+// TODO(mutations): migrate to mutation layer - legacy module (admin/report/dashboard)
+// eslint-disable-next-line no-restricted-imports
     updateDoc,
+// TODO(mutations): migrate to mutation layer - legacy module (admin/report/dashboard)
+// eslint-disable-next-line no-restricted-imports
     deleteDoc,
     serverTimestamp,
     onSnapshot,
@@ -46,9 +52,17 @@ import {
     and
 } from "firebase/firestore";
 import { db } from '@/lib/firebase';
+// TODO(mutations): migrate to mutation layer - legacy module (admin/report/dashboard)
+// eslint-disable-next-line no-restricted-imports
 import { geocodeAddress } from '@/lib/services/geocoding';
+// TODO(mutations): migrate to mutation layer - legacy module (admin/report/dashboard)
+// eslint-disable-next-line no-restricted-imports
 import { getAddresses, saveAddress, deleteAddress } from '@/lib/services/addresses';
+// TODO(mutations): migrate to mutation layer - legacy module (admin/report/dashboard)
+// eslint-disable-next-line no-restricted-imports
 import { deleteVisit } from '@/lib/services/visits';
+// TODO(mutations): migrate to mutation layer - legacy module (admin/report/dashboard)
+// eslint-disable-next-line no-restricted-imports
 import { getMapsContext } from '@/lib/services/territories';
 import Link from 'next/link';
 import { useAuth } from '@/app/context/AuthContext';

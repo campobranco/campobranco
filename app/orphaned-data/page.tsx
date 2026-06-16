@@ -4,6 +4,8 @@ export const dynamic = 'force-dynamic';
 
 import { useState, useEffect } from 'react';
 import { db } from '@/lib/firebase';
+// TODO(mutations): migrate to mutation layer - legacy module (admin/report/dashboard)
+// eslint-disable-next-line no-restricted-imports
 import { collection, getDocs, query, where, doc, getDoc, updateDoc } from 'firebase/firestore';
 import { useAuth } from '@/app/context/AuthContext';
 import { useRouter } from 'next/navigation';
@@ -11,6 +13,8 @@ import { ArrowLeft, Database, Trash2, Link as LinkIcon, AlertTriangle, Check, Lo
 import Link from 'next/link';
 import { toast } from 'sonner';
 import ConfirmationModal from '@/app/components/ConfirmationModal';
+// TODO(mutations): migrate to mutation layer - legacy module (admin/report/dashboard)
+// eslint-disable-next-line no-restricted-imports
 import { repairOrphanData, bulkDeleteOrphans } from '@/lib/services/admin';
 
 

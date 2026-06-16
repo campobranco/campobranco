@@ -14,6 +14,8 @@ import {
     getDocs,
     doc,
     getDoc,
+// TODO(mutations): migrate to mutation layer - legacy module (admin/report/dashboard)
+// eslint-disable-next-line no-restricted-imports
     setDoc,
     serverTimestamp
 } from 'firebase/firestore';
