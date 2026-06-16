@@ -31,7 +31,9 @@ export interface ReturnMapInput {
 }
 
 /**
- * Contrato de Mutações de Território
+ * Contrato de Mutações de Território.
+ * assignedTo é OPCIONAL — Links Abertos são suportados.
+ */
 export async function assignTerritoryMutation(input: AssignTerritoryInput): Promise<MutationResult<{ id: string, shareData: any }>> {
     // 1. Schema check (presença de dados - Edge Input Guard)
     // assignedTo é OPCIONAL pois suportamos Links Abertos.
