@@ -35,7 +35,7 @@ test.describe('E2E: Authentication Gates', () => {
     test('Login Page: Elements should be visible', async ({ page }) => {
         await page.goto('/login');
         await expect(page.getByRole('button', { name: /Google/i })).toBeVisible();
-        await expect(page.getByText('Campo Branco')).toBeVisible(); // Check for Title instead
+        await expect(page.getByRole('heading', { name: 'Campo Branco' })).toBeVisible();
         // Terms link is not present in LoginClient, likely in LegalConsent page instead
     });
 
