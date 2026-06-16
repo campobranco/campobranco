@@ -78,7 +78,7 @@ interface Address {
     observations?: string;
     gender?: 'HOMEM' | 'MULHER' | 'CASAL';
     isNeurodivergent?: boolean;
-    visitStatus?: 'contacted' | 'notContacted' | 'moved' | 'doNotVisit' | 'none';
+    visitStatus?: 'contacted' | 'notContacted' | 'moved' | 'doNotVisit' | 'none' | 'partial';
     lastVisitedAt?: string;
     sortOrder?: number;
     inactivatedAt?: string;
