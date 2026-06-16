@@ -13,6 +13,7 @@
     "test:all": "npm run lint && npm run test:unit && npm run test:e2e",
     "emulator": "firebase emulators:start --only firestore,auth --project demo-test",
     "test:integration": "jest __tests__/integration",
+    "seed:integration": "ts-node __tests__/integration/seed.ts",
     "deploy:rules": "firebase deploy --only firestore:rules",
     "deploy:hosting": "firebase deploy --only hosting"
   },

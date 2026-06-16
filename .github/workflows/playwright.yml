@@ -22,6 +22,9 @@ jobs:
           npx firebase emulators:start --only firestore,auth --project demo-test &
           sleep 10
 
+      - name: Seed Emulator
+        run: npm run seed:integration
+
       - name: Run Integration Tests
         run: npm run test:integration
 
