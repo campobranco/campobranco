@@ -359,7 +359,7 @@ export default function SharedListView({ id: propId }: SharedListViewProps) {
                 shareId: id,
                 userId: user.uid,
                 userName: profileName || 'Irmão sem Nome',
-                userCongregationId: listData?.congregationId
+                userCongregationId: listData?.congregationId || ''
             });
             
             if (!resData.success) {
