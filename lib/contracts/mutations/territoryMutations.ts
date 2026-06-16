@@ -32,14 +32,9 @@ export interface ReturnMapInput {
 
 /**
  * Contrato de Mutações de Território
- * Apenas roteamento de intenção e validação de schema. Sem regras de domínio.
- */
-
 export async function assignTerritoryMutation(input: AssignTerritoryInput): Promise<MutationResult<{ id: string, shareData: any }>> {
     // 1. Schema check (presença de dados - Edge Input Guard)
-    if (!input.assignedTo) {
-        return { success: false, code: 'MISSING_ASSIGNEE', message: 'Faltam dados do publicador alvo.' };
-    }
+    // assignedTo é OPCIONAL pois suportamos Links Abertos.
     if (!input.congregationId) {
         return { success: false, code: 'MISSING_CONGREGATION', message: 'Faltam dados da congregação.' };
     }
