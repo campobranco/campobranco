@@ -111,6 +111,10 @@ Os contadores são armazenados em um objeto aninhado `stats` no documento de cad
 
 ---
 ### 📝 Registro de Melhorias Recentes:
+- **v0.9.10-beta**: **Limpeza de Dívida Técnica e Auditoria Documental**. (16/06/2026)
+  - **Limpeza**: Remoção de arquivos legados do Firebase Admin SDK (`lib/auth.ts`, `lib/firebase-admin.ts`, etc.) após consolidação da arquitetura Static-First.
+  - **Testes**: Exclusão de testes de integração antigos baseados no backend removido e sincronização do `package.json` com o `README.md`.
+  - **Ação CI/CD**: Adição de documentação oficial para replicação Open Source do deploy via GitHub Actions.
 - **v0.9.9-beta**: **Desnormalização de Estatísticas de Bairro**. (15/06/2026)
   - **Fase 2**: Implementada a contagem desnormalizada de territórios (`totalTerritories`) e endereços ativos (`totalAddresses`) no documento de cada bairro/cidade.
   - **Mutações**: Adicionado controle transacional atômico direto no cliente via `writeBatch` e `increment()` na criação, edição (inativação/reativação) e exclusão (em cascata) de entidades.
