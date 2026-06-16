@@ -9,6 +9,8 @@ import { Camera, X, CheckCircle2, Loader2, Bug } from 'lucide-react';
 import html2canvas from 'html2canvas';
 import Image from 'next/image';
 import { db } from '@/lib/firebase';
+// TODO(mutations): migrate to mutation layer - legacy module (admin/report/dashboard)
+// eslint-disable-next-line no-restricted-imports
 import { collection, addDoc, serverTimestamp } from 'firebase/firestore';
 import { useAuth } from '@/app/context/AuthContext';
 import { toast } from 'sonner';

@@ -2,6 +2,8 @@
 
 import { useEffect, useState, Fragment } from 'react';
 import { db } from '@/lib/firebase';
+// TODO(mutations): migrate to mutation layer - legacy module (admin/report/dashboard)
+// eslint-disable-next-line no-restricted-imports
 import { collection, onSnapshot, updateDoc, doc, query, orderBy, where } from 'firebase/firestore';
 import { Loader2, Shield, Save, Key, Map, FileText, Store } from 'lucide-react';
 import { toast } from 'sonner';

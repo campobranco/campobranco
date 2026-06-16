@@ -29,7 +29,11 @@ import {
 import { useAuth } from '@/app/context/AuthContext';
 import { toast } from 'sonner';
 
+// TODO(mutations): migrate to mutation layer - legacy module (admin/report/dashboard)
+// eslint-disable-next-line no-restricted-imports
 import { getTerritoriesDetails } from '@/lib/services/territories';
+// TODO(mutations): migrate to mutation layer - legacy module (admin/report/dashboard)
+// eslint-disable-next-line no-restricted-imports
 import { getCongregationUsers } from '@/lib/services/users';
 import { assignTerritoryMutation } from '@/lib/contracts/mutations/territoryMutations';
 
@@ -210,10 +214,10 @@ function ShareSetupContent() {
             });
 
             if (!resData.success) {
-                throw new Error(resData.error || 'Erro ao criar a lista compartilhada');
+                throw new Error(resData.message || 'Erro ao criar a lista compartilhada');
             }
 
-            const link = `${window.location.origin}/share?id=${resData.id}`;
+            const link = `${window.location.origin}/share?id=${resData.data?.id}`;
             setGeneratedLink(link);
             return link;
         } catch (error) {

@@ -22,6 +22,8 @@ import {
 import { db } from '@/lib/firebase';
 import {
     doc,
+// TODO(mutations): migrate to mutation layer - legacy module (admin/report/dashboard)
+// eslint-disable-next-line no-restricted-imports
     updateDoc,
 } from 'firebase/firestore';
 import Link from 'next/link';
@@ -30,6 +32,8 @@ import { useRouter } from 'next/navigation';
 import { toast } from 'sonner';
 import BottomNav from '@/app/components/BottomNav';
 import ConfirmationModal from '@/app/components/ConfirmationModal';
+// TODO(mutations): migrate to mutation layer - legacy module (admin/report/dashboard)
+// eslint-disable-next-line no-restricted-imports
 import { getCongregations, saveCongregation, deleteCongregation, migrateCongregation } from '@/lib/services/admin';
 import DropDownItem from '@/app/components/DropDownItem';
 

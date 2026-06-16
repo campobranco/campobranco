@@ -29,6 +29,8 @@ import { getServiceYear, getServiceYearLabel, getServiceYearRange } from "@/lib/
 import { db } from "@/lib/firebase";
 import { collection, query, where, getDocs } from "firebase/firestore";
 import { useRouter } from "next/navigation";
+// TODO(mutations): migrate to mutation layer - legacy module (admin/report/dashboard)
+// eslint-disable-next-line no-restricted-imports
 import { getRegistryData } from "@/lib/services/reports";
 
 

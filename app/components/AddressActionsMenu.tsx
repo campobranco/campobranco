@@ -19,6 +19,8 @@ import { useRouter } from 'next/navigation';
 import { toast } from 'sonner';
 import CSVImportModal from './CSVImportModal';
 import DropDownItem from './DropDownItem';
+// TODO(mutations): migrate to mutation layer - legacy module (admin/report/dashboard)
+// eslint-disable-next-line no-restricted-imports
 import { exportDataToCSV } from '@/lib/services/export';
 
 

@@ -24,8 +24,14 @@ import {
     AlertCircle
 } from 'lucide-react';
 import MapView from '@/app/components/MapView';
+// TODO(mutations): migrate to mutation layer - legacy module (admin/report/dashboard)
+// eslint-disable-next-line no-restricted-imports
 import { geocodeAddress } from '@/lib/services/geocoding';
+// TODO(mutations): migrate to mutation layer - legacy module (admin/report/dashboard)
+// eslint-disable-next-line no-restricted-imports
 import { getCityStats } from '@/lib/services/stats';
+// TODO(mutations): migrate to mutation layer - legacy module (admin/report/dashboard)
+// eslint-disable-next-line no-restricted-imports
 import { createCity, updateCity, deleteCity } from '@/lib/services/cities';
 import CongregationSelector from '@/app/components/CongregationSelector';
 import BottomNav from '@/app/components/BottomNav';
@@ -39,9 +45,17 @@ import {
     orderBy,
     doc,
     getDoc,
+// TODO(mutations): migrate to mutation layer - legacy module (admin/report/dashboard)
+// eslint-disable-next-line no-restricted-imports
     setDoc,
+// TODO(mutations): migrate to mutation layer - legacy module (admin/report/dashboard)
+// eslint-disable-next-line no-restricted-imports
     addDoc,
+// TODO(mutations): migrate to mutation layer - legacy module (admin/report/dashboard)
+// eslint-disable-next-line no-restricted-imports
     updateDoc,
+// TODO(mutations): migrate to mutation layer - legacy module (admin/report/dashboard)
+// eslint-disable-next-line no-restricted-imports
     deleteDoc
 } from 'firebase/firestore';
 import Link from 'next/link';

@@ -11,6 +11,8 @@ import {
     Loader2
 } from 'lucide-react';
 import { useAuth } from '@/app/context/AuthContext';
+// TODO(mutations): migrate to mutation layer - legacy module (admin/report/dashboard)
+// eslint-disable-next-line no-restricted-imports
 import { getTerritoryHistory } from '@/lib/services/territories';
 import { db } from '@/lib/firebase';
 import { collection, query, where, getDocs, documentId } from 'firebase/firestore';

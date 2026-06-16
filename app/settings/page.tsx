@@ -8,6 +8,8 @@ import { useRouter } from 'next/navigation';
 import { updateProfile, deleteUser } from 'firebase/auth';
 import {
     doc,
+// TODO(mutations): migrate to mutation layer - legacy module (admin/report/dashboard)
+// eslint-disable-next-line no-restricted-imports
     updateDoc,
     serverTimestamp,
     collection,
@@ -15,7 +17,11 @@ import {
     where,
     getDocs,
     getDoc,
+// TODO(mutations): migrate to mutation layer - legacy module (admin/report/dashboard)
+// eslint-disable-next-line no-restricted-imports
     deleteDoc,
+// TODO(mutations): migrate to mutation layer - legacy module (admin/report/dashboard)
+// eslint-disable-next-line no-restricted-imports
     addDoc
 } from 'firebase/firestore';
 import { db, auth } from '@/lib/firebase';

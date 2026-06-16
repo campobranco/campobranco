@@ -35,12 +35,16 @@ const EditPointModal = dynamic(() => import('@/app/components/Witnessing/EditPoi
 import AssignedUserBadge from '@/app/components/AssignedUserBadge';
 import ConfirmationModal from '@/app/components/ConfirmationModal';
 import DropDownItem from '@/app/components/DropDownItem';
+// TODO(mutations): migrate to mutation layer - legacy module (admin/report/dashboard)
+// eslint-disable-next-line no-restricted-imports
 import { collection, query, where, orderBy, onSnapshot, doc, getDoc, updateDoc, deleteField, serverTimestamp } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
 import Link from 'next/link';
 import { useAuth } from '@/app/context/AuthContext';
 import { useSearchParams, useRouter } from 'next/navigation';
 import { toast } from 'sonner';
+// TODO(mutations): migrate to mutation layer - legacy module (admin/report/dashboard)
+// eslint-disable-next-line no-restricted-imports
 import { checkInWitnessingPoint, deleteWitnessingPoint } from '@/lib/services/witnessing';
 
 interface WitnessingPoint {

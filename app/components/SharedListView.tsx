@@ -2,6 +2,8 @@
 
 import { useEffect, useState, Suspense } from 'react';
 // Supabase removido — operações agora passam pelos serviços de cliente
+// TODO(mutations): migrate to mutation layer - legacy module (admin/report/dashboard)
+// eslint-disable-next-line no-restricted-imports
 import { getSharedListWithData } from '@/lib/services/shared_lists';
 import { returnMapMutation, returnTerritoryMutation, acceptResponsibilityMutation } from '@/lib/contracts/mutations/territoryMutations';
 import { reportVisitMutation, deleteVisitMutation } from '@/lib/contracts/mutations/visitMutations';

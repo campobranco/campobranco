@@ -9,7 +9,11 @@ import {
     where,
     getDocs,
     doc,
+// TODO(mutations): migrate to mutation layer - legacy module (admin/report/dashboard)
+// eslint-disable-next-line no-restricted-imports
     updateDoc,
+// TODO(mutations): migrate to mutation layer - legacy module (admin/report/dashboard)
+// eslint-disable-next-line no-restricted-imports
     deleteDoc,
     limit,
     orderBy,

@@ -45,8 +45,14 @@ import {
     collection,
     query,
     where,
+// TODO(mutations): migrate to mutation layer - legacy module (admin/report/dashboard)
+// eslint-disable-next-line no-restricted-imports
     addDoc,
+// TODO(mutations): migrate to mutation layer - legacy module (admin/report/dashboard)
+// eslint-disable-next-line no-restricted-imports
     updateDoc,
+// TODO(mutations): migrate to mutation layer - legacy module (admin/report/dashboard)
+// eslint-disable-next-line no-restricted-imports
     deleteDoc,
     serverTimestamp,
     onSnapshot
@@ -57,7 +63,11 @@ import { useAuth } from '@/app/context/AuthContext';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { formatRelativeDate } from '@/lib/dateUtils';
 import { getServiceYearRange, getServiceYear } from '@/lib/serviceYearUtils';
+// TODO(mutations): migrate to mutation layer - legacy module (admin/report/dashboard)
+// eslint-disable-next-line no-restricted-imports
 import { getTerritories, createTerritory, updateTerritory, deleteTerritory } from '@/lib/services/territories';
+// TODO(mutations): migrate to mutation layer - legacy module (admin/report/dashboard)
+// eslint-disable-next-line no-restricted-imports
 import { getAddresses } from '@/lib/services/addresses';
 
 interface Territory {

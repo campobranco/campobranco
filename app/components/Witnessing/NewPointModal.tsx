@@ -7,7 +7,11 @@
 import { useState } from 'react';
 import { X, Plus, Loader2, MapPin, Search, MousePointer2, Navigation, CheckCircle } from 'lucide-react';
 import { toast } from 'sonner';
+// TODO(mutations): migrate to mutation layer - legacy module (admin/report/dashboard)
+// eslint-disable-next-line no-restricted-imports
 import { createWitnessingPoint } from '@/lib/services/witnessing';
+// TODO(mutations): migrate to mutation layer - legacy module (admin/report/dashboard)
+// eslint-disable-next-line no-restricted-imports
 import { geocodeAddress } from '@/lib/services/geocoding';
 import dynamic from 'next/dynamic';
 

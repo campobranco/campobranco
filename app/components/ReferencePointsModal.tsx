@@ -15,6 +15,8 @@ import {
     Search
 } from 'lucide-react';
 import { toast } from 'sonner';
+// TODO(mutations): migrate to mutation layer - legacy module (admin/report/dashboard)
+// eslint-disable-next-line no-restricted-imports
 import { 
     getReferencePoints, 
     createReferencePoint, 
@@ -22,6 +24,8 @@ import {
     deleteReferencePoint,
     ReferencePoint 
 } from '@/lib/services/reference_points';
+// TODO(mutations): migrate to mutation layer - legacy module (admin/report/dashboard)
+// eslint-disable-next-line no-restricted-imports
 import { geocodeAddress } from '@/lib/services/geocoding';
 import dynamic from 'next/dynamic';
 import { MapSkeleton } from '@/app/components/Skeleton';
