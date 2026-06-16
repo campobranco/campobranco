@@ -14,6 +14,7 @@
     "emulator": "firebase emulators:start --only firestore,auth --project demo-test",
     "test:integration": "jest __tests__/integration",
     "seed:integration": "ts-node __tests__/integration/seed.ts",
+    "contracts:check": "ts-node scripts/contracts-check.ts",
     "deploy:rules": "firebase deploy --only firestore:rules",
     "deploy:hosting": "firebase deploy --only hosting"
   },
