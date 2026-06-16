@@ -15,9 +15,11 @@ import {
     orderBy,
     serverTimestamp,
     writeBatch,
+    runTransaction,
     Timestamp 
 } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
+import { canAssignTerritory, canReturnTerritory } from '../domain/territoryRules';
 
 const LISTS_TABLE = 'shared_lists';
 const SNAPSHOTS_TABLE = 'shared_list_snapshots';
@@ -52,64 +54,91 @@ export async function createSharedList(data: {
             updatedAt: serverTimestamp(),
         };
 
-        const docRef = await addDoc(collection(db, LISTS_TABLE), listData);
-        const shareId = docRef.id;
+        const listRef = doc(collection(db, LISTS_TABLE));
+        const shareId = listRef.id;
 
-        // 2. Criar snapshots (Territórios + Endereços) se type === 'territory'
+        // PRE-FETCH: Lemos dados que não exigem bloqueio (Endereços) fora do retry loop
+        let addressesDocs: any[] = [];
         if (data.type === 'territory' && data.territories && Array.isArray(data.territories)) {
-            const batch = writeBatch(db);
-            const snapshotsRef = collection(db, SNAPSHOTS_TABLE);
-
-            // Snapshot dos Territórios
-            data.territories.forEach((t: any) => {
-                const snapRef = doc(snapshotsRef);
-                batch.set(snapRef, {
-                    sharedListId: shareId,
-                    congregationId: data.congregationId,
-                    itemId: t.id,
-                    type: 'territory',
-                    data: {
-                        ...t,
-                        visitStatus: 'none'
-                    },
-                    createdAt: serverTimestamp()
-                });
-            });
-
-            // Buscar Endereços vinculados para snapshot
             const territoryIds = data.territories.map((t: any) => t.id);
             if (territoryIds.length > 0) {
                 const chunks = [];
                 for (let i = 0; i < territoryIds.length; i += 30) {
                     chunks.push(territoryIds.slice(i, i + 30));
                 }
-
                 for (const chunk of chunks) {
-                    const addrQ = query(
-                        collection(db, 'addresses'),
-                        where('territoryId', 'in', chunk)
-                    );
+                    const addrQ = query(collection(db, 'addresses'), where('territoryId', 'in', chunk));
                     const addrSnap = await getDocs(addrQ);
+                    addressesDocs.push(...addrSnap.docs);
+                }
+            }
+        }
 
-                    addrSnap.docs.forEach(d => {
-                        const snapRef = doc(snapshotsRef);
-                        batch.set(snapRef, {
-                            sharedListId: shareId,
-                            congregationId: data.congregationId,
-                            itemId: d.id,
-                            type: 'address',
-                            data: {
-                                ...d.data(),
-                                visitStatus: d.data().visitStatus === 'doNotVisit' ? 'doNotVisit' : 'none'
-                            },
-                            createdAt: serverTimestamp()
-                        });
-                    });
+        await runTransaction(db, async (transaction) => {
+            // FASE 1: LEITURA ATÔMICA
+            const territoryDocs = [];
+            if (data.type === 'territory' && data.territories && Array.isArray(data.territories)) {
+                for (const t of data.territories) {
+                    const terrRef = doc(db, 'territories', t.id);
+                    const terrDoc = await transaction.get(terrRef);
+                    territoryDocs.push({ t, terrRef, terrDoc });
                 }
             }
 
-            await batch.commit();
-        }
+            // FASE 2: VALIDAÇÃO (Domínio Puro, sem Side Effects)
+            for (const { t, terrDoc } of territoryDocs) {
+                if (!terrDoc.exists()) {
+                    throw new Error(`Território ${t.id} inexistente.`);
+                }
+                const tState = { id: terrDoc.id, ...terrDoc.data() } as any;
+                const validation = canAssignTerritory(tState, data.assignedTo);
+                if (!validation.valid) {
+                    throw new Error(validation.message || 'Território não disponível');
+                }
+            }
+
+            // FASE 3: ESCRITAS (Apenas a partir daqui. Sem mais Reads/Awaits)
+            for (const { terrRef } of territoryDocs) {
+                transaction.update(terrRef, {
+                    status: 'Emprestado',
+                    assignedTo: data.assignedTo,
+                    updatedAt: serverTimestamp()
+                });
+            }
+
+            transaction.set(listRef, listData);
+
+            if (data.type === 'territory' && data.territories && Array.isArray(data.territories)) {
+                const snapshotsRef = collection(db, SNAPSHOTS_TABLE);
+                
+                data.territories.forEach((t: any) => {
+                    const snapRef = doc(snapshotsRef);
+                    transaction.set(snapRef, {
+                        sharedListId: shareId,
+                        congregationId: data.congregationId,
+                        itemId: t.id,
+                        type: 'territory',
+                        data: { ...t, visitStatus: 'none' },
+                        createdAt: serverTimestamp()
+                    });
+                });
+
+                addressesDocs.forEach(d => {
+                    const snapRef = doc(snapshotsRef);
+                    transaction.set(snapRef, {
+                        sharedListId: shareId,
+                        congregationId: data.congregationId,
+                        itemId: d.id,
+                        type: 'address',
+                        data: {
+                            ...d.data(),
+                            visitStatus: d.data().visitStatus === 'doNotVisit' ? 'doNotVisit' : 'none'
+                        },
+                        createdAt: serverTimestamp()
+                    });
+                });
+            }
+        });
 
         return { success: true, id: shareId, shareData: { id: shareId, ...listData } };
     } catch (error: any) {
@@ -250,55 +279,115 @@ export async function processSharedListAction(id: string, action: string, payloa
         const listRef = doc(db, LISTS_TABLE, id);
         const { territoryId, undo, userId, userName, userCongregationId } = payload;
 
-        // AÇÃO 1: Devolver o mapa inteiro
-        if (action === 'returnMap') {
-            const expiresAt = new Date();
-            expiresAt.setHours(expiresAt.getHours() + 24);
-
-            await updateDoc(listRef, {
-                status: 'completed',
-                returnedAt: serverTimestamp(),
-                expiresAt: Timestamp.fromDate(expiresAt)
-            });
-
-            return { success: true, message: 'Mapa devolvido com sucesso!' };
-        }
-
-        // AÇÃO 2: Devolver ou desfazer devolução de um território individual
+        // PRE-FETCH: Operações pesadas sem lock
+        let snapshotsDocsToUpdate: any[] = [];
         if (action === 'returnTerritory' && territoryId) {
-            const newStatus = undo ? 'active' : 'completed';
-
-            const snapshotsQuery = query(
-                collection(db, SNAPSHOTS_TABLE),
-                where('sharedListId', '==', id),
-                where('itemId', '==', territoryId)
-            );
-
+            const snapshotsQuery = query(collection(db, SNAPSHOTS_TABLE), where('sharedListId', '==', id), where('itemId', '==', territoryId));
             const snapshotsSnap = await getDocs(snapshotsQuery);
-
-            if (!snapshotsSnap.empty) {
-                const batch = writeBatch(db);
-                snapshotsSnap.docs.forEach(snap => {
-                    batch.update(snap.ref, { 'data.visitStatus': newStatus });
-                });
-                await batch.commit();
-            }
-
-            // Se estava desfazendo e a lista estava 'completed', reativa
-            const listSnap = await getDoc(listRef);
-            if (undo && (listSnap.data() as any)?.status === 'completed') {
-                await updateDoc(listRef, {
-                    status: 'active',
-                    returnedAt: null,
-                    expiresAt: null
-                });
-            }
-
-            return { 
-                success: true, 
-                message: undo ? 'Devolução desfeita!' : 'Território devolvido!' 
-            };
+            snapshotsDocsToUpdate = snapshotsSnap.docs;
         }
+
+        await runTransaction(db, async (transaction) => {
+            // FASE 1: LEITURAS
+            const listSnap = await transaction.get(listRef);
+            if (!listSnap.exists()) throw new Error('Lista não encontrada');
+            const listData = listSnap.data() as any;
+
+            const territoryDocs = [];
+            if (action === 'returnMap') {
+                if (listData.items && Array.isArray(listData.items)) {
+                    for (const tId of listData.items) {
+                        const terrRef = doc(db, 'territories', tId);
+                        const terrDoc = await transaction.get(terrRef);
+                        territoryDocs.push({ tId, terrRef, terrDoc });
+                    }
+                }
+            } else if (action === 'returnTerritory' && territoryId) {
+                const terrRef = doc(db, 'territories', territoryId);
+                const terrDoc = await transaction.get(terrRef);
+                territoryDocs.push({ tId: territoryId, terrRef, terrDoc });
+            }
+
+            // FASE 2: VALIDAÇÃO (Domínio)
+            if (action === 'returnMap') {
+                for (const { tId, terrDoc } of territoryDocs) {
+                    if (terrDoc.exists()) {
+                        const tState = { id: terrDoc.id, ...terrDoc.data() } as any;
+                        const val = canReturnTerritory(tState, payload.currentUserRole || null, userId || listData.assignedTo);
+                        if (!val.valid) throw new Error(`Falha ao devolver território ${tId}: ${val.message}`);
+                    }
+                }
+            } else if (action === 'returnTerritory' && territoryId) {
+                const { terrDoc } = territoryDocs[0];
+                if (terrDoc.exists()) {
+                    const tState = { id: terrDoc.id, ...terrDoc.data() } as any;
+                    if (undo) {
+                        const valAssign = canAssignTerritory(tState, userId || listData.assignedTo);
+                        if (!valAssign.valid) throw new Error(valAssign.message);
+                    } else {
+                        const valReturn = canReturnTerritory(tState, payload.currentUserRole || null, userId || listData.assignedTo);
+                        if (!valReturn.valid) throw new Error(valReturn.message);
+                    }
+                }
+            }
+
+            // FASE 3: ESCRITAS (Sem leitura daqui pra baixo)
+            if (action === 'returnMap') {
+                const expiresAt = new Date();
+                expiresAt.setHours(expiresAt.getHours() + 24);
+
+                for (const { terrRef, terrDoc } of territoryDocs) {
+                    if (terrDoc.exists()) {
+                        transaction.update(terrRef, {
+                            status: 'Disponível',
+                            assignedTo: null,
+                            updatedAt: serverTimestamp()
+                        });
+                    }
+                }
+
+                transaction.update(listRef, {
+                    status: 'completed',
+                    returnedAt: serverTimestamp(),
+                    expiresAt: Timestamp.fromDate(expiresAt)
+                });
+
+            } else if (action === 'returnTerritory' && territoryId) {
+                const newStatus = undo ? 'active' : 'completed';
+                const { terrRef, terrDoc } = territoryDocs[0];
+                
+                if (terrDoc.exists()) {
+                    if (undo) {
+                        transaction.update(terrRef, {
+                            status: 'Emprestado',
+                            assignedTo: userId || listData.assignedTo,
+                            updatedAt: serverTimestamp()
+                        });
+                    } else {
+                        transaction.update(terrRef, {
+                            status: 'Disponível',
+                            assignedTo: null,
+                            updatedAt: serverTimestamp()
+                        });
+                    }
+                }
+
+                snapshotsDocsToUpdate.forEach(snap => {
+                    transaction.update(snap.ref, { 'data.visitStatus': newStatus });
+                });
+
+                if (undo && listData?.status === 'completed') {
+                    transaction.update(listRef, {
+                        status: 'active',
+                        returnedAt: null,
+                        expiresAt: null
+                    });
+                }
+            }
+        });
+
+        if (action === 'returnMap') return { success: true, message: 'Mapa devolvido com sucesso!' };
+        if (action === 'returnTerritory') return { success: true, message: undo ? 'Devolução desfeita!' : 'Território devolvido!' };
 
         // AÇÃO 3: Aceitar responsabilidade pela lista
         if (action === 'acceptResponsibility') {

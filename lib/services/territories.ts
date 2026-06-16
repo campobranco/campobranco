@@ -18,6 +18,7 @@ import {
     increment
 } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
+import { canDeleteTerritory } from '../domain/territoryRules';
 
 const TABLE = 'territories';
 
@@ -147,8 +148,7 @@ export async function updateTerritory(id: string, data: any) {
 }
 
 /**
- * Exclui um território e todos os seus filhos em cascata:
- * Território → Endereços → Visitas
+ * Exclui um território apenas se não houver dependências (bloqueio de segurança).
  */
 export async function deleteTerritory(id: string) {
     try {
@@ -160,77 +160,42 @@ export async function deleteTerritory(id: string) {
         const terrData = terrSnap.data();
         const cityId = terrData.cityId;
 
-        const batchDelete = async (refs: any[]) => {
-            let batch = writeBatch(db);
-            let ops = 0;
-            for (const ref of refs) {
-                batch.delete(ref);
-                ops++;
-                if (ops === 499) {
-                    await batch.commit();
-                    batch = writeBatch(db);
-                    ops = 0;
-                }
-            }
-            if (ops > 0) await batch.commit();
-        };
-
-        // 1. Busca endereços vinculados ao território
+        // 1. Busca endereços vinculados ao território para checar dependências
         const addressesSnap = await getDocs(
             query(collection(db, 'addresses'), where('territoryId', '==', id))
         );
 
-        // 2. Filtra em memória a contagem de endereços ativos sendo excluídos em cascata
-        const activeAddressesCount = addressesSnap.docs.filter(
-            d => d.data().isActive === true
-        ).length;
+        // 2. Validação Comportamental de Domínio (BDD)
+        const validation = canDeleteTerritory(
+            { id: terrSnap.id, ...terrData },
+            { activeAddressesCount: addressesSnap.size }
+        );
 
-        // 3. Busca e deleta as visitas de cada endereço
-        for (const addrDoc of addressesSnap.docs) {
-            const visitsSnap = await getDocs(
-                query(collection(db, 'visits'), where('addressId', '==', addrDoc.id))
-            );
-            await batchDelete(visitsSnap.docs.map(d => d.ref));
+        if (!validation.valid) {
+            return { success: false, error: validation.message, code: validation.code };
         }
 
-        // 4. Executa a deleção de endereços, território e atualiza estatísticas no lote final
+        // 3. Executa a deleção do território e atualiza estatísticas
         let batch = writeBatch(db);
-        let ops = 0;
 
         // Deleta o documento do território
         batch.delete(doc(db, TABLE, id));
-        ops++;
 
-        // Decrementa as estatísticas de territórios e endereços ativos no bairro
+        // Decrementa as estatísticas de territórios no bairro
         if (cityId) {
             const cityRef = doc(db, 'cities', cityId);
             batch.set(cityRef, {
                 stats: {
-                    totalTerritories: increment(-1),
-                    totalAddresses: increment(-activeAddressesCount)
+                    totalTerritories: increment(-1)
                 }
             }, { merge: true });
-            ops++;
         }
 
-        // Deleta os documentos de endereços
-        for (const addrDoc of addressesSnap.docs) {
-            batch.delete(addrDoc.ref);
-            ops++;
-            if (ops === 499) {
-                await batch.commit();
-                batch = writeBatch(db);
-                ops = 0;
-            }
-        }
-
-        if (ops > 0) {
-            await batch.commit();
-        }
+        await batch.commit();
 
         return { success: true };
     } catch (error: any) {
-        console.error('Error deleting territory (cascade):', error);
+        console.error('Error deleting territory:', error);
         return { success: false, error: error.message };
     }
 }

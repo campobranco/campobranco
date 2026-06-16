@@ -7,23 +7,7 @@ import { createContext, useContext, useEffect, useState } from "react";
 import { User, signOut } from "firebase/auth";
 import { doc, getDoc, updateDoc, setDoc, serverTimestamp, onSnapshot, addDoc, collection } from "firebase/firestore";
 import { auth, db } from "@/lib/firebase";
-
-// --- INTERFACES DE PERMISSÃO ---
-
-interface PermissionDomain {
-    view?: boolean;
-    create?: boolean;
-    edit?: boolean;
-    delete?: boolean;
-}
-
-interface UserPermissions {
-    maps?: PermissionDomain;
-    reports?: { view?: boolean };
-    witnessing?: PermissionDomain;
-    s13?: PermissionDomain;
-    referencePoints?: { manage?: boolean };
-}
+import { UserPermissions, getRoleFlags, checkPermission } from "@/lib/rbac";
 
 // Tipagem do contexto de autenticação
 interface AuthContextType {
@@ -273,26 +257,11 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     }, [congregationId]);
 
     // --- FLAGS DE CARGO ---
-    const isAdminRoleGlobal = role === 'ADMIN';
-    const isElder           = role === 'ANCIAO' || isAdminRoleGlobal;
-    const isServant         = role === 'SERVO'  || isElder;
-    const isAdmin           = isElder;
-    const canManageMembers  = isElder;
-    const canInviteMembers  = isServant;
+    const { isAdminRoleGlobal, isElder, isServant, isAdmin, canManageMembers, canInviteMembers } = getRoleFlags(role);
 
     // --- HELPER CENTRALIZADO DE PERMISSÃO ---
-    // Formato: 'domain.action' — ex: 'maps.view', 's13.create', 'reports.view'
-    // Precedência: ADMIN > ANCIAO > herança SERVO > permissão customizada
     const can = (perm: string): boolean => {
-        const [domain, action] = perm.split('.');
-        // Papéis com acesso total
-        if (isAdminRoleGlobal || isElder) return true;
-        // SERVO herda acesso completo a mapas, testemunho e pontos de referência, mas NÃO a relatórios ou S-13
-        if (isServant && (domain === 'maps' || domain === 'witnessing' || domain === 'referencePoints')) return true;
-        // Consultar permissão customizada no objeto estruturado
-        const domainPerms = permissions?.[domain as keyof UserPermissions];
-        if (!domainPerms || typeof domainPerms !== 'object') return false;
-        return !!(domainPerms as Record<string, boolean | undefined>)[action];
+        return checkPermission({ role, permissions }, perm);
     };
 
     // --- FLAGS COMPUTADAS (retrocompatibilidade com o restante do código) ---
