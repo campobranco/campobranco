@@ -457,7 +457,7 @@ export default function ReferencePointsModal({
                             ) : points.length === 0 ? (
                                 <div className="text-center py-10 border border-dashed border-gray-200 dark:border-slate-800 rounded-xl bg-gray-50/50 dark:bg-slate-900/50">
                                     <AlertCircle className="w-8 h-8 mx-auto mb-2 text-gray-400" />
-                                    <p className="text-sm font-bold text-gray-500 dark:text-gray-400">Nenhum ponto cadastrado nesta cidade</p>
+                                    <p className="text-sm font-bold text-gray-500 dark:text-gray-400">Nenhum ponto cadastrado neste mapa</p>
                                     <p className="text-[10px] text-gray-400 mt-1 max-w-[280px] mx-auto leading-normal">Eles servem para orientar os publicadores durante o testemunho sem interferir na centralização dos mapas.</p>
                                 </div>
                             ) : (

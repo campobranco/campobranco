@@ -26,7 +26,8 @@ import {
     ChevronUp,
     ChevronDown,
     MoreVertical,
-    Calendar
+    Calendar,
+    AlertTriangle
 } from 'lucide-react';
 import Link from 'next/link';
 import { useSearchParams } from 'next/navigation';
@@ -70,6 +71,7 @@ interface PreviewItem {
     observations?: string;
     lastVisitedAt?: any; // Firestore Timestamp or serialized object
     inactivatedAt?: string;
+    sortOrder?: number;
 }
 
 function SharedPreviewContent() {
@@ -86,6 +88,7 @@ function SharedPreviewContent() {
     const [items, setItems] = useState<PreviewItem[]>([]);
     const [pageCongregationId, setPageCongregationId] = useState<string | null>(null);
     const [referencePoints, setReferencePoints] = useState<any[]>([]);
+    const [visits, setVisits] = useState<any[]>([]);
     const [error, setError] = useState('');
 
     // Modals State
@@ -126,6 +129,7 @@ function SharedPreviewContent() {
 
             setPageCongregationId(listData.congregationId || null);
             setCongregationType(fetchedType as any);
+            setVisits(visitsData || []);
 
             // 2. Identify "Main Data" (The Territory or City being previewed)
             // The items from the API contain all snapshots. One of them is our main territory/city.
@@ -157,6 +161,7 @@ function SharedPreviewContent() {
                     complement: sourceData.complement,
                     residentName: sourceData.residentName,
                     googleMapsLink: sourceData.googleMapsLink,
+                    wazeLink: sourceData.wazeLink,
                     lat: sourceData.lat,
                     lng: sourceData.lng,
                     isActive: sourceData.isActive !== false,
@@ -169,7 +174,8 @@ function SharedPreviewContent() {
                     visitStatus: sourceData.visitStatus,
                     territoryId: sourceData.territoryId,
                     cityId: sourceData.cityId,
-                    inactivatedAt: sourceData.inactivatedAt
+                    inactivatedAt: sourceData.inactivatedAt,
+                    sortOrder: sourceData.sortOrder
                 };
             });
 
@@ -184,7 +190,7 @@ function SharedPreviewContent() {
             // Merge
             const mergedItems = addresses.map(addr => {
                 const visitRecord = linkResults[addr.id];
-                const finalStatus = visitRecord?.status || 'none';
+                const finalStatus = visitRecord?.status || addr.visitStatus || 'none';
                 return {
                     ...addr,
                     visitStatus: finalStatus,
@@ -195,9 +201,14 @@ function SharedPreviewContent() {
 
             // Sort merged items
             mergedItems.sort((a, b) => {
+                const orderA = a.sortOrder ?? 999999;
+                const orderB = b.sortOrder ?? 999999;
+                if (orderA !== orderB) return orderA - orderB;
+
                 const streetA = a.street || '';
                 const streetB = b.street || '';
                 if (streetA !== streetB) return streetA.localeCompare(streetB);
+                
                 const numA = parseInt(a.number || '0');
                 const numB = parseInt(b.number || '0');
                 if (!isNaN(numA) && !isNaN(numB)) return numA - numB;
@@ -446,10 +457,11 @@ function SharedPreviewContent() {
             <Wrapper key={item.id} {...(wrapperProps as any)}>
                 {/* Main Card Container - Matching Address List padding and styles */}
                 <div className={`bg-surface rounded-md p-4 border-2 shadow-sm hover:shadow-md transition-all relative 
-                    ${item.isActive === false ? 'opacity-60 grayscale' : ''} 
+                    ${item.isActive === false ? (item.visitStatus === 'doNotVisit' ? 'opacity-60' : 'opacity-60 grayscale') : ''} 
                     ${activeDropdownId === item.id ? 'relative z-20 ring-1 ring-primary-100 dark:ring-primary-900' : ''}
                     ${item.visitStatus && item.visitStatus !== 'none'
                         ? item.visitStatus === 'contacted' || item.visitStatus === 'contested' ? 'border-green-500 bg-green-50/30 dark:bg-green-900/10'
+                            : item.visitStatus === 'partial' ? 'border-yellow-500 bg-yellow-50/30 dark:bg-yellow-900/10'
                             : item.visitStatus === 'notContacted' ? 'border-orange-500 bg-orange-50/30 dark:bg-orange-900/10'
                                 : item.visitStatus === 'moved' ? 'border-blue-500 bg-blue-50/30 dark:bg-blue-900/10'
                                     : item.visitStatus === 'doNotVisit' ? 'border-red-500 bg-red-50/30 dark:bg-red-900/10'
@@ -476,6 +488,9 @@ function SharedPreviewContent() {
                                     if (item.visitStatus === 'contacted' || item.visitStatus === 'contested') {
                                         badgeStyles = "bg-green-100 text-green-700 border-green-200 dark:bg-green-900/40 dark:text-green-400 dark:border-green-800";
                                         StatusIcon = ThumbsUp;
+                                    } else if (item.visitStatus === 'partial') {
+                                        badgeStyles = "bg-yellow-100 text-yellow-700 border-yellow-200 dark:bg-yellow-900/40 dark:text-yellow-400 dark:border-yellow-800";
+                                        StatusIcon = AlertTriangle;
                                     } else if (item.visitStatus === 'notContacted') {
                                         badgeStyles = "bg-orange-100 text-orange-700 border-orange-200 dark:bg-orange-900/40 dark:text-orange-400 dark:border-orange-800";
                                         StatusIcon = ThumbsDown;
@@ -546,7 +561,7 @@ function SharedPreviewContent() {
                                         {!user && <Lock className="w-3 h-3 text-muted" />}
                                     </div>
 
-                                    <div className={`flex flex-wrap items-center gap-2 mt-1 text-xs text-muted ${item.visitStatus && item.visitStatus !== 'none' ? 'grayscale opacity-70' : ''}`}>
+                                    <div className={`flex flex-wrap items-center gap-2 mt-1 text-xs text-muted ${item.visitStatus && item.visitStatus !== 'none' ? (item.visitStatus === 'doNotVisit' ? 'opacity-70' : 'grayscale opacity-70') : ''}`}>
                                         {item.peopleCount ? (
                                             <div className="flex items-center gap-1 bg-gray-100 dark:bg-gray-800 px-1.5 py-0.5 rounded-md" title="Número de Pessoas">
                                                 <Users className="w-3 h-3" />
@@ -613,17 +628,19 @@ function SharedPreviewContent() {
                                     <div className="absolute right-0 top-10 bg-surface rounded-xl shadow-xl border border-surface-border p-1 z-20 min-w-[160px] animate-in fade-in zoom-in-95 duration-200">
 
                                         {/* Dropdown Options */}
-                                        <button
-                                            onClick={(e) => {
-                                                e.stopPropagation();
-                                                handleOpenMap(item);
-                                                setActiveDropdownId(null);
-                                            }}
-                                            className="flex items-center gap-2 px-3 py-2 text-sm font-bold text-gray-600 dark:text-gray-300 hover:bg-primary-50 dark:hover:bg-primary-900/30 hover:text-primary-600 dark:hover:text-primary-400 rounded-lg transition-colors w-full text-left"
-                                        >
-                                            <Navigation className="w-4 h-4" />
-                                            Abrir no Mapa
-                                        </button>
+                                        {((item.googleMapsLink && item.googleMapsLink.trim() !== '' && item.googleMapsLink !== 'undefined') || (item.wazeLink && item.wazeLink.trim() !== '' && item.wazeLink !== 'undefined')) && (
+                                            <button
+                                                onClick={(e) => {
+                                                    e.stopPropagation();
+                                                    handleOpenMap(item);
+                                                    setActiveDropdownId(null);
+                                                }}
+                                                className="flex items-center gap-2 px-3 py-2 text-sm font-bold text-gray-600 dark:text-gray-300 hover:bg-primary-50 dark:hover:bg-primary-900/30 hover:text-primary-600 dark:hover:text-primary-400 rounded-lg transition-colors w-full text-left"
+                                            >
+                                                <Navigation className="w-4 h-4" />
+                                                Abrir no Mapa
+                                            </button>
+                                        )}
 
                                         <button
                                             onClick={(e) => handleHistoryClick(e, item.id)}
@@ -717,12 +734,19 @@ function SharedPreviewContent() {
                             title: p.name,
                             observations: p.observations
                         }))}
-                        items={items.filter(i => i.isActive !== false).map((a, idx) => {
+                        hideMapLinkIfEmpty={true}
+                        items={[
+                            ...activeItems.map((a, idx) => ({ item: a, displayIndex: idx + 1 })),
+                            ...inactiveItems.map((a, idx) => ({ item: a, displayIndex: activeItems.length + idx + 1 }))
+                        ]
+                        .filter(x => x.item.isActive !== false || x.item.visitStatus === 'doNotVisit')
+                        .map(({ item: a, displayIndex }) => {
                             let streetClean = a.street?.split('-')[0].trim() || '';
                             if (a.number && a.number !== 'S/N') {
                                 const numberRegex = new RegExp(`[\\s,]+${a.number}$`);
                                 streetClean = streetClean.replace(numberRegex, '').trim();
                             }
+                            streetClean = streetClean.replace(/,+$/, '').trim();
 
                             // Map shared-list specific status to MapView status
                             let mapStatus: any = 'AGUARDANDO'; // Default Gray for shared links
@@ -730,19 +754,20 @@ function SharedPreviewContent() {
                             else if (a.visitStatus === 'notContacted') mapStatus = 'NAO_CONTATADO';
                             else if (a.visitStatus === 'moved') mapStatus = 'MUDOU';
                             else if (a.visitStatus === 'doNotVisit') mapStatus = 'NAO_VISITAR';
+                            else if (a.visitStatus === 'partial') mapStatus = 'PARCIAL';
 
                             return {
                                 id: a.id,
                                 lat: a.lat,
                                 lng: a.lng,
-                                title: `${streetClean}, ${a.number}`,
+                                title: a.number && a.number !== 'undefined' ? `${streetClean}, ${a.number}` : streetClean,
                                 subtitle: a.complement || '',
                                 status: mapStatus,
                                 number: a.number,
                                 variant: 'numbered' as const,
-                                index: idx + 1,
+                                index: displayIndex,
                                 residentName: a.residentName, // Pass resident name for display
-                                fullAddress: `${streetClean}, ${a.number}, Brasil`,
+                                fullAddress: a.number && a.number !== 'undefined' ? `${streetClean}, ${a.number}, Brasil` : `${streetClean}, Brasil`,
                                 googleMapsLink: a.googleMapsLink,
                                 gender: a.gender,
                                 lastVisit: a.lastVisitedAt ? (() => {
@@ -785,6 +810,8 @@ function SharedPreviewContent() {
                     addressId={selectedAddressForHistory}
                     onClose={() => setSelectedAddressForHistory(null)}
                     isSharedView={true}
+                    shareId={shareId || undefined}
+                    sharedVisits={visits}
                 />
             )}
 

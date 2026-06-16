@@ -49,6 +49,8 @@ interface PreviewAddress {
     isActive: boolean;
     isDeaf: boolean;
     isMinor: boolean;
+    googleMapsLink?: string;
+    wazeLink?: string;
 }
 
 interface PreviewTerritory {
@@ -59,6 +61,7 @@ interface PreviewTerritory {
 
 interface PreviewCity {
     name: string;
+    parentCity?: string;
     uf: string;
     territories: Record<string, PreviewTerritory>;
 }
@@ -79,16 +82,19 @@ function parseCSVLine(line: string, sep = ';'): string[] {
 
 // Parseia o CSV e monta a árvore de preview no cliente (sem chamar a API)
 function buildPreview(text: string): { cities: Record<string, PreviewCity>; totalAddresses: number; errors: string[] } {
-    const lines = text.split(/\r?\n/).filter(l => l.trim());
+    const lines = text.split(/\r\n|\n|\r/).filter(l => l.trim());
     if (lines.length < 2) return { cities: {}, totalAddresses: 0, errors: ['CSV vazio'] };
 
     const rawHeader = lines[0].replace(/^\ufeff/, '');
     const sep = (rawHeader.match(/;/g) || []).length >= (rawHeader.match(/,/g) || []).length ? ';' : ',';
     const header = parseCSVLine(rawHeader, sep);
 
+    const normalize = (s: string) => s.trim().toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '');
+
     const idx = (names: string[]) => {
         for (const n of names) {
-            const i = header.findIndex(h => h.trim() === n);
+            const normN = normalize(n);
+            const i = header.findIndex(h => normalize(h) === normN);
             if (i >= 0) return i;
         }
         return -1;
@@ -99,17 +105,20 @@ function buildPreview(text: string): { cities: Record<string, PreviewCity>; tota
             'Cidade', 'Nome da cidade (Cities name)', 'Nome da cidade',
             'Bairro', 'Nome do bairro (Neighborhoods name)', 'Nome do bairro', 'Bairros'
         ]),
+        parentCity: idx(['Cidade pai', 'Cidade do Bairro', 'Cidade Principal']),
         uf: idx(['UF (Cities uf)', 'UF']),
-        mapNum: idx(['Número do Mapa (Territories name)', 'Número do Mapa']),
-        mapDesc: idx(['Descrição (Territories notes)', 'Descrição']),
-        street: idx(['Endereço (street)', 'Endereço']),
+        mapNum: idx(['Número do Mapa (Territories name)', 'Número do Mapa', 'Nmero do Mapa']),
+        mapDesc: idx(['Descrição (Territories notes)', 'Descrição', 'Descrio']),
+        street: idx(['Endereço (street)', 'Endereço', 'Endereços', 'Endereos', 'Endereco']),
         residents: idx(['Quantidade de residentes', 'Número de residentes', 'Número de Residentes']),
         name: idx(['Nome']),
-        gender: idx(['Gênero (gender)', 'Gênero']),
+        gender: idx(['Gênero (gender)', 'Gênero', 'Gnero']),
         active: idx(['Status']),
         deaf: idx(['Surdo']),
         minor: idx(['Menor de idade']),
-        number: idx(['Número', 'number', 'N°', 'Nº']),
+        number: idx(['Número', 'number', 'N°', 'Nº', 'Nmero']),
+        googleMapsLink: idx(['Link do Maps', 'Link Google Maps', 'Link do Google Maps', 'Maps']),
+        wazeLink: idx(['Link do Waze', 'Link Waze', 'Waze']),
     };
 
     const cities: Record<string, PreviewCity> = {};
@@ -127,7 +136,7 @@ function buildPreview(text: string): { cities: Record<string, PreviewCity>; tota
 
         const cityKey = `${uf.toUpperCase()}:${cityName}`;
         if (!cities[cityKey]) {
-            cities[cityKey] = { name: cityName, uf: uf.toUpperCase(), territories: {} };
+            cities[cityKey] = { name: cityName, parentCity: g(COLS.parentCity), uf: uf.toUpperCase(), territories: {} };
         }
 
         if (!cities[cityKey].territories[mapNum]) {
@@ -148,6 +157,8 @@ function buildPreview(text: string): { cities: Record<string, PreviewCity>; tota
                 isActive: !g(COLS.active) || g(COLS.active).toLowerCase() === 'true',
                 isDeaf: g(COLS.deaf).toLowerCase() === 'true',
                 isMinor: g(COLS.minor).toLowerCase() === 'true',
+                googleMapsLink: g(COLS.googleMapsLink),
+                wazeLink: g(COLS.wazeLink),
             });
             totalAddresses++;
         }
@@ -180,8 +191,15 @@ export default function CSVImportModal({
         setResults(null);
 
         const buffer = await f.arrayBuffer();
-        const decoder = new TextDecoder('utf-8');
-        const text = decoder.decode(buffer);
+        let text = '';
+        try {
+            const decoder = new TextDecoder('utf-8', { fatal: true });
+            text = decoder.decode(buffer);
+        } catch (err) {
+            // Fallback to Windows-1252 / ISO-8859-1 which is common in Excel CSV exports in Brazil
+            const decoder = new TextDecoder('windows-1252');
+            text = decoder.decode(buffer);
+        }
 
         const p = buildPreview(text);
         setPreview(p);
@@ -256,6 +274,7 @@ export default function CSVImportModal({
                     const newCityRef = doc(collection(db, 'cities'));
                     currentBatch.set(newCityRef, {
                         name: pCity.name,
+                        parentCity: pCity.parentCity || null,
                         uf: pCity.uf,
                         congregationId,
                         createdAt: serverTimestamp(),
@@ -426,6 +445,7 @@ export default function CSVImportModal({
                                         >
                                             <Building2 className="w-4 h-4 text-primary shrink-0" />
                                             <span className="font-bold text-main flex-1 text-left">{city.name}</span>
+                                            {city.parentCity && <span className="text-[10px] font-bold text-muted bg-gray-100 px-2 py-0.5 rounded-full">{city.parentCity}</span>}
                                             <span className="text-[10px] font-bold text-muted uppercase bg-gray-100 px-2 py-0.5 rounded-full">{city.uf}</span>
                                             <span className="text-[10px] font-bold text-muted">{terrCount} terr.</span>
                                             {cityOpen ? <ChevronDown className="w-4 h-4 text-muted" /> : <ChevronRight className="w-4 h-4 text-muted" />}

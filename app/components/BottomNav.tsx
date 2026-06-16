@@ -15,7 +15,7 @@ export default function BottomNav() {
     const mapsPath = isAdminRoleGlobal ? '/my-maps' : (congregationId ? `/my-maps/city?congregationId=${congregationId}` : '/my-maps');
 
     // Determine path for Witnessing link
-    const witnessingPath = isAdminRoleGlobal ? '/witnessing' : (congregationId ? `/witnessing/congregation?congregationId=${congregationId}` : '/witnessing');
+    const witnessingPath = isAdminRoleGlobal ? '/witnessing' : (congregationId ? `/witnessing/city?congregationId=${congregationId}` : '/witnessing');
 
     const isActive = (path: string) => {
         if (path === '/dashboard' && pathname === '/dashboard') return true;

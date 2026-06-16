@@ -159,6 +159,7 @@ function AddressListContent() {
     const [isMinor, setIsMinor] = useState(false);
     const [isStudent, setIsStudent] = useState(false);
     const [isNeurodivergent, setIsNeurodivergent] = useState(false);
+    const [isDoNotVisit, setIsDoNotVisit] = useState(false);
     const [observations, setObservations] = useState('');
 
     // Context Selection State
@@ -492,6 +493,17 @@ function AddressListContent() {
                 observations
             };
 
+            if (isDoNotVisit) {
+                (addressData as any).visitStatus = 'doNotVisit';
+            } else if (editingId) {
+                const currentAddr = addresses.find(a => a.id === editingId);
+                if (currentAddr?.visitStatus === 'doNotVisit') {
+                    (addressData as any).visitStatus = 'none';
+                }
+            } else {
+                (addressData as any).visitStatus = 'none';
+            }
+
             const resData = await saveAddress(editingId || null, addressData);
 
             if (!resData.success) {
@@ -521,6 +533,7 @@ function AddressListContent() {
         setIsMinor(false);
         setIsStudent(false);
         setIsNeurodivergent(false);
+        setIsDoNotVisit(false);
         setObservations('');
         setEditingId(null);
         setIsCreateModalOpen(false);
@@ -541,6 +554,7 @@ function AddressListContent() {
         setIsMinor(!!addr.isMinor);
         setIsStudent(!!addr.isStudent);
         setIsNeurodivergent(!!addr.isNeurodivergent);
+        setIsDoNotVisit(addr.visitStatus === 'doNotVisit');
         setObservations(addr.observations || '');
         
         if (addr.congregationId) setSelectedCongregationId(addr.congregationId);
@@ -763,7 +777,9 @@ function AddressListContent() {
                 onDragEnd={handleDragEnd}
                 className={`group bg-surface rounded-md p-4 border shadow-md hover:shadow-md transition-all 
                     ${(addr.visitStatus === 'moved') ? 'border-2 border-blue-500 bg-blue-50/50 dark:bg-blue-900/20' :
-                        (addr.visitStatus === 'doNotVisit') ? 'border-2 border-red-500 bg-red-50/50 dark:bg-red-900/20' : 'border-surface-border'}
+                        (addr.visitStatus === 'doNotVisit') ? 'border-2 border-red-500 bg-red-50/50 dark:bg-red-900/20' :
+                            (addr.visitStatus === 'partial') ? 'border-2 border-yellow-500 bg-yellow-50/50 dark:bg-yellow-900/20' :
+                                (addr.visitStatus === 'contacted') ? 'border-2 border-green-500 bg-green-50/50 dark:bg-green-900/20' : 'border-surface-border'}
                     ${draggedId === addr.id ? 'opacity-20 transition-none scale-95' : ''} 
                     ${openMenuId === addr.id ? 'relative z-20 ring-1 ring-primary-100 dark:ring-primary-900' : ''}`}
             >
@@ -808,6 +824,18 @@ function AddressListContent() {
                                 );
                             }
 
+                            // Não Visitar Highlight - Red Hand Icon
+                            if (addr.visitStatus === 'doNotVisit') {
+                                return (
+                                    <div
+                                        title="Não Visitar"
+                                        className="w-10 h-10 rounded-lg flex items-center justify-center shrink-0 shadow-sm border bg-red-500 text-white border-red-600 transition-colors opacity-50"
+                                    >
+                                        <Hand className="w-6 h-6" />
+                                    </div>
+                                );
+                            }
+
                             // Gender Mode (Sign Language / Foreign)
                             if (!isTraditional && addr.gender) {
                                 let badgeStyles = "bg-gray-100 text-gray-600 border-gray-200 dark:bg-gray-800 dark:text-gray-400 dark:border-gray-700";
@@ -836,10 +864,17 @@ function AddressListContent() {
                                 );
                             }
 
+                            let defaultStyles = "bg-primary-50 dark:bg-primary-900/10 text-primary-700 dark:text-primary-400 border-primary-100 dark:border-primary-900/20";
+                            if (addr.visitStatus === 'partial') {
+                                defaultStyles = "bg-yellow-100 dark:bg-yellow-900/30 text-yellow-700 dark:text-yellow-400 border-yellow-200 dark:border-yellow-900/40";
+                            } else if (addr.visitStatus === 'contacted') {
+                                defaultStyles = "bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-400 border-green-200 dark:border-green-900/40";
+                            }
+
                             return (
                                 <div
                                     title={lastVisitFormatted}
-                                    className="w-10 h-10 rounded-lg flex items-center justify-center font-bold text-sm shrink-0 shadow-sm border bg-primary-50 dark:bg-primary-900/10 text-primary-700 dark:text-primary-400 border-primary-100 dark:border-primary-900/20 transition-colors"
+                                    className={`w-10 h-10 rounded-lg flex items-center justify-center font-bold text-sm shrink-0 shadow-sm border transition-colors ${defaultStyles}`}
                                 >
                                     <span className="text-sm font-bold">{index + 1}</span>
                                 </div>
@@ -981,12 +1016,14 @@ function AddressListContent() {
                             <>
                                 <div className="fixed inset-0 z-40" onClick={() => setOpenMenuId(null)} />
                                 <div className="absolute right-0 top-10 bg-surface rounded-2xl shadow-2xl border border-surface-border p-1.5 z-50 min-w-[200px] animate-in fade-in zoom-in-95 slide-in-from-top-2 duration-200 overflow-hidden">
-                                    <DropDownItem 
-                                        icon={Navigation} 
-                                        label="Abrir no Mapa" 
-                                        variant="primary" 
-                                        onClick={(e) => { e.stopPropagation(); handleOpenMap(addr); setOpenMenuId(null); }} 
-                                    />
+                                    {((addr.googleMapsLink && addr.googleMapsLink.trim() !== '' && addr.googleMapsLink !== 'undefined') || (addr.wazeLink && addr.wazeLink.trim() !== '' && addr.wazeLink !== 'undefined')) && (
+                                        <DropDownItem 
+                                            icon={Navigation} 
+                                            label="Abrir no Mapa" 
+                                            variant="primary" 
+                                            onClick={(e) => { e.stopPropagation(); handleOpenMap(addr); setOpenMenuId(null); }} 
+                                        />
+                                    )}
 
                                     <DropDownItem 
                                         icon={HistoryIcon} 
@@ -1177,16 +1214,17 @@ function AddressListContent() {
                                 residentName: a.residentName,
                                 gender: a.gender,
                                 status: (a.visitStatus === 'contacted' ? 'OCUPADO' :
-                                    a.visitStatus === 'doNotVisit' ? 'NAO_VISITAR' :
-                                        a.visitStatus === 'moved' ? 'MUDOU' :
-                                            a.visitStatus === 'notContacted' ? 'NAO_CONTATADO' : 'LIVRE') as MapItem['status'],
+                                    a.visitStatus === 'partial' ? 'PARCIAL' :
+                                        a.visitStatus === 'doNotVisit' ? 'NAO_VISITAR' :
+                                            a.visitStatus === 'moved' ? 'MUDOU' :
+                                                a.visitStatus === 'notContacted' ? 'NAO_CONTATADO' : 'LIVRE') as MapItem['status'],
                                 lastVisit: a.lastVisitedAt && new Date(a.lastVisitedAt).toLocaleDateString(),
                                 isDeaf: a.isDeaf,
                                 isMinor: a.isMinor,
                                 isStudent: a.isStudent,
                                 isNeurodivergent: a.isNeurodivergent
                             })),
-                            ...(isInactiveExpanded ? inactiveAddresses.map((a, idx) => ({
+                            ...inactiveAddresses.map((a, idx) => ({
                                 id: a.id,
                                 lat: a.lat,
                                 lng: a.lng,
@@ -1198,15 +1236,16 @@ function AddressListContent() {
                                 residentName: a.residentName,
                                 gender: a.gender,
                                 status: (a.visitStatus === 'contacted' ? 'OCUPADO' :
-                                    a.visitStatus === 'doNotVisit' ? 'NAO_VISITAR' :
-                                        a.visitStatus === 'moved' ? 'MUDOU' :
-                                            a.visitStatus === 'notContacted' ? 'NAO_CONTATADO' : 'LIVRE') as MapItem['status'],
+                                    a.visitStatus === 'partial' ? 'PARCIAL' :
+                                        a.visitStatus === 'doNotVisit' ? 'NAO_VISITAR' :
+                                            a.visitStatus === 'moved' ? 'MUDOU' :
+                                                a.visitStatus === 'notContacted' ? 'NAO_CONTATADO' : 'LIVRE') as MapItem['status'],
                                 lastVisit: a.lastVisitedAt && new Date(a.lastVisitedAt).toLocaleDateString(),
                                 isDeaf: a.isDeaf,
                                 isMinor: a.isMinor,
                                 isStudent: a.isStudent,
                                 isNeurodivergent: a.isNeurodivergent
-                            })) : [])
+                            }))
                         ]}
                         showLegend={false}
                     />
@@ -1249,7 +1288,7 @@ function AddressListContent() {
                                         <span className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${isActive ? 'translate-x-6' : 'translate-x-1'}`} />
                                     </button>
                                 </div>
-
+                                
                                 {/* Context Info (Read Only) */}
                                 <div className="bg-gray-50 dark:bg-gray-800 rounded-lg p-4 space-y-3 border border-gray-100 dark:border-gray-700">
                                     <div className="flex justify-between items-center border-b border-gray-200 dark:border-gray-700 pb-2">
@@ -1435,6 +1474,15 @@ function AddressListContent() {
                                         onChange={e => setObservations(e.target.value)}
                                         placeholder="Detalhes adicionais..."
                                     />
+                                </div>
+
+                                <div className="mt-2">
+                                    <label className="flex items-center gap-3 cursor-pointer p-2 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors">
+                                        <input type="checkbox" checked={isDoNotVisit} onChange={(e) => setIsDoNotVisit(e.target.checked)} className="w-5 h-5 rounded text-red-500 border-gray-300 dark:border-gray-600 focus:ring-red-500 dark:bg-gray-700" />
+                                        <div className="flex flex-col">
+                                            <span className="font-bold text-sm text-gray-700 dark:text-gray-300">Marcar endereço como "Não visitar"</span>
+                                        </div>
+                                    </label>
                                 </div>
 
                                 <div className="flex gap-3 pt-4 border-t border-gray-100 dark:border-gray-700">

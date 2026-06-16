@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState } from 'react';
-import { Loader2, MapPin, ThumbsUp, Home, Navigation, Ban, Truck, User, Maximize2, Minimize2, Map as MapIcon, Lock, Unlock, Store } from 'lucide-react';
+import { Loader2, MapPin, ThumbsUp, Home, Navigation, Ban, Truck, User, Maximize2, Minimize2, Map as MapIcon, Lock, Unlock, Store, Hand } from 'lucide-react';
 import { renderToStaticMarkup } from 'react-dom/server';
 import { geocodeAddress } from '@/lib/services/geocoding';
 
@@ -34,7 +34,9 @@ const STATUS_CONFIG = {
     'NAO_CONTATADO': { color: '#f97316', icon: Ban, label: 'Não Encontrado' }, // Orange-500
     'NAO_VISITAR': { color: '#ef4444', icon: Ban, label: 'Não Visitar' },      // Red-500
     'MUDOU': { color: '#3b82f6', icon: Truck, label: 'Mudou-se' },             // Blue-500
-    'PENDENTE': { color: '#eab308', icon: MapPin, label: 'Pendente' }          // Yellow-500
+    'PENDENTE': { color: '#eab308', icon: MapPin, label: 'Pendente' },         // Yellow-500
+    'partial': { color: '#eab308', icon: MapPin, label: 'Parcial' },           // Yellow-500
+    'PARCIAL': { color: '#eab308', icon: MapPin, label: 'Parcial' }            // Yellow-500
 };
 
 export interface ReferencePointItem {
@@ -58,6 +60,7 @@ interface MapViewProps {
     disableInteractionLock?: boolean;
     isTraditional?: boolean;
     referencePoints?: ReferencePointItem[];
+    hideMapLinkIfEmpty?: boolean;
 }
 
 const defaultCenter = {
@@ -87,7 +90,7 @@ const extractCoordsFromUrl = (url?: string): { lat: number, lng: number } | null
     return null;
 };
 
-export default function MapView({ items, center = defaultCenter, zoom = 15, onGeocodeSuccess, onMapClick, onMarkerDragEnd, onMarkerClick, showLegend = true, disableGeocoding = false, disableInteractionLock = false, isTraditional = true, referencePoints = [] }: MapViewProps) {
+export default function MapView({ items, center = defaultCenter, zoom = 15, onGeocodeSuccess, onMapClick, onMarkerDragEnd, onMarkerClick, showLegend = true, disableGeocoding = false, disableInteractionLock = false, isTraditional = true, referencePoints = [], hideMapLinkIfEmpty = false }: MapViewProps) {
     const mapContainerRef = useRef<HTMLDivElement>(null);
     const mapInstanceRef = useRef<any>(null);
     const markersRef = useRef<any[]>([]); // Keep track of Leaflet markers
@@ -311,7 +314,11 @@ export default function MapView({ items, center = defaultCenter, zoom = 15, onGe
             const isCity = item.variant === 'city';
             const isStore = item.variant === 'store';
             const genderNormalized = item.gender ? item.gender.toUpperCase() : undefined;
-            const innerContent = isCity ? (
+            const isDoNotVisit = statusKey === 'NAO_VISITAR';
+
+            const innerContent = isDoNotVisit ? (
+                <Hand size={18} strokeWidth={2.5} />
+            ) : isCity ? (
                 <MapIcon size={18} strokeWidth={2.5} />
             ) : isStore ? (
                 <Store size={18} strokeWidth={2.5} />
@@ -347,7 +354,7 @@ export default function MapView({ items, center = defaultCenter, zoom = 15, onGe
             // Custom HTML Marker Construction
             // Circle with Number/Icon inside + Label Below
             const iconHtml = renderToStaticMarkup(
-                <div className="relative flex flex-col items-center justify-center transform transition-transform hover:scale-110 hover:z-50 cursor-pointer group" style={{ width: 'auto', minWidth: '40px', height: 'auto' }}>
+                <div className={`relative flex flex-col items-center justify-center transform transition-all duration-300 hover:scale-110 hover:z-50 cursor-pointer group ${isDoNotVisit ? 'opacity-50' : 'opacity-100'}`} style={{ width: 'auto', minWidth: '40px', height: 'auto' }}>
 
                     {/* Main Circle */}
                     <div
@@ -386,7 +393,8 @@ export default function MapView({ items, center = defaultCenter, zoom = 15, onGe
             // Create Marker
             const marker = L.marker([item.lat, item.lng], {
                 icon: displayIcon,
-                draggable: !!onMarkerDragEnd
+                draggable: !!onMarkerDragEnd,
+                zIndexOffset: isDoNotVisit ? -1000 : 0
             })
                 .addTo(map)
                 .on('dragend', function (event: any) {
@@ -396,7 +404,14 @@ export default function MapView({ items, center = defaultCenter, zoom = 15, onGe
                         onMarkerDragEndRef.current(item.id, position.lat, position.lng);
                     }
                 })
-                .on('click', () => {
+                .on('click', (e: any) => {
+                    if (isDoNotVisit) {
+                        const el = e.target.getElement();
+                        if (el && el.firstChild) {
+                            (el.firstChild as HTMLElement).classList.remove('opacity-50');
+                            (el.firstChild as HTMLElement).classList.add('opacity-100');
+                        }
+                    }
                     if (onMarkerClickRef.current) {
                         onMarkerClickRef.current(item);
                     }
@@ -523,18 +538,22 @@ export default function MapView({ items, center = defaultCenter, zoom = 15, onGe
                     footer.appendChild(infoStack);
 
                     // Right Side: Action Button (Bottom Right)
-                    const navBtn = document.createElement('a');
-                    navBtn.href = `https://www.google.com/maps/search/?api=1&query=${item.lat},${item.lng}`;
-                    navBtn.target = '_blank';
-                    navBtn.rel = 'noopener noreferrer';
-                    // Use standard Green-600 (#16a34a) which matches var(--primary)
-                    // Added !text-white to override Leaflet's default anchor styling
-                    navBtn.className = 'flex items-center gap-2 bg-[#16a34a] !text-white px-5 py-2.5 rounded-xl text-sm font-black uppercase tracking-wide hover:bg-[#15803d] transition-transform active:scale-95 shadow-lg shadow-green-600/20';
-                    navBtn.innerHTML = `
-                         <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polygon points="3 11 22 2 13 21 11 13 3 11"/></svg>
-                        Ir
-                    `;
-                    footer.appendChild(navBtn);
+                    const hasValidLink = (item.googleMapsLink && item.googleMapsLink.trim() !== '' && item.googleMapsLink !== 'undefined');
+                    
+                    if (hasValidLink) {
+                        const navBtn = document.createElement('a');
+                        navBtn.href = hasValidLink ? item.googleMapsLink! : `https://www.google.com/maps/search/?api=1&query=${item.lat},${item.lng}`;
+                        navBtn.target = '_blank';
+                        navBtn.rel = 'noopener noreferrer';
+                        // Use standard Green-600 (#16a34a) which matches var(--primary)
+                        // Added !text-white to override Leaflet's default anchor styling
+                        navBtn.className = 'flex items-center gap-2 bg-[#16a34a] !text-white px-5 py-2.5 rounded-xl text-sm font-black uppercase tracking-wide hover:bg-[#15803d] transition-transform active:scale-95 shadow-lg shadow-green-600/20';
+                        navBtn.innerHTML = `
+                             <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polygon points="3 11 22 2 13 21 11 13 3 11"/></svg>
+                            Ir
+                        `;
+                        footer.appendChild(navBtn);
+                    }
 
                     container.appendChild(footer);
 
@@ -743,17 +762,38 @@ export default function MapView({ items, center = defaultCenter, zoom = 15, onGe
             {/* Floating Legend (Bottom Center) - Enhanced Design */}
             {showLegend && (
                 <div className="absolute bottom-6 left-1/2 -translate-x-1/2 bg-white/90 backdrop-blur-md px-5 py-3 rounded-lg shadow-xl shadow-gray-200/50 border border-gray-100 flex items-center gap-6 z-10 scale-95 transition-transform group-hover:scale-100 origin-bottom">
-                    {Object.entries(STATUS_CONFIG)
-                        .filter(([key]) => key !== 'LIVRE' && key !== 'PENDENTE')
-                        .map(([key, config]) => (
-                            <div key={key} className="flex flex-col items-center gap-1">
-                                <div
-                                    className="w-3 h-3 rounded-full shadow-sm"
-                                    style={{ backgroundColor: config.color }}
-                                />
-                                <span className="text-[10px] font-bold text-gray-500 uppercase tracking-wide whitespace-nowrap">{config.label}</span>
+                    {isTraditional ? (
+                        <>
+                            <div className="flex flex-col items-center gap-1">
+                                <div className="w-3 h-3 rounded-full shadow-sm" style={{ backgroundColor: STATUS_CONFIG['OCUPADO'].color }} />
+                                <span className="text-[10px] font-bold text-gray-500 uppercase tracking-wide whitespace-nowrap">Concluído</span>
                             </div>
-                        ))}
+                            <div className="flex flex-col items-center gap-1">
+                                <div className="w-3 h-3 rounded-full shadow-sm" style={{ backgroundColor: STATUS_CONFIG['partial'].color }} />
+                                <span className="text-[10px] font-bold text-gray-500 uppercase tracking-wide whitespace-nowrap">Parcial</span>
+                            </div>
+                            <div className="flex flex-col items-center gap-1">
+                                <div className="w-3 h-3 rounded-full shadow-sm" style={{ backgroundColor: STATUS_CONFIG['AGUARDANDO'].color }} />
+                                <span className="text-[10px] font-bold text-gray-500 uppercase tracking-wide whitespace-nowrap">Pendente</span>
+                            </div>
+                            <div className="flex flex-col items-center gap-1">
+                                <div className="w-3 h-3 rounded-full shadow-sm" style={{ backgroundColor: STATUS_CONFIG['NAO_VISITAR'].color }} />
+                                <span className="text-[10px] font-bold text-gray-500 uppercase tracking-wide whitespace-nowrap">Não Visitar</span>
+                            </div>
+                        </>
+                    ) : (
+                        Object.entries(STATUS_CONFIG)
+                            .filter(([key]) => key !== 'LIVRE' && key !== 'PENDENTE')
+                            .map(([key, config]) => (
+                                <div key={key} className="flex flex-col items-center gap-1">
+                                    <div
+                                        className="w-3 h-3 rounded-full shadow-sm"
+                                        style={{ backgroundColor: config.color }}
+                                    />
+                                    <span className="text-[10px] font-bold text-gray-500 uppercase tracking-wide whitespace-nowrap">{config.label}</span>
+                                </div>
+                            ))
+                    )}
                     {/* Adding "Aguardando" manually for clarity if needed, or filter LIVRE differently */}
                 </div>
             )}

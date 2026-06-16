@@ -66,7 +66,7 @@ export default function CSVActionButtons({
 
             // 2. Cabeçalho do CSV
             const headers = [
-                'Cidade', 'UF', 'Número do Mapa', 'Descrição', 'Endereço',
+                'Cidade', 'Cidade do Bairro', 'UF', 'Número do Mapa', 'Descrição', 'Endereço',
                 'Quantidade de residentes', 'Nome', 'Link do Maps', 'Link do Waze',
                 'Status', 'Surdo', 'Menor de idade', 'Estudante', 'Neurodivergente',
                 'Gênero', 'Observações', 'Resultado da ultima visita', 'Ordem na listagem'
@@ -79,6 +79,7 @@ export default function CSVActionButtons({
 
                 return [
                     city.name || '',
+                    city.parentCity || '',
                     city.uf || '',
                     territory.name || '',
                     territory.notes || territory.description || '',
@@ -131,8 +132,8 @@ export default function CSVActionButtons({
     };
 
     const downloadTemplate = () => {
-        const header = "Cidade;UF;Número do Mapa;Descrição;Endereço;Quantidade de residentes;Nome;Link do Maps;Link do Waze;Status;Surdo;Menor de idade;Estudante;Neurodivergente;Gênero;Observações;Resultado da ultima visita;Ordem na listagem";
-        const example = "Catanduva;SP;01;Centro;Rua Álamo, 225;1;João Silva;https://maps.google.com/...;https://waze.com/...;true;false;false;false;false;Homem;Exemplo de observação;notContacted;0";
+        const header = "Cidade;Cidade do Bairro;UF;Número do Mapa;Descrição;Endereço;Quantidade de residentes;Nome;Link do Maps;Link do Waze;Status;Surdo;Menor de idade;Estudante;Neurodivergente;Gênero;Observações;Resultado da ultima visita;Ordem na listagem";
+        const example = "Vila Carvalho;Catanduva;SP;01;Centro;Rua Álamo, 225;1;João Silva;https://maps.google.com/...;https://waze.com/...;true;false;false;false;false;Homem;Exemplo de observação;notContacted;0";
         const csvContent = "\ufeff" + [header, example].join('\n');
 
         const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });

@@ -30,6 +30,7 @@ interface VisitHistoryModalProps {
     address?: string;
     isSharedView?: boolean;
     shareId?: string;
+    sharedVisits?: any[];
     congregationType?: 'TRADITIONAL' | 'SIGN_LANGUAGE' | 'FOREIGN_LANGUAGE' | null;
 }
 
@@ -39,6 +40,7 @@ export default function VisitHistoryModal({
     address, 
     isSharedView = false, 
     shareId,
+    sharedVisits,
     congregationType 
 }: VisitHistoryModalProps) {
     const [loading, setLoading] = useState(true);
@@ -56,19 +58,23 @@ export default function VisitHistoryModal({
         const fetchHistory = async () => {
             setLoading(true);
             try {
-                // Busca visitas da coleção 'visits' no Firestore
-                // Utilizando ordenação em memória para evitar a exigência de Índice Composto (Composite Index) no Firestore
-                const visitsRef = collection(db, 'visits');
-                const q = query(
-                    visitsRef,
-                    where('addressId', '==', addressId)
-                );
+                let rawVisits: any[] = [];
+                
+                if (isSharedView && sharedVisits) {
+                    rawVisits = sharedVisits.filter((v: any) => v.addressId === addressId);
+                } else {
+                    const visitsRef = collection(db, 'visits');
+                    const q = query(
+                        visitsRef,
+                        where('addressId', '==', addressId)
+                    );
 
-                const snapshot = await getDocs(q);
-                let rawVisits = snapshot.docs.map(d => ({
-                    id: d.id,
-                    ...d.data()
-                }));
+                    const snapshot = await getDocs(q);
+                    rawVisits = snapshot.docs.map(d => ({
+                        id: d.id,
+                        ...d.data()
+                    }));
+                }
 
                 // Ordenação local descente por data da visita
                 rawVisits.sort((a: any, b: any) => {
@@ -84,7 +90,7 @@ export default function VisitHistoryModal({
                 const userIds = Array.from(new Set(rawVisits.map((v: any) => v.userId).filter(id => id)));
                 const userNamesMap = new Map<string, string>();
 
-                if (userIds.length > 0) {
+                if (!isSharedView && userIds.length > 0) {
                     // Nota: Firestore não tem 'in' para documentos simples, buscamos um por um ou via 'in' na coleção
                     const usersRef = collection(db, 'users');
                     // O limite de 'in' no Firestore é 30, o que é seguro aqui para 50 visitas
