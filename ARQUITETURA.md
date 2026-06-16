@@ -110,7 +110,15 @@ Os contadores são armazenados em um objeto aninhado `stats` no documento de cad
 *   **Promoção Automática**: Se o usuário logado corresponder a este e-mail, o `AuthContext` cria ou atualiza o perfil Firestore com o papel `ADMIN` automaticamente.
 
 ---
-### 📝 Registro de Melhorias Recentes:
+### 📈 Registro de Melhorias Recentes:
+- **v0.9.13-beta**: **BDD Core Domain e Proteção de Concorrência**. (16/06/2026)
+  - Extração de regras comportamentais puras para `lib/domain/territoryRules.ts` garantindo consistência na máquina de estados de territórios.
+  - Substituição cega de `writeBatch` por `runTransaction` no `lib/services/shared_lists.ts`, garantindo atomicidade real para designação e devolução de territórios.
+  - Modificação do método `deleteTerritory` para bloqueio seguro de exclusão quando existirem dependências, em vez de exclusão em cascata.
+  - Inserção de 13 cenários de testes unitários testando corrupção de dados, ownership e transições de estado.
+- **v0.9.12-beta**: **QA e Modularização de RBAC**. (16/06/2026)
+  - Refatoração da lógica de permissões do `AuthContext` para `lib/rbac.ts` visando testabilidade pura (desacoplada do React/Firebase).
+  - Implementação de 10 testes unitários com Jest (`__tests__/rbac.test.ts`) cobrindo todos os perfis de hierarquia e Edge Cases.
 - **v0.9.11-beta**: **Padronização Open Source**. (16/06/2026)
   - Remoção de redirecionamentos fixos de domínio legados via código (`layout.tsx`) para garantir que *forks* funcionem sem acoplamento.
   - Limpeza de variáveis obsoletas de ambiente (`NEXT_PUBLIC_LEGACY_HOST`) e de configuração (`DOMAIN_REDESIGN`).
