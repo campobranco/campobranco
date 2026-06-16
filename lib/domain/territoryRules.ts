@@ -29,10 +29,9 @@ export function canAssignTerritory(
         return { valid: false, code: "INVALID_TERRITORY_STATE", message: "Estado do território é nulo." };
     }
 
-    // Cenário: Usuário inexistente
-    if (!targetUserId || targetUserId.trim() === '') {
-        return { valid: false, code: "USER_NOT_FOUND", message: "Usuário alvo não informado ou inexistente." };
-    }
+    // Cenário: Usuário inexistente (Ignorado se for Link Aberto / Open Link)
+    // Se targetUserId for vazio/null, o sistema entende que é um Link Aberto,
+    // que será assumido depois por quem abrir o link.
 
     const s = (territory.status || "disponível").toLowerCase();
 
