@@ -733,13 +733,15 @@ function CityListContent() {
                             fullAddress: `${c.name}, ${c.uf}, Brasil`,
                             variant: 'city' as const
                         }))}
-                        referencePoints={referencePoints.map(p => ({
-                            id: p.id,
-                            lat: p.lat,
-                            lng: p.lng,
-                            title: p.name,
-                            observations: p.observations || ''
-                        }))}
+                        referencePoints={referencePoints
+                            .filter(p => cities.some(c => c.id === p.cityId))
+                            .map(p => ({
+                                id: p.id,
+                                lat: p.lat,
+                                lng: p.lng,
+                                title: p.name,
+                                observations: p.observations || ''
+                            }))}
                         showLegend={false}
                     />
                 </div>

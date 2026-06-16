@@ -30,14 +30,16 @@ O SOFTWARE É FORNECIDO "COMO ESTÁ" E O AUTOR ISENTA-SE DE TODAS AS GARANTIAS C
 const DEPENDENCIES = [
     { name: "react", version: "19.0.0", author: "Meta Platforms, Inc.", license: "MIT" },
     { name: "react-dom", version: "19.0.0", author: "Meta Platforms, Inc.", license: "MIT" },
-    { name: "next", version: "15.5.9", author: "Vercel, Inc.", license: "MIT" },
-    { name: "firebase", version: "12.7.0", author: "Google LLC", license: "Apache 2.0" },
-    { name: "firebase-admin", version: "13.6.0", author: "Google LLC", license: "Apache 2.0" },
+    { name: "next", version: "15.1.0", author: "Vercel, Inc.", license: "MIT" },
+    { name: "firebase", version: "12.9.0", author: "Google LLC", license: "Apache 2.0" },
+    { name: "firebase-admin", version: "13.6.1", author: "Google LLC", license: "Apache 2.0" },
     { name: "tailwindcss", version: "3.4.17", author: "Tailwind Labs, Inc.", license: "MIT" },
     { name: "lucide-react", version: "0.562.0", author: "Lucide Contributors", license: "ISC" },
     { name: "date-fns", version: "4.1.0", author: "Sasha Koss", license: "MIT" },
     { name: "jose", version: "6.1.3", author: "Filip Skokan", license: "MIT" },
     { name: "@google-cloud/recaptcha-enterprise", version: "6.3.1", author: "Google LLC", license: "Apache 2.0" },
+    { name: "sonner", version: "2.0.7", author: "Emil Kowalski", license: "MIT" },
+    { name: "@ducanh2912/next-pwa", version: "10.2.9", author: "Duc Anh", license: "MIT" }
 ];
 
 function LicenseCard({ dep }: { dep: typeof DEPENDENCIES[0] }) {

@@ -128,7 +128,13 @@ export async function deleteCity(id: string) {
         );
         await deleteDocs(pointsSnap.docs.map(d => d.ref));
 
-        // 7. Deletar a cidade em si
+        // 7. Pontos de referência vinculados à cidade
+        const refPointsSnap = await getDocs(
+            query(collection(db, 'reference_points'), where('cityId', '==', id))
+        );
+        await deleteDocs(refPointsSnap.docs.map(d => d.ref));
+
+        // 8. Deletar a cidade em si
         await deleteDoc(doc(db, TABLE, id));
 
         return { success: true };

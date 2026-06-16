@@ -52,7 +52,7 @@ export default function VisitReportModal({
     const congregationType = propType || forcedCongregationType || authType || 'TRADITIONAL';
 
     const [loading, setLoading] = useState(false);
-    const [status, setStatus] = useState<'contacted' | 'notContacted' | 'moved' | 'doNotVisit' | 'contested' | ''>(
+    const [status, setStatus] = useState<'contacted' | 'partial' | 'notContacted' | 'moved' | 'doNotVisit' | 'contested' | ''>(
         (address.visitStatus && address.visitStatus !== 'none') ? address.visitStatus : ''
     );
     const [isDeaf, setIsDeaf] = useState(address.isDeaf || false);
@@ -188,32 +188,36 @@ export default function VisitReportModal({
                         </div>
 
                         {/* Status Controls */}
-                        {congregationType === 'TRADITIONAL' ? (
-                            <button
-                                onClick={() => setStatus(status === 'contacted' ? '' : 'contacted')}
-                                className={`col-span-2 w-full p-6 rounded-2xl flex flex-col items-center gap-3 transition-all border-2
-                                    ${status === 'contacted'
-                                        ? 'bg-green-600 border-green-600 text-white shadow-xl shadow-green-500/30 active:scale-95'
-                                        : 'bg-white dark:bg-slate-800 border-gray-200 dark:border-slate-700 text-gray-400 hover:border-green-300 dark:hover:border-green-700'}`}
-                            >
-                                {status === 'contacted' ? (
-                                    <>
-                                        <CheckCircle2 className="w-16 h-16 animate-in zoom-in duration-300" />
-                                        <div className="flex flex-col items-center">
-                                            <span className="text-xl font-black uppercase tracking-widest">Concluído</span>
-                                            <span className="text-xs font-medium opacity-90 text-green-50">Visita registrada</span>
-                                        </div>
-                                    </>
-                                ) : (
-                                    <>
-                                        <CheckCircle className="w-16 h-16 text-gray-200 dark:text-slate-700" />
-                                        <div className="flex flex-col items-center">
-                                            <span className="text-xl font-black uppercase tracking-widest">Concluído</span>
-                                            <span className="text-xs font-medium opacity-60">Toque para marcar como trabalhado</span>
-                                        </div>
-                                    </>
-                                )}
-                            </button>
+                        {congregationType === 'TRADITIONAL' && address.visitStatus !== 'doNotVisit' ? (
+                            <div className="grid grid-cols-2 gap-3">
+                                <button
+                                    onClick={() => setStatus(status === 'contacted' ? '' : 'contacted')}
+                                    className={`p-5 rounded-2xl flex flex-col items-center gap-2 transition-all border-2
+                                        ${status === 'contacted'
+                                            ? 'bg-green-600 border-green-600 text-white shadow-lg shadow-green-500/30 active:scale-95'
+                                            : 'bg-white dark:bg-slate-800 border-gray-200 dark:border-slate-700 text-gray-400 hover:border-green-300 dark:hover:border-green-700'}`}
+                                >
+                                    <CheckCircle2 className={`w-10 h-10 ${status === 'contacted' ? 'animate-in zoom-in duration-300' : 'text-gray-200 dark:text-slate-700'}`} />
+                                    <div className="flex flex-col items-center">
+                                        <span className="text-sm font-black uppercase tracking-wider">Concluída</span>
+                                        <span className={`text-[10px] font-medium ${status === 'contacted' ? 'text-green-50' : 'opacity-60'}`}>100% da rua</span>
+                                    </div>
+                                </button>
+                                
+                                <button
+                                    onClick={() => setStatus(status === 'partial' ? '' : 'partial')}
+                                    className={`p-5 rounded-2xl flex flex-col items-center gap-2 transition-all border-2
+                                        ${status === 'partial'
+                                            ? 'bg-yellow-500 border-yellow-500 text-white shadow-lg shadow-yellow-500/30 active:scale-95'
+                                            : 'bg-white dark:bg-slate-800 border-gray-200 dark:border-slate-700 text-gray-400 hover:border-yellow-300 dark:hover:border-yellow-700'}`}
+                                >
+                                    <AlertTriangle className={`w-10 h-10 ${status === 'partial' ? 'animate-in zoom-in duration-300' : 'text-gray-200 dark:text-slate-700'}`} />
+                                    <div className="flex flex-col items-center">
+                                        <span className="text-sm font-black uppercase tracking-wider">Parcial</span>
+                                        <span className={`text-[10px] font-medium ${status === 'partial' ? 'text-yellow-50' : 'opacity-60'}`}>Faltou uma parte</span>
+                                    </div>
+                                </button>
+                            </div>
                         ) : (
                             /* Sign/Foreign: Full Status Buttons */
                             <div className="grid grid-cols-2 gap-3">
@@ -354,8 +358,8 @@ export default function VisitReportModal({
                             <textarea
                                 value={observations}
                                 onChange={(e) => setObservations(e.target.value)}
-                                className={`w-full bg-white dark:bg-slate-900 border border-gray-200 dark:border-slate-700 text-gray-900 dark:text-white rounded-lg p-3 text-sm focus:ring-2 focus:ring-blue-500/20 focus:outline-none min-h-[80px] ${status === 'contested' && !observations.trim() ? 'ring-2 ring-orange-200 bg-orange-50 dark:bg-orange-900/20' : ''}`}
-                                placeholder={status === 'contested' ? "Por que este endereço deve ser considerado ativo?" : isListening ? "Ouvindo..." : "Alguma observação importante?"}
+                                className={`w-full bg-white dark:bg-slate-900 border border-gray-200 dark:border-slate-700 text-gray-900 dark:text-white rounded-lg p-3 text-sm focus:ring-2 focus:ring-blue-500/20 focus:outline-none min-h-[80px] ${(status === 'contested' || status === 'partial') && !observations.trim() ? 'ring-2 ring-orange-200 bg-orange-50 dark:bg-orange-900/20' : ''}`}
+                                placeholder={status === 'contested' ? "Por que este endereço deve ser considerado ativo?" : status === 'partial' ? "Opcional: O que faltou concluir? (Ex: lado das chácaras)" : isListening ? "Ouvindo..." : "Alguma observação importante?"}
                             />
                         </div>
 
@@ -369,9 +373,9 @@ export default function VisitReportModal({
                                 <History className="w-5 h-5" />
                             </button>
 
-                            {(address.googleMapsLink || (address.lat && address.lng)) && (
+                            {((address.googleMapsLink && address.googleMapsLink.trim() !== '' && address.googleMapsLink !== 'undefined') || (address.wazeLink && address.wazeLink.trim() !== '' && address.wazeLink !== 'undefined')) && (
                                 <a
-                                    href={address.googleMapsLink || `https://www.google.com/maps/search/?api=1&query=${address.lat},${address.lng}`}
+                                    href={address.googleMapsLink || address.wazeLink}
                                     target="_blank"
                                     rel="noopener noreferrer"
                                     className="flex-1 bg-white hover:bg-gray-100 dark:bg-slate-800 dark:hover:bg-slate-700 text-gray-900 dark:text-white py-3.5 rounded-lg font-bold text-sm flex items-center justify-center gap-2 transition-colors border border-gray-200 dark:border-slate-700"

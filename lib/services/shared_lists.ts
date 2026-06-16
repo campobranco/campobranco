@@ -100,7 +100,7 @@ export async function createSharedList(data: {
                             type: 'address',
                             data: {
                                 ...d.data(),
-                                visitStatus: 'none'
+                                visitStatus: d.data().visitStatus === 'doNotVisit' ? 'doNotVisit' : 'none'
                             },
                             createdAt: serverTimestamp()
                         });
@@ -211,12 +211,19 @@ export async function getSharedListWithData(id: string) {
         let congregationType: 'TRADITIONAL' | 'SIGN_LANGUAGE' | 'FOREIGN_LANGUAGE' = 'TRADITIONAL';
         const congregationId = list.congregationId;
         if (congregationId) {
-            const congSnap = await getDoc(doc(db, 'congregations', congregationId));
-            if (congSnap.exists()) {
-                const category = ((congSnap.data() as any).category || '').toLowerCase();
-                if (category.includes('sinais')) congregationType = 'SIGN_LANGUAGE';
-                else if (category.includes('estrangeiro')) congregationType = 'FOREIGN_LANGUAGE';
-                else congregationType = 'TRADITIONAL';
+            try {
+                const congSnap = await getDoc(doc(db, 'congregations', congregationId));
+                if (congSnap.exists()) {
+                    const category = ((congSnap.data() as any).category || '').toLowerCase();
+                    if (category.includes('sinais')) congregationType = 'SIGN_LANGUAGE';
+                    else if (category.includes('estrangeiro')) congregationType = 'FOREIGN_LANGUAGE';
+                    else congregationType = 'TRADITIONAL';
+                }
+            } catch (err: any) {
+                console.warn('Could not read congregation for shared list (might be public access):', err.message);
+                if (list.congregationType) {
+                    congregationType = list.congregationType;
+                }
             }
         }
 

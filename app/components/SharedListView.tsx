@@ -97,6 +97,7 @@ export default function SharedListView({ id: propId }: SharedListViewProps) {
         total: 0,
         processed: 0,
         contacted: 0,
+        partial: 0,
         notContacted: 0,
         moved: 0,
         doNotVisit: 0,
@@ -159,6 +160,9 @@ export default function SharedListView({ id: propId }: SharedListViewProps) {
                             visitNotes: result?.notes || '',
                             inactivatedAt: sourceData.inactivatedAt
                         };
+                    })
+                    .sort((a: any, b: any) => {
+                        return mainItemIds.indexOf(a.id) - mainItemIds.indexOf(b.id);
                     });
 
                 setItems(mergedItems);
@@ -190,6 +194,7 @@ export default function SharedListView({ id: propId }: SharedListViewProps) {
                         total: 0,
                         processed: 0,
                         contacted: 0,
+                        partial: 0,
                         notContacted: 0,
                         moved: 0,
                         doNotVisit: 0,
@@ -210,6 +215,7 @@ export default function SharedListView({ id: propId }: SharedListViewProps) {
                                 if (tId && list.type === 'territory') procCounts[tId] = (procCounts[tId] || 0) + 1;
                                 
                                 if (currentStatus === 'contacted') stats.contacted++;
+                                else if (currentStatus === 'partial') stats.partial++;
                                 else if (currentStatus === 'notContacted') stats.notContacted++;
                                 else if (currentStatus === 'moved') stats.moved++;
                                 else if (currentStatus === 'doNotVisit') stats.doNotVisit++;
@@ -481,6 +487,7 @@ export default function SharedListView({ id: propId }: SharedListViewProps) {
                             <div className="space-y-2">
                                 <div className="h-4 w-full bg-gray-100 dark:bg-gray-800 rounded-full overflow-hidden flex">
                                     <div style={{ width: `${(globalStats.contacted / globalStats.total) * 100}%` }} className="bg-green-600 h-full transition-all duration-500" title={`Concluído: ${globalStats.contacted}`} />
+                                    <div style={{ width: `${(globalStats.partial / globalStats.total) * 100}%` }} className="bg-yellow-500 h-full transition-all duration-500" title={`Parcial: ${globalStats.partial}`} />
                                     {congregationType !== 'TRADITIONAL' && (
                                         <>
                                             <div style={{ width: `${(globalStats.notContacted / globalStats.total) * 100}%` }} className="bg-orange-500 h-full transition-all duration-500" title={`Não Contatados: ${globalStats.notContacted}`} />
@@ -500,6 +507,12 @@ export default function SharedListView({ id: propId }: SharedListViewProps) {
                                             {congregationType === 'TRADITIONAL' ? 'Concluído' : 'Contatado'}
                                         </span>
                                     </div>
+                                    {congregationType === 'TRADITIONAL' && (
+                                        <div className="flex items-center gap-1.5">
+                                            <div className="w-2 h-2 rounded-full bg-yellow-500" />
+                                            <span className="text-[10px] text-muted font-bold uppercase">Parcial</span>
+                                        </div>
+                                    )}
                                     {congregationType !== 'TRADITIONAL' && (
                                         <>
                                             <div className="flex items-center gap-1.5"><div className="w-2 h-2 rounded-full bg-orange-500" /><span className="text-[10px] text-muted font-bold uppercase">Não Contatado</span></div>
@@ -575,7 +588,7 @@ export default function SharedListView({ id: propId }: SharedListViewProps) {
                         }
                         return (
                             <div key={item.id} className="block group">
-                                <div className={`bg-surface p-4 rounded-lg border border-surface-border flex items-center gap-4 shadow-sm group-hover:border-primary-light dark:group-hover:border-primary-dark group-hover:shadow-md transition-all relative overflow-hidden ${item.isActive === false ? 'opacity-60 grayscale' : ''}`}>
+                                <div className={`bg-surface p-4 rounded-lg border border-surface-border flex items-center gap-4 shadow-sm group-hover:border-primary-light dark:group-hover:border-primary-dark group-hover:shadow-md transition-all relative overflow-hidden ${item.isActive === false ? (item.visitStatus === 'doNotVisit' ? 'opacity-60' : 'opacity-60 grayscale') : ''}`}>
                                     <div
                                         onClick={() => {
                                             if (listData?.type === 'address') {
@@ -586,22 +599,22 @@ export default function SharedListView({ id: propId }: SharedListViewProps) {
                                     />
                                     <div className={`w-12 h-12 rounded-lg flex items-center justify-center shrink-0 transition-colors shadow-sm ${listData?.type === 'address' ? (
                                         item.visitStatus && item.visitStatus !== 'none' 
-                                            ? (congregationType === 'TRADITIONAL' ? 'bg-[#21832B] text-white' : (item.visitStatus === 'contacted' ? 'bg-[#21832B] text-white' : item.visitStatus === 'notContacted' ? 'bg-orange-500 text-white' : item.visitStatus === 'moved' ? 'bg-blue-500 text-white' : item.visitStatus === 'doNotVisit' ? 'bg-red-500 text-white' : 'bg-primary-light/50 dark:bg-primary-dark/30 text-primary-dark dark:text-primary-light'))
+                                            ? (item.visitStatus === 'doNotVisit' ? 'bg-red-500 text-white shadow-red-500/30' : congregationType === 'TRADITIONAL' ? (item.visitStatus === 'partial' ? 'bg-yellow-500 text-white shadow-yellow-500/30' : 'bg-[#21832B] text-white') : (item.visitStatus === 'contacted' ? 'bg-[#21832B] text-white' : item.visitStatus === 'notContacted' ? 'bg-orange-500 text-white' : item.visitStatus === 'moved' ? 'bg-blue-500 text-white' : 'bg-primary-light/50 dark:bg-primary-dark/30 text-primary-dark dark:text-primary-light'))
                                             : 'bg-primary-light/50 dark:bg-primary-dark/30 text-primary-dark dark:text-primary-light group-hover:bg-primary-light/80 dark:group-hover:bg-primary-dark/50 group-hover:text-primary-dark dark:group-hover:text-primary-light'
                                     ) : listData?.type === 'territory' && (addressCounts[item.id] > 0 && addressCounts[item.id] === processedCounts[item.id]) ? 'bg-green-600 text-white shadow-lg shadow-green-500/20' : 'bg-gray-50 dark:bg-gray-800 text-gray-400 dark:text-gray-500 border border-gray-100 dark:border-gray-700 group-hover:bg-primary-light/50 dark:group-hover:bg-primary-dark/30 group-hover:text-primary dark:group-hover:text-primary-light'}`}>
                                         {listData?.type === 'city' && <Building2 className="w-6 h-6" />}
                                         {listData?.type === 'territory' && <MapIcon className="w-6 h-6" />}
                                         {listData?.type === 'address' && (
                                             <>
-                                                {item.gender === 'HOMEM' && <User className={`w-5 h-5 ${item.visitStatus ? 'text-white' : 'text-primary fill-primary'}`} />}
-                                                {item.gender === 'MULHER' && <User className={`w-5 h-5 ${item.visitStatus ? 'text-white' : 'text-pink-500 fill-pink-500'}`} />}
+                                                {item.gender === 'HOMEM' && <User className={`w-5 h-5 ${item.visitStatus && item.visitStatus !== 'none' ? 'text-white' : 'text-primary fill-primary'}`} />}
+                                                {item.gender === 'MULHER' && <User className={`w-5 h-5 ${item.visitStatus && item.visitStatus !== 'none' ? 'text-white' : 'text-pink-500 fill-pink-500'}`} />}
                                                 {item.gender === 'CASAL' && (
                                                     <div className="flex items-center -space-x-1">
-                                                        <User className={`w-4 h-4 ${item.visitStatus ? 'text-white' : 'text-purple-500 fill-purple-500'}`} />
-                                                        <User className={`w-4 h-4 ${item.visitStatus ? 'text-white' : 'text-purple-500 fill-purple-500'}`} />
+                                                        <User className={`w-4 h-4 ${item.visitStatus && item.visitStatus !== 'none' ? 'text-white' : 'text-purple-500 fill-purple-500'}`} />
+                                                        <User className={`w-4 h-4 ${item.visitStatus && item.visitStatus !== 'none' ? 'text-white' : 'text-purple-500 fill-purple-500'}`} />
                                                     </div>
                                                 )}
-                                                {!item.gender && <MapPin className={`w-6 h-6 ${item.visitStatus ? 'text-white' : 'text-primary'}`} />}
+                                                {!item.gender && <MapPin className={`w-6 h-6 ${item.visitStatus && item.visitStatus !== 'none' ? 'text-white' : 'text-primary'}`} />}
                                             </>
                                         )}
                                     </div>
@@ -662,16 +675,18 @@ export default function SharedListView({ id: propId }: SharedListViewProps) {
                                                                     setOpenMenuId(null);
                                                                 }} 
                                                             />
-                                                            <DropDownItem 
-                                                                icon={Navigation} 
-                                                                label="Abrir no Mapa" 
-                                                                variant="primary" 
-                                                                onClick={(e) => {
-                                                                    e.stopPropagation();
-                                                                    handleOpenMap(item);
-                                                                    setOpenMenuId(null);
-                                                                }} 
-                                                            />
+                                                            {((item.googleMapsLink && item.googleMapsLink.trim() !== '' && item.googleMapsLink !== 'undefined') || (item.wazeLink && item.wazeLink.trim() !== '' && item.wazeLink !== 'undefined')) && (
+                                                                <DropDownItem 
+                                                                    icon={Navigation} 
+                                                                    label="Abrir no Mapa" 
+                                                                    variant="primary" 
+                                                                    onClick={(e) => {
+                                                                        e.stopPropagation();
+                                                                        handleOpenMap(item);
+                                                                        setOpenMenuId(null);
+                                                                    }} 
+                                                                />
+                                                            )}
                                                         </div>
                                                     </>
                                                 )}
