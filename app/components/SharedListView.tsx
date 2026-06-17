@@ -168,7 +168,16 @@ export default function SharedListView({ id: propId }: SharedListViewProps) {
                         return mainItemIds.indexOf(a.id) - mainItemIds.indexOf(b.id);
                     });
 
-                setItems(mergedItems);
+                // Deduplicate by id to prevent React "duplicate key" warning
+                // when list.items in Firestore contains the same id more than once.
+                const seenIds = new Set<string>();
+                const uniqueItems = mergedItems.filter((item: any) => {
+                    if (seenIds.has(item.id)) return false;
+                    seenIds.add(item.id);
+                    return true;
+                });
+
+                setItems(uniqueItems);
 
                 // 4. Calculate Counts and Stats
                 if (list.type === 'territory' || list.type === 'address') {
