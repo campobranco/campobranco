@@ -609,46 +609,55 @@ export async function processSharedListAction(id: string, action: string, payloa
                 if (!listSnap.exists()) throw new Error('Lista não encontrada');
                 const listData = listSnap.data() as any;
 
-                // Atualiza a lista
+                // 1. FAZ TODAS AS LEITURAS PRIMEIRAMENTE
+                const territoryDocsToUpdate: any[] = [];
+                if (listData.items && Array.isArray(listData.items)) {
+                    for (const tId of listData.items) {
+                        const terrRef = doc(db, 'territories', tId);
+                        const terrDoc = await transaction.get(terrRef);
+                        if (terrDoc.exists()) {
+                            territoryDocsToUpdate.push({ terrRef, terrDoc });
+                        }
+                    }
+                }
+
+                let userDocToUpdate = null;
+                let userRef = null;
+                if (userCongregationId) {
+                    userRef = doc(db, 'users', userId);
+                    const userDoc = await transaction.get(userRef);
+                    if (userDoc.exists()) {
+                        const userData = userDoc.data() as any;
+                        if (userData && !userData.congregationId) {
+                            userDocToUpdate = { userRef, userData };
+                        }
+                    }
+                }
+
+                // 2. FAZ TODAS AS ESCRITAS DEPOIS
                 transaction.update(listRef, {
                     assignedTo: userId,
                     assignedName: userName || 'Irmão sem Nome',
                     status: 'active'
                 });
 
-                // Atualiza cada território associado
-                if (listData.items && Array.isArray(listData.items)) {
-                    for (const tId of listData.items) {
-                        const terrRef = doc(db, 'territories', tId);
-                        const terrDoc = await transaction.get(terrRef);
-                        if (terrDoc.exists()) {
-                            const tData = terrDoc.data() as any;
-                            const { activeLinkIds, assignedToUsers } = coerceToArrays(tData);
-
-                            const newAssignedToUsers = Array.from(new Set([...assignedToUsers, userId]));
-                            transaction.update(terrRef, {
-                                assignedToUsers: newAssignedToUsers,
-                                assignedTo: null, // nulificar escalar
-                                updatedAt: serverTimestamp()
-                            });
-                        }
-                    }
+                for (const { terrRef, terrDoc } of territoryDocsToUpdate) {
+                    const tData = terrDoc.data() as any;
+                    const { activeLinkIds, assignedToUsers } = coerceToArrays(tData);
+                    const newAssignedToUsers = Array.from(new Set([...assignedToUsers, userId]));
+                    transaction.update(terrRef, {
+                        assignedToUsers: newAssignedToUsers,
+                        assignedTo: null,
+                        updatedAt: serverTimestamp()
+                    });
                 }
 
-                // Vincula o usuário à congregação da lista se ele ainda não tiver
-                if (userCongregationId) {
-                    const userRef = doc(db, 'users', userId);
-                    const userDoc = await transaction.get(userRef);
-                    if (userDoc.exists()) {
-                        const userData = userDoc.data() as any;
-                        if (userData && !userData.congregationId) {
-                            transaction.update(userRef, {
-                                congregationId: userCongregationId,
-                                role: 'PUBLICADOR'
-                            });
-                            reloadRequired = true;
-                        }
-                    }
+                if (userDocToUpdate && userRef) {
+                    transaction.update(userRef, {
+                        congregationId: userCongregationId,
+                        role: 'PUBLICADOR'
+                    });
+                    reloadRequired = true;
                 }
             });
 
