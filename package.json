@@ -1,6 +1,6 @@
 {
   "name": "campobranco",
-  "version": "0.9.23-beta",
+  "version": "0.9.24-beta",
   "private": true,
   "scripts": {
     "dev": "next dev",
