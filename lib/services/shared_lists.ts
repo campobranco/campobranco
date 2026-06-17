@@ -110,8 +110,7 @@ export async function createSharedList(data: {
                     resultLink = { success: true, id: businessKey, shareData: { id: businessKey, ...listVal } };
                     return; // Retorno de idempotência segura
                 }
-                // Se existe mas não está ativo, aborta a escrita/sobrescrita direta para evitar overwrite concorrente
-                throw new Error('DOCUMENT_ALREADY_EXISTS');
+                // Se existe mas está inativo/devolvido, a transação avança incrementando a versão física (CAS)
             }
 
             // Leitura dos territórios para validação e auditoria

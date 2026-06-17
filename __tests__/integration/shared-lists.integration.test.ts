@@ -298,7 +298,11 @@ describe('Integration: Shared Links — Firestore Emulator', () => {
             territories: [{ id: 'T-001', name: 'T-001', status: 'Disponível' }]
         });
         expect(newResult.success).toBe(true);
-        expect(newResult.id).not.toBe(result.id); // Deve gerar um novo link de transação CAS (nova versão)
+        expect(newResult.id).toBe(result.id); // O ID determinístico permanece idêntico (chave de negócio)
+
+        // Valida que a nova versão física (CAS) foi gravada no documento determinístico
+        const listSnap = await db.collection('shared_lists').doc(newResult.id).get();
+        expect(listSnap.data()?.version).toBe(2); // Era versão 1, agora deve ser versão 2 (CAS Versionado)
     });
 
     afterAll(async () => {
