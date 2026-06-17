@@ -643,8 +643,13 @@ function TerritoryListContent() {
                                                                 <MapIcon className="w-5 h-5" />
                                                             </div>
                                                             <div className="flex flex-col items-start min-w-0">
-                                                                <div className="font-bold text-main text-lg">{t.name}</div>
-                                                                <div className="text-xs text-muted font-medium">
+                                                                <div className="font-bold text-main text-lg leading-tight">{t.name}</div>
+                                                                {(t.notes || t.description) && (
+                                                                    <div className="text-xs text-muted font-normal mt-0.5 line-clamp-1 max-w-md" title={t.notes || t.description}>
+                                                                        {t.notes || t.description}
+                                                                    </div>
+                                                                )}
+                                                                <div className="text-xs text-muted font-medium mt-1">
                                                                     {territory_addresses.length > 0 ? (
                                                                         <span className="flex items-center gap-1">
                                                                             <MapPin className="w-3 h-3" />
