@@ -33,12 +33,13 @@ const textStyles = {
 
 export default function DropDownItem({
     onClick,
-    icon: Icon,
+    icon,
     label,
     variant = 'neutral',
     className = ''
 }: DropDownItemProps) {
     const isDestructive = variant === 'danger' || variant === 'orange';
+    const isImageIcon = typeof icon === 'string';
     
     return (
         <button
@@ -46,7 +47,11 @@ export default function DropDownItem({
             className={`flex items-center gap-3 px-3 py-2.5 text-sm font-bold transition-all w-full text-left rounded-xl group ${textStyles[variant]} ${isDestructive ? (variant === 'danger' ? 'text-red-600' : 'text-orange-600') : 'text-gray-700 dark:text-gray-300'} ${className}`}
         >
             <div className={`w-8 h-8 rounded-full flex items-center justify-center shrink-0 transition-transform group-hover:scale-110 ${variantStyles[variant]}`}>
-                <Icon className="w-4 h-4" />
+                {isImageIcon ? (
+                    <img src={icon} alt={label} className="w-5 h-5 object-contain" />
+                ) : (
+                    React.createElement(icon, { className: "w-4 h-4" })
+                )}
             </div>
             <span className="truncate">{label}</span>
         </button>

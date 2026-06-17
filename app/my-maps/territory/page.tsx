@@ -87,7 +87,7 @@ function TerritoryListContent() {
     const searchParams = useSearchParams();
     const congregationId = searchParams.get('congregationId');
     const cityId = searchParams.get('cityId');
-    const { user, isAdmin, isAdminRoleGlobal, isElder, isServant, loading: authLoading, canManageMaps, canCreateMaps, canEditMaps, canDeleteMaps } = useAuth();
+    const { user, isAdmin, isAdminRoleGlobal, isElder, isServant, loading: authLoading, canManageMaps, canCreateMaps, canEditMaps, canDeleteMaps, congregationType } = useAuth();
     const router = useRouter();
     const [currentView, setCurrentView] = useState(searchParams.get('view') || 'grid');
     const [error, setError] = useState<string | null>(null);
@@ -763,9 +763,12 @@ function TerritoryListContent() {
                                                                                                             Neurodivergente
                                                                                                         </span>
                                                                                                     )}
-                                                                                                    {/* Contador de residentes movido para aqui */}
                                                                                                     <span className="text-[10px] bg-gray-100 text-gray-800 dark:bg-gray-800 dark:text-gray-400 px-1.5 py-0.5 rounded-full font-bold">
-                                                                                                        {addr.residentsCount || 1} residente{addr.residentsCount !== 1 ? 's' : ''}
+                                                                                                        {congregationType === 'TRADITIONAL' ? (
+                                                                                                            <span>{addr.residentsCount || 1} endereço{addr.residentsCount !== 1 ? 's' : ''}</span>
+                                                                                                        ) : (
+                                                                                                            <span>{addr.residentsCount || 1} residente{addr.residentsCount !== 1 ? 's' : ''}</span>
+                                                                                                        )}
                                                                                                     </span>
                                                                                                 </div>
                                                                                             </div>
@@ -790,7 +793,7 @@ function TerritoryListContent() {
                                                                                 <div className="absolute right-0 top-full mt-2 w-48 bg-surface rounded-xl shadow-2xl border border-surface-border p-1 z-50 animate-in fade-in zoom-in-95 duration-200 origin-top-right">
                                                                                     {addr.googleMapsLink && (
                                                                                         <DropDownItem
-                                                                                            icon={MapIcon}
+                                                                                            icon="/icons/google-maps.svg"
                                                                                             label="Google Maps"
                                                                                             variant="primary"
                                                                                             onClick={() => {

@@ -790,10 +790,10 @@ function AddressListContent() {
                 onDragOver={(e) => handleDragOver(e, addr.id)}
                 onDragEnd={handleDragEnd}
                 className={`group bg-surface rounded-md p-4 border shadow-md hover:shadow-md transition-all 
-                    ${(addr.visitStatus === 'moved') ? 'border-2 border-blue-500 bg-blue-50/50 dark:bg-blue-900/20' :
-                        (addr.visitStatus === 'doNotVisit') ? 'border-2 border-red-500 bg-red-50/50 dark:bg-red-900/20' :
-                            (addr.visitStatus === 'partial') ? 'border-2 border-yellow-500 bg-yellow-50/50 dark:bg-yellow-900/20' :
-                                (addr.visitStatus === 'contacted') ? 'border-2 border-green-500 bg-green-50/50 dark:bg-green-900/20' : 'border-surface-border'}
+                    ${(addr.visitStatus === 'moved') ? 'border-2 border-blue-500 bg-blue-50/50 dark:border-blue-500/30 dark:bg-blue-950/20' :
+                        (addr.visitStatus === 'doNotVisit') ? 'border-2 border-red-500 bg-red-50/50 dark:border-red-500/30 dark:bg-red-950/20' :
+                            (addr.visitStatus === 'partial') ? 'border-2 border-yellow-500 bg-yellow-50/50 dark:border-yellow-500/30 dark:bg-yellow-950/20' :
+                                (addr.visitStatus === 'contacted') ? 'border-2 border-green-500 bg-green-50/50 dark:border-green-500/30 dark:bg-green-950/20' : 'border-surface-border'}
                     ${draggedId === addr.id ? 'opacity-20 transition-none scale-95' : ''} 
                     ${openMenuId === addr.id ? 'relative z-20 ring-1 ring-primary-100 dark:ring-primary-900' : ''}`}
             >
@@ -1032,7 +1032,7 @@ function AddressListContent() {
                                 <div className="absolute right-0 top-10 bg-surface rounded-2xl shadow-2xl border border-surface-border p-1.5 z-50 min-w-[200px] animate-in fade-in zoom-in-95 slide-in-from-top-2 duration-200 overflow-hidden">
                                     {((addr.googleMapsLink && addr.googleMapsLink.trim() !== '' && addr.googleMapsLink !== 'undefined') || (addr.wazeLink && addr.wazeLink.trim() !== '' && addr.wazeLink !== 'undefined')) && (
                                         <DropDownItem 
-                                            icon={Navigation} 
+                                            icon="/icons/google-maps.svg" 
                                             label="Abrir no Mapa" 
                                             variant="primary" 
                                             onClick={(e) => { e.stopPropagation(); handleOpenMap(addr); setOpenMenuId(null); }} 
