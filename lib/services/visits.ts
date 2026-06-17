@@ -43,6 +43,7 @@ export async function reportVisit(shareId: string, visitData: any) {
         // 2. Insere a visita vinculada à congregação da lista
         const finalVisitData = {
             ...visitData,
+            publisherName: visitData.userName || visitData.publisherName || null,
             sharedListId: shareId,
             congregationId: list.congregationId,
             createdAt: serverTimestamp(),
