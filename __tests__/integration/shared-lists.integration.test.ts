@@ -228,6 +228,79 @@ describe('Integration: Shared Links — Firestore Emulator', () => {
         expect(resA.id).toBe(resB.id); // Ambos devem terminar apontando para o mesmo ID único
     });
 
+    test('Cenário 6: Conflito heterogêneo por invariância de domínio cross-key', async () => {
+        // 1. Cria a primeira lista A para T-001 (Chave: T-001)
+        const resultA = await createSharedList({
+            title: 'Lista A',
+            type: 'territory',
+            items: ['T-001'],
+            congregationId: 'CONG-XYZ',
+            assignedTo: '',
+            assignedName: '',
+            territories: [{ id: 'T-001', name: 'T-001', status: 'Disponível' }]
+        });
+        expect(resultA.success).toBe(true);
+
+        // 2. Tenta criar uma segunda lista B heterogênea (Chave: T-001_T-002) que tenta englobar T-001
+        // Deve falhar com a regra de negócio TERRITORY_ALREADY_ASSIGNED
+        const resultB = await createSharedList({
+            title: 'Lista B',
+            type: 'territory',
+            items: ['T-001', 'T-002'],
+            congregationId: 'CONG-XYZ',
+            assignedTo: '',
+            assignedName: '',
+            territories: [
+                { id: 'T-001', name: 'T-001', status: 'Emprestado' },
+                { id: 'T-002', name: 'T-002', status: 'Disponível' }
+            ]
+        });
+
+        expect(resultB.success).toBe(false);
+        expect(resultB.code).toBe('TERRITORY_ALREADY_ASSIGNED');
+    });
+
+    test('Cenário 7: Ciclo completo de vida de estado e reusabilidade temporal', async () => {
+        const { processSharedListAction } = require('../../lib/services/shared_lists');
+
+        // 1. Cria lista ativa para T-001
+        const result = await createSharedList({
+            title: 'Lista Ativa',
+            type: 'territory',
+            items: ['T-001'],
+            congregationId: 'CONG-XYZ',
+            assignedTo: 'user-123',
+            assignedName: 'User Test',
+            territories: [{ id: 'T-001', name: 'T-001', status: 'Disponível' }]
+        });
+        expect(result.success).toBe(true);
+
+        // 2. Devolve o mapa (completa a transição do lifecycle temporal, limpando locks e status)
+        const actionResult = await processSharedListAction(result.id, 'returnMap', {
+            userId: 'user-123',
+            currentUserRole: 'ADMIN'
+        });
+        expect(actionResult.success).toBe(true);
+
+        // Verifica que o território foi limpo no Firestore e voltou para "Disponível"
+        const terrSnap = await db.collection('territories').doc('T-001').get();
+        expect(terrSnap.data()?.status).toBe('Disponível');
+        expect(terrSnap.data()?.activeLinkId).toBeNull();
+
+        // 3. Tenta recriar uma nova lista B usando o mesmo território T-001 (deve permitir normalmente)
+        const newResult = await createSharedList({
+            title: 'Lista Reatribuída',
+            type: 'territory',
+            items: ['T-001'],
+            congregationId: 'CONG-XYZ',
+            assignedTo: 'user-123',
+            assignedName: 'User Test',
+            territories: [{ id: 'T-001', name: 'T-001', status: 'Disponível' }]
+        });
+        expect(newResult.success).toBe(true);
+        expect(newResult.id).not.toBe(result.id); // Deve gerar um novo link de transação CAS (nova versão)
+    });
+
     afterAll(async () => {
         // Desconecta e encerra instâncias abertas para evitar leaks de conexão no Jest
         const { deleteApp } = require('firebase/app');
