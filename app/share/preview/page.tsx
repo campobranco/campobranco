@@ -550,7 +550,7 @@ function SharedPreviewContent() {
 
                                 // Traditional Numeric Badge
                                 return (
-                                    <div className="w-10 h-10 rounded-xl flex items-center justify-center font-bold text-sm shrink-0 shadow-sm border bg-primary-50 dark:bg-primary-900/10 text-primary-700 dark:text-primary-400 border-primary-100 dark:border-primary-900/20 transition-colors">
+                                    <div className="w-10 h-10 rounded-xl flex items-center justify-center font-bold text-sm shrink-0 shadow-sm border bg-primary-50 dark:bg-primary-900/10 text-primary-700 dark:text-primary-400 border-surface-border transition-colors">
                                         <span className="text-sm font-bold">{index + 1}</span>
                                     </div>
                                 );
@@ -692,7 +692,7 @@ function SharedPreviewContent() {
                     <div className="flex items-center gap-2">
                         <h1 className="font-extrabold text-2xl text-main leading-tight">{title}</h1>
                         {cityName && (
-                            <span className="text-sm font-bold text-primary dark:text-primary-light uppercase bg-primary-50 dark:bg-primary-900/10 px-2 py-0.5 rounded-md border border-primary-100 dark:border-primary-900/20">
+                            <span className="text-sm font-bold text-primary dark:text-primary-light uppercase bg-primary-50 dark:bg-primary-900/10 px-2 py-0.5 rounded-md border border-surface-border">
                                 {cityName}
                             </span>
                         )}
