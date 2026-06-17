@@ -1073,14 +1073,14 @@ export default function SettingsPage() {
                                         </Link>
                                         <Link
                                             href="/admin/users"
-                                            className="inline-block bg-background hover:bg-primary-light/50 dark:hover:bg-primary-dark/30 text-primary border border-primary-light dark:border-primary-dark/30 font-bold py-2 px-4 rounded-lg transition-colors shadow-sm flex items-center gap-2"
+                                            className="inline-block bg-background hover:bg-primary-light/50 dark:hover:bg-primary-dark/30 text-primary border border-surface-border font-bold py-2 px-4 rounded-lg transition-colors shadow-sm flex items-center gap-2"
                                         >
                                             <Users className="w-4 h-4" />
                                             Membros
                                         </Link>
                                         <Link
                                             href="/orphaned-data"
-                                            className="inline-block bg-background hover:bg-primary-light/50 dark:hover:bg-primary-dark/30 text-primary border border-primary-light dark:border-primary-dark/30 font-bold py-2 px-4 rounded-lg transition-colors shadow-sm flex items-center gap-2"
+                                            className="inline-block bg-background hover:bg-primary-light/50 dark:hover:bg-primary-dark/30 text-primary border border-surface-border font-bold py-2 px-4 rounded-lg transition-colors shadow-sm flex items-center gap-2"
                                         >
                                             <Database className="w-4 h-4" />
                                             Dados Órfãos
