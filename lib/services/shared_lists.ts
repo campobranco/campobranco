@@ -25,6 +25,32 @@ const LISTS_TABLE = 'shared_lists';
 const SNAPSHOTS_TABLE = 'shared_list_snapshots';
 const VISITS_TABLE = 'visits';
 
+/**
+ * Busca um link ativo existente para um conjunto de territórios.
+ * Retorna o ID do link ativo se encontrado, ou null caso contrário.
+ */
+export async function findActiveSharedList(
+    territoryIds: string[],
+    congregationId: string
+): Promise<{ id: string; shareData: any } | null> {
+    try {
+        if (!territoryIds.length) return null;
+        // Busca listas ativas da congregação que contenham ao menos um dos territórios
+        const q = query(
+            collection(db, LISTS_TABLE),
+            where('congregationId', '==', congregationId),
+            where('status', '==', 'active'),
+            where('items', 'array-contains', territoryIds[0])
+        );
+        const snap = await getDocs(q);
+        if (snap.empty) return null;
+        const found = snap.docs[0];
+        return { id: found.id, shareData: { id: found.id, ...found.data() } };
+    } catch {
+        return null;
+    }
+}
+
 export async function createSharedList(data: {
     title: string;
     type: 'territory' | 'LIST_CARDS';
@@ -36,6 +62,14 @@ export async function createSharedList(data: {
     territories?: any[];
 }) {
     try {
+        // getOrCreate real: se já existe link ativo para esses territórios, retorna o existente
+        if (data.type === 'territory' && data.items.length > 0) {
+            const existing = await findActiveSharedList(data.items, data.congregationId);
+            if (existing) {
+                return { success: true, id: existing.id, shareData: existing.shareData };
+            }
+        }
+
         const expiresAt = data.expiresInHours 
             ? new Date(Date.now() + data.expiresInHours * 60 * 60 * 1000)
             : null;
