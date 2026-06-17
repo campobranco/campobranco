@@ -20,7 +20,7 @@ export interface TerritoryDependencies {
  * Regras de Negócio para Designação de Territórios
  */
 export function canAssignTerritory(
-    territory: TerritoryState, 
+    territory: TerritoryState & { assignedToUsers?: string[] }, 
     targetUserId?: string | null
 ): ValidationResult {
     
@@ -29,11 +29,6 @@ export function canAssignTerritory(
         return { valid: false, code: "INVALID_TERRITORY_STATE", message: "Estado do território é nulo." };
     }
 
-    // Cenário: Usuário inexistente (Ignorado se for Link Aberto / Open Link)
-    // Se targetUserId for vazio/null, o sistema entende que é um Link Aberto,
-    // que será assumido depois por quem abrir o link.
-
-
     const s = (territory.status || "disponível").toLowerCase();
 
     // Cenário: Status inválido
@@ -41,12 +36,14 @@ export function canAssignTerritory(
         return { valid: false, code: "INVALID_STATUS", message: `Status do território não é reconhecido: ${territory.status}` };
     }
 
-    // Cenário: Território já emprestado (Integridade de Estado)
-    if (s === "emprestado" || s === "assigned") {
-        return { valid: false, code: "TERRITORY_ALREADY_ASSIGNED", message: "Território já está emprestado." };
+    // Garante que o mesmo usuário não pegue o mesmo território duas vezes
+    if (targetUserId) {
+        const assignedUsers = territory.assignedToUsers || (territory.assignedTo ? [territory.assignedTo] : []);
+        if (assignedUsers.includes(targetUserId)) {
+            return { valid: false, code: "ALREADY_ASSIGNED_TO_USER", message: "Você já é o responsável por este território." };
+        }
     }
 
-    // Cenário: Território disponível + Usuário Válido
     return { valid: true };
 }
 

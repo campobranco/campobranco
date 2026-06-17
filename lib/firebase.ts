@@ -35,4 +35,9 @@ if (process.env.FIRESTORE_EMULATOR_HOST) {
     connectFirestoreEmulator(db, host, parseInt(port, 10));
 }
 
-export { app, auth, db };
+import { getStorage, FirebaseStorage } from 'firebase/storage';
+
+// Initialize Firebase Storage
+const storage: FirebaseStorage = getStorage(app);
+
+export { app, auth, db, storage };

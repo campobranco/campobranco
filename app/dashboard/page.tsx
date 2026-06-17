@@ -97,7 +97,6 @@ export default function DashboardPage() {
     const [cityCompletion, setCityCompletion] = useState<{ cityName: string; percentage: number } | undefined>();
     const [expiringMaps, setExpiringMaps] = useState<{ id: string, title: string, daysLeft: number }[]>([]);
     const [openMenuId, setOpenMenuId] = useState<string | null>(null);
-    const [menuPosition, setMenuPosition] = useState<{ top: number; right: number } | null>(null);
     const [confirmModal, setConfirmModal] = useState<{
         title: string;
         message: string;
@@ -292,7 +291,7 @@ export default function DashboardPage() {
                     let lastAny = lastWork;
                     const hAny = latestAnyMap.get(t.id) || 0;
                     if (hAny > lastAny) lastAny = hAny;
-                    if (!t.assignedTo) {
+                    if (!t.assignedToUsers || t.assignedToUsers.length === 0) {
                         const ago = new Date(); ago.setDate(ago.getDate() - 180);
                         const laDate = lastAny > 0 ? new Date(lastAny) : null;
                         idleList.push({
@@ -423,12 +422,12 @@ export default function DashboardPage() {
                                             </div>
                                         )}
                                     </div>
-                                    <div>
-                                        <button onClick={(e) => { e.stopPropagation(); const rect = (e.currentTarget as HTMLElement).getBoundingClientRect(); const BOTTOM_NAV_HEIGHT = 80; const MENU_HEIGHT = 160; const spaceBelow = window.innerHeight - rect.bottom - BOTTOM_NAV_HEIGHT; const top = spaceBelow >= MENU_HEIGHT ? rect.bottom + 4 : rect.top - MENU_HEIGHT - 4; setMenuPosition({ top, right: window.innerWidth - rect.right }); setOpenMenuId(openMenuId === list.id ? null : list.id); }} className="p-1.5 text-muted hover:text-main hover:bg-gray-100 rounded-lg transition-colors"><MoreVertical className="w-4 h-4" /></button>
-                                        {openMenuId === list.id && menuPosition && (
+                                    <div className="relative">
+                                        <button onClick={(e) => { e.stopPropagation(); setOpenMenuId(openMenuId === list.id ? null : list.id); }} className="p-1.5 text-muted hover:text-main hover:bg-gray-100 rounded-lg transition-colors"><MoreVertical className="w-4 h-4" /></button>
+                                        {openMenuId === list.id && (
                                             <>
                                                 <div className="fixed inset-0 z-[199]" onClick={(e) => { e.stopPropagation(); setOpenMenuId(null); }} />
-                                                <div className="fixed w-52 bg-surface rounded-xl shadow-2xl border border-surface-border p-1 z-[200] animate-in fade-in zoom-in-95 duration-200" style={{ top: menuPosition.top, right: menuPosition.right }}>
+                                                <div className="absolute right-0 top-full mt-1 w-52 bg-surface rounded-xl shadow-2xl border border-surface-border p-1 z-[200] animate-in fade-in zoom-in-95 duration-200">
                                                     <DropDownItem 
                                                         icon={ExternalLink} 
                                                         label="Abrir" 

@@ -25,6 +25,26 @@ const LISTS_TABLE = 'shared_lists';
 const SNAPSHOTS_TABLE = 'shared_list_snapshots';
 const VISITS_TABLE = 'visits';
 
+function coerceToArrays(territory: any): {
+    activeLinkIds: string[];
+    assignedToUsers: string[];
+} {
+    return {
+        activeLinkIds: territory.activeLinkIds || 
+                      (territory.activeLinkId ? [territory.activeLinkId] : []),
+        assignedToUsers: territory.assignedToUsers || 
+                        (territory.assignedTo ? [territory.assignedTo] : [])
+    };
+}
+
+async function isOrphanedLink(
+    link: any,
+    existingTerritoryIds: Set<string>
+): Promise<boolean> {
+    const items = link.items || [];
+    return items.every((id: string) => !existingTerritoryIds.has(id));
+}
+
 export async function findActiveSharedList(
     territoryIds: string[],
     congregationId: string
@@ -126,23 +146,42 @@ export async function createSharedList(data: {
                 }
             }
 
+            // 2. Ler todos os shared_lists ativos da congregação (para detecção de órfãos)
+            const activeListsQ = query(
+                collection(db, 'shared_lists'),
+                where('congregationId', '==', data.congregationId),
+                where('status', '==', 'active')
+            );
+            const activeListsSnap = await transaction.get(activeListsQ);
+
+            const validTerritoryIds = new Set(
+                territoryDocs
+                    .filter(doc => doc.exists())
+                    .map(doc => doc.id)
+            );
+
+            // Identifica e desativa órfãos (links cujo território pai foi excluído)
+            for (const docObj of activeListsSnap.docs) {
+                const link = { id: docObj.id, ...docObj.data() } as any;
+                const isOrphan = await isOrphanedLink(link, validTerritoryIds);
+                if (isOrphan && link.status === 'active') {
+                    transaction.update(docObj.ref, {
+                        status: 'completed',
+                        updatedAt: serverTimestamp()
+                    });
+                }
+            }
+
             // Inspeciona/valida territórios e coleta inconsistências para logging pós-commit
             for (const { terrDoc } of territoryDocs) {
                 const tData = terrDoc.data() as any;
 
-                // Verificação de conflito real: se o território está associado a outro link ativo
-                if (tData.activeLinkId && tData.activeLinkId !== businessKey) {
-                    const otherListRef = doc(db, 'shared_lists', tData.activeLinkId);
-                    const otherListSnap = await transaction.get(otherListRef);
-                    if (otherListSnap.exists() && otherListSnap.data()?.status === 'active') {
-                        throw new Error('TERRITORY_ALREADY_ASSIGNED');
-                    }
-                }
+                const { activeLinkIds, assignedToUsers } = coerceToArrays(tData);
 
                 // Recomposição transacional automática (Self-Healing de domínio)
                 const isOrphaned = !existingActiveLink;
 
-                if (isOrphaned && (tData.status === 'Emprestado' || tData.activeLinkId)) {
+                if (isOrphaned && (tData.status === 'Emprestado' || activeLinkIds.length > 0)) {
                     recoveryLogs.push({
                         type: 'ORPHAN_RECOVERED',
                         territoryId: terrDoc.id,
@@ -154,6 +193,7 @@ export async function createSharedList(data: {
                 const tState = {
                     id: terrDoc.id,
                     ...tData,
+                    assignedToUsers,
                     status: isOrphaned ? 'Disponível' : tData.status
                 };
 
@@ -190,14 +230,26 @@ export async function createSharedList(data: {
             // 1. Grava a shared_list incrementando a versão física (CAS)
             transaction.set(listRef, listData);
 
-            // 2. Atualiza territórios com o activeLinkId atômico
-            for (const { terrRef } of territoryDocs) {
-                transaction.update(terrRef, {
-                    status: 'Emprestado',
-                    assignedTo: data.assignedTo,
-                    activeLinkId: businessKey,
-                    updatedAt: serverTimestamp()
-                });
+            // 2. Atualiza territórios com os novos arrays
+            for (const { terrRef, terrDoc } of territoryDocs) {
+                if (terrDoc.exists()) {
+                    const tData = terrDoc.data() as any;
+                    const { activeLinkIds, assignedToUsers } = coerceToArrays(tData);
+
+                    const newActiveLinkIds = Array.from(new Set([...activeLinkIds, businessKey]));
+                    const newAssignedToUsers = data.assignedTo 
+                        ? Array.from(new Set([...assignedToUsers, data.assignedTo]))
+                        : assignedToUsers;
+
+                    transaction.update(terrRef, {
+                        activeLinkIds: newActiveLinkIds,
+                        assignedToUsers: newAssignedToUsers,
+                        activeLinkId: null, // Nulificar para compatibilidade legada
+                        assignedTo: null,   // Nulificar para compatibilidade legada
+                        status: 'Emprestado',
+                        updatedAt: serverTimestamp()
+                    });
+                }
             }
 
             // 3. Grava log de reconciliação de concorrência com chave determinística para evitar double-writes nos logs (Idempotência de Log)
@@ -459,10 +511,22 @@ export async function processSharedListAction(id: string, action: string, payloa
 
                 for (const { terrRef, terrDoc } of territoryDocs) {
                     if (terrDoc.exists()) {
+                        const tData = terrDoc.data() as any;
+                        const { activeLinkIds, assignedToUsers } = coerceToArrays(tData);
+
+                        const newActiveLinkIds = activeLinkIds.filter((tid: string) => tid !== id);
+                        const newAssignedToUsers = listData.assignedTo 
+                            ? assignedToUsers.filter((uid: string) => uid !== listData.assignedTo)
+                            : assignedToUsers;
+
+                        const isStillAssigned = newActiveLinkIds.length > 0;
+
                         transaction.update(terrRef, {
-                            status: 'Disponível',
+                            status: isStillAssigned ? 'Emprestado' : 'Disponível',
+                            activeLinkIds: newActiveLinkIds,
+                            assignedToUsers: newAssignedToUsers,
+                            activeLinkId: null,
                             assignedTo: null,
-                            activeLinkId: null, // Limpa o lock lógico na devolução
                             updatedAt: serverTimestamp()
                         });
                     }
@@ -479,18 +543,37 @@ export async function processSharedListAction(id: string, action: string, payloa
                 const { terrRef, terrDoc } = territoryDocs[0];
                 
                 if (terrDoc.exists()) {
+                    const tData = terrDoc.data() as any;
+                    const { activeLinkIds, assignedToUsers } = coerceToArrays(tData);
+
                     if (undo) {
+                        const newActiveLinkIds = Array.from(new Set([...activeLinkIds, id]));
+                        const newAssignedToUsers = listData.assignedTo 
+                            ? Array.from(new Set([...assignedToUsers, listData.assignedTo]))
+                            : assignedToUsers;
+
                         transaction.update(terrRef, {
                             status: 'Emprestado',
-                            assignedTo: userId || listData.assignedTo,
-                            activeLinkId: id, // Restabelece o ID da shared list ao desfazer devolução
+                            activeLinkIds: newActiveLinkIds,
+                            assignedToUsers: newAssignedToUsers,
+                            activeLinkId: null,
+                            assignedTo: null,
                             updatedAt: serverTimestamp()
                         });
                     } else {
+                        const newActiveLinkIds = activeLinkIds.filter((tid: string) => tid !== id);
+                        const newAssignedToUsers = listData.assignedTo 
+                            ? assignedToUsers.filter((uid: string) => uid !== listData.assignedTo)
+                            : assignedToUsers;
+
+                        const isStillAssigned = newActiveLinkIds.length > 0;
+
                         transaction.update(terrRef, {
-                            status: 'Disponível',
+                            status: isStillAssigned ? 'Emprestado' : 'Disponível',
+                            activeLinkIds: newActiveLinkIds,
+                            assignedToUsers: newAssignedToUsers,
+                            activeLinkId: null,
                             assignedTo: null,
-                            activeLinkId: null, // Limpa o lock lógico na devolução
                             updatedAt: serverTimestamp()
                         });
                     }
@@ -519,28 +602,57 @@ export async function processSharedListAction(id: string, action: string, payloa
                 throw new Error('Usuário não informado');
             }
 
-            await updateDoc(listRef, {
-                assignedTo: userId,
-                assignedName: userName || 'Irmão sem Nome',
-                status: 'active'
+            let reloadRequired = false;
+
+            await runTransaction(db, async (transaction) => {
+                const listSnap = await transaction.get(listRef);
+                if (!listSnap.exists()) throw new Error('Lista não encontrada');
+                const listData = listSnap.data() as any;
+
+                // Atualiza a lista
+                transaction.update(listRef, {
+                    assignedTo: userId,
+                    assignedName: userName || 'Irmão sem Nome',
+                    status: 'active'
+                });
+
+                // Atualiza cada território associado
+                if (listData.items && Array.isArray(listData.items)) {
+                    for (const tId of listData.items) {
+                        const terrRef = doc(db, 'territories', tId);
+                        const terrDoc = await transaction.get(terrRef);
+                        if (terrDoc.exists()) {
+                            const tData = terrDoc.data() as any;
+                            const { activeLinkIds, assignedToUsers } = coerceToArrays(tData);
+
+                            const newAssignedToUsers = Array.from(new Set([...assignedToUsers, userId]));
+                            transaction.update(terrRef, {
+                                assignedToUsers: newAssignedToUsers,
+                                assignedTo: null, // nulificar escalar
+                                updatedAt: serverTimestamp()
+                            });
+                        }
+                    }
+                }
+
+                // Vincula o usuário à congregação da lista se ele ainda não tiver
+                if (userCongregationId) {
+                    const userRef = doc(db, 'users', userId);
+                    const userDoc = await transaction.get(userRef);
+                    if (userDoc.exists()) {
+                        const userData = userDoc.data() as any;
+                        if (userData && !userData.congregationId) {
+                            transaction.update(userRef, {
+                                congregationId: userCongregationId,
+                                role: 'PUBLICADOR'
+                            });
+                            reloadRequired = true;
+                        }
+                    }
+                }
             });
 
-            // Vincula o usuário à congregação da lista se ele ainda não tiver
-            if (userCongregationId) {
-                const userRef = doc(db, 'users', userId);
-                const userSnap = await getDoc(userRef);
-                const userData = userSnap.data() as any;
-
-                if (userData && !userData.congregationId) {
-                    await updateDoc(userRef, {
-                        congregationId: userCongregationId,
-                        role: 'PUBLICADOR'
-                    });
-                    return { success: true, reloadRequired: true };
-                }
-            }
-
-            return { success: true, reloadRequired: false };
+            return { success: true, reloadRequired };
         }
 
         return { success: false, error: 'Ação inválida' };
