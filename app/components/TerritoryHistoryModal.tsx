@@ -69,14 +69,31 @@ export default function TerritoryHistoryModal({ territoryId, territoryName, cong
                     });
                 }
 
-                const entries: HistoryEntry[] = rawData.map((item: any) => ({
-                    id: item.id,
-                    createdBy: item.createdBy,
-                    userName: item.assignedName || userNamesMap.get(item.assignedTo) || '',
-                    createdAt: item.createdAt || item.assignedAt,
-                    returnedAt: item.returnedAt,
-                    status: item.status || 'active'
-                }));
+                const entries: HistoryEntry[] = rawData.map((item: any) => {
+                    const resolveDate = (dateVal: any) => {
+                        if (!dateVal) return null;
+                        if (dateVal.toDate && typeof dateVal.toDate === 'function') {
+                            return dateVal.toDate().toISOString();
+                        }
+                        if (dateVal.seconds) {
+                            return new Date(dateVal.seconds * 1000).toISOString();
+                        }
+                        try {
+                            const parsed = new Date(dateVal);
+                            return isNaN(parsed.getTime()) ? null : parsed.toISOString();
+                        } catch (e) {
+                            return null;
+                        }
+                    };
+                    return {
+                        id: item.id,
+                        createdBy: item.createdBy,
+                        userName: item.assignedName || userNamesMap.get(item.assignedTo) || 'Publicador',
+                        createdAt: resolveDate(item.createdAt || item.assignedAt) || '',
+                        returnedAt: resolveDate(item.returnedAt),
+                        status: item.status || 'active'
+                    };
+                });
 
                 setHistory(entries);
                 setLoading(false);
@@ -162,14 +179,14 @@ export default function TerritoryHistoryModal({ territoryId, territoryName, cong
                                             <div className="flex items-center gap-2 text-muted">
                                                 <Calendar className="w-4 h-4" />
                                                 <span className="text-xs font-medium">
-                                                    Saída: {entry.createdAt ? new Date(entry.createdAt).toLocaleDateString() : '---'}
+                                                    Saída: {entry.createdAt ? new Date(entry.createdAt).toLocaleDateString('pt-BR') : '---'}
                                                 </span>
                                             </div>
                                             {entry.returnedAt && (
                                                 <div className="flex items-center gap-2 text-green-600 dark:text-green-400">
                                                     <CheckCircle2 className="w-4 h-4" />
                                                     <span className="text-xs font-bold">
-                                                        Retorno: {new Date(entry.returnedAt).toLocaleDateString()}
+                                                        Retorno: {new Date(entry.returnedAt).toLocaleDateString('pt-BR')}
                                                     </span>
                                                 </div>
                                             )}
