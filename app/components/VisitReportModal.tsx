@@ -91,8 +91,10 @@ export default function VisitReportModal({
         recognition.onerror = (event: any) => {
             if (event.error === 'no-speech') {
                 toast.error("Nenhuma voz detectada. Tente falar novamente.");
+            } else if (event.error === 'not-allowed') {
+                toast.error("Permissão de microfone negada. Ative o acesso nas configurações do navegador.");
             } else {
-                console.error("Erro no reconhecimento de voz:", event.error);
+                console.warn("Erro no reconhecimento de voz:", event.error);
                 toast.error("Erro ao acessar microfone.");
             }
             setIsListening(false);
