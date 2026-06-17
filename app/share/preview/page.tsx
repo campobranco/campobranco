@@ -194,7 +194,15 @@ function SharedPreviewContent() {
             }
 
             // Merge
-            const mergedItems = addresses.map(addr => {
+            // Deduplicate by id first: fetchedItems may contain the same snapshot
+            // id more than once, which causes React duplicate key warnings.
+            const seenAddrIds = new Set<string>();
+            const uniqueAddresses = addresses.filter(a => {
+                if (seenAddrIds.has(a.id)) return false;
+                seenAddrIds.add(a.id);
+                return true;
+            });
+            const mergedItems = uniqueAddresses.map(addr => {
                 const visitRecord = linkResults[addr.id];
                 const finalStatus = visitRecord?.status || addr.visitStatus || 'none';
                 return {
