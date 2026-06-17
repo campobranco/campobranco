@@ -680,10 +680,10 @@ function TerritoryListContent() {
                                                 </tr>
                                                 {territory_addresses.length > 0 && (
                                                     <tr>
-                                                        <td colSpan={3} className="p-0 border-b border-surface-border/50">
+                                                        <td colSpan={3} className="p-0 border-b border-surface-border">
                                                             <div className="w-full">
-                                                                <table className="w-full text-xs bg-surface border-x border-b border-surface-border/50 shadow-sm first:border-t-0">
-                                                                    <tbody className="divide-y divide-surface-border/50">
+                                                                <table className="w-full text-xs bg-surface border-x border-b border-surface-border shadow-sm first:border-t-0">
+                                                                    <tbody className="divide-y divide-surface-border">
                                                                         {territory_addresses.map(addr => (
                                                                             <tr key={addr.id} className="hover:bg-surface-highlight/30 transition-colors group/addr">
                                                                                 <td className="px-6 py-3 w-[50px]">
