@@ -838,7 +838,7 @@ export default function SettingsPage() {
                 {showEditModal && (
                     <div className="fixed inset-0 z-50 overflow-y-auto bg-black/60 backdrop-blur-sm animate-in fade-in duration-200">
                         <div className="flex min-h-full items-center justify-center p-4 sm:p-6">
-                            <div className="bg-white rounded-3xl w-full max-w-sm p-6 shadow-2xl animate-in zoom-in-95 duration-200 text-center my-8">
+                            <div className="bg-surface border border-surface-border rounded-3xl w-full max-w-sm p-6 shadow-2xl animate-in zoom-in-95 duration-200 text-center my-8">
                                 <div className="flex justify-between items-start mb-6">
                                     <div>
                                         <h2 className="text-2xl font-bold text-main tracking-tight">Editar Perfil</h2>
