@@ -733,31 +733,31 @@ function TerritoryListContent() {
                                                                                                 {/* Tags/Labels alinhadas com o endereço - igual à tela de endereços */}
                                                                                                 <div className="flex gap-1 flex-wrap pt-1">
                                                                                                     {addr.isDeaf && (
-                                                                                                        <span className="text-[8px] bg-yellow-100 text-yellow-800 px-2 py-1 rounded-full font-medium flex items-center gap-1" title="Surdo">
+                                                                                                        <span className="text-[8px] bg-yellow-100 text-yellow-800 dark:bg-yellow-950/40 dark:text-yellow-400 px-2 py-1 rounded-full font-medium flex items-center gap-1" title="Surdo">
                                                                                                             <Ear className="w-3 h-3" />
                                                                                                             Surdo
                                                                                                         </span>
                                                                                                     )}
                                                                                                     {addr.isMinor && (
-                                                                                                        <span className="text-[8px] bg-primary-light/50 text-primary-dark px-2 py-1 rounded-full font-medium flex items-center gap-1" title="Menor de idade">
+                                                                                                        <span className="text-[8px] bg-primary-light/50 text-primary-dark dark:bg-primary-950/40 dark:text-primary-400 px-2 py-1 rounded-full font-medium flex items-center gap-1" title="Menor de idade">
                                                                                                             <Baby className="w-3 h-3" />
                                                                                                             Menor
                                                                                                         </span>
                                                                                                     )}
                                                                                                     {addr.isStudent && (
-                                                                                                        <span className="text-[8px] bg-purple-100 text-purple-800 px-2 py-1 rounded-full font-medium flex items-center gap-1" title="Estudante">
+                                                                                                        <span className="text-[8px] bg-purple-100 text-purple-800 dark:bg-purple-950/40 dark:text-purple-400 px-2 py-1 rounded-full font-medium flex items-center gap-1" title="Estudante">
                                                                                                             <GraduationCap className="w-3 h-3" />
                                                                                                             Estudante
                                                                                                         </span>
                                                                                                     )}
                                                                                                     {addr.isNeurodivergent && (
-                                                                                                        <span className="text-[8px] bg-teal-100 text-teal-800 px-2 py-1 rounded-full font-medium flex items-center gap-1" title="Neurodivergente">
+                                                                                                        <span className="text-[8px] bg-teal-100 text-teal-800 dark:bg-teal-950/40 dark:text-teal-400 px-2 py-1 rounded-full font-medium flex items-center gap-1" title="Neurodivergente">
                                                                                                             <Brain className="w-3 h-3" />
                                                                                                             Neurodivergente
                                                                                                         </span>
                                                                                                     )}
                                                                                                     {/* Contador de residentes movido para aqui */}
-                                                                                                    <span className="text-[10px] bg-gray-100 text-gray-800 px-1.5 py-0.5 rounded-full font-bold">
+                                                                                                    <span className="text-[10px] bg-gray-100 text-gray-800 dark:bg-gray-800 dark:text-gray-400 px-1.5 py-0.5 rounded-full font-bold">
                                                                                                         {addr.residentsCount || 1} residente{addr.residentsCount !== 1 ? 's' : ''}
                                                                                                     </span>
                                                                                                 </div>
