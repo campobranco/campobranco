@@ -48,7 +48,7 @@ export default function DropDownItem({
         >
             <div className={`w-8 h-8 rounded-full flex items-center justify-center shrink-0 transition-transform group-hover:scale-110 ${variantStyles[variant]}`}>
                 {isImageIcon ? (
-                    <img src={icon} alt={label} className="w-5 h-5 object-contain" />
+                    <img src={icon} alt={label} className="w-5 h-5 object-contain rounded-full" />
                 ) : (
                     React.createElement(icon, { className: "w-4 h-4" })
                 )}
