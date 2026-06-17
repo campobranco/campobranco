@@ -128,3 +128,12 @@ body {
 ::-webkit-scrollbar-thumb:hover {
   background: var(--text-muted);
 }
+
+/* Force checkboxes background to match the surface theme in dark mode */
+input[type="checkbox"] {
+  background-color: var(--surface);
+  color-adjust: exact;
+}
+input[type="checkbox"]:checked {
+  background-color: var(--primary) !important;
+}
