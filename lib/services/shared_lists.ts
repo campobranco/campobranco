@@ -118,6 +118,14 @@ export async function createSharedList(data: {
         const recoveryLogs: any[] = [];
         let existingActiveLink = false;
 
+        // 2. Ler todos os shared_lists ativos da congregação (para detecção de órfãos) - FORA da transação
+        const activeListsQ = query(
+            collection(db, 'shared_lists'),
+            where('congregationId', '==', data.congregationId),
+            where('status', '==', 'active')
+        );
+        const activeListsSnap = await getDocs(activeListsQ);
+
         await runTransaction(db, async (transaction) => {
             // FASE 1: LEITURA ATÔMICA DO DOCUMENTO DE NEGÓCIO DETERMINÍSTICO (V18)
             const listSnap = await transaction.get(listRef);
@@ -146,18 +154,10 @@ export async function createSharedList(data: {
                 }
             }
 
-            // 2. Ler todos os shared_lists ativos da congregação (para detecção de órfãos)
-            const activeListsQ = query(
-                collection(db, 'shared_lists'),
-                where('congregationId', '==', data.congregationId),
-                where('status', '==', 'active')
-            );
-            const activeListsSnap = await transaction.get(activeListsQ);
-
             const validTerritoryIds = new Set(
                 territoryDocs
-                    .filter(doc => doc.exists())
-                    .map(doc => doc.id)
+                    .filter(item => item.terrDoc.exists())
+                    .map(item => item.terrDoc.id)
             );
 
             // Identifica e desativa órfãos (links cujo território pai foi excluído)
