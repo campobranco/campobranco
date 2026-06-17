@@ -314,7 +314,54 @@ export default function SharedListView({ id: propId }: SharedListViewProps) {
         });
     };
 
+    const performReturnTerritoryExecution = async (territoryId: string, territoryName: string) => {
+        setItems(prev => prev.map(item =>
+            item.id === territoryId ? { ...item, visitStatus: 'completed' } : item
+        ));
+        try {
+            const resData = await returnTerritoryMutation({ 
+                shareId: id as string, 
+                territoryId, 
+                userId: user?.uid || '',
+                userName: profileName || '',
+                userCongregationId: listData?.congregationId || '',
+                currentUserRole: role || null,
+                undo: false 
+            });
+            if (!resData.success) throw new Error(resData.message || 'Erro ao devolver território');
+            toast.success(`Território ${territoryName} devolvido.`);
+        } catch (e: any) {
+            console.error(e);
+            toast.error(e.message || "Erro ao sincronizar devolução. Tente novamente.");
+            setItems(prev => prev.map(item =>
+                item.id === territoryId ? { ...item, visitStatus: 'active' } : item
+            ));
+        }
+    };
+
+    const [pendingTerritoryInfo, setPendingTerritoryInfo] = useState<{ id: string, name: string } | null>(null);
+
     const handleReturnTerritory = async (territoryId: string, territoryName: string) => {
+        // Se for congregação TRADITIONAL
+        if (congregationType === 'TRADITIONAL') {
+            // Em uma lista do tipo 'city' (onde temos múltiplos territórios), o array 'items' contém os territórios.
+            // Para saber se todos os endereços daquele território específico foram trabalhados,
+            // precisamos consultar a quantidade total de endereços cadastrados ativos versus o processado para aquele território.
+            const totalAddr = addressCounts[territoryId] || 0;
+            const workedAddr = processedCounts[territoryId] || 0;
+            const hasUnworked = workedAddr < totalAddr;
+
+            if (hasUnworked) {
+                setPendingTerritoryInfo({ id: territoryId, name: territoryName });
+                setReturnValidationModal({
+                    isOpen: true,
+                    hasUnworked: true,
+                    isConfirmed: false
+                });
+                return;
+            }
+        }
+
         setConfirmModal({
             isOpen: true,
             title: "Devolver Território",
@@ -322,28 +369,7 @@ export default function SharedListView({ id: propId }: SharedListViewProps) {
             variant: 'info',
             onConfirm: async () => {
                 setConfirmModal(prev => ({ ...prev, isOpen: false }));
-                setItems(prev => prev.map(item =>
-                    item.id === territoryId ? { ...item, visitStatus: 'completed' } : item
-                ));
-                try {
-                    const resData = await returnTerritoryMutation({ 
-                        shareId: id as string, 
-                        territoryId, 
-                        userId: user?.uid || '',
-                        userName: profileName || '',
-                        userCongregationId: listData?.congregationId || '',
-                        currentUserRole: role || null,
-                        undo: false 
-                    });
-                    if (!resData.success) throw new Error(resData.message || 'Erro ao devolver território');
-                    toast.success(`Território ${territoryName} devolvido.`);
-                } catch (e: any) {
-                    console.error(e);
-                    toast.error(e.message || "Erro ao sincronizar devolução. Tente novamente.");
-                    setItems(prev => prev.map(item =>
-                        item.id === territoryId ? { ...item, visitStatus: 'active' } : item
-                    ));
-                }
+                await performReturnTerritoryExecution(territoryId, territoryName);
             }
         });
     };
@@ -826,7 +852,7 @@ export default function SharedListView({ id: propId }: SharedListViewProps) {
             {returnValidationModal.isOpen && (
                 <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4 animate-in fade-in duration-200">
                     <div className="bg-surface border border-surface-border rounded-xl w-full max-w-sm p-6 shadow-2xl animate-in zoom-in-95 duration-200 text-center space-y-4">
-                        <h2 className="text-xl font-bold text-main">Devolver Mapa</h2>
+                        <h2 className="text-xl font-bold text-main">Devolver {pendingTerritoryInfo ? 'Território' : 'Mapa'}</h2>
                         <p className="text-muted text-sm leading-relaxed">
                             Ainda existem endereços não trabalhados ou marcados como parciais neste território.
                         </p>
@@ -844,7 +870,10 @@ export default function SharedListView({ id: propId }: SharedListViewProps) {
                         </div>
                         <div className="flex gap-3 pt-2">
                             <button
-                                onClick={() => setReturnValidationModal(prev => ({ ...prev, isOpen: false, isConfirmed: false }))}
+                                onClick={() => {
+                                    setReturnValidationModal(prev => ({ ...prev, isOpen: false, isConfirmed: false }));
+                                    setPendingTerritoryInfo(null);
+                                }}
                                 className="flex-1 bg-surface-highlight hover:bg-background text-main border border-surface-border py-3 rounded-lg font-bold text-sm transition-colors"
                             >
                                 Cancelar
@@ -852,8 +881,18 @@ export default function SharedListView({ id: propId }: SharedListViewProps) {
                             <button
                                 onClick={async () => {
                                     if (!returnValidationModal.isConfirmed) return;
+                                    const isTerr = !!pendingTerritoryInfo;
+                                    const terrId = pendingTerritoryInfo?.id;
+                                    const terrName = pendingTerritoryInfo?.name;
+                                    
                                     setReturnValidationModal(prev => ({ ...prev, isOpen: false, isConfirmed: false }));
-                                    await performReturnMapExecution();
+                                    setPendingTerritoryInfo(null);
+                                    
+                                    if (isTerr && terrId && terrName) {
+                                        await performReturnTerritoryExecution(terrId, terrName);
+                                    } else {
+                                        await performReturnMapExecution();
+                                    }
                                 }}
                                 disabled={!returnValidationModal.isConfirmed}
                                 className={`flex-1 text-white py-3 rounded-lg font-bold text-sm transition-all shadow-lg ${
