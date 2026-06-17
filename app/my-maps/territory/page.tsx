@@ -697,13 +697,17 @@ function TerritoryListContent() {
                                                                                 <td className="px-6 py-3 relative">
                                                                                     <div className="flex items-center justify-between gap-4">
                                                                                         <div className="flex items-center gap-2 min-w-0">
-                                                                                            {/* Gender Mode - igual à tela de endereços */}
+                                                                                            {/* Gender Mode */}
                                                                                             {addr.gender && (addr.gender === 'male' || addr.gender === 'HOMEM' || addr.gender === 'female' || addr.gender === 'MULHER' || addr.gender === 'CASAL') ? (
-                                                                                                <div className={`w-6 h-6 rounded-lg flex items-center justify-center shrink-0 shadow-sm border transition-colors ${addr.gender === 'HOMEM' || addr.gender === 'male' ? 'bg-blue-100 text-blue-600 border-blue-200' :
-                                                                                                        addr.gender === 'MULHER' || addr.gender === 'female' ? 'bg-pink-100 text-pink-600 border-pink-200' :
-                                                                                                            addr.gender === 'CASAL' ? 'bg-purple-100 text-purple-600 border-purple-200' :
-                                                                                                                'bg-gray-100 text-gray-600 border-gray-200'
-                                                                                                    }`}>
+                                                                                                <div className={`w-6 h-6 rounded-lg flex items-center justify-center shrink-0 shadow-sm border transition-colors ${
+                                                                                                    addr.gender === 'HOMEM' || addr.gender === 'male' 
+                                                                                                        ? 'bg-blue-100 text-blue-600 border-blue-200 dark:bg-blue-950/40 dark:border-blue-900 dark:text-blue-400' 
+                                                                                                        : addr.gender === 'MULHER' || addr.gender === 'female' 
+                                                                                                            ? 'bg-pink-100 text-pink-600 border-pink-200 dark:bg-pink-950/40 dark:border-pink-900 dark:text-pink-400' 
+                                                                                                            : addr.gender === 'CASAL' 
+                                                                                                                ? 'bg-purple-100 text-purple-600 border-purple-200 dark:bg-purple-950/40 dark:border-purple-900 dark:text-purple-400' 
+                                                                                                                : 'bg-gray-100 text-gray-600 border-gray-200 dark:bg-gray-800 dark:border-gray-700 dark:text-gray-400'
+                                                                                                }`}>
                                                                                                     {addr.gender === 'CASAL' ? (
                                                                                                         <div className="flex -space-x-1.5">
                                                                                                             <User className="w-3 h-3 fill-current" />
