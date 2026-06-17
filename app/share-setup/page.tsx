@@ -184,11 +184,7 @@ function ShareSetupContent() {
             return null;
         }
 
-        // 2. UI Guard (prevenção UX) - Edge Input Guard
-        if (!selectedUser || !selectedUser.id) {
-            toast.error("Selecione um publicador para designar o território.");
-            return null;
-        }
+        // assignedTo é opcional — Links Abertos não exigem publicador designado.
 
         setGenerating(true);
         try {

@@ -22,15 +22,13 @@ describe('Territory Business Rules (Core Domain)', () => {
             expect(result.code).toBe('TERRITORY_ALREADY_ASSIGNED');
         });
 
-        it('Cenário 3: Usuário inexistente = Erro (USER_NOT_FOUND)', () => {
+        it('Cenário 3: Usuário vazio/nulo = Permitido (Link Aberto)', () => {
             const territory: TerritoryState = { id: 't1', status: 'Disponível' };
             const result = canAssignTerritory(territory, '');
-            expect(result.valid).toBe(false);
-            expect(result.code).toBe('USER_NOT_FOUND');
+            expect(result.valid).toBe(true);
             
             const resultNull = canAssignTerritory(territory, null);
-            expect(resultNull.valid).toBe(false);
-            expect(resultNull.code).toBe('USER_NOT_FOUND');
+            expect(resultNull.valid).toBe(true);
         });
 
         it('Cenário Extra: Status inválido = Erro (INVALID_STATUS)', () => {

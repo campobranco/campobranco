@@ -1,12 +1,13 @@
 {
   "name": "campobranco",
-  "version": "0.9.13-beta",
+  "version": "0.9.20-beta",
   "private": true,
   "scripts": {
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
     "lint": "eslint",
+    "setup": "ts-node scripts/setup.ts",
     "test": "npm run test:unit && npm run test:e2e",
     "test:unit": "jest --testPathIgnorePatterns=__tests__/integration",
     "test:e2e": "playwright test",

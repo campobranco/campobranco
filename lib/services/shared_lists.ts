@@ -25,10 +25,6 @@ const LISTS_TABLE = 'shared_lists';
 const SNAPSHOTS_TABLE = 'shared_list_snapshots';
 const VISITS_TABLE = 'visits';
 
-/**
- * Busca um link ativo existente para um conjunto de territórios.
- * Retorna o ID do link ativo se encontrado, ou null caso contrário.
- */
 export async function findActiveSharedList(
     territoryIds: string[],
     congregationId: string
@@ -44,9 +40,24 @@ export async function findActiveSharedList(
         );
         const snap = await getDocs(q);
         if (snap.empty) return null;
-        const found = snap.docs[0];
-        return { id: found.id, shareData: { id: found.id, ...found.data() } };
-    } catch {
+
+        // Compara localmente conjuntos ordenados para suportar múltiplos territórios exatos
+        const targetSorted = [...territoryIds].sort();
+
+        for (const docObj of snap.docs) {
+            const data = docObj.data();
+            const items = data.items || [];
+            if (items.length === targetSorted.length) {
+                const itemsSorted = [...items].sort();
+                const isExactMatch = itemsSorted.every((id, idx) => id === targetSorted[idx]);
+                if (isExactMatch) {
+                    return { id: docObj.id, shareData: { id: docObj.id, ...data } };
+                }
+            }
+        }
+        return null;
+    } catch (error) {
+        console.error('[findActiveSharedList] Falha ao consultar link ativo no Firestore:', error);
         return null;
     }
 }
@@ -62,35 +73,6 @@ export async function createSharedList(data: {
     territories?: any[];
 }) {
     try {
-        // getOrCreate real: se já existe link ativo para esses territórios, retorna o existente
-        if (data.type === 'territory' && data.items.length > 0) {
-            const existing = await findActiveSharedList(data.items, data.congregationId);
-            if (existing) {
-                return { success: true, id: existing.id, shareData: existing.shareData };
-            }
-        }
-
-        const expiresAt = data.expiresInHours 
-            ? new Date(Date.now() + data.expiresInHours * 60 * 60 * 1000)
-            : null;
-
-        const listData = {
-            title: data.title,
-            type: data.type,
-            items: data.items,
-            congregationId: data.congregationId,
-            assignedTo: data.assignedTo,
-            assignedName: data.assignedName,
-            status: 'active',
-            assignedAt: serverTimestamp(),
-            expiresAt: expiresAt ? Timestamp.fromDate(expiresAt) : null,
-            createdAt: serverTimestamp(),
-            updatedAt: serverTimestamp(),
-        };
-
-        const listRef = doc(collection(db, LISTS_TABLE));
-        const shareId = listRef.id;
-
         // PRE-FETCH: Lemos dados que não exigem bloqueio (Endereços) fora do retry loop
         let addressesDocs: any[] = [];
         if (data.type === 'territory' && data.territories && Array.isArray(data.territories)) {
@@ -108,39 +90,130 @@ export async function createSharedList(data: {
             }
         }
 
+        const sortedTerritoryIds = [...data.items].sort();
+        const businessKey = sortedTerritoryIds.join('_');
+        const listRef = doc(db, 'shared_lists', businessKey);
+
+        let resultLink: any = null;
+        const recoveryLogs: any[] = [];
+        let existingActiveLink = false;
+
         await runTransaction(db, async (transaction) => {
-            // FASE 1: LEITURA ATÔMICA
+            // FASE 1: LEITURA ATÔMICA DO DOCUMENTO DE NEGÓCIO DETERMINÍSTICO (V18)
+            const listSnap = await transaction.get(listRef);
+
+            // Document Existence is the Lock: se o documento físico já existe no Firestore
+            if (listSnap.exists()) {
+                const listVal = listSnap.data() as any;
+                if (listVal.status === 'active') {
+                    existingActiveLink = true;
+                    resultLink = { success: true, id: businessKey, shareData: { id: businessKey, ...listVal } };
+                    return; // Retorno de idempotência segura
+                }
+                // Se existe mas não está ativo, aborta a escrita/sobrescrita direta para evitar overwrite concorrente
+                throw new Error('DOCUMENT_ALREADY_EXISTS');
+            }
+
+            // Leitura dos territórios para validação e auditoria
             const territoryDocs = [];
             if (data.type === 'territory' && data.territories && Array.isArray(data.territories)) {
                 for (const t of data.territories) {
                     const terrRef = doc(db, 'territories', t.id);
                     const terrDoc = await transaction.get(terrRef);
+                    if (!terrDoc.exists()) {
+                        throw new Error(`Território ${t.id} inexistente.`);
+                    }
                     territoryDocs.push({ t, terrRef, terrDoc });
                 }
             }
 
-            // FASE 2: VALIDAÇÃO (Domínio Puro, sem Side Effects)
-            for (const { t, terrDoc } of territoryDocs) {
-                if (!terrDoc.exists()) {
-                    throw new Error(`Território ${t.id} inexistente.`);
+            // Inspeciona/valida territórios e coleta inconsistências para logging pós-commit
+            for (const { terrDoc } of territoryDocs) {
+                const tData = terrDoc.data() as any;
+
+                // Verificação de conflito real: se o território está associado a outro link ativo
+                if (tData.activeLinkId && tData.activeLinkId !== businessKey) {
+                    const otherListRef = doc(db, 'shared_lists', tData.activeLinkId);
+                    const otherListSnap = await transaction.get(otherListRef);
+                    if (otherListSnap.exists() && otherListSnap.data()?.status === 'active') {
+                        throw new Error('TERRITORY_ALREADY_ASSIGNED');
+                    }
                 }
-                const tState = { id: terrDoc.id, ...terrDoc.data() } as any;
+
+                // Recomposição transacional automática (Self-Healing de domínio)
+                const isOrphaned = !existingActiveLink;
+
+                if (isOrphaned && (tData.status === 'Emprestado' || tData.activeLinkId)) {
+                    recoveryLogs.push({
+                        type: 'ORPHAN_RECOVERED',
+                        territoryId: terrDoc.id,
+                        previousStatus: tData.status,
+                        previousActiveLinkId: tData.activeLinkId || null
+                    });
+                }
+
+                const tState = {
+                    id: terrDoc.id,
+                    ...tData,
+                    status: isOrphaned ? 'Disponível' : tData.status
+                };
+
+                // Valida as regras normais de domínio
                 const validation = canAssignTerritory(tState, data.assignedTo);
                 if (!validation.valid) {
                     throw new Error(validation.message || 'Território não disponível');
                 }
             }
 
-            // FASE 3: ESCRITAS (Apenas a partir daqui. Sem mais Reads/Awaits)
+            const currentVersion = listSnap.exists() ? (listSnap.data()?.version || 0) : 0;
+            const newVersion = currentVersion + 1;
+
+            // FASE 3: ESCRITAS (Commit Único Lógico V19 - CAS Versionado)
+            const expiresAt = data.expiresInHours 
+                ? new Date(Date.now() + data.expiresInHours * 60 * 60 * 1000)
+                : null;
+
+            const listData = {
+                title: data.title,
+                type: data.type,
+                items: data.items,
+                congregationId: data.congregationId,
+                assignedTo: data.assignedTo,
+                assignedName: data.assignedName,
+                status: 'active',
+                version: newVersion,
+                assignedAt: serverTimestamp(),
+                expiresAt: expiresAt ? Timestamp.fromDate(expiresAt) : null,
+                createdAt: serverTimestamp(),
+                updatedAt: serverTimestamp(),
+            };
+
+            // 1. Grava a shared_list incrementando a versão física (CAS)
+            transaction.set(listRef, listData);
+
+            // 2. Atualiza territórios com o activeLinkId atômico
             for (const { terrRef } of territoryDocs) {
                 transaction.update(terrRef, {
                     status: 'Emprestado',
                     assignedTo: data.assignedTo,
+                    activeLinkId: businessKey,
                     updatedAt: serverTimestamp()
                 });
             }
 
-            transaction.set(listRef, listData);
+            // 3. Grava log de reconciliação de concorrência com chave determinística para evitar double-writes nos logs (Idempotência de Log)
+            if (recoveryLogs.length > 0) {
+                recoveryLogs.forEach((rLog) => {
+                    const logDeterministicId = `${businessKey}_${rLog.territoryId}_v${newVersion}`;
+                    const logRef = doc(db, 'security_logs', logDeterministicId);
+                    transaction.set(logRef, {
+                        ...rLog,
+                        reconciledToLinkId: businessKey,
+                        version: newVersion,
+                        createdAt: serverTimestamp()
+                    });
+                });
+            }
 
             if (data.type === 'territory' && data.territories && Array.isArray(data.territories)) {
                 const snapshotsRef = collection(db, SNAPSHOTS_TABLE);
@@ -148,7 +221,7 @@ export async function createSharedList(data: {
                 data.territories.forEach((t: any) => {
                     const snapRef = doc(snapshotsRef);
                     transaction.set(snapRef, {
-                        sharedListId: shareId,
+                        sharedListId: businessKey,
                         congregationId: data.congregationId,
                         itemId: t.id,
                         type: 'territory',
@@ -160,7 +233,7 @@ export async function createSharedList(data: {
                 addressesDocs.forEach(d => {
                     const snapRef = doc(snapshotsRef);
                     transaction.set(snapRef, {
-                        sharedListId: shareId,
+                        sharedListId: businessKey,
                         congregationId: data.congregationId,
                         itemId: d.id,
                         type: 'address',
@@ -172,11 +245,26 @@ export async function createSharedList(data: {
                     });
                 });
             }
+
+            resultLink = { success: true, id: businessKey, shareData: { id: businessKey, ...listData } };
         });
 
-        return { success: true, id: shareId, shareData: { id: shareId, ...listData } };
+        return resultLink;
     } catch (error: any) {
         console.error('Error creating shared list:', error);
+
+        const isAlreadyAssignedError =
+            error.message?.includes('Território já está emprestado') ||
+            error.message?.includes('TERRITORY_ALREADY_ASSIGNED');
+
+        if (isAlreadyAssignedError) {
+            return {
+                success: false,
+                error: 'Este território já está emprestado em outra lista ativa. Escolha outro território.',
+                code: 'TERRITORY_ALREADY_ASSIGNED'
+            };
+        }
+
         return { success: false, error: error.message };
     }
 }
@@ -375,6 +463,7 @@ export async function processSharedListAction(id: string, action: string, payloa
                         transaction.update(terrRef, {
                             status: 'Disponível',
                             assignedTo: null,
+                            activeLinkId: null, // Limpa o lock lógico na devolução
                             updatedAt: serverTimestamp()
                         });
                     }
@@ -395,12 +484,14 @@ export async function processSharedListAction(id: string, action: string, payloa
                         transaction.update(terrRef, {
                             status: 'Emprestado',
                             assignedTo: userId || listData.assignedTo,
+                            activeLinkId: id, // Restabelece o ID da shared list ao desfazer devolução
                             updatedAt: serverTimestamp()
                         });
                     } else {
                         transaction.update(terrRef, {
                             status: 'Disponível',
                             assignedTo: null,
+                            activeLinkId: null, // Limpa o lock lógico na devolução
                             updatedAt: serverTimestamp()
                         });
                     }

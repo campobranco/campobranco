@@ -33,6 +33,7 @@ export function canAssignTerritory(
     // Se targetUserId for vazio/null, o sistema entende que é um Link Aberto,
     // que será assumido depois por quem abrir o link.
 
+
     const s = (territory.status || "disponível").toLowerCase();
 
     // Cenário: Status inválido

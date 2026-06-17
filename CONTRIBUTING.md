@@ -1,31 +1,57 @@
 # Contribuindo para o Campo Branco
 
-Obrigado por considerar contribuir para o Campo Branco!
+Obrigado por considerar contribuir para o Campo Branco! O projeto utiliza uma arquitetura pensada para ser robusta no backend, resiliente a concorrência e livre de falhas de consistência lógica.
 
-## Como contribuir
+## 🚀 Como começar em 5 minutos
 
-1.  Faça um Fork do projeto.
-2.  Crie uma Branch para sua Feature (`git checkout -b feature/MinhaFeature`).
-3.  Faça o Commit de suas mudanças (`git commit -m 'Adicionando uma nova feature'`).
-4.  Faça o Push para a Branch (`git push origin feature/MinhaFeature`).
-5.  Abra um Pull Request.
+1. Faça o Fork e clone o projeto.
+2. Certifique-se de ter o **Java JDK 21+** instalado.
+3. Roda o setup automatizado para instalar dependências e testar seu ambiente local:
+   ```bash
+   npm run setup
+   ```
+4. Inicie o servidor de desenvolvimento:
+   ```bash
+   npm run dev
+   ```
 
-## Padrões de Código e Arquitetura Pragmática
+---
 
-O Campo Branco prioriza **simplicidade, colaboração rápida e execução correta**. Nossa arquitetura evita o "over-engineering". Siga estas regras de ouro:
+## 🧱 Arquitetura e Regras de Segurança
 
-1. **A Regra Mestra:** Se a arquitetura está dificultando você escrever código simples para resolver uma dor real, ela está errada.
-2. **Mutações (Escritas):** Não escreva direto no Firestore (`updateDoc`, `deleteDoc`) dentro de componentes React. Use/crie funções simples em `lib/contracts/mutations/`.
-3. **Queries (Leituras):** A UI pode (e deve) ler o banco diretamente via `onSnapshot` ou `getDocs`. Não crie burocracia para ler dados.
-4. **Services (`lib/services`):** Use apenas para encapsular operações densas do Firebase (ex: transações atômicas). Se for simples, o contrato resolve sem service.
-5. **Regras de Negócio Puras:** Lógicas comportamentais isoladas (ex: "quem pode assumir mapa") vivem em `lib/domain/` como funções puras sem Firebase, garantindo cobertura pelo Jest.
-6. **Concorrência:** Se uma operação puder sofrer corrida (ex: cliques simultâneos designando mapa), use `runTransaction`.
-7. **Testes Críticos:** Quebrou o fluxo E2E (Playwright) de Designar/Devolver? O PR não sobe.
-8. **Não tente prever o futuro (YAGNI):** Só separe Bounded Contexts ou crie abstrações quando a dor no código atual justificar.
+Para manter o projeto sustentável a longo prazo e compatível com múltiplos contribuidores simultâneos, seguimos regras estritas travadas por design:
 
-- Utilizamos Tailwind CSS.
-- Siga as regras do ESLint (Next.js config).
+```
+[ UI Componentes ]
+      │
+      ▼ (Uso Obrigatório para Escritas)
+[ Mutation Layer / Contratos ]
+      │
+      ▼ (Integridade e Domínio Puro)
+[ Domain Layer / Regras ] ◄──► [ Jest Unit Tests ]
+      │
+      ▼ (Transações e Concorrência)
+[ Services ] ◄───────────────► [ Firestore / Emulator ]
+```
 
-## Reportando Bugs
+### 🚫 Regras importantes:
+* **UI não acessa escritas no Firestore diretamente**: Não utilize `updateDoc`, `deleteDoc` ou `setDoc` dentro de componentes React. Toda mutação deve ser importada e executada a partir de `lib/contracts/mutations/`.
+* **Queries (Leituras) são livres**: A UI pode e deve assinar dados em tempo real ou ler o banco diretamente usando `onSnapshot` ou `getDocs`.
+* **Regras de Domínio Puras**: Lógicas puras de negócio (ex: "se o território pode ser designado") devem morar isoladas em `lib/domain/` sem dependência de APIs externas ou do Firestore, facilitando cobertura de testes de regressão simples com Jest.
 
-Se você encontrar um bug, por favor abra uma issue detalhando o problema, como reproduzi-lo e o comportamento esperado.
+---
+
+## 🧪 Testes e Emuladores
+
+* **Roda testes unitários**: `npm run test:unit`
+* **Roda emulador de banco**: `npm run emulator`
+* **Roda testes de integração no emulador**: `npm run test:integration`
+* **Roda testes E2E com Playwright**: `npm run test:e2e`
+
+---
+
+## ⚠️ Antes de enviar seu Pull Request
+
+1. Roda a verificação estrita local: `npm run setup`.
+2. Certifique-se de que os testes locais e o linter (`npm run lint`) passam.
+3. Não envie mock data estático para mascarar comportamentos que deveriam passar por transações reais no Firestore.
