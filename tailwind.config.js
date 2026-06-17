@@ -11,6 +11,7 @@ module.exports = {
                 background: "var(--background)",
                 foreground: "var(--text-main)",
                 surface: "var(--surface)",
+                "surface-highlight": "var(--surface-highlight)",
                 "surface-border": "var(--surface-border)",
                 "text-main": "var(--text-main)",
                 "text-muted": "var(--text-muted)",
