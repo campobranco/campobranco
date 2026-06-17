@@ -605,16 +605,16 @@ function CityListContent() {
                                             className="group bg-background rounded-lg p-4 border border-surface-border shadow-sm hover:shadow-md hover:border-primary-light/50 dark:hover:border-primary-light/20 transition-all flex items-center gap-4"
                                         >
 
-                                            <Link href={`/my-maps/territory?congregationId=${congregationId}&cityId=${city.id}`} prefetch={false} className="flex-1 flex items-center gap-4 min-w-0">
+                                            <Link href={`/my-maps/territory?congregationId=${congregationId}&cityId=${city.id}`} prefetch={false} className="flex-[2] flex items-center gap-4 min-w-0">
                                                 <div className="w-10 h-10 bg-surface dark:bg-surface-highlight rounded-lg flex items-center justify-center text-muted shrink-0 shadow-sm border border-surface-border">
                                                     <MapIcon className="w-5 h-5" />
                                                 </div>
-                                                <div className="flex-1 min-w-0">
+                                                <div className="flex-1 min-w-0 flex flex-col">
                                                     <div className="flex items-center justify-between mb-1">
-                                                        <div>
+                                                        <div className="min-w-0">
                                                             <h3 className="font-bold text-main text-base truncate leading-tight">{city.name}</h3>
                                                             {city.parentCity && (
-                                                                <p className="text-[10px] text-muted font-black uppercase tracking-wider">{city.parentCity}</p>
+                                                                <p className="text-[10px] text-muted font-black uppercase tracking-wider truncate">{city.parentCity}</p>
                                                             )}
                                                         </div>
                                                         {(stats && stats.total > 0) && (
