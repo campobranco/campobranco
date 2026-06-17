@@ -405,9 +405,9 @@ export default function CSVImportModal({
                     {/* Seleção de arquivo */}
                     {!preview && !results && (
                         <>
-                            <label className="group relative border-2 border-dashed border-gray-200 hover:border-primary rounded-2xl p-10 flex flex-col items-center justify-center gap-3 cursor-pointer transition-all bg-gray-50/50 hover:bg-primary/5">
+                            <label className="group relative border-2 border-dashed border-surface-border hover:border-primary rounded-2xl p-10 flex flex-col items-center justify-center gap-3 cursor-pointer transition-all bg-surface hover:bg-primary/5">
                                 <input type="file" accept=".csv" className="hidden" onChange={handleFileChange} />
-                                <div className="bg-white dark:bg-surface p-4 rounded-xl shadow-sm group-hover:scale-110 transition-transform">
+                                <div className="bg-background dark:bg-surface-highlight p-4 rounded-xl shadow-sm group-hover:scale-110 transition-transform border border-surface-border">
                                     <Upload className="w-8 h-8 text-primary" />
                                 </div>
                                 <div className="text-center">
@@ -415,9 +415,9 @@ export default function CSVImportModal({
                                     <p className="text-[10px] text-muted mt-1 font-medium italic">Separador ponto e vírgula (;)</p>
                                 </div>
                             </label>
-                            <div className="bg-amber-50/50 border border-amber-100 rounded-xl p-4 flex gap-3">
+                            <div className="bg-amber-50/10 dark:bg-amber-950/20 border border-amber-200/30 dark:border-amber-900/30 rounded-xl p-4 flex gap-3">
                                 <AlertTriangle className="w-5 h-5 text-amber-500 shrink-0 mt-0.5" />
-                                <p className="text-xs text-amber-800 font-bold leading-relaxed">
+                                <p className="text-xs text-amber-800 dark:text-amber-400 font-bold leading-relaxed">
                                     Atenção: Sempre revise manualmente tarefas realizadas em massa para evitar erros de importação.
                                 </p>
                             </div>
