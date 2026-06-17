@@ -259,7 +259,7 @@ export default function BugReportsAdminPage() {
                     </div>
 
                     {/* Report Content */}
-                    <div className="flex-1 min-h-[500px]">
+                    <div className="flex-1 min-w-0 min-h-[500px]">
                         {selectedReport ? (
                             <div className="bg-surface rounded-2xl border border-surface-border overflow-hidden shadow-sm animate-in fade-in slide-in-from-right-4 duration-300">
                                 <div className="p-6 border-b border-surface-border">
@@ -356,7 +356,7 @@ export default function BugReportsAdminPage() {
                                                         <h3 className="text-[10px] font-bold uppercase tracking-widest">Conteúdo do Console (Últimos 50 logs)</h3>
                                                     </div>
                                                     <div className="bg-zinc-950 p-4 rounded-lg overflow-x-auto max-h-[300px] custom-scrollbar">
-                                                        <pre className="text-[10px] font-mono leading-relaxed text-zinc-300">
+                                                        <pre className="text-[10px] font-mono leading-relaxed text-zinc-300 whitespace-pre-wrap break-all">
                                                             {selectedReport.deviceInfo.consoleLogs.join('\n')}
                                                         </pre>
                                                     </div>
