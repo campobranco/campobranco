@@ -24,7 +24,8 @@ import {
 // eslint-disable-next-line no-restricted-imports
     addDoc
 } from 'firebase/firestore';
-import { db, auth } from '@/lib/firebase';
+import { db, auth, storage } from '@/lib/firebase';
+import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
 import {
     LogOut,
     User,
@@ -106,6 +107,9 @@ export default function SettingsPage() {
     const [generatingToken, setGeneratingToken] = useState(false);
     const [openMenuId, setOpenMenuId] = useState<string | null>(null);
     const [showDangerZone, setShowDangerZone] = useState(false);
+const [selectedFile, setSelectedFile] = useState<File | null>(null);
+const [previewUrl, setPreviewUrl] = useState<string | null>(null);
+const [uploading, setUploading] = useState(false);
 
     // Custom Permissions States
     const [selectedMemberForPermissions, setSelectedMemberForPermissions] = useState<any | null>(null);
@@ -611,36 +615,42 @@ export default function SettingsPage() {
         if (!user || (!user.email && !user.uid)) return;
         setSaving(true);
         try {
-            // Atualiza o documento no Firestore (Principal)
+            // Update name in Firestore
             const userRef = doc(db, 'users', user.uid);
             await updateDoc(userRef, {
                 name: editName,
                 updatedAt: serverTimestamp()
             });
+            // Update display name in Auth
+            await updateProfile(user, { displayName: editName });
 
-            // Atualiza o perfil no Firebase Auth (Principal para a UI)
-            await updateProfile(user, {
-                displayName: editName
-            });
+            // If new avatar selected, upload to Firebase Storage
+            if (selectedFile) {
+                setUploading(true);
+                const avatarRef = ref(storage, `avatars/${user.uid}`);
+                await uploadBytes(avatarRef, selectedFile);
+                const downloadURL = await getDownloadURL(avatarRef);
+                // Update photoURL in Auth and Firestore
+                await updateProfile(user, { photoURL: downloadURL });
+                await updateDoc(userRef, { photoURL: downloadURL });
+                setSelectedFile(null);
+                setPreviewUrl(null);
+            }
 
             setShowEditModal(false);
             toast.success("Perfil atualizado com sucesso!");
-
-            // Forçamos o recarregamento para que o AuthContext e o navegador peguem os novos dados
+            // Reload to reflect changes
             setTimeout(() => {
                 window.location.reload();
             }, 500);
         } catch (error: any) {
             console.error("Error updating profile:", error);
-            // Transformamos alerts em notificações internas conforme regra global
             toast.error("Erro ao atualizar perfil: " + (error.message || "Tente novamente"));
         } finally {
             setSaving(false);
+            setUploading(false);
         }
     };
-
-
-
 
     const handleSignOut = async () => {
         try {
@@ -651,8 +661,6 @@ export default function SettingsPage() {
             window.location.href = '/login';
         }
     };
-
-
 
     useEffect(() => {
         if (!loading && !user) {
@@ -690,13 +698,22 @@ export default function SettingsPage() {
                     <h2 className="text-sm font-bold text-gray-400 uppercase tracking-widest pl-1">Minha Conta</h2>
                     <div className="bg-surface p-6 rounded-lg shadow-sm border border-surface-border flex flex-col md:flex-row items-start md:items-center justify-between gap-6">
                         <div className="flex items-center gap-4">
-                            <div className="w-16 h-16 bg-background dark:bg-surface-highlight rounded-full flex items-center justify-center text-muted text-xl font-bold border-2 border-surface dark:border-surface shadow-sm ring-1 ring-surface-border">
-                                {user.photoURL ? (
+                            <div className="w-16 h-16 bg-background dark:bg-surface-highlight rounded-full flex items-center justify-center text-muted text-xl font-bold border-2 border-surface dark:border-surface shadow-sm ring-1 ring-surface-border cursor-pointer" onClick={() => document.getElementById('avatarInput')?.click()}>
+                                {previewUrl ? (
+                                    <img src={previewUrl} alt="Preview" width={64} height={64} className="rounded-full object-cover w-16 h-16" />
+                                ) : user.photoURL ? (
                                     <img src={user.photoURL} alt="Avatar" width={64} height={64} className="rounded-full object-cover w-16 h-16" referrerPolicy="no-referrer" />
                                 ) : (
                                     <User className="w-8 h-8" />
                                 )}
                             </div>
+                            <input type="file" accept="image/*" id="avatarInput" className="hidden" onChange={(e) => {
+                                const file = e.target.files?.[0];
+                                if (file) {
+                                    setSelectedFile(file);
+                                    setPreviewUrl(URL.createObjectURL(file));
+                                }
+                            }} />
                             <div>
                                 <h3 className="text-lg font-bold text-main">{profileName || user.displayName || 'Usuário'}</h3>
                                 <p className="text-muted text-sm">{user.email}</p>

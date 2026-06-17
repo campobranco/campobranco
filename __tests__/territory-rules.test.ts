@@ -15,11 +15,14 @@ describe('Territory Business Rules (Core Domain)', () => {
             expect(result.valid).toBe(true);
         });
 
-        it('Cenário 2: Território já emprestado = Erro (TERRITORY_ALREADY_ASSIGNED)', () => {
+        it('Cenário 2: Território já emprestado para outro usuário = Permitido, mas para o mesmo usuário = Bloqueado (ALREADY_ASSIGNED_TO_USER)', () => {
             const territory: TerritoryState = { id: 't1', status: 'Emprestado', assignedTo: 'user-999' };
-            const result = canAssignTerritory(territory, 'user-123');
-            expect(result.valid).toBe(false);
-            expect(result.code).toBe('TERRITORY_ALREADY_ASSIGNED');
+            const resultOther = canAssignTerritory(territory, 'user-123');
+            expect(resultOther.valid).toBe(true);
+
+            const resultSame = canAssignTerritory(territory, 'user-999');
+            expect(resultSame.valid).toBe(false);
+            expect(resultSame.code).toBe('ALREADY_ASSIGNED_TO_USER');
         });
 
         it('Cenário 3: Usuário vazio/nulo = Permitido (Link Aberto)', () => {
