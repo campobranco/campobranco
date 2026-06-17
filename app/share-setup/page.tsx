@@ -56,7 +56,7 @@ function ShareSetupContent() {
     const [expiration, setExpiration] = useState('14d');
     const [generatedLink, setGeneratedLink] = useState<string | null>(null);
     const [generating, setGenerating] = useState(false);
-    const [error, setError] = useState('');
+    const [loadError, setLoadError] = useState('');
 
     const [users, setUsers] = useState<any[]>([]);
     const [searchUserTerm, setSearchUserTerm] = useState('');
@@ -82,14 +82,14 @@ function ShareSetupContent() {
             if (!user) return; // Hook above handles redirect
 
             if (!territoryIdsParam) {
-                setError("Nenhum território selecionado.");
+                setLoadError("Nenhum território selecionado.");
                 setLoading(false);
                 return;
             }
 
             const ids = territoryIdsParam.split(',').filter(Boolean);
             if (ids.length === 0) {
-                setError("IDs inválidos.");
+                setLoadError("IDs inválidos.");
                 setLoading(false);
                 return;
             }
@@ -106,7 +106,7 @@ function ShareSetupContent() {
 
                 if (fetched.length === 0) {
                     console.warn("Nenhum território retornado pela API para os IDs:", ids);
-                    setError("Territórios não encontrados ou você não tem permissão para acessá-los.");
+                    setLoadError("Territórios não encontrados ou você não tem permissão para acessá-los.");
                 } else {
                     console.log(`${fetched.length} territórios carregados com sucesso.`);
                     setTerritories(fetched);
@@ -123,7 +123,7 @@ function ShareSetupContent() {
                 }
             } catch (err: any) {
                 console.error("Erro ao carregar detalhes dos territórios:", err);
-                setError(err.message || "Erro ao carregar detalhes dos territórios.");
+                setLoadError(err.message || "Erro ao carregar detalhes dos territórios.");
             } finally {
                 setLoading(false);
             }
@@ -217,15 +217,18 @@ function ShareSetupContent() {
             });
 
             if (!resData.success) {
-                throw new Error(resData.message || 'Erro ao criar a lista compartilhada');
+                setError(resData.message || 'Erro ao criar a lista compartilhada');
+                toast.error(resData.message || 'Erro ao criar a lista compartilhada');
+                return null;
             }
 
             const link = `${window.location.origin}/share?id=${resData.data?.id}`;
             setGeneratedLink(link);
+            setError('');
             return link;
-        } catch (error) {
+        } catch (error: any) {
             console.error("Error generating link:", error);
-            toast.error("Erro ao gerar link.");
+            toast.error(error.message || "Erro inesperado ao gerar link.");
             return null;
         } finally {
             setGenerating(false);
@@ -289,12 +292,12 @@ function ShareSetupContent() {
         );
     }
 
-    if (error) {
+    if (loadError) {
         return (
             <div className="min-h-screen flex flex-col items-center justify-center bg-background p-6 text-center space-y-4">
                 <AlertCircle className="w-12 h-12 text-red-500" />
                 <h1 className="text-xl font-bold text-main">Erro</h1>
-                <p className="text-muted">{error}</p>
+                <p className="text-muted">{loadError}</p>
                 <button onClick={() => router.push(returnUrl)} className="text-primary hover:underline">
                     Voltar
                 </button>

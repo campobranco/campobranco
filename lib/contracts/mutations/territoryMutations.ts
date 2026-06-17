@@ -47,7 +47,11 @@ export async function assignTerritoryMutation(input: AssignTerritoryInput): Prom
     // Encaminha para o Executor de Infra (Service puro)
     const result = await createSharedList(input);
     if (!result.success) {
-        return { success: false, message: result.error || 'Falha ao designar.' };
+        return { 
+            success: false, 
+            code: result.code || 'ASSIGN_FAILED',
+            message: result.error || 'Falha ao designar.' 
+        };
     }
 
     return { 
