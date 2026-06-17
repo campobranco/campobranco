@@ -1049,7 +1049,7 @@ export default function SettingsPage() {
 
                             {/* Admin - All Congregations */}
                             {isAdminRoleGlobal && (
-                                <div className="bg-surface p-6 rounded-lg shadow-sm border border-primary-light dark:border-primary-dark/30 mb-6 relative overflow-hidden group">
+                                <div className="bg-surface p-6 rounded-lg shadow-sm border border-surface-border mb-6 relative overflow-hidden group">
                                     <div className="absolute top-0 right-0 p-4 opacity-10 group-hover:opacity-20 transition-opacity">
                                         <Building2 className="w-24 h-24 text-primary" />
                                     </div>
