@@ -608,9 +608,9 @@ function TerritoryListContent() {
                         <p className="text-gray-400 font-medium">Nenhum território encontrado</p>
                     </div>
                 ) : currentView === 'table' ? (
-                    <div className="w-full overflow-x-auto pb-4 flex justify-start lg:justify-center">
-                        <div className="bg-surface rounded-lg border border-surface-border shadow-sm inline-block min-w-full sm:min-w-0">
-                            <table className="w-auto min-w-full sm:min-w-0 text-left text-sm">
+                    <div className="w-full overflow-x-auto pb-4">
+                        <div className="bg-surface rounded-lg border border-surface-border shadow-sm min-w-full">
+                            <table className="w-full text-left text-sm">
                                 <thead className="bg-surface-highlight border-b border-surface-border text-muted uppercase tracking-wider text-[10px] font-bold">
                                     <tr>
                                         <th className="px-6 py-4 w-[100px] text-left">Opções</th>
