@@ -104,7 +104,7 @@ export default function VisitHistoryModal({
 
                 const mergedVisits = rawVisits.map((v: any) => ({
                     ...v,
-                    displayName: userNamesMap.get(v.userId) || v.publisherName || 'Publicador',
+                    displayName: userNamesMap.get(v.userId) || v.userName || v.publisherName || 'Publicador',
                     visitDate: v.visitDate,
                     tagsSnapshot: v.tagsSnapshot
                 }));
