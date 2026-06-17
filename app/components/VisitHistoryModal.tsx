@@ -76,6 +76,14 @@ export default function VisitHistoryModal({
                     }));
                 }
 
+                // Deduplicar visitas por ID único do documento
+                const seenVisitIds = new Set<string>();
+                rawVisits = rawVisits.filter((v: any) => {
+                    if (!v.id || seenVisitIds.has(v.id)) return false;
+                    seenVisitIds.add(v.id);
+                    return true;
+                });
+
                 // Ordenação local descente por data da visita
                 rawVisits.sort((a: any, b: any) => {
                     const dateA = new Date(a.visitDate || 0).getTime();
@@ -90,16 +98,20 @@ export default function VisitHistoryModal({
                 const userIds = Array.from(new Set(rawVisits.map((v: any) => v.userId).filter(id => id)));
                 const userNamesMap = new Map<string, string>();
 
-                if (!isSharedView && userIds.length > 0) {
-                    // Nota: Firestore não tem 'in' para documentos simples, buscamos um por um ou via 'in' na coleção
-                    const usersRef = collection(db, 'users');
-                    // O limite de 'in' no Firestore é 30, o que é seguro aqui para 50 visitas
-                    const userQuery = query(usersRef, where(documentId(), 'in', userIds.slice(0, 30)));
-                    const userSnapshot = await getDocs(userQuery);
+                if (userIds.length > 0) {
+                    try {
+                        // Nota: Firestore não tem 'in' para documentos simples, buscamos um por um ou via 'in' na coleção
+                        const usersRef = collection(db, 'users');
+                        // O limite de 'in' no Firestore é 30, o que é seguro aqui para 50 visitas
+                        const userQuery = query(usersRef, where(documentId(), 'in', userIds.slice(0, 30)));
+                        const userSnapshot = await getDocs(userQuery);
 
-                    userSnapshot.docs.forEach(d => {
-                        userNamesMap.set(d.id, d.data().name);
-                    });
+                        userSnapshot.docs.forEach(d => {
+                            userNamesMap.set(d.id, d.data().name);
+                        });
+                    } catch (e) {
+                        console.warn("[VISIT_HISTORY] Could not fetch real user names (possibly restricted shared view):", e);
+                    }
                 }
 
                 const mergedVisits = rawVisits.map((v: any) => ({
