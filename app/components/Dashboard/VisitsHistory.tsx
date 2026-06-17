@@ -34,9 +34,8 @@ import Link from "next/link";
 import { toast } from "sonner";
 import ConfirmationModal from "@/app/components/ConfirmationModal";
 import DropDownItem from "@/app/components/DropDownItem";
-
 export default function VisitsHistory({ scope = 'all', showViewAll = true }: { scope?: 'mine' | 'all', showViewAll?: boolean }) {
-    const { user, congregationId, role, isElder, isServant, profileName, loading: authLoading } = useAuth();
+    const { user, congregationId, role, isElder, isServant, profileName, loading: authLoading, congregationType } = useAuth();
     const [visits, setVisits] = useState<any[]>([]);
     const [loading, setLoading] = useState(true);
     const [hasError, setHasError] = useState(false);
@@ -278,8 +277,9 @@ export default function VisitsHistory({ scope = 'all', showViewAll = true }: { s
     };
 
     const getStatusLabel = (status: string) => {
+        const isTraditional = congregationType === 'TRADITIONAL';
         switch (status) {
-            case 'contacted': return { label: 'Encontrado', color: 'bg-green-50 text-green-700 border border-green-500 dark:bg-green-900/20 dark:border-green-600 dark:text-green-400' };
+            case 'contacted': return { label: isTraditional ? 'Concluído' : 'Encontrado', color: 'bg-green-50 text-green-700 border border-green-500 dark:bg-green-900/20 dark:border-green-600 dark:text-green-400' };
             case 'notContacted': return { label: 'Não Enc.', color: 'bg-orange-50 text-orange-600 border border-orange-500 dark:bg-orange-900/20 dark:border-orange-600 dark:text-orange-400' };
             case 'moved': return { label: 'Mudou-se', color: 'bg-blue-50 text-blue-600 border border-blue-500 dark:bg-blue-900/20 dark:border-blue-600 dark:text-blue-400' };
             case 'doNotVisit': return { label: 'Não Visitar', color: 'bg-red-50 text-red-600 border border-red-500 dark:bg-red-900/20 dark:border-red-600 dark:text-red-400' };

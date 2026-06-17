@@ -217,14 +217,14 @@ function ShareSetupContent() {
             });
 
             if (!resData.success) {
-                setError(resData.message || 'Erro ao criar a lista compartilhada');
+                setLoadError(resData.message || 'Erro ao criar a lista compartilhada');
                 toast.error(resData.message || 'Erro ao criar a lista compartilhada');
                 return null;
             }
 
             const link = `${window.location.origin}/share?id=${resData.data?.id}`;
             setGeneratedLink(link);
-            setError('');
+            setLoadError('');
             return link;
         } catch (error: any) {
             console.error("Error generating link:", error);

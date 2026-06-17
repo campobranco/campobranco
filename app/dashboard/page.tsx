@@ -558,7 +558,12 @@ export default function DashboardPage() {
                             {role === 'ADMIN' && !congregationId && (
                                 <div className="col-span-2 bg-surface p-4 rounded-lg shadow-sm border border-surface-border"><p className="text-[10px] font-bold text-muted uppercase">CONGREGAÇÕES</p><p className="text-2xl font-bold text-main">{stats.congregations}</p></div>
                             )}
-                            <div className="bg-surface p-4 rounded-lg shadow-sm border border-surface-border"><p className="text-[10px] font-bold text-muted uppercase">CIDADES</p><p className="text-2xl font-bold text-main">{stats.cities}</p></div>
+                            <div className="bg-surface p-4 rounded-lg shadow-sm border border-surface-border">
+                                <p className="text-[10px] font-bold text-muted uppercase">
+                                    {congregationType === 'TRADITIONAL' ? 'Bairros' : 'Cidades'}
+                                </p>
+                                <p className="text-2xl font-bold text-main">{stats.cities}</p>
+                            </div>
                             <div className="bg-surface p-4 rounded-lg shadow-sm border border-surface-border"><p className="text-[10px] font-bold text-muted uppercase">MAPAS</p><p className="text-2xl font-bold text-main">{stats.maps}</p></div>
                             <div className="bg-surface p-4 rounded-lg shadow-sm border border-surface-border"><p className="text-[10px] font-bold text-muted uppercase">ENDEREÇOS</p><p className="text-2xl font-bold text-main">{stats.addresses}</p></div>
                             <div className="bg-surface p-4 rounded-lg shadow-sm border border-surface-border"><p className="text-[10px] font-bold text-muted uppercase">VISITAS</p><p className="text-2xl font-bold text-main">{stats.visits}</p></div>
