@@ -408,7 +408,7 @@ export default function DashboardPage() {
                                         {list.status === 'completed' ? <span className="bg-green-100 text-green-700 text-[9px] font-black px-2 py-0.5 rounded-lg uppercase">Concluído</span> : <span className="bg-primary/20 text-primary text-[9px] font-black px-2 py-0.5 rounded-lg uppercase">Ativo</span>}
                                     </div>
                                 </div>
-                                <div className="flex items-center justify-between pt-2 border-t border-surface-border/10">
+                                <div className="flex items-center justify-between pt-2 border-t border-surface-border">
                                     <div className="flex items-center gap-4">
                                         <div className="flex items-center gap-1"><Calendar className="w-3 h-3 text-muted" /><span className="text-[10px] text-muted">Início: {formatDate(list.createdAt)}</span></div>
                                         {list.status === 'completed' ? (
