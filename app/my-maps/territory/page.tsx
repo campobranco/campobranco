@@ -593,7 +593,7 @@ function TerritoryListContent() {
                                 type="checkbox"
                                 checked={searchInItems}
                                 onChange={(e) => setSearchInItems(e.target.checked)}
-                                className="w-4 h-4 rounded border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 text-primary hover:text-primary-dark transition-colors"
+                                className="w-4 h-4 rounded border-gray-300 dark:border-gray-600 bg-surface dark:bg-surface text-primary hover:text-primary-dark transition-colors"
                             />
                             <span className="text-xs font-bold text-gray-400 dark:text-gray-500 select-none hover:text-primary transition-colors">Buscar itens</span>
                         </label>
@@ -632,7 +632,7 @@ function TerritoryListContent() {
                                                                     type="checkbox"
                                                                     checked={selectedIds.has(t.id)}
                                                                     onChange={() => toggleSelection(t.id)}
-                                                                    className="w-5 h-5 rounded-md border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 text-primary focus:ring-primary transition-all cursor-pointer"
+                                                                    className="w-5 h-5 rounded-md border-gray-300 dark:border-gray-600 bg-surface dark:bg-surface text-primary focus:ring-primary transition-all cursor-pointer"
                                                                 />
                                                             )}
                                                         </div>
@@ -691,7 +691,7 @@ function TerritoryListContent() {
                                                                                         type="checkbox"
                                                                                         checked={selectedIds.has(addr.id)}
                                                                                         onChange={() => toggleSelection(addr.id)}
-                                                                                        className="w-4 h-4 rounded border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 text-primary focus:ring-primary transition-all cursor-pointer"
+                                                                                        className="w-4 h-4 rounded border-gray-300 dark:border-gray-600 bg-surface dark:bg-surface text-primary focus:ring-primary transition-all cursor-pointer"
                                                                                     />
                                                                                 </td>
                                                                                 <td className="px-6 py-3 relative">
@@ -890,7 +890,7 @@ function TerritoryListContent() {
                             // const isOutdated = historyDate && historyDate < getServiceYearRange(getServiceYear()).start;
 
                             return (
-                                <div
+                                                                <div
                                     key={t.id}
                                     className={`group bg-surface rounded-lg p-3 border border-surface-border shadow-sm hover:shadow-md transition-all relative ${isSelected ? 'ring-2 ring-primary bg-primary-light/10' : ''}`}
                                 >
@@ -901,7 +901,7 @@ function TerritoryListContent() {
                                                     type="checkbox"
                                                     checked={isSelected}
                                                     onChange={() => toggleSelection(t.id)}
-                                                    className="w-5 h-5 rounded-md border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 text-primary focus:ring-primary transition-all cursor-pointer"
+                                                    className="w-5 h-5 rounded-md border-gray-300 dark:border-gray-600 bg-surface dark:bg-surface text-primary focus:ring-primary transition-all cursor-pointer"
                                                 />
                                             </div>
                                         )}
