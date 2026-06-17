@@ -282,6 +282,14 @@ export default function SharedListView({ id: propId }: SharedListViewProps) {
     const handleReturnMap = async () => {
         if (!id || !user) return;
 
+        // Verifica se há responsável designado para o mapa. Se não, bloqueia a devolução e avisa
+        const hasResponsible = listData?.assignedTo || listData?.assignedName;
+        if (!hasResponsible) {
+            toast.error("Aceite ser o responsável para devolver o mapa.");
+            setIsResponsibilityModalOpen(true);
+            return;
+        }
+
         // Se for congregação TRADITIONAL
         if (congregationType === 'TRADITIONAL') {
             // Conta quantos endereços ATIVOS existem
@@ -621,16 +629,14 @@ export default function SharedListView({ id: propId }: SharedListViewProps) {
                             </div>
                         )}
                         <div className="flex flex-col sm:flex-row gap-3 pt-2">
-                            {globalStats.total > 0 && globalStats.processed === globalStats.total && (
-                                <button
-                                    onClick={handleReturnMap}
-                                    disabled={returning || listData?.status === 'completed'}
-                                    className={`flex-1 px-6 py-3.5 rounded-lg text-sm font-bold uppercase tracking-wider flex items-center justify-center gap-2 transition-all active:scale-95 shadow-lg ${listData?.status === 'completed' ? 'bg-gray-100 dark:bg-gray-800 text-gray-400 dark:text-gray-500 border border-gray-200 dark:border-gray-700 shadow-none cursor-not-allowed' : 'bg-green-600 hover:bg-green-700 text-white shadow-green-500/20'}`}
-                                >
-                                    {returning ? <Loader2 className="w-4 h-4 animate-spin" /> : (listData?.status === 'completed' ? <CheckCircle className="w-5 h-5" /> : <CheckCircle2 className="w-5 h-5" />)}
-                                    {listData?.status === 'completed' ? 'Mapa Devolvido' : 'Devolver Mapa'}
-                                </button>
-                            )}
+                            <button
+                                onClick={handleReturnMap}
+                                disabled={returning || listData?.status === 'completed'}
+                                className={`flex-1 px-6 py-3.5 rounded-lg text-sm font-bold uppercase tracking-wider flex items-center justify-center gap-2 transition-all active:scale-95 shadow-lg ${listData?.status === 'completed' ? 'bg-gray-100 dark:bg-gray-800 text-gray-400 dark:text-gray-500 border border-gray-200 dark:border-gray-700 shadow-none cursor-not-allowed' : 'bg-green-600 hover:bg-green-700 text-white shadow-green-500/20'}`}
+                            >
+                                {returning ? <Loader2 className="w-4 h-4 animate-spin" /> : (listData?.status === 'completed' ? <CheckCircle className="w-5 h-5" /> : <CheckCircle2 className="w-5 h-5" />)}
+                                {listData?.status === 'completed' ? 'Mapa Devolvido' : 'Devolver Mapa'}
+                            </button>
                             <button
                                 onClick={() => {
                                     navigator.clipboard.writeText(window.location.href);
