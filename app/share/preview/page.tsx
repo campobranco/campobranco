@@ -470,17 +470,17 @@ function SharedPreviewContent() {
         return (
             <Wrapper key={item.id} {...(wrapperProps as any)}>
                 {/* Main Card Container - Matching Address List padding and styles */}
-                <div className={`bg-surface rounded-md p-4 border shadow-sm hover:shadow-md transition-all relative 
+                <div className={`bg-surface rounded-md p-4 border border-surface-border shadow-sm hover:shadow-md transition-all relative 
                     ${item.isActive === false ? (item.visitStatus === 'doNotVisit' ? 'opacity-60' : 'opacity-60 grayscale') : ''} 
                     ${activeDropdownId === item.id ? 'relative z-20 ring-1 ring-primary-100 dark:ring-primary-900' : ''}
                     ${item.visitStatus && item.visitStatus !== 'none'
-                        ? item.visitStatus === 'contacted' || item.visitStatus === 'contested' ? 'border-green-500 bg-green-50/30 dark:bg-green-900/10'
-                            : item.visitStatus === 'partial' ? 'border-yellow-500 bg-yellow-50/30 dark:bg-yellow-900/10'
-                            : item.visitStatus === 'notContacted' ? 'border-orange-500 bg-orange-50/30 dark:bg-orange-900/10'
-                                : item.visitStatus === 'moved' ? 'border-blue-500 bg-blue-50/30 dark:bg-blue-900/10'
-                                    : item.visitStatus === 'doNotVisit' ? 'border-red-500 bg-red-50/30 dark:bg-red-900/10'
-                                        : 'border-surface-border'
-                        : 'border-surface-border'
+                        ? item.visitStatus === 'contacted' || item.visitStatus === 'contested' ? 'bg-green-50/30 dark:bg-green-900/10'
+                            : item.visitStatus === 'partial' ? 'bg-yellow-50/30 dark:bg-yellow-900/10'
+                            : item.visitStatus === 'notContacted' ? 'bg-orange-50/30 dark:bg-orange-900/10'
+                                : item.visitStatus === 'moved' ? 'bg-blue-50/30 dark:bg-blue-900/10'
+                                    : item.visitStatus === 'doNotVisit' ? 'bg-red-50/30 dark:bg-red-900/10'
+                                        : ''
+                        : ''
                     }
                 `}>
 
