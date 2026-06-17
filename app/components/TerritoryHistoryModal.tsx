@@ -179,14 +179,14 @@ export default function TerritoryHistoryModal({ territoryId, territoryName, cong
                                             <div className="flex items-center gap-2 text-muted">
                                                 <Calendar className="w-4 h-4" />
                                                 <span className="text-xs font-medium">
-                                                    Saída: {entry.createdAt ? new Date(entry.createdAt).toLocaleDateString('pt-BR') : '---'}
+                                                    Início: {entry.createdAt ? new Date(entry.createdAt).toLocaleDateString('pt-BR') : '---'}
                                                 </span>
                                             </div>
                                             {entry.returnedAt && (
                                                 <div className="flex items-center gap-2 text-green-600 dark:text-green-400">
                                                     <CheckCircle2 className="w-4 h-4" />
                                                     <span className="text-xs font-bold">
-                                                        Retorno: {new Date(entry.returnedAt).toLocaleDateString('pt-BR')}
+                                                        Fim: {new Date(entry.returnedAt).toLocaleDateString('pt-BR')}
                                                     </span>
                                                 </div>
                                             )}
