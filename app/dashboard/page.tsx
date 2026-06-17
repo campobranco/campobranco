@@ -74,7 +74,7 @@ const formatExpirationTime = (expiresAtValue: any) => {
 };
 
 export default function DashboardPage() {
-    const { user, role, isElder, isServant, congregationId, loading, profileName, isAdminRoleGlobal } = useAuth();
+    const { user, role, isElder, isServant, congregationId, loading, profileName, isAdminRoleGlobal, congregationType } = useAuth();
     const router = useRouter();
     const [sharedHistory, setSharedHistory] = useState<any[]>([]);
     const [myAssignments, setMyAssignments] = useState<any[]>([]);
