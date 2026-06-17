@@ -106,6 +106,11 @@ export default function SharedListView({ id: propId }: SharedListViewProps) {
         doNotVisit: 0,
         contested: 0
     });
+    const [returnValidationModal, setReturnValidationModal] = useState<{
+        isOpen: boolean;
+        hasUnworked: boolean;
+        isConfirmed: boolean;
+    }>({ isOpen: false, hasUnworked: false, isConfirmed: false });
 
     useEffect(() => {
         const fetchList = async () => {
@@ -253,8 +258,50 @@ export default function SharedListView({ id: propId }: SharedListViewProps) {
         if (id) fetchList();
     }, [id, user]);
 
+    const performReturnMapExecution = async () => {
+        if (!id || !user) return;
+        setReturning(true);
+        try {
+            const resData = await returnMapMutation({ 
+                shareId: id as string,
+                userId: user.uid,
+                userName: profileName || 'Irmão sem Nome',
+                userCongregationId: listData?.congregationId || '',
+                currentUserRole: role || null
+            });
+            if (!resData.success) throw new Error(resData.message || 'Erro ao devolver mapa');
+            toast.success("Mapa devolvido com sucesso! O acesso será encerrado em 24 horas.");
+            window.location.reload();
+        } catch (e: any) {
+            console.error(e);
+            toast.error(e.message || "Erro ao devolver mapa.");
+            setReturning(false);
+        }
+    };
+
     const handleReturnMap = async () => {
         if (!id || !user) return;
+
+        // Se for congregação TRADITIONAL
+        if (congregationType === 'TRADITIONAL') {
+            // Conta quantos endereços ATIVOS existem
+            // E quantos NÃO estão com status 'contacted' (ou seja, não trabalhados ou parciais)
+            // Lembre-se: 'contacted' é o status final trabalhado (exibido como Concluído). 
+            // 'partial' e 'none' não contam como totalmente concluídos.
+            const totalActive = items.filter(item => item.isActive !== false).length;
+            const workedActive = items.filter(item => item.isActive !== false && item.visitStatus === 'contacted').length;
+            const hasUnworked = workedActive < totalActive;
+
+            if (hasUnworked) {
+                setReturnValidationModal({
+                    isOpen: true,
+                    hasUnworked: true,
+                    isConfirmed: false
+                });
+                return;
+            }
+        }
+
         setConfirmModal({
             isOpen: true,
             title: "Devolver Mapa",
@@ -262,23 +309,7 @@ export default function SharedListView({ id: propId }: SharedListViewProps) {
             variant: 'info',
             onConfirm: async () => {
                 setConfirmModal(prev => ({ ...prev, isOpen: false }));
-                setReturning(true);
-                try {
-                    const resData = await returnMapMutation({ 
-                        shareId: id as string,
-                        userId: user.uid,
-                        userName: profileName || 'Irmão sem Nome',
-                        userCongregationId: listData?.congregationId || '',
-                        currentUserRole: role || null
-                    });
-                    if (!resData.success) throw new Error(resData.message || 'Erro ao devolver mapa');
-                    toast.success("Mapa devolvido com sucesso! O acesso será encerrado em 24 horas.");
-                    window.location.reload();
-                } catch (e: any) {
-                    console.error(e);
-                    toast.error(e.message || "Erro ao devolver mapa.");
-                    setReturning(false);
-                }
+                await performReturnMapExecution();
             }
         });
     };
@@ -787,6 +818,52 @@ export default function SharedListView({ id: propId }: SharedListViewProps) {
                         <div className="space-y-3">
                             <button onClick={handleAcceptResponsibility} disabled={accepting} className="w-full bg-primary text-white py-4 rounded-lg font-bold">{accepting ? "Aceitando..." : "Sim, Aceitar"}</button>
                             <button onClick={() => setIsResponsibilityModalOpen(false)} className="w-full text-muted py-3 font-bold">Apenas Visualizar</button>
+                        </div>
+                    </div>
+                </div>
+            )}
+
+            {returnValidationModal.isOpen && (
+                <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4 animate-in fade-in duration-200">
+                    <div className="bg-surface border border-surface-border rounded-xl w-full max-w-sm p-6 shadow-2xl animate-in zoom-in-95 duration-200 text-center space-y-4">
+                        <h2 className="text-xl font-bold text-main">Devolver Mapa</h2>
+                        <p className="text-muted text-sm leading-relaxed">
+                            Ainda existem endereços não trabalhados ou marcados como parciais neste território.
+                        </p>
+                        <div className="flex items-center gap-3 bg-gray-50 dark:bg-slate-800 p-4 rounded-xl border border-gray-200 dark:border-slate-700 text-left">
+                            <input
+                                id="confirm-all-worked"
+                                type="checkbox"
+                                checked={returnValidationModal.isConfirmed}
+                                onChange={(e) => setReturnValidationModal(prev => ({ ...prev, isConfirmed: e.target.checked }))}
+                                className="w-5 h-5 rounded border-gray-300 text-primary focus:ring-primary cursor-pointer shrink-0"
+                            />
+                            <label htmlFor="confirm-all-worked" className="text-xs font-bold text-main cursor-pointer select-none">
+                                Todas as ruas foram trabalhadas
+                            </label>
+                        </div>
+                        <div className="flex gap-3 pt-2">
+                            <button
+                                onClick={() => setReturnValidationModal(prev => ({ ...prev, isOpen: false, isConfirmed: false }))}
+                                className="flex-1 bg-surface-highlight hover:bg-background text-main border border-surface-border py-3 rounded-lg font-bold text-sm transition-colors"
+                            >
+                                Cancelar
+                            </button>
+                            <button
+                                onClick={async () => {
+                                    if (!returnValidationModal.isConfirmed) return;
+                                    setReturnValidationModal(prev => ({ ...prev, isOpen: false, isConfirmed: false }));
+                                    await performReturnMapExecution();
+                                }}
+                                disabled={!returnValidationModal.isConfirmed}
+                                className={`flex-1 text-white py-3 rounded-lg font-bold text-sm transition-all shadow-lg ${
+                                    returnValidationModal.isConfirmed
+                                        ? 'bg-green-600 hover:bg-green-700 shadow-green-500/20 active:scale-95'
+                                        : 'bg-gray-300 dark:bg-slate-800 text-gray-400 dark:text-gray-500 cursor-not-allowed shadow-none'
+                                }`}
+                            >
+                                Confirmar
+                            </button>
                         </div>
                     </div>
                 </div>
