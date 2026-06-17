@@ -704,14 +704,14 @@ export default function RegistryPage() {
                                 <div className="grid grid-cols-2 gap-3">
                                     <button
                                         onClick={() => setPrintMode('page-break')}
-                                        className={`p-3 rounded-xl border flex flex-col items-center gap-2 transition-colors ${printMode === 'page-break' ? 'border-primary-light/500 bg-primary-light/50 dark:bg-blue-900/20 text-primary-dark dark:text-blue-400' : 'border-gray-200 dark:border-gray-700 hover:border-gray-300 dark:hover:border-gray-600 text-main'}`}
+                                        className={`p-3 rounded-xl border flex flex-col items-center gap-2 transition-colors ${printMode === 'page-break' ? 'border-primary bg-primary-light/50 dark:bg-blue-900/20 text-primary-dark dark:text-blue-400' : 'border-gray-200 dark:border-gray-700 hover:border-gray-300 dark:hover:border-gray-600 text-main'}`}
                                     >
                                         <FileText className="w-5 h-5" />
                                         <span className="text-sm font-medium">Uma Cidade por Página</span>
                                     </button>
                                     <button
                                         onClick={() => setPrintMode('continuous')}
-                                        className={`p-3 rounded-xl border flex flex-col items-center gap-2 transition-colors ${printMode === 'continuous' ? 'border-primary-light/500 bg-primary-light/50 dark:bg-blue-900/20 text-primary-dark dark:text-blue-400' : 'border-gray-200 dark:border-gray-700 hover:border-gray-300 dark:hover:border-gray-600 text-main'}`}
+                                        className={`p-3 rounded-xl border flex flex-col items-center gap-2 transition-colors ${printMode === 'continuous' ? 'border-primary bg-primary-light/50 dark:bg-blue-900/20 text-primary-dark dark:text-blue-400' : 'border-gray-200 dark:border-gray-700 hover:border-gray-300 dark:hover:border-gray-600 text-main'}`}
                                     >
                                         <div className="flex flex-col gap-0.5">
                                             <FileText className="w-4 h-4" />
