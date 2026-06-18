@@ -1,6 +1,6 @@
 # Campo Branco
 
-O **Campo Branco** é uma aplicação web moderna e progressiva (PWA) desenvolvida para digitalizar e otimizar a gestão de territórios, visitas e testemunho público para congregações. Focada em usabilidade, privacidade (LGPD) e performance, a aplicação serve desde a administração central da congregação até o uso diário pelos publicadores no campo.
+O **Campo Branco** é uma aplicação web moderna e progressiva (PWA) desenvolvida para digitalizar e otimizar a gestão de territórios, visitas e testemunho público para congregações locais. Focada em usabilidade, privacidade (LGPD), performance e resiliência lógica, a aplicação serve desde a administração central da congregação até o uso diário pelos publicadores no campo.
 
 > 🚀 Construído com **Vibe Coding Google Antigravity**
 
@@ -15,119 +15,131 @@ Este aplicativo é uma iniciativa **independente e open source**. Ele **não** �
 ## ✨ Funcionalidades Principais
 
 ### 🗺️ Gestão de Territórios
-- **Mapas Interativos:** Visualização clara de territórios com indicadores de status.
-- **Cartões Digitais:** Compartilhamento seguro de territórios via links únicos (sem necessidade de login para visualização básica).
+- **Mapas Interativos:** Visualização clara de territórios com indicadores de status integrados com Leaflet/OpenStreetMap.
+- **Cartões Digitais:** Compartilhamento seguro de territórios via links únicos (sem necessidade de login para visualização básica dos publicadores).
 - **Geocodificação:** Integração com APIs de mapas para localização precisa.
 - **Histórico:** Registro detalhado de designações, conclusões e devoluções.
 
 ### 🔒 Privacidade e Segurança (LGPD)
 - **Compliance LGPD:** Estrutura desenvolvida com foco na Lei Geral de Proteção de Dados.
-- **Definição de Papéis:** Clara distinção entre Operador (Software) e Controlador (Congregação Local).
-- **Minimização de Dados:** Coleta apenas do estritamente necessário para a atividade pastoral.
-- **Dados Sensíveis:** Tratamento especial e protegido para informações sensíveis.
+- **Definição de Papéis:** Clara distinção de responsabilidade legal entre o Operador (o software/administrador) e o Controlador (a congregação local).
+- **Minimização de Dados:** Coleta e tratamento estrito apenas das informações necessárias para as atividades pastorais.
 
-### 👥 Controle de Acesso
-- **Admin:** Gestão global do sistema.
-- **Anciãos:** Gestão de territórios e campanhas.
+### 👥 Controle de Acesso Baseado em Papéis (RBAC)
+Lógica de permissões modularizada e testável puramente via [rbac.ts](file:///C:/Users/design/Desktop/dev/campobranco/lib/rbac.ts):
+- **Admin:** Gestão global do sistema e de congregações.
+- **Anciãos:** Gestão de territórios, membros e campanhas.
 - **Servos:** Manutenção e distribuição.
 - **Publicadores:** Acesso restrito aos seus próprios territórios.
 
 ### 📱 Experiência Mobile (PWA)
 - **Instalável:** Funciona como app nativo em Android e iOS.
-- **Offline First:** Funcionalidades essenciais disponíveis mesmo sem conexão.
-- **Dark Mode:** Tema escuro integrado.
+- **Offline First:** Funcionalidades essenciais disponíveis mesmo sem conexão ativa à internet.
+- **Dark Mode:** Tema escuro nativo e fluido.
+
+---
+
+## 🏗️ Arquitetura e Engenharia de Software
+
+O projeto adota uma arquitetura robusta pensada para tolerância a falhas, concorrência e consistência de dados:
+
+```
+[ UI Componentes (React 19) ]
+             │
+             ▼ (Uso Obrigatório para Escritas)
+[ Mutation Layer / Contratos ]
+             │
+             ▼ (Integridade e Domínio Puro)
+[ Domain Layer / Regras ] ◄──► [ Jest Unit Tests ]
+             │
+             ▼ (Transações e Concorrência)
+[ Services ] ◄───────────────► [ Firestore / Emulator ]
+```
+
+### 🚫 Regras Críticas de Desenvolvimento:
+1. **Zero UI Direct Writes:** A UI nunca acessa escritas no Firestore diretamente (`updateDoc`, `deleteDoc`, `setDoc`). Toda mutação deve passar por `lib/contracts/mutations/` de forma transacional.
+2. **Camada de Domínio Pura:** As lógicas puras de negócio (como transições de estado de territórios ou regras de concorrência) residem isoladas em [territoryRules.ts](file:///C:/Users/design/Desktop/dev/campobranco/lib/domain/territoryRules.ts), desacopladas do Firebase e testadas via Jest.
+3. **Padrão Híbrido de Banco de Dados:** Coleções usam `snake_case` e os atributos/campos usam estritamente `camelCase` (migração concluída na v0.8.31-beta).
+4. **Desnormalização no Cliente:** Contadores de estatísticas de territórios e endereços são computados transacionalmente por bairro via `FieldValue.increment()` para eliminar queries custosas na tela inicial.
+
+---
 
 ## 🚀 Tecnologias
 
 - **Frontend:** [Next.js 15](https://nextjs.org/) (App Router), React 19
 - **Estilização:** [Tailwind CSS](https://tailwindcss.com/)
 - **Mapas:** [Leaflet](https://leafletjs.com/) & OpenStreetMap
-- **Banco de Dados & Auth:** [Firebase](https://firebase.google.com/) (Firestore/Auth)
+- **Banco de Dados & Auth:** [Firebase Client SDK](https://firebase.google.com/) (Firestore/Auth) - *Static-First (Plano Spark Gratuito)*
 - **Hospedagem:** [Firebase Hosting](https://firebase.google.com/hosting)
 - **PWA:** `@ducanh2912/next-pwa`
+
+---
 
 ## 🛠️ Configuração e Instalação
 
 ### 1. Pré-requisitos
 - Node.js 18+
-- Projeto no Firebase (Firestore e Auth ativados)
-- **Plano Spark:** O projeto é otimizado para funcionar inteiramente no plano gratuito do Firebase.
+- Java JDK 21+ (necessário para rodar o emulador do Firebase localmente)
+- Projeto no Firebase com Firestore e Auth ativados
 
-### 2. Instalação
+### 2. Instalação e Configuração Automática
+O projeto dispõe de um instalador e assistente visual automatizado:
 ```bash
 git clone https://github.com/campobranco/campobranco.git
 cd campobranco
-npm install
+
+# Roda o script de setup para configurar dependências e verificar o ambiente
+npm run setup
 ```
 
-### 3. Configuração de Ambiente
-Crie um arquivo `.env.development` na raiz do projeto (use o `env.example` como base):
-
-```env
-# Configuração de Desenvolvimento
-NEXT_PUBLIC_APP_NAME="Campo Branco (Dev)"
-# ... veja mais variáveis no env.example
-```
-
-### 4. Rodando o Projeto
+### 3. Rodando o Projeto
 ```bash
+# Servidor local de desenvolvimento
 npm run dev
 # Acesse http://localhost:3000
 ```
 
-## 🔥 Firebase Hosting
+---
 
-O **Firebase** é utilizado de forma integral:
-- **Hosting**: Hospedagem estática da aplicação (pasta `out/`).
-- **Firestore**: Banco de dados NoSQL com segurança baseada em regras (Zero Trust).
-- **Auth**: Autenticação segura de usuários.
+## 🔥 Firebase & Infraestrutura
 
-1.  Certifique-se de estar logado: `firebase login`
-2.  Faça o deploy do frontend: `npm run deploy:hosting`
-3.  Faça o deploy das regras de segurança: `npm run deploy:rules`
+Toda a infraestrutura do projeto foi desenhada sob uma política **Zero Trust** utilizando regras de segurança rígidas no Firestore:
+- **Zero Trust Rules:** Validações finas baseadas no papel do usuário logado diretamente no `firestore.rules`.
+- **Master Admin:** O primeiro acesso ao sistema é configurado pela variável `NEXT_PUBLIC_MASTER_EMAIL`. Se o usuário logado coincidir com este e-mail, ele é promovido a ADMIN automaticamente.
 
-### 🐙 Deploy Automático (GitHub Actions para Forks)
+### Comandos de Deploy
+- Fazer deploy de regras e hospedagem: `firebase deploy`
+- Fazer deploy apenas das regras do Firestore: `npm run deploy:rules`
+- Fazer deploy apenas da hospedagem estática: `npm run deploy:hosting`
 
-Se você fez um *Fork* deste repositório e deseja configurar o deploy contínuo (CI/CD) no seu próprio GitHub, execute o comando abaixo no diretório raiz do projeto:
+---
 
-```bash
-firebase init hosting:github
-```
-
-O CLI do Firebase fará a autenticação com seu GitHub, injetará as chaves de segurança necessárias nos *Secrets* do seu repositório e irá **sobrescrever** os arquivos dentro da pasta `.github/workflows/`, vinculando a automação de deploy ao seu projeto do Firebase.
-
-### Redirects Customizados
-
-Se desejar configurar redirecionamentos de domínio (ex: de um domínio antigo para o novo), você deve editar o arquivo `firebase.json` manualmente. Adicione a chave `redirects` dentro de `hosting`. Consulte a [documentação do Firebase](https://firebase.google.com/docs/hosting/full-config#redirects) para mais detalhes.
-
-## Testes e QA
-
-O projeto possui scripts automatizados para garantir a qualidade do código.
-
-### Comandos Disponíveis
+## 🧪 Testes e Qualidade (QA)
 
 | Comando | Descrição |
 |---------|-----------|
 | `npm run lint` | Executa a validação de sintaxe e regras de estilo do código (ESLint). |
-| `npm run test` | Roda sequencialmente os testes unitários e de integração E2E. |
-| `npm run test:unit` | Executa testes unitários (Jest). Valida lógica isolada. |
-| `npm run test:e2e` | Executa testes End-to-End (Playwright). Simula o usuário real. |
-| `npm run test:all` | Roda Lint, Unitários e E2E em sequência completa. |
+| `npm run test:unit` | Executa testes unitários isolados com Jest (regras de domínio e RBAC). |
+| `npm run test:integration` | Executa testes de integração diretamente contra o emulador local do Firebase. |
+| `npm run test:e2e` | Executa testes End-to-End simulando o comportamento real do usuário com Playwright. |
+| `npm run test:all` | Roda sequencialmente o Lint, Testes Unitários e E2E. |
 
-### 🔍 Recomendação para QA Manual
-Para validação completa antes de releases:
-1.  **Limpeza**: Teste em aba anônima ou limpe o Storage.
-2.  **Fluxo Crítico**:
-    *   Criar Conta / Login
-    *   Criar Território e Designar
-    *   Devolver Território
-3.  **Mobile**: Verifique a responsividade e o modo offline (PWA).
+### Rodando Emuladores Localmente
+Para rodar os testes de integração ou testar a aplicação localmente sem poluir o ambiente de produção:
+```bash
+# Inicia o emulador do Firestore e Auth locais
+npm run emulator
+```
+
+---
 
 ## 🤝 Contribuição e Suporte
 
+Contribuições são muito bem-vindas! Se você deseja ajudar na evolução da plataforma, por favor leia o nosso guia de contribuição detalhado em [CONTRIBUTING.md](file:///C:/Users/design/Desktop/dev/campobranco/CONTRIBUTING.md).
+
 Desenvolvido por **Paulo Jacomelli**.
 - E-mail: `campobrancojw@gmail.com`
-- Contribuições são bem-vindas via Pull Requests.
 
 ## 📄 Licença
 Este projeto está licenciado sob a licença MIT.
+

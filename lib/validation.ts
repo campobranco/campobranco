@@ -25,6 +25,26 @@ export function sanitizeString(val: string): string {
     // Escape básico de caracteres HTML se formos salvar algo que possa ser executado
     // Porém, o ideal é que o frontend trate a exibição com segurança (que o React já faz)
     return sanitized;
+
+/**
+ * Sanitiza URLs para garantir que apenas protocolos seguros (http, https) são permitidos.
+ * Caso a URL seja inválida ou use outro protocolo, retorna string vazia.
+ */
+export function sanitizeUrl(url: string): string {
+  if (typeof url !== 'string' || !url) return '';
+  try {
+    const parsed = new URL(url);
+    if (parsed.protocol === 'http:' || parsed.protocol === 'https:') {
+      return parsed.toString();
+    }
+    console.warn('[sanitizeUrl] Protocolo não permitido:', parsed.protocol);
+    return '';
+  } catch (e) {
+    console.warn('[sanitizeUrl] URL inválida:', url);
+    return '';
+  }
+}
+
 }
 
 /**
