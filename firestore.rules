@@ -1,4 +1,5 @@
 // ATENÇÃO: REGRA DE EDIÇÃO - Este arquivo NÃO deve ser editado sem antes discutir a alteração.
+// Última revisão de segurança: v0.9.43-beta (18/06/2026)
 
 rules_version = '2';
 service cloud.firestore {
@@ -10,13 +11,13 @@ service cloud.firestore {
       return request.auth != null;
     }
 
-    // Busca o papel do usuário (padrão: PUBLICADOR) de forma robusta
+    // Busca o papel do usuário (padrão: PUBLICADOR) de forma robusta.
+    // O bootstrap do primeiro admin é feito via NEXT_PUBLIC_MASTER_EMAIL no AuthContext,
+    // que cria o documento users/{uid} com role: 'ADMIN' no Firestore.
     function getAuthRole() {
-      return request.auth.token.email == 'campobrancojw@gmail.com'
-             ? 'ADMIN'
-             : (exists(/databases/$(database)/documents/users/$(request.auth.uid))
-                ? get(/databases/$(database)/documents/users/$(request.auth.uid)).data.get('role', 'PUBLICADOR')
-                : 'PUBLICADOR');
+      return exists(/databases/$(database)/documents/users/$(request.auth.uid))
+             ? get(/databases/$(database)/documents/users/$(request.auth.uid)).data.get('role', 'PUBLICADOR')
+             : 'PUBLICADOR';
     }
 
     function isAdmin() {
@@ -60,6 +61,14 @@ service cloud.firestore {
       return data.get('congregationId', null);
     }
 
+    // Verifica se o recurso pertence à mesma congregação do usuário autenticado.
+    // Usado para isolamento multi-tenant em coleções que possuem congregationId.
+    function isSameCongregation(resourceData) {
+      return isAuthenticated() &&
+             exists(/databases/$(database)/documents/users/$(request.auth.uid)) &&
+             getCongId(getUserData()) == getCongId(resourceData);
+    }
+
     // --- REGRAS POR COLEÇÃO ---
 
     // 1. Congregações
@@ -70,39 +79,62 @@ service cloud.firestore {
     }
 
     // 2. Coleção de Usuários
+    // Segurança: Field-level restrictions impedem auto-promoção de papel.
+    // Isolamento: Servos/Anciãos só leem/editam usuários da mesma congregação.
     match /users/{userId} {
       allow read, list: if isAuthenticated() && (
         request.auth.uid == userId || 
         isAdmin() || 
-        isServant() ||
-        isElder()
+        ((isServant() || isElder()) && isSameCongregation(resource.data))
       );
       allow create: if isAuthenticated() && request.auth.uid == userId;
-      allow update: if isAuthenticated() && (request.auth.uid == userId || isAdmin() || isServant());
+      allow update: if isAuthenticated() && (
+        // Admin pode alterar qualquer campo de qualquer usuário
+        isAdmin() ||
+        // Próprio usuário pode atualizar seu perfil, MAS não pode alterar campos privilegiados
+        (
+          request.auth.uid == userId &&
+          !('role' in request.resource.data.diff(resource.data).affectedKeys()) &&
+          !('permissions' in request.resource.data.diff(resource.data).affectedKeys()) &&
+          !('congregationId' in request.resource.data.diff(resource.data).affectedKeys())
+        ) ||
+        // Servo/Ancião da mesma congregação pode editar, MAS não pode alterar campos privilegiados
+        (
+          isServant() &&
+          isSameCongregation(resource.data) &&
+          !('role' in request.resource.data.diff(resource.data).affectedKeys()) &&
+          !('permissions' in request.resource.data.diff(resource.data).affectedKeys()) &&
+          !('congregationId' in request.resource.data.diff(resource.data).affectedKeys())
+        )
+      );
       allow delete: if isAdmin();
     }
 
     // 3. Cidades
+    // Isolamento: Escritas restritas à mesma congregação do usuário.
     match /cities/{id} {
       allow read: if isAuthenticated() && (isAdmin() || isServant() || hasPermission('maps', 'view') || getAuthRole() == 'PUBLICADOR' || getAuthRole() == 'PUBLICADOR_SEM_ACESSO');
-      allow create: if isAdmin() || isServant() || hasPermission('maps', 'create');
-      allow update: if isAdmin() || isServant() || hasPermission('maps', 'edit');
-      allow delete: if isAdmin() || isServant() || hasPermission('maps', 'delete');
+      allow create: if (isAdmin() || isServant() || hasPermission('maps', 'create')) && isSameCongregation(request.resource.data);
+      allow update: if (isAdmin() || isServant() || hasPermission('maps', 'edit')) && isSameCongregation(resource.data);
+      allow delete: if (isAdmin() || isServant() || hasPermission('maps', 'delete')) && isSameCongregation(resource.data);
     }
 
-    // 4. Territórios e Endereços
+    // 4. Territórios
+    // Isolamento: Escritas restritas à mesma congregação do usuário.
     match /territories/{id} {
       allow read, list: if isAuthenticated() && (isAdmin() || isServant() || hasPermission('maps', 'view') || getAuthRole() == 'PUBLICADOR' || getAuthRole() == 'PUBLICADOR_SEM_ACESSO');
-      allow create: if isAdmin() || isServant() || hasPermission('maps', 'create');
-      allow update: if isAdmin() || isServant() || hasPermission('maps', 'edit');
-      allow delete: if isAdmin() || isServant() || hasPermission('maps', 'delete');
+      allow create: if (isAdmin() || isServant() || hasPermission('maps', 'create')) && isSameCongregation(request.resource.data);
+      allow update: if (isAdmin() || isServant() || hasPermission('maps', 'edit')) && isSameCongregation(resource.data);
+      allow delete: if (isAdmin() || isServant() || hasPermission('maps', 'delete')) && isSameCongregation(resource.data);
     }
 
+    // 5. Endereços
+    // Isolamento: Escritas restritas à mesma congregação do usuário.
     match /addresses/{id} {
       allow read: if isAuthenticated();
-      allow create: if isAdmin() || isServant() || hasPermission('maps', 'create');
-      allow delete: if isAdmin() || isServant() || hasPermission('maps', 'delete');
-      allow update: if isAuthenticated() && (
+      allow create: if (isAdmin() || isServant() || hasPermission('maps', 'create')) && isSameCongregation(request.resource.data);
+      allow delete: if (isAdmin() || isServant() || hasPermission('maps', 'delete')) && isSameCongregation(resource.data);
+      allow update: if isAuthenticated() && isSameCongregation(resource.data) && (
         isAdmin() || isServant() || hasPermission('maps', 'edit') || 
         request.resource.data.diff(resource.data).affectedKeys()
           .hasOnly(['visit_status', 'visit_notes', 'last_visited_at', 'last_visited_by', 'notes', 'tagsSnapshot'])
@@ -115,30 +147,35 @@ service cloud.firestore {
       }
     }
 
-    // 5. Visitas (Histórico Individual)
+    // 6. Visitas (Histórico Individual)
+    // Segurança: Leitura restrita a usuários autenticados (LGPD).
+    // Links públicos exibem mapa e endereços, mas NÃO o histórico de visitas.
     match /visits/{id} {
-      allow read: if true; // Permitir leitura pública para histórico em listas compartilhadas
-      allow create: if isAuthenticated(); // Escrita apenas para usuários autenticados
+      allow read: if isAuthenticated();
+      allow create: if isAuthenticated();
       allow update, delete: if isAuthenticated();
     }
 
-    // 6. Listas Compartilhadas (Cartões)
+    // 7. Listas Compartilhadas (Cartões)
+    // Leitura pública mantida (links compartilhados sem login).
+    // Isolamento: Escritas restritas à mesma congregação.
     match /shared_lists/{id} {
-      // Regras específicas para registros S-13 (title == 'Registro Manual')
       allow read: if true; // Leitura pública via link
       allow create: if isAuthenticated() && (
         request.resource.data.get('title', '') == 'Registro Manual' ? (
-          isAdmin() || isServant() || hasPermission('s13', 'create')
-        ) : true
+          (isAdmin() || isServant() || hasPermission('s13', 'create')) && isSameCongregation(request.resource.data)
+        ) : (
+          isSameCongregation(request.resource.data)
+        )
       );
-      allow update: if isAuthenticated() && (
+      allow update: if isAuthenticated() && isSameCongregation(resource.data) && (
         resource.data.get('title', '') == 'Registro Manual' ? (
           isAdmin() || isServant() || hasPermission('s13', 'edit')
         ) : (
           isAdmin() || isServant() || resource.data.get('createdBy', null) == request.auth.uid
         )
       );
-      allow delete: if isAuthenticated() && (
+      allow delete: if isAuthenticated() && isSameCongregation(resource.data) && (
         resource.data.get('title', '') == 'Registro Manual' ? (
           isAdmin() || isServant() || hasPermission('s13', 'delete')
         ) : (
@@ -162,11 +199,12 @@ service cloud.firestore {
     }
 
 
-    // 7. Snapshots de Listas (Públicos)
+    // 8. Snapshots de Listas (Públicos)
+    // Isolamento: Escritas restritas à mesma congregação.
     match /shared_list_snapshots/{snapId} {
       allow read: if true;
-      allow create, update: if isAuthenticated() && (isAdmin() || isServant() || getAuthRole() == 'PUBLICADOR');
-      allow delete: if isAdmin() || isServant();
+      allow create, update: if isAuthenticated() && (isAdmin() || isServant() || getAuthRole() == 'PUBLICADOR') && isSameCongregation(request.resource.data);
+      allow delete: if (isAdmin() || isServant()) && isSameCongregation(resource.data);
       
       match /visits/{id} {
         allow read: if true;
@@ -174,23 +212,25 @@ service cloud.firestore {
       }
     }
 
-    // 8. Pontos de Testemunho
+    // 9. Pontos de Testemunho
+    // Isolamento: Escritas restritas à mesma congregação.
     match /witnessing_points/{pointId} {
       allow read: if isAuthenticated();
-      allow create: if isAdmin() || isServant() || hasPermission('witnessing', 'create');
-      allow update: if isAuthenticated() && (isModerator() || hasPermission('witnessing', 'edit') || request.resource.data.diff(resource.data).affectedKeys().hasOnly(['activeUsers', 'status', 'updatedAt', 'currentPublishers']));
-      allow delete: if isModerator() || hasPermission('witnessing', 'delete');
+      allow create: if (isAdmin() || isServant() || hasPermission('witnessing', 'create')) && isSameCongregation(request.resource.data);
+      allow update: if isAuthenticated() && isSameCongregation(resource.data) && (isModerator() || hasPermission('witnessing', 'edit') || request.resource.data.diff(resource.data).affectedKeys().hasOnly(['activeUsers', 'status', 'updatedAt', 'currentPublishers']));
+      allow delete: if (isModerator() || hasPermission('witnessing', 'delete')) && isSameCongregation(resource.data);
     }
 
-    // 8.1. Pontos de Referência
+    // 9.1. Pontos de Referência
+    // Isolamento: Escritas restritas à mesma congregação.
     match /reference_points/{pointId} {
       allow read: if true; // Permitir leitura pública para que apareça em links compartilhados públicos
-      allow create: if isAdmin() || isServant() || hasPermission('referencePoints', 'manage');
-      allow update: if isAdmin() || isServant() || hasPermission('referencePoints', 'manage');
-      allow delete: if isAdmin() || isServant() || hasPermission('referencePoints', 'manage');
+      allow create: if (isAdmin() || isServant() || hasPermission('referencePoints', 'manage')) && isSameCongregation(request.resource.data);
+      allow update: if (isAdmin() || isServant() || hasPermission('referencePoints', 'manage')) && isSameCongregation(resource.data);
+      allow delete: if (isAdmin() || isServant() || hasPermission('referencePoints', 'manage')) && isSameCongregation(resource.data);
     }
 
-    // 9. Miscelânea (Logs, Reports, etc)
+    // 10. Miscelânea (Logs, Reports, etc)
     match /notification_templates/{id} {
       allow read: if isAuthenticated();
       allow write: if isAdmin();

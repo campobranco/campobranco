@@ -2,6 +2,7 @@
 
 import React from 'react';
 import { Map as MapIcon, X } from 'lucide-react';
+import { sanitizeUrl } from '@/lib/validation';
 
 /* 
  * Componente modal para seleção de aplicativo de mapa (Waze ou Google Maps)
@@ -46,7 +47,7 @@ export default function MapAppSelectModal({ isOpen, onClose, address }: MapAppSe
                     {/* Botão Waze */}
                     <button
                         onClick={() => {
-                            if (wazeLink) window.open(wazeLink, '_blank');
+                            if (wazeLink) { const safe = sanitizeUrl(wazeLink); if (safe) window.open(safe, '_blank'); }
                             onClose();
                         }}
                         disabled={!wazeLink}
@@ -62,7 +63,7 @@ export default function MapAppSelectModal({ isOpen, onClose, address }: MapAppSe
                     {/* Botão Google Maps */}
                     <button
                         onClick={() => {
-                            if (googleLink) window.open(googleLink, '_blank');
+                            if (googleLink) { const safe = sanitizeUrl(googleLink); if (safe) window.open(safe, '_blank'); }
                             onClose();
                         }}
                         disabled={!googleLink}

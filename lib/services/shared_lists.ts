@@ -394,20 +394,25 @@ export async function getSharedListWithData(id: string) {
             collection(db, SNAPSHOTS_TABLE),
             where('sharedListId', '==', id)
         );
-        
-        // Busca o histórico de visitas
-        const visitsQuery = query(
-            collection(db, VISITS_TABLE),
-            where('sharedListId', '==', id)
-        );
-
-        const [snapshotsSnap, visitsSnap] = await Promise.all([
-            getDocs(snapshotsQuery),
-            getDocs(visitsQuery)
-        ]);
-
+        const snapshotsSnap = await getDocs(snapshotsQuery);
         const items = snapshotsSnap.docs.map(d => ({ id: d.id, ...d.data() }));
-        const visits = visitsSnap.docs.map(d => ({ id: d.id, ...d.data() }));
+
+        // Busca o histórico de visitas com tratamento de erro
+        let visits = [];
+        try {
+            const visitsQuery = query(
+                collection(db, VISITS_TABLE),
+                where('sharedListId', '==', id)
+            );
+            const visitsSnap = await getDocs(visitsQuery);
+            visits = visitsSnap.docs.map(d => ({ id: d.id, ...d.data() }));
+        } catch (err: any) {
+            if (err.code === 'permission-denied') {
+                console.warn('[getSharedListWithData] Visitas ocultas por falta de permissão.');
+            } else {
+                console.error('[getSharedListWithData] Erro ao buscar visitas:', err);
+            }
+        }
 
         // Busca categoria da congregação e normaliza para o tipo usado no App
         let congregationType: 'TRADITIONAL' | 'SIGN_LANGUAGE' | 'FOREIGN_LANGUAGE' = 'TRADITIONAL';
