@@ -1,4 +1,5 @@
 // lib/validation.ts
+export {};
 // Utilitário para sanitização e validação de input de dados
 // Protege contra ataques de XSS e injeção de scripts
 
@@ -31,18 +32,23 @@ export function sanitizeString(val: string): string {
  * Caso a URL seja inválida ou use outro protocolo, retorna string vazia.
  */
 export function sanitizeUrl(url: string): string {
-  if (typeof url !== 'string' || !url) return '';
-  try {
-    const parsed = new URL(url);
-    if (parsed.protocol === 'http:' || parsed.protocol === 'https:') {
-      return parsed.toString();
-    }
-    console.warn('[sanitizeUrl] Protocolo não permitido:', parsed.protocol);
-    return '';
-  } catch (e) {
-    console.warn('[sanitizeUrl] URL inválida:', url);
+  if (!url) return '';
+  const lowercased = url.toLowerCase();
+  // Rejeitar protocolos perigosos
+  if (lowercased.startsWith('javascript:') || lowercased.startsWith('data:')) {
     return '';
   }
+  // Permitir protocolos seguros
+  if (lowercased.startsWith('http://') ||
+      lowercased.startsWith('https://') ||
+      lowercased.startsWith('geo:') ||
+      lowercased.startsWith('waze://')) {
+    return url;
+  }
+  // Qualquer outro protocolo é rejeitado
+  return '';
+}
+
 }
 
 }
