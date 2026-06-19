@@ -1,4 +1,10 @@
-const pkg = require('./package.json');
+import { readFileSync } from 'fs';
+import { join } from 'path';
+
+// Como o package.json está no mesmo diretório, lemos a versão dele usando fs.readFileSync
+// para evitar problemas com import assertions ou experimental json modules.
+const pkgPath = join(process.cwd(), 'package.json');
+const pkg = JSON.parse(readFileSync(pkgPath, 'utf8'));
 
 /** @type {import('next').NextConfig} */
 const nextConfig = {
@@ -35,7 +41,8 @@ const nextConfig = {
     turbopack: {},
 };
 
-const withPWA = require("@ducanh2912/next-pwa").default({
+import withPWAPkg from "@ducanh2912/next-pwa";
+const withPWA = withPWAPkg({
     dest: "public",
     cacheOnFrontEndNav: false,
     aggressiveFrontEndNavCaching: false,
@@ -63,4 +70,4 @@ const withPWA = require("@ducanh2912/next-pwa").default({
     },
 });
 
-module.exports = withPWA(nextConfig);
+export default withPWA(nextConfig);
