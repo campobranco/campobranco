@@ -398,7 +398,7 @@ export async function getSharedListWithData(id: string) {
         const items = snapshotsSnap.docs.map(d => ({ id: d.id, ...d.data() }));
 
         // Busca o histórico de visitas com tratamento de erro
-        let visits = [];
+        let visits: any[] = [];
         try {
             const visitsQuery = query(
                 collection(db, VISITS_TABLE),
