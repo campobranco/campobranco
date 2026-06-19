@@ -1,5 +1,5 @@
 // lib/validation.ts
-export {};
+
 // Utilitário para sanitização e validação de input de dados
 // Protege contra ataques de XSS e injeção de scripts
 
@@ -26,31 +26,28 @@ export function sanitizeString(val: string): string {
     // Escape básico de caracteres HTML se formos salvar algo que possa ser executado
     // Porém, o ideal é que o frontend trate a exibição com segurança (que o React já faz)
     return sanitized;
+}
 
 /**
  * Sanitiza URLs para garantir que apenas protocolos seguros (http, https) são permitidos.
  * Caso a URL seja inválida ou use outro protocolo, retorna string vazia.
  */
 export function sanitizeUrl(url: string): string {
-  if (!url) return '';
-  const lowercased = url.toLowerCase();
-  // Rejeitar protocolos perigosos
-  if (lowercased.startsWith('javascript:') || lowercased.startsWith('data:')) {
+    if (!url) return '';
+    const lowercased = url.toLowerCase();
+    // Rejeitar protocolos perigosos
+    if (lowercased.startsWith('javascript:') || lowercased.startsWith('data:')) {
+        return '';
+    }
+    // Permitir protocolos seguros
+    if (lowercased.startsWith('http://') ||
+        lowercased.startsWith('https://') ||
+        lowercased.startsWith('geo:') ||
+        lowercased.startsWith('waze://')) {
+        return url;
+    }
+    // Qualquer outro protocolo é rejeitado
     return '';
-  }
-  // Permitir protocolos seguros
-  if (lowercased.startsWith('http://') ||
-      lowercased.startsWith('https://') ||
-      lowercased.startsWith('geo:') ||
-      lowercased.startsWith('waze://')) {
-    return url;
-  }
-  // Qualquer outro protocolo é rejeitado
-  return '';
-}
-
-}
-
 }
 
 /**
