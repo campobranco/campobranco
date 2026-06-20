@@ -20,6 +20,12 @@ jobs:
       - name: Check Internal API Contracts
         run: npm run contracts:check
 
+      - name: Set up JDK 21
+        uses: actions/setup-java@v4
+        with:
+          distribution: 'temurin'
+          java-version: '21'
+
       - name: Start Firebase Emulator
         run: |
           npx firebase emulators:start --only firestore,auth --project demo-test &
