@@ -11,7 +11,7 @@ process.env.NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID = '1234567890';
 process.env.NEXT_PUBLIC_FIREBASE_APP_ID = '1:1234567890:web:mockappid';
 process.env.NEXT_PUBLIC_FIREBASE_DATABASE_ID = '(default)';
 
-import * as admin from 'firebase-admin';
+import admin from 'firebase-admin';
 import { createSharedList, findActiveSharedList } from '../../lib/services/shared_lists';
 
 // Inicializa o app admin do Firebase caso não esteja inicializado
