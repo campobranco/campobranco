@@ -1,4 +1,4 @@
-import { reportVisit, deleteVisitByAddressAndShare } from '@/lib/services/visits';
+import { reportVisit, deleteVisitByAddressAndShare, markAllAddressesAsWorked } from '@/lib/services/visits';
 import { MutationResult } from './types';
 
 export interface ReportVisitInput {
@@ -89,3 +89,29 @@ export async function deleteVisitHistoryMutation(input: DeleteVisitHistoryInput)
         return { success: false, message: error.message };
     }
 }
+
+// ----------------------------------------------------
+// Marcar Todos como Trabalhados (Devolução)
+// ----------------------------------------------------
+
+export interface MarkAllAsWorkedInput {
+    shareId: string;
+    userId: string;
+    userName: string;
+    territoryId?: string;
+}
+
+export async function markAllAsWorkedMutation(input: MarkAllAsWorkedInput): Promise<MutationResult> {
+    if (!input.shareId || !input.userId) {
+        return { success: false, message: 'Dados insuficientes para marcar endereços.' };
+    }
+
+    try {
+        const result = await markAllAddressesAsWorked(input);
+        if (!result.success) throw new Error(result.error || 'Erro ao marcar endereços');
+        return { success: true, message: `${result.count} endereço(s) marcado(s) como trabalhado(s).` };
+    } catch (error: any) {
+        return { success: false, message: error.message };
+    }
+}
+
