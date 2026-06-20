@@ -6,7 +6,7 @@ import { useEffect, useState, Suspense } from 'react';
 // eslint-disable-next-line no-restricted-imports
 import { getSharedListWithData } from '@/lib/services/shared_lists';
 import { returnMapMutation, returnTerritoryMutation, acceptResponsibilityMutation } from '@/lib/contracts/mutations/territoryMutations';
-import { reportVisitMutation, deleteVisitMutation } from '@/lib/contracts/mutations/visitMutations';
+import { reportVisitMutation, deleteVisitMutation, markAllAsWorkedMutation } from '@/lib/contracts/mutations/visitMutations';
 import {
     Map as MapIcon,
     Loader2,
@@ -893,6 +893,28 @@ export default function SharedListView({ id: propId }: SharedListViewProps) {
                                     
                                     setReturnValidationModal(prev => ({ ...prev, isOpen: false, isConfirmed: false }));
                                     setPendingTerritoryInfo(null);
+                                    
+                                    // Marca todos os endereços não trabalhados como concluídos
+                                    if (user) {
+                                        try {
+                                            const markResult = await markAllAsWorkedMutation({
+                                                shareId: id as string,
+                                                userId: user.uid,
+                                                userName: profileName || 'Visitante',
+                                                territoryId: isTerr ? terrId : undefined
+                                            });
+                                            if (!markResult.success) {
+                                                toast.error(markResult.message || 'Erro ao marcar endereços.');
+                                                return;
+                                            }
+                                            if (markResult.message) {
+                                                toast.success(markResult.message);
+                                            }
+                                        } catch (e: any) {
+                                            toast.error(e.message || 'Erro ao marcar endereços como trabalhados.');
+                                            return;
+                                        }
+                                    }
                                     
                                     if (isTerr && terrId && terrName) {
                                         await performReturnTerritoryExecution(terrId, terrName);

@@ -133,3 +133,120 @@ export async function deleteVisitByAddressAndShare(addressId: string, shareId: s
         return { success: false, error: error.message };
     }
 }
+
+/**
+ * Marca todos os endereços não trabalhados como 'contacted' em lote.
+ * Usado quando o usuário confirma "Todas as ruas foram trabalhadas" ao devolver o mapa.
+ * 
+ * - Busca snapshots de endereço do shared list
+ * - Identifica quais ainda não possuem visita 'contacted'
+ * - Cria/atualiza visitas em batch (Firestore writeBatch)
+ * - Exclui endereços inativos e 'doNotVisit' do batch
+ */
+export async function markAllAddressesAsWorked(params: {
+    shareId: string;
+    userId: string;
+    userName: string;
+    territoryId?: string;
+}): Promise<{ success: boolean; count: number; error?: string }> {
+    try {
+        const { shareId, userId, userName, territoryId } = params;
+
+        // 1. Busca dados do shared list para congregationId
+        const listSnap = await getDoc(doc(db, 'shared_lists', shareId));
+        if (!listSnap.exists()) throw new Error('Lista não encontrada');
+        const listData = listSnap.data()!;
+
+        // 2. Busca snapshots de endereço do shared list
+        const snapshotsSnap = await getDocs(
+            query(collection(db, 'shared_list_snapshots'), where('sharedListId', '==', shareId))
+        );
+
+        const activeAddresses = snapshotsSnap.docs
+            .filter(d => {
+                const data = d.data();
+                if (data.type !== 'address') return false;
+                const addrData = data.data || {};
+                if (addrData.isActive === false) return false;
+                if (addrData.visitStatus === 'doNotVisit') return false;
+                if (territoryId && addrData.territoryId !== territoryId) return false;
+                return true;
+            })
+            .map(d => {
+                const data = d.data();
+                return { id: data.itemId, territoryId: (data.data || {}).territoryId };
+            });
+
+        if (activeAddresses.length === 0) return { success: true, count: 0 };
+
+        // 3. Busca visitas existentes para este shared list
+        const visitsSnap = await getDocs(
+            query(collection(db, TABLE), where('sharedListId', '==', shareId))
+        );
+        const visitsByAddress = new Map<string, { ref: any; status: string }>();
+        visitsSnap.docs.forEach(d => {
+            const data = d.data();
+            visitsByAddress.set(data.addressId, { ref: d.ref, status: data.status });
+        });
+
+        // 4. Filtra endereços que precisam ser marcados
+        const toMark = activeAddresses.filter(addr => {
+            const existing = visitsByAddress.get(addr.id);
+            return !existing || existing.status !== 'contacted';
+        });
+
+        if (toMark.length === 0) return { success: true, count: 0 };
+
+        // 5. Batch de operações (limite Firestore: 500 por batch)
+        const visitDate = new Date().toISOString();
+        const BATCH_LIMIT = 450;
+
+        for (let i = 0; i < toMark.length; i += BATCH_LIMIT) {
+            const chunk = toMark.slice(i, i + BATCH_LIMIT);
+            const batchOp = writeBatch(db);
+
+            for (const addr of chunk) {
+                const existing = visitsByAddress.get(addr.id);
+
+                if (existing) {
+                    // Atualiza visita existente (ex: 'partial' → 'contacted')
+                    batchOp.update(existing.ref, {
+                        status: 'contacted',
+                        notes: 'Marcado automaticamente na devolução',
+                        updatedAt: serverTimestamp()
+                    });
+                } else {
+                    // Cria nova visita
+                    const visitRef = doc(collection(db, TABLE));
+                    batchOp.set(visitRef, {
+                        addressId: addr.id,
+                        territoryId: addr.territoryId || territoryId,
+                        userId,
+                        userName,
+                        publisherName: userName,
+                        status: 'contacted',
+                        notes: 'Marcado automaticamente na devolução',
+                        visitDate,
+                        sharedListId: shareId,
+                        congregationId: listData.congregationId,
+                        createdAt: serverTimestamp(),
+                        tagsSnapshot: {
+                            isDeaf: false,
+                            isMinor: false,
+                            isStudent: false,
+                            isNeurodivergent: false
+                        }
+                    });
+                }
+            }
+
+            await batchOp.commit();
+        }
+
+        return { success: true, count: toMark.length };
+    } catch (error: any) {
+        console.error('Error marking all addresses as worked:', error);
+        return { success: false, count: 0, error: error.message };
+    }
+}
+
