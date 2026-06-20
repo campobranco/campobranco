@@ -154,5 +154,20 @@
       "error",
       "data"
     ]
+  },
+  "MarkAllAsWorkedInput": {
+    "input": [
+      "shareId",
+      "userId",
+      "userName",
+      "territoryId"
+    ],
+    "output": [
+      "success",
+      "code",
+      "message",
+      "error",
+      "data"
+    ]
   }
 }
