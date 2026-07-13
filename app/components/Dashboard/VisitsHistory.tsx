@@ -87,7 +87,7 @@ export default function VisitsHistory({ scope = 'all', showViewAll = true }: { s
             const addressIds = Array.from(new Set(filteredVisits.map((v: any) => v.addressId).filter(id => !!id)));
             const userIds = Array.from(new Set(filteredVisits.map((v: any) => v.userId).filter(id => !!id)));
 
-            const addressMap: Record<string, string> = {};
+            const addressMap: Record<string, { street: string; number: string }> = {};
             const userMap: Record<string, string> = {};
 
             // Fetch addresses (limite de 30 para 'in' no firestore)
@@ -105,7 +105,13 @@ export default function VisitsHistory({ scope = 'all', showViewAll = true }: { s
                         where('congregationId', '==', congregationId)
                     );
                     const addrSnap = await getDocs(qAddr);
-                    addrSnap.forEach(docSnap => addressMap[docSnap.id] = docSnap.data().street);
+                    addrSnap.forEach(docSnap => {
+                        const data = docSnap.data();
+                        addressMap[docSnap.id] = {
+                            street: data.street || '',
+                            number: data.number || ''
+                        };
+                    });
                 }));
             }
 
@@ -140,9 +146,17 @@ export default function VisitsHistory({ scope = 'all', showViewAll = true }: { s
                 const userId = v.userId;
                 const visitDate = v.visitDate;
 
+                const addrInfo = addressMap[addressId];
+                let displayAddress = 'Localização não identificada';
+                if (addrInfo) {
+                    const street = (addrInfo as any).street;
+                    const num = (addrInfo as any).number;
+                    displayAddress = (num && num.trim() !== '') ? `${street}, ${num}` : street;
+                }
+
                 return {
                     ...v,
-                    addressStreet: addressMap[addressId] || 'Localização não identificada',
+                    addressStreet: displayAddress,
                     displayName: userMap[userId] || 'Publicador',
                     sortDate: visitDate?.toDate ? visitDate.toDate() : (visitDate ? new Date(visitDate) : new Date(0)),
                     observations: v.notes || ''
@@ -401,7 +415,7 @@ export default function VisitsHistory({ scope = 'all', showViewAll = true }: { s
                                                     {formatDate(visit.sortDate)}
                                                 </span>
                                             </div>
-                                            <h4 className="font-bold text-main text-sm">{visit.addressStreet}, {visit.addressNumber}</h4>
+                                            <h4 className="font-bold text-main text-sm">{visit.addressStreet}</h4>
                                         </div>
 
                                         <div>
