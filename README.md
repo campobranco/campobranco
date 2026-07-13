@@ -125,7 +125,9 @@ Toda a infraestrutura do projeto foi desenhada sob uma política **Zero Trust** 
 | `npm run test:all` | Roda sequencialmente o Lint, Testes Unitários e E2E. |
 
 ### Rodando Emuladores Localmente
-Para rodar os testes de integração ou testar a aplicação localmente sem poluir o ambiente de produção:
+Tanto os testes de integração (`npm run test:integration`) quanto os testes E2E (`npm run test:e2e`) rodam isolados localmente contra o emulador do Firebase para evitar poluição de dados reais e custos. 
+
+Antes de executar essas suítes de teste, certifique-se de iniciar o emulador em um terminal separado e deixá-lo rodando em segundo plano:
 ```bash
 # Inicia o emulador do Firestore e Auth locais
 npm run emulator

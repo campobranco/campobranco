@@ -7,8 +7,8 @@ import { fileURLToPath } from 'url';
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
-// Load env from .env.development
-dotenv.config({ path: path.resolve(__dirname, '.env.development') });
+// Load env from .env.test
+dotenv.config({ path: path.resolve(__dirname, '.env.test') });
 
 export default defineConfig({
     testDir: './e2e',
