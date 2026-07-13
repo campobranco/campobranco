@@ -61,16 +61,13 @@ export default function VisitsHistory({ scope = 'all', showViewAll = true }: { s
         setLoading(true);
         try {
             const visitsRef = collection(db, 'visits');
-            let q = query(visitsRef, orderBy('visitDate', 'desc'), limit(showViewAll ? 20 : 100));
-
-            if (role !== 'ADMIN') {
-                if (congregationId) {
-                    q = query(visitsRef, where('congregationId', '==', congregationId), orderBy('visitDate', 'desc'), limit(showViewAll ? 20 : 100));
-                } else {
-                    setVisits([]);
-                    setLoading(false);
-                    return;
-                }
+            let q;
+            if (congregationId) {
+                q = query(visitsRef, where('congregationId', '==', congregationId), orderBy('visitDate', 'desc'), limit(showViewAll ? 20 : 100));
+            } else {
+                setVisits([]);
+                setLoading(false);
+                return;
             }
 
             const querySnapshot = await getDocs(q);
