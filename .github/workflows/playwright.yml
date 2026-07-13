@@ -30,6 +30,8 @@ jobs:
         run: |
           npx firebase emulators:start --only firestore,auth --project demo-test &
           sleep 10
+        env:
+          FIREBASE_CLI_EXPERIMENTS: webframeworks
 
       - name: Seed Emulator
         run: npm run seed:integration
