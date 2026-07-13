@@ -309,6 +309,277 @@ describe('Integration: Shared Links — Firestore Emulator', () => {
         expect(listSnap.data()?.version).toBe(2); // Era versão 1, agora deve ser versão 2 (CAS Versionado)
     });
 
+    // -----------------------------------------------------------------
+    // TESTES DE REGRAS DE SEGURANÇA (FIRESTORE RULES)
+    // -----------------------------------------------------------------
+
+    describe('Firestore Security Rules', () => {
+        let clientAuth: any;
+        let clientDb: any;
+        const { doc: cDoc, setDoc: cSetDoc, updateDoc: cUpdateDoc, getDoc: cGetDoc, collection: cCollection } = require('firebase/firestore');
+        const { signOut: cSignOut, createUserWithEmailAndPassword: cCreateUser, signInWithEmailAndPassword: cSignIn } = require('firebase/auth');
+
+        beforeAll(() => {
+            const firebaseModule = require('../../lib/firebase');
+            clientAuth = firebaseModule.auth;
+            clientDb = firebaseModule.db;
+        });
+
+        beforeEach(async () => {
+            // Garante que o client auth está deslogado
+            if (clientAuth.currentUser) {
+                await cSignOut(clientAuth);
+            }
+        });
+
+        // Helper para criar e logar um usuário com determinado papel e congregação
+        const setupTestUser = async (email: string, role: string, congregationId: string) => {
+            let credential;
+            try {
+                credential = await cCreateUser(clientAuth, email, 'senha123');
+            } catch {
+                credential = await cSignIn(clientAuth, email, 'senha123');
+            }
+            
+            const uid = credential.user.uid;
+            
+            // Grava o perfil via Admin SDK (bypassing rules)
+            await db.collection('users').doc(uid).set({
+                name: 'Security Test User',
+                email: email,
+                role: role,
+                congregationId: congregationId,
+                permissions: {}
+            });
+
+            return uid;
+        };
+
+        test('Negativo: Criar perfil de usuário diretamente com role: ADMIN deve falhar', async () => {
+            const credential = await cCreateUser(clientAuth, 'hacker_admin@test.com', 'senha123');
+            const userRef = cDoc(clientDb, 'users', credential.user.uid);
+
+            await expect(
+                cSetDoc(userRef, {
+                    name: 'Hacker',
+                    email: 'hacker_admin@test.com',
+                    role: 'ADMIN',
+                    congregationId: 'CONG-A'
+                })
+            ).rejects.toThrow(/permission/i);
+        });
+
+        test('Positivo: Criar perfil de usuário diretamente com role: PUBLICADOR deve passar', async () => {
+            const credential = await cCreateUser(clientAuth, 'legit_pub@test.com', 'senha123');
+            const userRef = cDoc(clientDb, 'users', credential.user.uid);
+
+            await expect(
+                cSetDoc(userRef, {
+                    name: 'Novo Membro',
+                    email: 'legit_pub@test.com',
+                    role: 'PUBLICADOR',
+                    congregationId: null
+                })
+            ).resolves.not.toThrow();
+        });
+
+        test('Negativo: Usuário comum tentando alterar sua própria role de PUBLICADOR para ADMIN deve falhar', async () => {
+            const uid = await setupTestUser('user_common@test.com', 'PUBLICADOR', 'CONG-A');
+            const userRef = cDoc(clientDb, 'users', uid);
+
+            await expect(
+                cUpdateDoc(userRef, {
+                    role: 'ADMIN'
+                })
+            ).rejects.toThrow(/permission/i);
+        });
+
+        test('Negativo: Usuário comum tentando alterar seu congregationId deve falhar', async () => {
+            const uid = await setupTestUser('user_common@test.com', 'PUBLICADOR', 'CONG-A');
+            const userRef = cDoc(clientDb, 'users', uid);
+
+            await expect(
+                cUpdateDoc(userRef, {
+                    congregationId: 'CONG-B'
+                })
+            ).rejects.toThrow(/permission/i);
+        });
+
+        test('Negativo: Alterar o email para valor diferente do contido no token Auth deve falhar', async () => {
+            const uid = await setupTestUser('user_common@test.com', 'PUBLICADOR', 'CONG-A');
+            const userRef = cDoc(clientDb, 'users', uid);
+
+            await expect(
+                cUpdateDoc(userRef, {
+                    email: 'hacker_mail@test.com'
+                })
+            ).rejects.toThrow(/permission/i);
+        });
+
+        test('Negativo: Alterar e-mail válido mas tentar alterar role na mesma transação deve falhar', async () => {
+            const uid = await setupTestUser('user_common@test.com', 'PUBLICADOR', 'CONG-A');
+            const userRef = cDoc(clientDb, 'users', uid);
+
+            await expect(
+                cUpdateDoc(userRef, {
+                    email: 'user_common@test.com',
+                    role: 'ADMIN'
+                })
+            ).rejects.toThrow(/permission/i);
+        });
+
+        test('Positivo: Sincronizar e-mail correto com o Auth token mantendo demais campos deve passar', async () => {
+            const uid = await setupTestUser('user_common@test.com', 'PUBLICADOR', 'CONG-A');
+            const userRef = cDoc(clientDb, 'users', uid);
+
+            await expect(
+                cUpdateDoc(userRef, {
+                    email: 'user_common@test.com',
+                    name: 'Novo Nome'
+                })
+            ).resolves.not.toThrow();
+        });
+
+        test('Negativo: Usuário da CONG-A tentando criar visita para CONG-B deve falhar', async () => {
+            await setupTestUser('user_a@test.com', 'PUBLICADOR', 'CONG-A');
+            const visitRef = cDoc(cCollection(clientDb, 'visits'));
+
+            await expect(
+                cSetDoc(visitRef, {
+                    addressId: 'ADDR-1',
+                    congregationId: 'CONG-B',
+                    status: 'contacted'
+                })
+            ).rejects.toThrow(/permission/i);
+        });
+
+        test('Negativo: Usuário da CONG-A tentando ler visita da CONG-B deve falhar', async () => {
+            await setupTestUser('user_a@test.com', 'PUBLICADOR', 'CONG-A');
+
+            // Cria a visita da CONG-B via Admin SDK
+            await db.collection('visits').doc('visit-b').set({
+                addressId: 'ADDR-B',
+                congregationId: 'CONG-B',
+                status: 'contacted'
+            });
+
+            const visitRef = cDoc(clientDb, 'visits', 'visit-b');
+
+            await expect(
+                cGetDoc(visitRef)
+            ).rejects.toThrow();
+        });
+
+        test('Negativo: Usuário da CONG-A tentando alterar o congregationId de uma visita existente deve falhar', async () => {
+            await setupTestUser('user_a@test.com', 'PUBLICADOR', 'CONG-A');
+
+            // Cria a visita da CONG-A via Admin SDK
+            await db.collection('visits').doc('visit-a').set({
+                addressId: 'ADDR-A',
+                congregationId: 'CONG-A',
+                status: 'contacted'
+            });
+
+            const visitRef = cDoc(clientDb, 'visits', 'visit-a');
+
+            await expect(
+                cUpdateDoc(visitRef, {
+                    congregationId: 'CONG-B'
+                })
+            ).rejects.toThrow();
+        });
+
+        test('Negativo: Usuário da CONG-A tentando ler histórico de endereço pertencente a CONG-B deve falhar', async () => {
+            await setupTestUser('user_a@test.com', 'PUBLICADOR', 'CONG-A');
+
+            // Cria endereço da CONG-B no Admin
+            await db.collection('addresses').doc('addr-b').set({
+                street: 'Rua B',
+                congregationId: 'CONG-B'
+            });
+
+            // Cria histórico sob o endereço da CONG-B
+            await db.collection('addresses').doc('addr-b').collection('history').doc('hist-1').set({
+                notes: 'Visita anterior'
+            });
+
+            const histRef = cDoc(clientDb, 'addresses', 'addr-b', 'history', 'hist-1');
+
+            await expect(
+                cGetDoc(histRef)
+            ).rejects.toThrow();
+        });
+
+        test('Negativo: Usuário da CONG-A tentando gravar itens em lista compartilhada da CONG-B deve falhar', async () => {
+            await setupTestUser('user_a@test.com', 'PUBLICADOR', 'CONG-A');
+
+            // Cria lista da CONG-B
+            await db.collection('shared_lists').doc('list-b').set({
+                title: 'Mapa B',
+                congregationId: 'CONG-B'
+            });
+
+            const itemRef = cDoc(clientDb, 'shared_lists', 'list-b', 'items', 'item-1');
+
+            await expect(
+                cSetDoc(itemRef, {
+                    addressId: 'addr-1',
+                    worked: true
+                })
+            ).rejects.toThrow(/permission/i);
+        });
+
+        // --- TESTES POSITIVOS DE MESMA CONGREGAÇÃO ---
+
+        test('Positivo: Usuário da CONG-A criando visita para CONG-A deve passar', async () => {
+            await setupTestUser('user_a@test.com', 'PUBLICADOR', 'CONG-A');
+            const visitRef = cDoc(cCollection(clientDb, 'visits'));
+
+            await expect(
+                cSetDoc(visitRef, {
+                    addressId: 'ADDR-A',
+                    congregationId: 'CONG-A',
+                    status: 'contacted'
+                })
+            ).resolves.not.toThrow();
+        });
+
+        test('Positivo: Usuário da CONG-A lendo visita da CONG-A deve passar', async () => {
+            await setupTestUser('user_a@test.com', 'PUBLICADOR', 'CONG-A');
+
+            // Cria a visita da CONG-A via Admin SDK
+            await db.collection('visits').doc('visit-a-read').set({
+                addressId: 'ADDR-A',
+                congregationId: 'CONG-A',
+                status: 'contacted'
+            });
+
+            const visitRef = cDoc(clientDb, 'visits', 'visit-a-read');
+            const snap = await cGetDoc(visitRef);
+            expect(snap.exists()).toBe(true);
+            expect(snap.data().congregationId).toBe('CONG-A');
+        });
+
+        test('Positivo: Usuário da CONG-A lendo histórico de endereço da CONG-A deve passar', async () => {
+            await setupTestUser('user_a@test.com', 'PUBLICADOR', 'CONG-A');
+
+            // Cria endereço da CONG-A no Admin
+            await db.collection('addresses').doc('addr-a').set({
+                street: 'Rua A',
+                congregationId: 'CONG-A'
+            });
+
+            // Cria histórico sob o endereço da CONG-A
+            await db.collection('addresses').doc('addr-a').collection('history').doc('hist-a').set({
+                notes: 'Visita ok'
+            });
+
+            const histRef = cDoc(clientDb, 'addresses', 'addr-a', 'history', 'hist-a');
+            const snap = await cGetDoc(histRef);
+            expect(snap.exists()).toBe(true);
+        });
+    });
+
     afterAll(async () => {
         // Desconecta e encerra instâncias abertas para evitar leaks de conexão no Jest
         const { deleteApp } = require('firebase/app');

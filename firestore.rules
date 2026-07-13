@@ -64,9 +64,21 @@ service cloud.firestore {
     // Verifica se o recurso pertence à mesma congregação do usuário autenticado.
     // Usado para isolamento multi-tenant em coleções que possuem congregationId.
     function isSameCongregation(resourceData) {
+      let userDoc = /databases/$(database)/documents/users/$(request.auth.uid);
       return isAuthenticated() &&
-             exists(/databases/$(database)/documents/users/$(request.auth.uid)) &&
-             getCongId(getUserData()) == getCongId(resourceData);
+             exists(userDoc) &&
+             get(userDoc).data.get('congregationId', null) == resourceData.get('congregationId', null);
+    }
+
+
+
+    // Helper para verificar se campos restritos não foram alterados no update de usuário
+    function isImmutableUserUpdate() {
+      return !('role' in request.resource.data.diff(resource.data).affectedKeys()) &&
+             !('permissions' in request.resource.data.diff(resource.data).affectedKeys()) &&
+             !('congregationId' in request.resource.data.diff(resource.data).affectedKeys()) &&
+             !('createdAt' in request.resource.data.diff(resource.data).affectedKeys()) &&
+             !('inviteTokenUsed' in request.resource.data.diff(resource.data).affectedKeys());
     }
 
     // --- REGRAS POR COLEÇÃO ---
@@ -93,44 +105,22 @@ service cloud.firestore {
       );
       allow create: if isAuthenticated() && 
                     request.auth.uid == userId &&
-                    (
-                      (request.resource.data.role == 'ADMIN' && request.auth.token.email == request.resource.data.email) ||
-                      request.resource.data.role == 'PUBLICADOR'
-                    );
+                    request.resource.data.role == 'PUBLICADOR';
       allow update: if isAuthenticated() && (
         // Admin pode alterar qualquer campo de qualquer usuário
         isAdmin() ||
-        // Próprio usuário pode atualizar seu perfil
+        // Próprio usuário pode atualizar seu perfil se mantiver os campos imutáveis e sincronizar o e-mail
         (
           request.auth.uid == userId &&
-          !('role' in request.resource.data.diff(resource.data).affectedKeys()) &&
-          !('permissions' in request.resource.data.diff(resource.data).affectedKeys()) &&
-          (
-            // Caso A: Não alterou congregationId
-            !('congregationId' in request.resource.data.diff(resource.data).affectedKeys()) ||
-            
-            // Caso B: Primeira vinculação via convite
-            (
-              resource.data.get('congregationId', null) == null &&
-              exists(/databases/$(database)/documents/congregations/$(request.resource.data.congregationId)) &&
-              request.resource.data.get('inviteTokenUsed', '') == 
-                get(/databases/$(database)/documents/congregations/$(request.resource.data.congregationId))
-                  .data.get('inviteToken', 'DIVERGENTE')
-            )
-          ) &&
-          (
-            // inviteTokenUsed só pode ser criado na primeira associação, nunca editado
-            !('inviteTokenUsed' in request.resource.data.diff(resource.data).affectedKeys()) ||
-            (resource.data.get('inviteTokenUsed', null) == null)
-          )
+          isImmutableUserUpdate() &&
+          (!('email' in request.resource.data.diff(resource.data).affectedKeys()) || request.resource.data.get('email', '') == request.auth.token.get('email', ''))
         ) ||
         // Servo/Ancião da mesma congregação pode editar, MAS não pode alterar campos privilegiados
         (
           isServant() &&
           isSameCongregation(resource.data) &&
-          !('role' in request.resource.data.diff(resource.data).affectedKeys()) &&
-          !('permissions' in request.resource.data.diff(resource.data).affectedKeys()) &&
-          !('congregationId' in request.resource.data.diff(resource.data).affectedKeys())
+          isImmutableUserUpdate() &&
+          (!('email' in request.resource.data.diff(resource.data).affectedKeys()) || request.resource.data.get('email', '') == resource.data.get('email', ''))
         )
       );
       allow delete: if isAdmin();
@@ -168,18 +158,20 @@ service cloud.firestore {
       
       // Subcoleção de Histórico de Endereço
       match /history/{histId} {
-        allow read: if isAuthenticated();
-        allow write: if isAuthenticated();
+        allow read, write: if isAuthenticated() && (isAdmin() || (exists(/databases/$(database)/documents/addresses/$(id)) && isSameCongregation(get(/databases/$(database)/documents/addresses/$(id)).data)));
       }
     }
 
     // 6. Visitas (Histórico Individual)
-    // Segurança: Leitura restrita a usuários autenticados (LGPD).
-    // Links públicos exibem mapa e endereços, mas NÃO o histórico de visitas.
+    // Segurança: Leitura restrita a usuários autenticados da mesma congregação.
     match /visits/{id} {
-      allow read: if isAuthenticated();
-      allow create: if isAuthenticated();
-      allow update, delete: if isAuthenticated();
+      allow read: if isAuthenticated() && (isAdmin() || isSameCongregation(resource.data));
+      allow create: if isAuthenticated() && (isAdmin() || isSameCongregation(request.resource.data));
+      allow update: if isAuthenticated() && (isAdmin() || (
+        isSameCongregation(resource.data) &&
+        !('congregationId' in request.resource.data.diff(resource.data).affectedKeys())
+      ));
+      allow delete: if isAuthenticated() && (isAdmin() || isSameCongregation(resource.data));
     }
 
     // 7. Listas Compartilhadas (Cartões)
@@ -212,15 +204,15 @@ service cloud.firestore {
       // Subcoleções de Listas
       match /items/{item_id} {
         allow read: if true;
-        allow write: if isAuthenticated();
+        allow write: if isAuthenticated() && (isAdmin() || (exists(/databases/$(database)/documents/shared_lists/$(id)) && isSameCongregation(get(/databases/$(database)/documents/shared_lists/$(id)).data)));
       }
       match /territory_addresses/{addrId} {
         allow read: if true;
-        allow write: if isAuthenticated();
+        allow write: if isAuthenticated() && (isAdmin() || (exists(/databases/$(database)/documents/shared_lists/$(id)) && isSameCongregation(get(/databases/$(database)/documents/shared_lists/$(id)).data)));
       }
       match /results/{resultId} {
         allow read: if true;
-        allow write: if isAuthenticated();
+        allow write: if isAuthenticated() && (isAdmin() || (exists(/databases/$(database)/documents/shared_lists/$(id)) && isSameCongregation(get(/databases/$(database)/documents/shared_lists/$(id)).data)));
       }
     }
 
@@ -234,7 +226,7 @@ service cloud.firestore {
       
       match /visits/{id} {
         allow read: if true;
-        allow write: if isAuthenticated();
+        allow write: if isAuthenticated() && (isAdmin() || (exists(/databases/$(database)/documents/shared_list_snapshots/$(snapId)) && isSameCongregation(get(/databases/$(database)/documents/shared_list_snapshots/$(snapId)).data)));
       }
     }
 
