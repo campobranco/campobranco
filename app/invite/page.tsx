@@ -5,7 +5,7 @@ import { useAuth } from '@/app/context/AuthContext';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { Users, Loader2, CheckCircle, AlertCircle } from 'lucide-react';
 import { toast } from 'sonner';
-import ConfirmationModal from '@/app/components/ConfirmationModal';
+
 import { db } from '@/lib/firebase';
 import {
     collection,
@@ -34,13 +34,7 @@ function InviteContent() {
     const [congregationId, setCongregationId] = useState<string | null>(null);
     const [accepting, setAccepting] = useState(false);
 
-    const [confirmModal, setConfirmModal] = useState<{
-        isOpen: boolean;
-        title: string;
-        message: string;
-        onConfirm: () => void;
-        variant?: 'danger' | 'info';
-    }>({ isOpen: false, title: '', message: '', onConfirm: () => { } });
+
 
     useEffect(() => {
         const checkInvite = async () => {
@@ -145,6 +139,11 @@ function InviteContent() {
             const userSnap = await getDoc(userRef);
             const exists = userSnap.exists();
 
+            console.log("[DEBUG INVITE] Documento do usuário existe?", exists);
+            if (exists) {
+                console.log("[DEBUG INVITE] Conteúdo do documento:", JSON.stringify(userSnap.data(), null, 2));
+            }
+
             if (exists) {
                 const userData = userSnap.data();
                 const currentCongId = userData.congregationId;
@@ -157,17 +156,9 @@ function InviteContent() {
                         setTimeout(() => window.location.href = '/dashboard', 2000);
                         return;
                     } else {
-                        setConfirmModal({
-                            isOpen: true,
-                            title: "Mudar de Congregação",
-                            message: "Você já pertence a outra congregação. Deseja mudar para esta?",
-                            variant: 'info',
-                            onConfirm: () => {
-                                setConfirmModal(prev => ({ ...prev, isOpen: false }));
-                                proceedWithAccept(false); // Apenas update
-                            }
-                        });
-                        setAccepting(false); // Stop loader while waiting for confirmation
+                        // Bloqueia a auto-transferência e exibe aviso amigável
+                        setError("Você já pertence a outra congregação. Para realizar a transferência de congregação, solicite a alteração ao administrador.");
+                        setAccepting(false);
                         return;
                     }
                 }
@@ -209,7 +200,7 @@ function InviteContent() {
 
             {error ? (
                 <div className="bg-red-50 dark:bg-red-900/20 text-red-600 dark:text-red-400 p-4 rounded-2xl flex items-center gap-3 text-sm font-bold justify-center">
-                    <AlertCircle className="w-5 h-5" />
+                    <AlertCircle className="w-5 h-5 animate-in shake" />
                     {error}
                 </div>
             ) : success ? (
@@ -233,16 +224,6 @@ function InviteContent() {
                     )}
                 </div>
             )}
-
-            {/* Confirmation Modal */}
-            <ConfirmationModal
-                isOpen={confirmModal.isOpen}
-                onClose={() => setConfirmModal(prev => ({ ...prev, isOpen: false }))}
-                onConfirm={confirmModal.onConfirm}
-                title={confirmModal.title}
-                description={confirmModal.message}
-                variant={confirmModal.variant}
-            />
         </div>
     );
 }
