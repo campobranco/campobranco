@@ -197,7 +197,7 @@ describe('Integration: Shared Links — Firestore Emulator', () => {
         // Garante que o território foi atualizado corretamente no Firestore pós auto-recomposição
         const terrSnap = await db.collection('territories').doc('T-003').get();
         expect(terrSnap.data()?.status).toBe('Emprestado');
-        expect(terrSnap.data()?.activeLinkId).toBe(result.id);
+        expect(terrSnap.data()?.activeLinkIds).toContain(result.id);
     });
 
     test('Cenário 5: Concorrência simultânea (Race Condition Recovery)', async () => {
