@@ -98,7 +98,6 @@ function InviteContent() {
             await setDoc(userRef, {
                 congregationId: congregationId,
                 inviteTokenUsed: token,
-                role: 'PUBLICADOR',
                 updatedAt: serverTimestamp(),
                 email: user.email,
                 name: profileName || user.email?.split('@')[0]
