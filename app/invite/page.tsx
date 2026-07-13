@@ -89,27 +89,35 @@ function InviteContent() {
 
 
 
-    const proceedWithAccept = async () => {
+    const proceedWithAccept = async (isCreate: boolean) => {
         if (!congregationId || !user) return;
         setAccepting(true);
         try {
-            // Update User in Firestore
             const userRef = doc(db, 'users', user.uid);
-            await setDoc(userRef, {
+            
+            const payload: any = {
                 congregationId: congregationId,
                 inviteTokenUsed: token,
                 updatedAt: serverTimestamp(),
                 email: user.email,
                 name: profileName || user.email?.split('@')[0]
-            }, { merge: true });
+            };
+
+            // Inclui role e createdAt apenas no fluxo de criação para atender as regras de segurança do Firestore
+            if (isCreate) {
+                payload.role = 'PUBLICADOR';
+                payload.createdAt = serverTimestamp();
+            }
+
+            await setDoc(userRef, payload, { merge: true });
 
             setSuccess(true);
             // Force refresh to ensure AuthContext picks up the change
             setTimeout(() => window.location.href = '/dashboard', 2000);
 
-        } catch (e) {
+        } catch (e: any) {
             console.error("Error accepting invite:", e);
-            toast.error("Erro ao aceitar convite.");
+            toast.error(`Erro ao aceitar convite: ${e.message || e}`);
             setAccepting(false);
         }
     };
@@ -135,8 +143,9 @@ function InviteContent() {
             // Check if user already has a congregation
             const userRef = doc(db, 'users', user.uid);
             const userSnap = await getDoc(userRef);
+            const exists = userSnap.exists();
 
-            if (userSnap.exists()) {
+            if (exists) {
                 const userData = userSnap.data();
                 const currentCongId = userData.congregationId;
 
@@ -155,7 +164,7 @@ function InviteContent() {
                             variant: 'info',
                             onConfirm: () => {
                                 setConfirmModal(prev => ({ ...prev, isOpen: false }));
-                                proceedWithAccept();
+                                proceedWithAccept(false); // Apenas update
                             }
                         });
                         setAccepting(false); // Stop loader while waiting for confirmation
@@ -164,12 +173,12 @@ function InviteContent() {
                 }
             }
 
-            // Normal case
-            proceedWithAccept();
+            // Se exists for false, criará o perfil com a role. Se for true, apenas atualizará sem a role.
+            proceedWithAccept(!exists);
 
-        } catch (e) {
+        } catch (e: any) {
             console.error("Error checking user congregation:", e);
-            toast.error("Erro ao verificar dados do usuário.");
+            toast.error(`Erro ao verificar dados do usuário: ${e.message || e}`);
             setAccepting(false);
         }
     };
