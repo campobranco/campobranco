@@ -454,62 +454,62 @@ export default function AdminUsersPage() {
             {/* CREATE MODAL - Padrão clássico do app (ex: NewPointModal) */}
             {showCreateModal && (
                 <div className="fixed inset-0 z-[60] flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm animate-in fade-in duration-300">
-                    <div className="bg-white rounded-lg w-full max-w-sm p-6 shadow-2xl animate-in zoom-in-95 duration-300">
+                    <div className="bg-surface border border-surface-border rounded-lg w-full max-w-sm p-6 shadow-2xl animate-in zoom-in-95 duration-300">
                         <div className="flex justify-between items-center mb-6">
-                            <h2 className="text-xl font-bold text-gray-900 flex items-center gap-2">
-                                <UserPlus2 className="w-6 h-6 text-emerald-600" />
+                            <h2 className="text-xl font-bold text-main flex items-center gap-2">
+                                <UserPlus2 className="w-6 h-6 text-primary" />
                                 Novo Membro
                             </h2>
-                            <button onClick={() => setShowCreateModal(false)}><X className="w-5 h-5 text-gray-400" /></button>
+                            <button onClick={() => setShowCreateModal(false)}><X className="w-5 h-5 text-muted hover:text-main" /></button>
                         </div>
 
                         <form onSubmit={handleCreateUser} className="space-y-4">
                             <div>
-                                <label className="block text-xs font-bold text-gray-500 uppercase tracking-wider mb-2 text-left">Nome Completo</label>
+                                <label className="block text-xs font-bold text-muted uppercase tracking-wider mb-2 text-left">Nome Completo</label>
                                 <input
                                     required
                                     type="text"
                                     value={newUser.name}
                                     onChange={(e) => setNewUser({ ...newUser, name: e.target.value })}
-                                    className="w-full bg-gray-50 border-none rounded-lg p-4 font-bold text-gray-900 focus:ring-2 focus:ring-emerald-500/20 outline-none"
+                                    className="w-full bg-background border border-surface-border rounded-lg p-4 font-bold text-main focus:ring-2 focus:ring-primary/20 outline-none placeholder-muted"
                                     placeholder="Digite o nome..."
-                                />
+                                  />
                             </div>
 
                             <div>
-                                <label className="block text-xs font-bold text-gray-500 uppercase tracking-wider mb-2 text-left">E-mail de Acesso</label>
+                                <label className="block text-xs font-bold text-muted uppercase tracking-wider mb-2 text-left">E-mail de Acesso</label>
                                 <input
                                     required
                                     type="email"
                                     value={newUser.email}
                                     onChange={(e) => setNewUser({ ...newUser, email: e.target.value })}
-                                    className="w-full bg-gray-50 border-none rounded-lg p-4 font-bold text-gray-900 focus:ring-2 focus:ring-emerald-500/20 outline-none"
+                                    className="w-full bg-background border border-surface-border rounded-lg p-4 font-bold text-main focus:ring-2 focus:ring-primary/20 outline-none placeholder-muted"
                                     placeholder="exemplo@gmail.com"
                                 />
                             </div>
 
                             {isAdminRoleGlobal && (
                                 <div className="relative">
-                                    <label className="block text-xs font-bold text-gray-500 uppercase tracking-wider mb-2 text-left">Congregação</label>
+                                    <label className="block text-xs font-bold text-muted uppercase tracking-wider mb-2 text-left">Congregação</label>
                                     <div className="relative">
-                                        <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400 pointer-events-none" />
+                                        <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted pointer-events-none" />
                                         <input
                                             type="text"
                                             value={congSearchCreate}
                                             onChange={(e) => { setCongSearchCreate(e.target.value); setShowCongDropCreate(true); if (!e.target.value) { setNewUser({ ...newUser, congregationId: '' }); } }}
                                             onFocus={() => setShowCongDropCreate(true)}
                                             placeholder={newUser.congregationId ? (congregations.find(c => c.id === newUser.congregationId)?.name || 'Buscar congregação...') : 'Buscar congregação...'}
-                                            className="w-full bg-gray-50 border-none rounded-lg py-3 pl-10 pr-4 font-bold text-gray-900 focus:ring-2 focus:ring-emerald-500/20 outline-none text-sm"
+                                            className="w-full bg-background border border-surface-border rounded-lg py-3 pl-10 pr-4 font-bold text-main focus:ring-2 focus:ring-primary/20 outline-none text-sm placeholder-muted"
                                         />
                                     </div>
                                     {showCongDropCreate && (
                                         <>
                                             <div className="fixed inset-0 z-10" onClick={() => setShowCongDropCreate(false)} />
-                                            <div className="absolute left-0 right-0 top-full mt-1 bg-white rounded-xl shadow-2xl border border-gray-100 z-20 max-h-48 overflow-y-auto">
+                                            <div className="absolute left-0 right-0 top-full mt-1 bg-surface rounded-xl shadow-2xl border border-surface-border z-20 max-h-48 overflow-y-auto">
                                                 <button
                                                     type="button"
                                                     onClick={() => { setNewUser({ ...newUser, congregationId: '' }); setCongSearchCreate(''); setShowCongDropCreate(false); }}
-                                                    className="w-full text-left px-4 py-2.5 text-sm text-gray-400 hover:bg-gray-50 font-medium border-b border-gray-50"
+                                                    className="w-full text-left px-4 py-2.5 text-sm text-muted hover:bg-background font-medium border-b border-surface-border"
                                                 >
                                                     Sem vínculo inicial
                                                 </button>
@@ -518,13 +518,13 @@ export default function AdminUsersPage() {
                                                         key={c.id}
                                                         type="button"
                                                         onClick={() => { setNewUser({ ...newUser, congregationId: c.id }); setCongSearchCreate(c.name); setShowCongDropCreate(false); }}
-                                                        className={`w-full text-left px-4 py-2.5 text-sm font-bold hover:bg-emerald-50 hover:text-emerald-700 transition-colors ${ newUser.congregationId === c.id ? 'bg-emerald-50 text-emerald-700' : 'text-gray-800'}`}
+                                                        className={`w-full text-left px-4 py-2.5 text-sm font-bold hover:bg-primary-light/10 hover:text-primary transition-colors ${ newUser.congregationId === c.id ? 'bg-primary-light/10 text-primary' : 'text-main'}`}
                                                     >
                                                         {c.name}
                                                     </button>
                                                 ))}
                                                 {congregations.filter(c => c.name.toLowerCase().includes(congSearchCreate.toLowerCase())).length === 0 && (
-                                                    <p className="px-4 py-3 text-xs text-gray-400 text-center">Nenhuma congregação encontrada</p>
+                                                    <p className="px-4 py-3 text-xs text-muted text-center">Nenhuma congregação encontrada</p>
                                                 )}
                                             </div>
                                         </>
@@ -535,7 +535,7 @@ export default function AdminUsersPage() {
                             <button
                                 type="submit"
                                 disabled={loadingData}
-                                className="w-full py-4 bg-gray-900 text-white rounded-lg font-bold shadow-lg mt-2 flex items-center justify-center gap-2 active:scale-95 transition-transform"
+                                className="w-full py-4 bg-primary hover:bg-primary-dark text-white rounded-lg font-bold shadow-lg shadow-primary/20 mt-2 flex items-center justify-center gap-2 active:scale-95 transition-transform"
                             >
                                 {loadingData ? <Loader2 className="w-5 h-5 animate-spin" /> : 'Criar Membro'}
                             </button>
@@ -547,48 +547,48 @@ export default function AdminUsersPage() {
             {/* EDIT MODAL - Padrão clássico do app */}
             {showEditModal && editingUser && (
                 <div className="fixed inset-0 z-[60] flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm animate-in fade-in duration-300">
-                    <div className="bg-white rounded-lg w-full max-w-sm p-6 shadow-2xl animate-in zoom-in-95 duration-300">
+                    <div className="bg-surface border border-surface-border rounded-lg w-full max-w-sm p-6 shadow-2xl animate-in zoom-in-95 duration-300">
                         <div className="flex justify-between items-center mb-6">
-                            <h2 className="text-xl font-bold text-gray-900 flex items-center gap-2">
-                                <Pencil className="w-6 h-6 text-emerald-600" />
+                            <h2 className="text-xl font-bold text-main flex items-center gap-2">
+                                <Pencil className="w-6 h-6 text-primary" />
                                 Editar Membro
                             </h2>
-                            <button onClick={() => setShowEditModal(false)}><X className="w-5 h-5 text-gray-400" /></button>
+                            <button onClick={() => setShowEditModal(false)}><X className="w-5 h-5 text-muted hover:text-main" /></button>
                         </div>
 
                         <div className="space-y-5">
                             <div>
-                                <label className="block text-xs font-bold text-gray-500 uppercase tracking-wider mb-2 text-left">Nome</label>
+                                <label className="block text-xs font-bold text-muted uppercase tracking-wider mb-2 text-left">Nome</label>
                                 <input
                                     type="text"
                                     value={editName}
                                     onChange={(e) => setEditName(e.target.value)}
-                                    className="w-full bg-gray-50 border-none rounded-lg p-4 font-bold text-gray-900 focus:ring-2 focus:ring-emerald-500/20 outline-none"
+                                    className="w-full bg-background border border-surface-border rounded-lg p-4 font-bold text-main focus:ring-2 focus:ring-primary/20 outline-none"
                                 />
                             </div>
 
                             {isAdminRoleGlobal && (
                                 <div className="relative">
-                                    <label className="block text-xs font-bold text-gray-500 uppercase tracking-wider mb-2 text-left">Congregação</label>
+                                    <label className="block text-xs font-bold text-muted uppercase tracking-wider mb-2 text-left">Congregação</label>
                                     <div className="relative">
-                                        <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400 pointer-events-none" />
+                                        <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted pointer-events-none" />
                                         <input
                                             type="text"
                                             value={congSearchEdit}
                                             onChange={(e) => { setCongSearchEdit(e.target.value); setShowCongDropEdit(true); if (!e.target.value) { setEditCongId(''); } }}
                                             onFocus={() => setShowCongDropEdit(true)}
                                             placeholder={editCongId ? (congregations.find(c => c.id === editCongId)?.name || 'Buscar congregação...') : 'Buscar congregação...'}
-                                            className="w-full bg-gray-50 border-none rounded-lg py-3 pl-10 pr-4 font-bold text-gray-900 focus:ring-2 focus:ring-emerald-500/20 outline-none text-sm"
+                                            className="w-full bg-background border border-surface-border rounded-lg py-3 pl-10 pr-4 font-bold text-main focus:ring-2 focus:ring-primary/20 outline-none text-sm placeholder-muted"
                                         />
                                     </div>
                                     {showCongDropEdit && (
                                         <>
                                             <div className="fixed inset-0 z-10" onClick={() => setShowCongDropEdit(false)} />
-                                            <div className="absolute left-0 right-0 top-full mt-1 bg-white rounded-xl shadow-2xl border border-gray-100 z-20 max-h-48 overflow-y-auto">
+                                            <div className="absolute left-0 right-0 top-full mt-1 bg-surface rounded-xl shadow-2xl border border-surface-border z-20 max-h-48 overflow-y-auto">
                                                 <button
                                                     type="button"
                                                     onClick={() => { setEditCongId(''); setCongSearchEdit(''); setShowCongDropEdit(false); }}
-                                                    className="w-full text-left px-4 py-2.5 text-sm text-gray-400 hover:bg-gray-50 font-medium border-b border-gray-50"
+                                                    className="w-full text-left px-4 py-2.5 text-sm text-muted hover:bg-background font-medium border-b border-surface-border"
                                                 >
                                                     Sem vínculo
                                                 </button>
@@ -597,13 +597,13 @@ export default function AdminUsersPage() {
                                                         key={c.id}
                                                         type="button"
                                                         onClick={() => { setEditCongId(c.id); setCongSearchEdit(c.name); setShowCongDropEdit(false); }}
-                                                        className={`w-full text-left px-4 py-2.5 text-sm font-bold hover:bg-emerald-50 hover:text-emerald-700 transition-colors ${ editCongId === c.id ? 'bg-emerald-50 text-emerald-700' : 'text-gray-800'}`}
+                                                        className={`w-full text-left px-4 py-2.5 text-sm font-bold hover:bg-primary-light/10 hover:text-primary transition-colors ${ editCongId === c.id ? 'bg-primary-light/10 text-primary' : 'text-main'}`}
                                                     >
                                                         {c.name}
                                                     </button>
                                                 ))}
                                                 {congregations.filter(c => c.name.toLowerCase().includes(congSearchEdit.toLowerCase())).length === 0 && (
-                                                    <p className="px-4 py-3 text-xs text-gray-400 text-center">Nenhuma congregação encontrada</p>
+                                                    <p className="px-4 py-3 text-xs text-muted text-center">Nenhuma congregação encontrada</p>
                                                 )}
                                             </div>
                                         </>
@@ -612,7 +612,7 @@ export default function AdminUsersPage() {
                             )}
 
                             <div>
-                                <label className="block text-xs font-bold text-gray-500 uppercase tracking-wider mb-2 text-left">Nível de Acesso (Função)</label>
+                                <label className="block text-xs font-bold text-muted uppercase tracking-wider mb-2 text-left">Nível de Acesso (Função)</label>
                                 {editingUser?.id === user?.uid ? (
                                     <div className="bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800 rounded-lg p-4 flex flex-col gap-2">
                                         <div className="flex items-center gap-2 text-amber-700 dark:text-amber-400 font-bold text-xs uppercase">
@@ -633,14 +633,14 @@ export default function AdminUsersPage() {
                                                     onClick={() => setEditRoles([role.value])}
                                                     className={`p-4 rounded-lg border text-sm font-bold transition-all flex items-center justify-between
                                                         ${isActive
-                                                            ? 'bg-emerald-600 border-emerald-600 text-white shadow-md'
-                                                            : 'bg-gray-50 border-transparent text-gray-500 hover:bg-gray-100 hover:border-gray-200'
+                                                            ? 'bg-primary border-primary text-white shadow-md'
+                                                            : 'bg-background border-surface-border text-muted hover:bg-surface hover:text-main'
                                                         }
                                                     `}
                                                 >
                                                     <span>{role.label}</span>
-                                                    {isActive && <CheckCircle2 className="w-4 h-4" />}
-                                                    {!isActive && <div className="w-4 h-4 rounded-full border-2 border-gray-200" />}
+                                                    {isActive && <CheckCircle2 className="w-4 h-4 text-white" />}
+                                                    {!isActive && <div className="w-4 h-4 rounded-full border-2 border-surface-border" />}
                                                 </button>
                                             );
                                         })}
@@ -651,7 +651,7 @@ export default function AdminUsersPage() {
                             <button
                                 onClick={handleSaveUser}
                                 disabled={updatingId === editingUser.id}
-                                className="w-full py-4 bg-gray-900 text-white rounded-lg font-bold shadow-lg mt-2 flex items-center justify-center gap-2 active:scale-95 transition-transform"
+                                className="w-full py-4 bg-primary hover:bg-primary-dark text-white rounded-lg font-bold shadow-lg shadow-primary/20 mt-2 flex items-center justify-center gap-2 active:scale-95 transition-transform"
                             >
                                 {updatingId === editingUser.id ? <Loader2 className="w-5 h-5 animate-spin" /> : 'Confirmar Alterações'}
                             </button>
