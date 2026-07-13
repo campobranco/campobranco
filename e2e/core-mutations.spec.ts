@@ -6,6 +6,18 @@ test.describe('Core Mutations (Territórios)', () => {
     test('Flow 1: Assign Territory (Idempotência e Estado)', async ({ page }) => {
         // Ignorando este teste se não houver um emulador rodando 
         // ou precisarmos preencher DB com dados
+        /**
+         * BLOQUEADO: Autenticação E2E incompatível com fluxo real
+         *
+         * Este teste pressupõe login via e-mail/senha (helper `loginAsAdmin` tenta preencher input[type="email"]).
+         * Porém, a tela de login real só expõe OAuth (Google).
+         *
+         * Para desbloquear, seria necessário:
+         * 1. Implementar formulário de e-mail/senha no frontend, OU
+         * 2. Refatorar E2E para usar storageState pré-autenticada via Firebase Admin API
+         *
+         * TODO: Reavaliação quando estratégia de E2E auth for revisitada.
+         */
         test.skip(); 
         
         await loginAsAdmin(page);
@@ -21,6 +33,18 @@ test.describe('Core Mutations (Territórios)', () => {
     });
 
     test('Flow 2: Return Territory', async ({ page }) => {
+        /**
+         * BLOQUEADO: Autenticação E2E incompatível com fluxo real
+         *
+         * Este teste pressupõe login via e-mail/senha (helper `loginAsAdmin` tenta preencher input[type="email"]).
+         * Porém, a tela de login real só expõe OAuth (Google).
+         *
+         * Para desbloquear, seria necessário:
+         * 1. Implementar formulário de e-mail/senha no frontend, OU
+         * 2. Refatorar E2E para usar storageState pré-autenticada via Firebase Admin API
+         *
+         * TODO: Reavaliação quando estratégia de E2E auth for revisitada.
+         */
         test.skip();
         await loginAsAdmin(page);
         

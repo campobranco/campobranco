@@ -10,7 +10,6 @@ module.exports = {
             tsconfig: {
                 module: 'commonjs',
             },
-            isolatedModules: true,
         }]
     },
     testMatch: ['**/__tests__/**/*.test.ts'],
