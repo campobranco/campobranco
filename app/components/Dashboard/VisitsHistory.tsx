@@ -119,27 +119,6 @@ export default function VisitsHistory({ scope = 'all', showViewAll = true }: { s
             if (user?.uid) {
                 userMap[user.uid] = profileName || "Você";
             }
-            if (userIds.length > 0 && (isElder || isServant || role === 'ADMIN')) {
-                const chunkedUserIds = [];
-                for (let i = 0; i < userIds.length; i += 30) {
-                    chunkedUserIds.push(userIds.slice(i, i + 30));
-                }
-
-                await Promise.all(chunkedUserIds.map(async (chunk) => {
-                    const qUser = query(
-                        collection(db, 'users'), 
-                        where(documentId(), 'in', chunk)
-                    );
-                    const userSnap = await getDocs(qUser);
-                    userSnap.forEach(docSnap => {
-                        const data = docSnap.data();
-                        const fetchedName = data.name || data.profileName;
-                        if (fetchedName) {
-                            userMap[docSnap.id] = fetchedName;
-                        }
-                    });
-                }));
-            }
 
             const mergedVisits = filteredVisits.map((v: any) => {
                 const addressId = v.addressId;
@@ -157,7 +136,7 @@ export default function VisitsHistory({ scope = 'all', showViewAll = true }: { s
                 return {
                     ...v,
                     addressStreet: displayAddress,
-                    displayName: userMap[userId] || 'Publicador',
+                    displayName: v.publisherName || v.userName || userMap[userId] || 'Publicador',
                     sortDate: visitDate?.toDate ? visitDate.toDate() : (visitDate ? new Date(visitDate) : new Date(0)),
                     observations: v.notes || ''
                 };
