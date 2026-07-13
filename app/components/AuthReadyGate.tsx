@@ -1,11 +1,13 @@
 'use client';
 
-import React from 'react';
+import React, { useEffect } from 'react';
 import { useAuth } from '@/app/context/AuthContext';
 import { Loader2 } from 'lucide-react';
+import { useRouter } from 'next/navigation';
 
 interface AuthReadyGateProps {
     children: React.ReactNode;
+    requireAuth?: boolean;
     requireCongregation?: boolean;
     requireRole?: boolean;
     fallback?: React.ReactNode;
@@ -18,15 +20,25 @@ interface AuthReadyGateProps {
  * do contexto de autenticação (como congregationId, role, permissions) 
  * antes que esses dados estejam efetivamente disponíveis na memória.
  * 
- * Evita o bug "Faltam dados do publicador ou congregação" em mutations.
+ * Também lida com o redirecionamento automático de usuários não autenticados
+ * para a tela de login quando requireAuth for verdadeiro.
  */
 export function AuthReadyGate({ 
     children, 
+    requireAuth = true,
     requireCongregation = true,
     requireRole = true,
     fallback
 }: AuthReadyGateProps) {
     const { user, loading, congregationId, role } = useAuth();
+    const router = useRouter();
+
+    useEffect(() => {
+        if (requireAuth && !loading && !user) {
+            console.log("[AuthReadyGate] Usuário não autenticado em rota protegida, redirecionando para /login...");
+            router.push('/login');
+        }
+    }, [user, loading, requireAuth, router]);
 
     if (loading) {
         return fallback ? <>{fallback}</> : (
@@ -34,6 +46,11 @@ export function AuthReadyGate({
                 <Loader2 className="w-8 h-8 animate-spin text-primary" />
             </div>
         );
+    }
+
+    // Se não exige autenticação e o usuário está deslogado, renderiza os filhos imediatamente
+    if (!requireAuth && !user) {
+        return <>{children}</>;
     }
 
     if (!user) {
