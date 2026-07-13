@@ -87,6 +87,8 @@ function InviteContent() {
         checkInvite();
     }, [token, user, authLoading]);
 
+
+
     const proceedWithAccept = async () => {
         if (!congregationId || !user) return;
         setAccepting(true);
@@ -95,6 +97,7 @@ function InviteContent() {
             const userRef = doc(db, 'users', user.uid);
             await setDoc(userRef, {
                 congregationId: congregationId,
+                inviteTokenUsed: token,
                 role: 'PUBLICADOR',
                 updatedAt: serverTimestamp(),
                 email: user.email,

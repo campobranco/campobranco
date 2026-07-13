@@ -179,9 +179,11 @@ export default function DashboardPage() {
             let q;
             if (congregationId) {
                 q = query(listsRef, where('congregationId', '==', congregationId));
+            } else if (role === 'ADMIN') {
+                q = query(listsRef, where('congregationId', '==', null));
+            } else {
+                return;
             }
-            else if (role !== 'ADMIN') return;
-            else q = query(listsRef, limit(100));
 
             const usersMap: Record<string, string> = {};
             if (user?.uid) usersMap[user.uid] = profileName || "Você";

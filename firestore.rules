@@ -82,21 +82,47 @@ service cloud.firestore {
     // Segurança: Field-level restrictions impedem auto-promoção de papel.
     // Isolamento: Servos/Anciãos só leem/editam usuários da mesma congregação.
     match /users/{userId} {
-      allow read, list: if isAuthenticated() && (
+      allow read: if isAuthenticated() && (
         request.auth.uid == userId || 
-        isAdmin() || 
+        getAuthRole() == 'ADMIN' || 
         ((isServant() || isElder()) && isSameCongregation(resource.data))
       );
-      allow create: if isAuthenticated() && request.auth.uid == userId;
+      allow list: if isAuthenticated() && (
+        getAuthRole() == 'ADMIN' || 
+        ((isServant() || isElder()) && isSameCongregation(resource.data))
+      );
+      allow create: if isAuthenticated() && 
+                    request.auth.uid == userId &&
+                    (
+                      (request.resource.data.role == 'ADMIN' && request.auth.token.email == request.resource.data.email) ||
+                      request.resource.data.role == 'PUBLICADOR'
+                    );
       allow update: if isAuthenticated() && (
         // Admin pode alterar qualquer campo de qualquer usuário
         isAdmin() ||
-        // Próprio usuário pode atualizar seu perfil, MAS não pode alterar campos privilegiados
+        // Próprio usuário pode atualizar seu perfil
         (
           request.auth.uid == userId &&
           !('role' in request.resource.data.diff(resource.data).affectedKeys()) &&
           !('permissions' in request.resource.data.diff(resource.data).affectedKeys()) &&
-          !('congregationId' in request.resource.data.diff(resource.data).affectedKeys())
+          (
+            // Caso A: Não alterou congregationId
+            !('congregationId' in request.resource.data.diff(resource.data).affectedKeys()) ||
+            
+            // Caso B: Primeira vinculação via convite
+            (
+              resource.data.get('congregationId', null) == null &&
+              exists(/databases/$(database)/documents/congregations/$(request.resource.data.congregationId)) &&
+              request.resource.data.get('inviteTokenUsed', '') == 
+                get(/databases/$(database)/documents/congregations/$(request.resource.data.congregationId))
+                  .data.get('inviteToken', 'DIVERGENTE')
+            )
+          ) &&
+          (
+            // inviteTokenUsed só pode ser criado na primeira associação, nunca editado
+            !('inviteTokenUsed' in request.resource.data.diff(resource.data).affectedKeys()) ||
+            (resource.data.get('inviteTokenUsed', null) == null)
+          )
         ) ||
         // Servo/Ancião da mesma congregação pode editar, MAS não pode alterar campos privilegiados
         (

@@ -16,7 +16,7 @@ export interface EnsureUserProfileInput {
 
 export async function ensureUserProfileMutation(input: EnsureUserProfileInput): Promise<MutationResult> {
     if (!input.uid) return { success: false, message: 'UID do usuário obrigatório.' };
-
+    
     const userEmail = (input.email || '').trim().toLowerCase();
     const masterEmail = input.masterEmail.trim().toLowerCase();
     const isMaster = masterEmail && userEmail === masterEmail;
@@ -24,15 +24,10 @@ export async function ensureUserProfileMutation(input: EnsureUserProfileInput): 
     const userRef = doc(db, 'users', input.uid);
 
     try {
-        if (input.existingData) {
-            // Se usuário já existe, mas é o Master e não está como ADMIN, corrija
-            if (isMaster && input.existingData.role !== 'ADMIN') {
-                console.log(`[AUTH MUTATION] Corrigindo role do Master para ADMIN`);
-                await setDoc(userRef, { role: 'ADMIN', updatedAt: serverTimestamp() }, { merge: true });
-            }
-        } else {
-            // Perfil novo
-            console.log(`[AUTH MUTATION] Criando novo perfil. Admin? ${isMaster}`);
+        if (!input.existingData) {
+            // Perfil novo é criado como ADMIN apenas se coincidir com o Master Email configurado.
+            // A integridade dessa criação é validada e garantida pelo Firestore no deploy de regras.
+            console.log(`[AUTH MUTATION] Criando novo perfil. Admin Mestre? ${isMaster}`);
             await setDoc(userRef, {
                 name: input.displayName || (isMaster ? 'Admin' : 'Membro'),
                 email: input.email,

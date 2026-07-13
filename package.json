@@ -1,6 +1,6 @@
 {
   "name": "campobranco",
-  "version": "0.9.45-beta",
+  "version": "0.9.50-beta",
   "private": true,
   "type": "module",
   "scripts": {
@@ -18,9 +18,15 @@
     "seed:integration": "node --loader ts-node/esm __tests__/integration/seed.ts",
     "contracts:check": "node --loader ts-node/esm scripts/contracts-check.ts",
     "deploy:rules": "firebase deploy --only firestore:rules",
-    "deploy:hosting": "firebase deploy --only hosting"
+    "deploy:hosting": "firebase deploy --only hosting",
+    "cap:sync": "npx cap sync",
+    "cap:open": "npx cap open android",
+    "build:android": "npm run build && npx cap sync"
   },
   "dependencies": {
+    "@capacitor/android": "^8.4.0",
+    "@capacitor/cli": "^8.4.0",
+    "@capacitor/core": "^8.4.0",
     "@ducanh2912/next-pwa": "^10.2.9",
     "@google-cloud/recaptcha-enterprise": "^6.3.1",
     "cookie": "^1.1.1",

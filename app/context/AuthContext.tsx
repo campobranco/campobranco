@@ -146,7 +146,45 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
                     setRole('ADMIN');
                 }
 
+                // Sincroniza e garante o perfil no Firestore antes de setar o usuário e acionar listeners
+                try {
+                    // Busca dados atuais do documento se existirem
+                    const userRef = doc(db, 'users', firebaseUser.uid);
+                    const userSnap = await getDoc(userRef);
+                    const existingData = userSnap.exists() ? userSnap.data() : null;
+
+                    const res = await ensureUserProfileMutation({
+                        uid: firebaseUser.uid,
+                        email: firebaseUser.email,
+                        displayName: firebaseUser.displayName,
+                        masterEmail: process.env.NEXT_PUBLIC_MASTER_EMAIL || '',
+                        existingData
+                    });
+
+                    if (!res.success) {
+                        throw new Error(res.message || 'Falha desconhecida na mutação de perfil');
+                    }
+                } catch (e: any) {
+                    console.error("[AUTH] Erro ao garantir perfil inicial:", e);
+                    const { toast } = require("sonner");
+                    toast.error("Erro ao inicializar perfil. Tente novamente.");
+                    await signOut(auth);
+                    setLoading(false);
+                    return;
+                }
+
                 setUser(firebaseUser);
+
+                // Redireciona de volta para o convite caso venha de um fluxo de login pendente
+                setTimeout(() => {
+                    if (typeof window !== 'undefined') {
+                        const redirectTarget = localStorage.getItem('loginRedirect');
+                        if (redirectTarget) {
+                            localStorage.removeItem('loginRedirect');
+                            window.location.href = redirectTarget;
+                        }
+                    }
+                }, 0);
 
                 // Salva o token no cookie para uso nas API routes
                 try {
@@ -179,25 +217,19 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         console.log(`[AUTH] Iniciando listener de perfil: users/${user.uid}`);
         const userRef = doc(db, 'users', user.uid);
 
-        const unsubscribe = onSnapshot(userRef, async (userSnap) => {
+        const unsubscribe = onSnapshot(userRef, (userSnap) => {
             try {
-                const data = userSnap.exists() ? userSnap.data() : null;
-                // Chamar a mutação de garantia do perfil
-                ensureUserProfileMutation({
-                    uid: user.uid,
-                    email: user.email,
-                    displayName: user.displayName,
-                    masterEmail: process.env.NEXT_PUBLIC_MASTER_EMAIL || '',
-                    existingData: data
-                });
-
-                if (userSnap.exists() && data) {
-                        setRole(data.role || 'PUBLICADOR');
-                        setPermissions(normalizePermissions(data.permissions ?? null));
-                        setCongregationId(data.congregationId || null);
-                        setProfileName(data.name || user.displayName || user.email);
-                        setNotificationsEnabledInternal(data.notificationsEnabled ?? true);
-                    }
+                if (userSnap.exists()) {
+                    const data = userSnap.data();
+                    setRole(data.role || 'PUBLICADOR');
+                    setPermissions(normalizePermissions(data.permissions ?? null));
+                    setCongregationId(data.congregationId || null);
+                    setProfileName(data.name || user.displayName || user.email);
+                    setNotificationsEnabledInternal(data.notificationsEnabled ?? true);
+                } else {
+                    console.error("[AUTH] Perfil do usuário não encontrado no Firestore.");
+                    setRole('PUBLICADOR');
+                }
             } catch (error) {
                 console.error("[AUTH] Erro no listener de perfil:", error);
             } finally {
@@ -205,7 +237,10 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
             }
         }, (error) => {
             console.error("[AUTH] Erro fatal no listener de perfil:", error);
-            setLoading(false);
+            // Evita estado indefinido da UI em erro crítico
+            signOut(auth).then(() => {
+                setLoading(false);
+            });
         });
 
         return () => unsubscribe();
