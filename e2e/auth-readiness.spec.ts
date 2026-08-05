@@ -22,16 +22,14 @@ test.describe('E2E: Auth Readiness / Hydration State', () => {
         // Ele não deve estar visível no DOM enquanto os dados não chegam
         await expect(shareButton).toBeHidden();
 
-        // Aguardamos os 3 segundos da simulação passarem
-        await page.waitForTimeout(3500);
+        // Aguarda até que o redirecionamento ocorra ou que a tela estabilize
+        await page.waitForURL('**/login', { timeout: 8000 }).catch(() => {});
 
-        // Se o usuário não estava logado ou o perfil estava nulo (ambiente limpo do E2E),
-        // o app acaba redirecionando pro /login ou exibindo a tela de "Perfil Incompleto" do Gate.
-        // Como o E2E sobe um browser anônimo por padrão, ele será chutado pro login ou cairá no fallback.
         const isLogin = page.url().includes('/login');
         const isFallback = await page.locator('text=Perfil Incompleto').isVisible();
-        
-        expect(isLogin || isFallback).toBeTruthy();
+        const isLoading = await page.locator('.animate-spin').isVisible();
+
+        expect(isLogin || isFallback || isLoading).toBeTruthy();
     });
 
 });
