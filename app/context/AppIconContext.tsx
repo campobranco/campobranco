@@ -56,7 +56,7 @@ export const AppIconProvider: React.FC<{ children: React.ReactNode }> = ({ child
         }
     }, []);
 
-    const appIconSrc = isCanary ? '/app-icon-c.png' : '/app-icon.svg';
+    const appIconSrc = isCanary ? '/app-icon-c.svg' : '/app-icon.svg';
     const appleTouchIconSrc = isCanary ? '/apple-touch-icon-c.png' : '/apple-touch-icon.png';
     const faviconSrc = isCanary ? '/favicon-c.ico' : '/favicon.ico';
 
