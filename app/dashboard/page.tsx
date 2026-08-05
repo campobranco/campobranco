@@ -20,6 +20,7 @@ import {
     updateDoc
 } from "firebase/firestore";
 import { db } from "@/lib/firebase";
+import { useAppIcon } from "@/app/context/AppIconContext";
 import {
     User,
     Shield,
@@ -467,13 +468,15 @@ export default function DashboardPage() {
         );
     };
 
+    const { appIconSrc } = useAppIcon();
+
     if (loading) return null;
 
     return (
         <div className="bg-background min-h-screen pb-24 font-sans text-main">
             <header className="bg-surface sticky top-0 z-30 px-6 py-4 border-b border-surface-border flex justify-between items-center">
                 <div className="flex items-center gap-3">
-                    <img src="/app-icon.svg" alt="Logo" width="40" height="40" className="object-contain" />
+                    <img src={appIconSrc} alt="Logo" width="40" height="40" className="object-contain" />
                     <div>
                         <span className="font-bold text-lg text-main block leading-tight">Campo Branco</span>
                         <span className="text-[10px] text-muted font-bold uppercase">Início</span>

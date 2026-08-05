@@ -4,11 +4,11 @@ import './globals.css'
 import Script from 'next/script'
 import { AuthProvider } from './context/AuthContext';
 import { ThemeProvider } from './context/ThemeContext';
+import { AppIconProvider } from './context/AppIconContext';
 // import FCMManager from './components/FCMManager'; // Removed
 import FloatingReportButton from './components/FloatingReportButton';
 import CookieBanner from './components/CookieBanner';
 import PreviewIndicator from './components/PreviewIndicator';
-import DynamicCanaryFavicon from './components/DynamicCanaryFavicon';
 import { appVersion } from '@/lib/version';
 import { Toaster } from 'sonner';
 
@@ -119,24 +119,25 @@ export default function RootLayout({
         ></script>
       </head>
       <body className={`${inter.className} min-h-screen flex flex-col`} suppressHydrationWarning={true}>
-        <AuthProvider>
-          <ThemeProvider>
-            <DynamicCanaryFavicon />
-            <PreviewIndicator />
-            {/* <FCMManager /> Removed */}
-            <FloatingReportButton />
-            <CookieBanner />
-            <Toaster richColors position="top-center" />
-            <main className="app-shell flex-1 relative">
-              {children}
-            </main>
-            <footer className="py-4 text-center print:hidden">
-              <p className="text-[10px] text-gray-400 font-mono opacity-60">
-                v{appVersion}
-              </p>
-            </footer>
-          </ThemeProvider>
-        </AuthProvider>
+        <AppIconProvider>
+          <AuthProvider>
+            <ThemeProvider>
+              <PreviewIndicator />
+              {/* <FCMManager /> Removed */}
+              <FloatingReportButton />
+              <CookieBanner />
+              <Toaster richColors position="top-center" />
+              <main className="app-shell flex-1 relative">
+                {children}
+              </main>
+              <footer className="py-4 text-center print:hidden">
+                <p className="text-[10px] text-gray-400 font-mono opacity-60">
+                  v{appVersion}
+                </p>
+              </footer>
+            </ThemeProvider>
+          </AuthProvider>
+        </AppIconProvider>
       </body>
     </html>
   )

@@ -1,11 +1,16 @@
+'use client';
+
 import Link from 'next/link';
 import { ArrowLeft, Shield, FileText, Lock, UserCheck } from 'lucide-react';
+import { useAppIcon } from '@/app/context/AppIconContext';
 
 export default function LegalLayout({
     children,
 }: {
     children: React.ReactNode;
 }) {
+    const { appIconSrc } = useAppIcon();
+
     return (
         <div className="min-h-screen bg-gray-50 dark:bg-slate-950 flex flex-col font-sans transition-colors">
             {/* Header */}
@@ -16,7 +21,7 @@ export default function LegalLayout({
                         <span className="font-bold text-sm">Voltar</span>
                     </Link>
                     <div className="flex items-center gap-2">
-                        <img src="/app-icon.png" alt="Logo Campo Branco" width={32} height={32} className="rounded-lg" />
+                        <img src={appIconSrc} alt="Logo Campo Branco" width={32} height={32} className="rounded-lg object-contain" />
                         <span className="font-black text-lg text-gray-800 dark:text-white tracking-tight">Campo Branco</span>
                     </div>
                     <div className="w-20" /> {/* Spacer for centering */}

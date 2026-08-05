@@ -11,6 +11,7 @@ import { AlertCircle, Mail, Lock } from 'lucide-react';
 
 import { Capacitor } from '@capacitor/core';
 import { FirebaseAuthentication } from '@capacitor-firebase/authentication';
+import { useAppIcon } from '@/app/context/AppIconContext';
 
 export default function LoginClient() {
     const [loading, setLoading] = useState(false);
@@ -90,13 +91,15 @@ export default function LoginClient() {
         }
     };
 
+    const { appIconSrc } = useAppIcon();
+
     return (
         <div className="min-h-[100dvh] bg-primary dark:bg-background flex flex-col items-center justify-center p-6 font-sans transition-colors duration-300 relative z-10">
             <div className="w-full max-w-sm">
                 <div className="bg-white dark:bg-surface rounded-2xl p-8 shadow-2xl animate-in slide-in-from-bottom-12 fade-in duration-1000 border border-transparent dark:border-surface-border transition-colors">
                     <div className="text-center mb-8">
                         <div className="w-24 h-24 flex items-center justify-center mx-auto mb-2">
-                            <img src="/app-icon.svg" alt="Campo Branco" width={96} height={96} className="w-full h-full object-contain" />
+                            <img src={appIconSrc} alt="Campo Branco" width={96} height={96} className="w-full h-full object-contain" />
                         </div>
                         <h1 className="text-2xl font-black text-gray-900 dark:text-white tracking-tighter mb-1">Campo Branco</h1>
                         <p className="text-primary dark:text-primary-light text-[10px] font-bold opacity-80 uppercase tracking-widest">Acesso Restrito</p>
