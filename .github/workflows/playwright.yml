@@ -26,17 +26,7 @@ jobs:
           distribution: 'temurin'
           java-version: '21'
 
-      - name: Start Firebase Emulator
-        run: |
-          npx firebase emulators:start --only firestore,auth --project demo-test &
-          sleep 10
-
-      - name: Seed Emulator
-        run: npm run seed:integration
-
-      - name: Run Integration Tests
-        run: npm run test:integration
-
       - run: npx playwright install --with-deps
 
-      - run: npm run test:e2e
+      - name: Run Integration Suite with Firebase Emulator
+        run: npx firebase emulators:exec --only firestore,auth --project demo-test "npm run seed:integration && npm run test:integration && npm run test:e2e"
