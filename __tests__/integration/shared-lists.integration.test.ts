@@ -71,18 +71,9 @@ describe('Integration: Shared Links — Firestore Emulator', () => {
 
         // Faz login mockado no Firebase Auth Client para passar nos rules do Firestore Emulator
         const { auth } = require('../../lib/firebase');
-        const { signInWithCustomToken } = require('firebase/auth');
+        const { signInAnonymously } = require('firebase/auth');
         
-        // No emulador de auth podemos usar signInAnonymously ou criar um usuário customizado,
-        // mas o emulador permite sign-in com credenciais básicas/customizadas sem verificação estrita.
-        // Vamos usar um helper direto para injetar as propriedades auth no client.
-        // Como o Firestore no emulador do client confia na sessão ativa do SDK Auth client:
-        const { signInWithEmailAndPassword, createUserWithEmailAndPassword } = require('firebase/auth');
-        try {
-            await createUserWithEmailAndPassword(auth, 'teste@campobranco.com', 'senha123');
-        } catch {
-            await signInWithEmailAndPassword(auth, 'teste@campobranco.com', 'senha123');
-        }
+        await signInAnonymously(auth);
 
         // Garante que o UID criado é mapeado para o admin user no DB
         if (auth.currentUser) {
