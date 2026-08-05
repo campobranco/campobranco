@@ -32,5 +32,11 @@ export default defineConfig({
         url: 'http://localhost:3000',
         reuseExistingServer: !process.env.CI,
         timeout: 120 * 1000,
+        env: {
+            FIREBASE_AUTH_EMULATOR_HOST: '127.0.0.1:9099',
+            FIRESTORE_EMULATOR_HOST: '127.0.0.1:8080',
+            NEXT_PUBLIC_FIREBASE_AUTH_EMULATOR_HOST: '127.0.0.1:9099',
+            NEXT_PUBLIC_FIREBASE_API_KEY: process.env.NEXT_PUBLIC_FIREBASE_API_KEY || 'fake-api-key-for-testing',
+        },
     },
 });

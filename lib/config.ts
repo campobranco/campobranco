@@ -6,9 +6,11 @@
  * especialmente após migrações de banco de dados ou mudança de domínios.
  */
 
+import { APP_VERSION } from './version';
+
 // --- Firebase Public Config ---
 export const FIREBASE_CONFIG = {
-    apiKey: process.env.NEXT_PUBLIC_FIREBASE_API_KEY,
+    apiKey: process.env.NEXT_PUBLIC_FIREBASE_API_KEY || 'fake-api-key-for-testing',
     authDomain: process.env.NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN,
     projectId: process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID,
     storageBucket: process.env.NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET,
@@ -24,8 +26,8 @@ export const FIRESTORE_DATABASE_ID = process.env.NEXT_PUBLIC_FIREBASE_DATABASE_I
 export const APP_CONFIG = {
     name: process.env.NEXT_PUBLIC_APP_NAME || 'Campo Branco',
     description: process.env.NEXT_PUBLIC_APP_DESCRIPTION || 'Gestão de Territórios',
-    version: process.env.NEXT_PUBLIC_APP_VERSION || '0.8.0-beta',
+    version: APP_VERSION,
     url: process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000',
-    supportEmail: process.env.NEXT_PUBLIC_SUPPORT_EMAIL || 'suporte@dominio.com',
+    supportEmail: process.env.NEXT_PUBLIC_SUPPORT_EMAIL || '',
 };
 
