@@ -12,22 +12,20 @@ import { FIREBASE_CONFIG, FIRESTORE_DATABASE_ID } from './config';
 // Inicializa o app apenas uma vez (evita duplicatas em hot-reload do Next.js)
 const app: FirebaseApp = !getApps().length ? initializeApp(FIREBASE_CONFIG) : getApp();
 
-// Exporta instância do Auth (client-side only para evitar invalid-api-key no SSR)
-let auth: Auth;
+// Exporta instância do Auth (compatível com cliente, SSR e Node/Jest)
+const auth: Auth = getAuth(app);
+
+// Conecta o Auth ao emulador local se configurado
+const authEmulatorHost = process.env.FIREBASE_AUTH_EMULATOR_HOST || process.env.NEXT_PUBLIC_FIREBASE_AUTH_EMULATOR_HOST;
+if (authEmulatorHost) {
+    connectAuthEmulator(auth, `http://${authEmulatorHost}`, { disableWarnings: true });
+}
+
+// Configura persistência local exclusivamente no ambiente do navegador
 if (typeof window !== 'undefined') {
-    auth = getAuth(app);
-
-    const authEmulatorHost = process.env.FIREBASE_AUTH_EMULATOR_HOST || process.env.NEXT_PUBLIC_FIREBASE_AUTH_EMULATOR_HOST;
-    if (authEmulatorHost) {
-        connectAuthEmulator(auth, `http://${authEmulatorHost}`, { disableWarnings: true });
-    }
-
     setPersistence(auth, browserLocalPersistence).catch((err) => {
         console.error('[FIREBASE] Erro ao configurar persistência:', err);
     });
-} else {
-    // Instância vazia/noop no SSR para evitar erros de inicialização durante o pré-render
-    auth = {} as Auth;
 }
 
 // Configura Firestore com cache persistente no cliente (browser/WebView) e padrão no SSR
