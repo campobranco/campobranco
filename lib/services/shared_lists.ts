@@ -244,8 +244,8 @@ export async function createSharedList(data: {
                     transaction.update(terrRef, {
                         activeLinkIds: newActiveLinkIds,
                         assignedToUsers: newAssignedToUsers,
-                        activeLinkId: null, // Nulificar para compatibilidade legada
-                        assignedTo: null,   // Nulificar para compatibilidade legada
+                        activeLinkId: businessKey, // Manter o ID do link ativo para compatibilidade legada
+                        assignedTo: data.assignedTo || null,
                         status: 'Emprestado',
                         updatedAt: serverTimestamp()
                     });
