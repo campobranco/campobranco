@@ -1,0 +1,22 @@
+{
+  "name": "Campo Branco (Canary)",
+  "short_name": "Campo Branco (C)",
+  "description": "Aplicativo para gerenciamento de territórios e atividades de campo (Canary)",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#ffffff",
+  "theme_color": "#2563eb",
+  "orientation": "portrait",
+  "icons": [
+    {
+      "src": "/icon-192x192-c.png",
+      "sizes": "192x192",
+      "type": "image/png"
+    },
+    {
+      "src": "/icon-512x512-c.png",
+      "sizes": "512x512",
+      "type": "image/png"
+    }
+  ]
+}

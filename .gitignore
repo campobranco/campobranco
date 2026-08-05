@@ -106,3 +106,12 @@ temp_setup_admin.js
 build_*.log
 tsc_errors*.txt
 firebase_deploy_debug.txt
+
+# =====================
+# Capacitor & Android Build Assets
+# =====================
+/android/app/src/main/assets/public
+/android/app/build
+/android/.gradle
+/android/build
+

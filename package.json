@@ -1,6 +1,6 @@
 {
   "name": "campobranco",
-  "version": "0.9.45-beta",
+  "version": "0.9.47-beta",
   "private": true,
   "type": "module",
   "scripts": {
@@ -21,6 +21,10 @@
     "deploy:hosting": "firebase deploy --only hosting"
   },
   "dependencies": {
+    "@capacitor-firebase/authentication": "^8.3.0",
+    "@capacitor/android": "^8.5.0",
+    "@capacitor/cli": "^8.5.0",
+    "@capacitor/core": "^8.5.0",
     "@ducanh2912/next-pwa": "^10.2.9",
     "@google-cloud/recaptcha-enterprise": "^6.3.1",
     "cookie": "^1.1.1",
@@ -36,6 +40,8 @@
     "sonner": "^2.0.7"
   },
   "devDependencies": {
+    "@emnapi/core": "1.11.1",
+    "@emnapi/runtime": "1.11.1",
     "@playwright/test": "^1.57.0",
     "@types/google.maps": "^3.58.1",
     "@types/jest": "^30.0.0",
@@ -53,9 +59,7 @@
     "tailwindcss": "^3.4.17",
     "ts-jest": "^29.4.6",
     "ts-node": "^10.9.2",
-    "typescript": "^5",
-    "@emnapi/core": "1.11.1",
-    "@emnapi/runtime": "1.11.1"
+    "typescript": "^5"
   },
   "overrides": {
     "postcss": "$postcss",

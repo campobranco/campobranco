@@ -9,6 +9,9 @@ import { GoogleAuthProvider, signInWithPopup, signInWithEmailAndPassword } from 
 import { useRouter } from 'next/navigation';
 import { AlertCircle, Mail, Lock } from 'lucide-react';
 
+import { Capacitor } from '@capacitor/core';
+import { FirebaseAuthentication } from '@capacitor-firebase/authentication';
+
 export default function LoginClient() {
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState('');
@@ -22,22 +25,28 @@ export default function LoginClient() {
         setError('');
 
         try {
-            // Autenticação via popup do Google (Firebase)
-            const provider = new GoogleAuthProvider();
-            provider.addScope('email');
-            provider.addScope('profile');
-            provider.setCustomParameters({ prompt: 'select_account' });
+            if (Capacitor.isNativePlatform()) {
+                // No APK nativo Android/iOS, usa o login nativo do Firebase via Capacitor Plugin
+                await FirebaseAuthentication.signInWithGoogle();
+            } else {
+                // No navegador Web/PWA, usa o signInWithPopup oficial do Firebase SDK
+                const provider = new GoogleAuthProvider();
+                provider.addScope('email');
+                provider.addScope('profile');
+                provider.setCustomParameters({ prompt: 'select_account' });
 
-            await signInWithPopup(auth, provider);
+                await signInWithPopup(auth, provider);
+            }
 
             // Após login bem-sucedido, o AuthContext detecta via onAuthStateChanged
             // e faz o redirect automaticamente
             router.push('/dashboard');
         } catch (error: any) {
             console.error("Erro no login com Google:", error);
-            // Ignora cancelamento do popup pelo usuário
-            if (error.code !== 'auth/popup-closed-by-user') {
-                setError("Erro ao conectar com Google. Tente novamente.");
+            // Ignora cancelamento pelo usuário
+            if (error.code !== 'auth/popup-closed-by-user' && error.code !== '12501' && error.message !== 'canceled') {
+                setError("Erro ao conectar com Google. Use o login com e-mail ou tente novamente.");
+                setShowEmailLogin(true);
             }
             setLoading(false);
         }

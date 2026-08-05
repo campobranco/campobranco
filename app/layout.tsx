@@ -8,6 +8,7 @@ import { ThemeProvider } from './context/ThemeContext';
 import FloatingReportButton from './components/FloatingReportButton';
 import CookieBanner from './components/CookieBanner';
 import PreviewIndicator from './components/PreviewIndicator';
+import DynamicCanaryFavicon from './components/DynamicCanaryFavicon';
 import { appVersion } from '@/lib/version';
 import { Toaster } from 'sonner';
 
@@ -120,6 +121,7 @@ export default function RootLayout({
       <body className={`${inter.className} min-h-screen flex flex-col`} suppressHydrationWarning={true}>
         <AuthProvider>
           <ThemeProvider>
+            <DynamicCanaryFavicon />
             <PreviewIndicator />
             {/* <FCMManager /> Removed */}
             <FloatingReportButton />
