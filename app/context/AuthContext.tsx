@@ -226,12 +226,27 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
                     console.log(`[AUTH] Perfil carregado -> User: ${user.email} | Role: ${assignedRole} | CongregationId: ${data.congregationId || 'NULL'}`);
                     setRole(assignedRole);
                     setPermissions(normalizePermissions(data.permissions ?? null));
-                    setCongregationId(data.congregationId || null);
+                    
+                    const storedCong = typeof window !== 'undefined' ? localStorage.getItem('selectedCongregationId') : null;
+                    const finalCongId = data.congregationId || storedCong || (isMaster ? 'ls-catanduva' : null);
+                    setCongregationId(finalCongId);
+                    if (finalCongId && typeof window !== 'undefined') {
+                        localStorage.setItem('selectedCongregationId', finalCongId);
+                    }
+
                     setProfileName(data.name || user.displayName || user.email);
                     setNotificationsEnabledInternal(data.notificationsEnabled ?? true);
                 } else {
                     console.log(`[AUTH] Documento de perfil não encontrado em users/${user.uid}`);
-                    if (!isMaster) {
+                    if (isMaster) {
+                        setRole('ADMIN');
+                        const storedCong = typeof window !== 'undefined' ? localStorage.getItem('selectedCongregationId') : null;
+                        const finalCongId = storedCong || 'ls-catanduva';
+                        setCongregationId(finalCongId);
+                        if (typeof window !== 'undefined') {
+                            localStorage.setItem('selectedCongregationId', finalCongId);
+                        }
+                    } else {
                         setRole('PUBLICADOR');
                         setCongregationId(null);
                     }

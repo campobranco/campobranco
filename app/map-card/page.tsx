@@ -236,14 +236,17 @@ export default function MapCardPage() {
     const [uploadingTerritoryId, setUploadingTerritoryId] = useState<string | null>(null);
 
     const fetchData = useCallback(async () => {
-        if (!congregationId) {
+        const storedCongId = typeof window !== 'undefined' ? localStorage.getItem('selectedCongregationId') : null;
+        const targetCongId = congregationId || storedCongId || 'ls-catanduva';
+
+        if (!targetCongId) {
             setPageLoading(false);
             return;
         }
 
         setPageLoading(true);
         try {
-            const resData = await getRegistryData(congregationId);
+            const resData = await getRegistryData(targetCongId);
             if (!resData.success) throw new Error(resData.error || "Erro ao buscar territórios");
 
             const cityMap = new Map<string, string>();
@@ -274,13 +277,9 @@ export default function MapCardPage() {
 
     useEffect(() => {
         if (!authLoading) {
-            if (congregationId) {
-                fetchData();
-            } else {
-                setPageLoading(false);
-            }
+            fetchData();
         }
-    }, [authLoading, congregationId, fetchData]);
+    }, [authLoading, fetchData]);
 
     // Troca Estrita de Modo: Desabilita e descarrega os outros modelos quando um modo é selecionado
     const handleSwitchCardMode = (newMode: MapCardMode) => {
@@ -290,9 +289,11 @@ export default function MapCardPage() {
             toast.info("Modo 1 Ativo: Imagem Manual (Modos 2 e 3 desabilitados)");
         } else if (newMode === 'address-pins') {
             toast.info("Modo 2 Ativo: Pinos dos Endereços (Modos 1 e 3 desabilitados)");
-            // Carrega pinos de endereços estritamente sob demanda para o Modo 2
-            if (territoryPinsMap.size === 0 && congregationId) {
-                getAddresses(congregationId).then(resAddr => {
+            const storedCongId = typeof window !== 'undefined' ? localStorage.getItem('selectedCongregationId') : null;
+            const targetCongId = congregationId || storedCongId || 'ls-catanduva';
+
+            if (territoryPinsMap.size === 0 && targetCongId) {
+                getAddresses(targetCongId).then(resAddr => {
                     if (resAddr.success && Array.isArray(resAddr.addresses)) {
                         const pinsMap = new Map<string, AddressPinItem[]>();
                         resAddr.addresses.forEach((addr: any) => {
