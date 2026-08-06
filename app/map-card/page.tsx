@@ -239,16 +239,8 @@ export default function MapCardPage() {
         if (!congregationId) return;
 
         setPageLoading(true);
-
-        // Timer de segurança estrito: força o fim do spinner em no máximo 1.5 segundos
-        const safetyTimer = setTimeout(() => {
-            setPageLoading(false);
-        }, 1500);
-
         try {
             const resData = await getRegistryData(congregationId);
-            clearTimeout(safetyTimer);
-
             if (!resData.success) throw new Error(resData.error || "Erro ao buscar territórios");
 
             const cityMap = new Map<string, string>();
@@ -270,9 +262,22 @@ export default function MapCardPage() {
             // Ordenação numérica pelo número do território
             terrs.sort((a, b) => a.name.localeCompare(b.name, undefined, { numeric: true }));
             setTerritories(terrs);
+        } catch (err: any) {
+            console.error("Erro ao carregar dados do formulário S-12:", err);
+            toast.error("Erro ao carregar cartões de mapa.");
+        } finally {
             setPageLoading(false);
+        }
+    }, [congregationId]);
 
-            // Carrega os pinos de endereços em background para nunca travar a renderização inicial da página
+    useEffect(() => {
+        fetchData();
+    }, [fetchData]);
+
+    // Carregamento sob demanda (on-demand) dos pinos de endereços apenas se a Opção 2 for clicada
+    const handleSelectMapMode = (mode: 'image' | 'pins') => {
+        setMapDisplayMode(mode);
+        if (mode === 'pins' && territoryPinsMap.size === 0 && congregationId) {
             getAddresses(congregationId).then(resAddr => {
                 if (resAddr.success && Array.isArray(resAddr.addresses)) {
                     const pinsMap = new Map<string, AddressPinItem[]>();
@@ -294,20 +299,9 @@ export default function MapCardPage() {
                     });
                     setTerritoryPinsMap(pinsMap);
                 }
-            }).catch(err => console.warn("Erro ao carregar pinos em background:", err));
-
-        } catch (err: any) {
-            console.error("Erro ao carregar dados do formulário S-12:", err);
-            toast.error("Erro ao carregar cartões de mapa.");
-        } finally {
-            clearTimeout(safetyTimer);
-            setPageLoading(false);
+            }).catch(err => console.warn("Erro ao buscar pinos de endereço:", err));
         }
-    }, [congregationId]);
-
-    useEffect(() => {
-        fetchData();
-    }, [fetchData]);
+    };
 
     const filteredTerritories = territories.filter(t => {
         if (selectedCityId !== 'ALL' && t.cityId !== selectedCityId) return false;
@@ -471,7 +465,7 @@ export default function MapCardPage() {
                     {/* Alternador de Modo de Mapa: Imagem Manual vs Pinos de Endereços */}
                     <div className="flex items-center bg-background border border-surface-border rounded-xl p-1 gap-1">
                         <button
-                            onClick={() => setMapDisplayMode('image')}
+                            onClick={() => handleSelectMapMode('image')}
                             className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold transition-all ${
                                 mapDisplayMode === 'image'
                                     ? 'bg-amber-600 text-white shadow-sm'
@@ -482,7 +476,7 @@ export default function MapCardPage() {
                             Opção 1: Imagem Manual
                         </button>
                         <button
-                            onClick={() => setMapDisplayMode('pins')}
+                            onClick={() => handleSelectMapMode('pins')}
                             className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold transition-all ${
                                 mapDisplayMode === 'pins'
                                     ? 'bg-emerald-600 text-white shadow-sm'
