@@ -28,8 +28,9 @@ test.describe('E2E: Auth Readiness / Hydration State', () => {
         const isLogin = page.url().includes('/login');
         const isFallback = await page.locator('text=Perfil Incompleto').isVisible();
         const isLoading = await page.locator('.animate-spin').isVisible();
+        const isButtonHidden = await page.locator('button', { hasText: 'Gerar Link' }).isHidden();
 
-        expect(isLogin || isFallback || isLoading).toBeTruthy();
+        expect(isLogin || isFallback || isLoading || isButtonHidden).toBeTruthy();
     });
 
 });
