@@ -459,23 +459,24 @@ export default function MapCardPage() {
             `}</style>
 
             {/* Cabeçalho de Ações e Filtros (oculto na impressão) */}
-            <header className="bg-surface border-b border-surface-border sticky top-0 z-50 px-6 py-4 flex flex-wrap items-center justify-between gap-4 no-print shadow-md font-sans">
-                <div className="flex items-center gap-3">
-                    <button onClick={() => router.back()} className="p-2 hover:bg-background rounded-full transition-colors">
-                        <ChevronLeft className="w-5 h-5 text-muted" />
-                    </button>
-                    <div>
-                        <h1 className="text-xl font-bold text-main flex items-center gap-2">
-                            <MapPin className="w-5 h-5 text-amber-500" />
-                            Cartão de Mapa de Território
-                        </h1>
-                        <p className="text-xs text-muted">Formulário S-12-T 6/72 (A6: 148 x 105 mm | A4: 297 x 210 mm)</p>
+            <header className="bg-surface border-b border-surface-border sticky top-0 z-50 px-6 py-3.5 flex flex-col gap-3 no-print shadow-md font-sans">
+                {/* Linha Superior: Título à esquerda + Modo de Mapa à direita */}
+                <div className="flex flex-wrap items-center justify-between gap-4 w-full">
+                    <div className="flex items-center gap-3">
+                        <button onClick={() => router.back()} className="p-2 hover:bg-background rounded-full transition-colors">
+                            <ChevronLeft className="w-5 h-5 text-muted" />
+                        </button>
+                        <div>
+                            <h1 className="text-xl font-bold text-main flex items-center gap-2">
+                                <MapPin className="w-5 h-5 text-amber-500" />
+                                Cartão de Mapa de Território
+                            </h1>
+                            <p className="text-xs text-muted">Formulário S-12-T 6/72 (A6: 148 x 105 mm | A4: 297 x 210 mm)</p>
+                        </div>
                     </div>
-                </div>
 
-                <div className="flex flex-wrap items-center gap-3">
-                    {/* Seletor Estrito de Modo de Exibição do Cartão */}
-                    <div className="flex items-center bg-background border border-surface-border rounded-xl px-3 py-1.5 gap-2 text-xs font-semibold">
+                    {/* Seletor Estrito de Modo de Exibição do Cartão (Posicionado no topo direito) */}
+                    <div className="flex items-center bg-background border border-surface-border rounded-xl px-3.5 py-2 gap-2 text-xs font-semibold shadow-sm">
                         <Sliders className="w-4 h-4 text-amber-500" />
                         <span className="text-muted">Modo de Mapa:</span>
                         <select
@@ -488,7 +489,10 @@ export default function MapCardPage() {
                             <option value="polygons" className="bg-surface text-main" disabled>Modo 3: Polígonos (Em Breve)</option>
                         </select>
                     </div>
+                </div>
 
+                {/* Linha Inferior: Layouts, Filtros de Cidade/Território e Impressão */}
+                <div className="flex flex-wrap items-center justify-end gap-3 w-full border-t border-surface-border/50 pt-2.5">
                     {/* Seletor do Formato de Impressão */}
                     <div className="flex items-center bg-background border border-surface-border rounded-xl p-1 gap-1">
                         <button
