@@ -30,13 +30,19 @@ interface AddressPinItem {
     residentName?: string;
 }
 
-// Extrai coordenadas numéricas válidas de lat/lng, objeto coordinates ou link do Google Maps
+// Extrai coordenadas numéricas válidas (suportando números e strings) de lat/lng, objeto coordinates ou link do Google Maps
 function parseAddressCoords(addr: any): { lat: number; lng: number } | null {
-    if (typeof addr.lat === 'number' && typeof addr.lng === 'number' && !isNaN(addr.lat) && !isNaN(addr.lng)) {
-        return { lat: addr.lat, lng: addr.lng };
+    const lat = typeof addr.lat === 'number' ? addr.lat : parseFloat(addr.lat);
+    const lng = typeof addr.lng === 'number' ? addr.lng : parseFloat(addr.lng);
+    if (!isNaN(lat) && !isNaN(lng) && lat !== 0 && lng !== 0) {
+        return { lat, lng };
     }
-    if (addr.coordinates && typeof addr.coordinates.lat === 'number' && typeof addr.coordinates.lng === 'number') {
-        return { lat: addr.coordinates.lat, lng: addr.coordinates.lng };
+    if (addr.coordinates) {
+        const cLat = typeof addr.coordinates.lat === 'number' ? addr.coordinates.lat : parseFloat(addr.coordinates.lat);
+        const cLng = typeof addr.coordinates.lng === 'number' ? addr.coordinates.lng : parseFloat(addr.coordinates.lng);
+        if (!isNaN(cLat) && !isNaN(cLng) && cLat !== 0 && cLng !== 0) {
+            return { lat: cLat, lng: cLng };
+        }
     }
     if (addr.googleMapsLink && typeof addr.googleMapsLink === 'string') {
         const atMatch = addr.googleMapsLink.match(/@(-?\d+\.\d+),(-?\d+\.\d+)/);
@@ -311,7 +317,7 @@ export default function MapCardPage() {
                             const coords = parseAddressCoords(addr);
                             if (coords) {
                                 const existing = pinsMap.get(addr.territoryId) || [];
-                                const rName = addr.residentName || addr.resident_name || addr.resident || addr.name || '';
+                                const rName = addr.residentName || addr.resident_name || addr.resident || addr.name || addr.morador || addr.nome || addr.residentNameStr || '';
                                 existing.push({
                                     id: addr.id,
                                     territoryId: addr.territoryId,
