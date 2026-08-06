@@ -47,8 +47,8 @@ export default function VisitReportModal({
     forcedCongregationType
 }: VisitReportModalProps) {
     const { congregationType: authType } = useAuth();
-    // Usa o tipo de congregação real: Prop > Forced > Auth (sem fallbacks hardcoded)
-    const congregationType = propType || forcedCongregationType || authType || null;
+    // Prioriza o tipo de congregação do usuário ativo via useAuth() sobre props/forced
+    const congregationType = authType || propType || forcedCongregationType || null;
 
     const [loading, setLoading] = useState(false);
     const [status, setStatus] = useState<'contacted' | 'partial' | 'notContacted' | 'moved' | 'doNotVisit' | 'contested' | ''>(

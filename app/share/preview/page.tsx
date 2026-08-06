@@ -85,7 +85,7 @@ function SharedPreviewContent() {
     const type = searchParams.get('type');
     const id = searchParams.get('id');
     const shareId = searchParams.get('shareId');
-    const { user, profileName } = useAuth();
+    const { user, profileName, congregationType: userCongregationType } = useAuth();
 
     const [loading, setLoading] = useState(true);
     const [title, setTitle] = useState('');
@@ -134,7 +134,7 @@ function SharedPreviewContent() {
             const { list: listData, items: fetchedItems, visits: visitsData, congregationType: fetchedType } = res;
 
             setPageCongregationId(listData.congregationId || null);
-            setCongregationType(fetchedType as any);
+            setCongregationType((userCongregationType || fetchedType) as any);
             setVisits(visitsData || []);
 
             // 2. Identify "Main Data" (The Territory or City being previewed)
