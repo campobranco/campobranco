@@ -1,6 +1,3 @@
-// app/login/LoginClient.tsx
-// Página de login usando Firebase Auth com Google e E-mail/Senha
-
 "use client";
 
 import { useState } from 'react';
@@ -12,6 +9,7 @@ import { AlertCircle, Mail, Lock } from 'lucide-react';
 import { Capacitor } from '@capacitor/core';
 import { FirebaseAuthentication } from '@capacitor-firebase/authentication';
 import { useAppIcon } from '@/app/context/AppIconContext';
+import { logActivity } from '@/lib/services/audit_logs';
 
 export default function LoginClient() {
     const [loading, setLoading] = useState(false);
@@ -26,9 +24,10 @@ export default function LoginClient() {
         setError('');
 
         try {
+            let res;
             if (Capacitor.isNativePlatform()) {
                 // No APK nativo Android/iOS, usa o login nativo do Firebase via Capacitor Plugin
-                await FirebaseAuthentication.signInWithGoogle();
+                res = await FirebaseAuthentication.signInWithGoogle();
             } else {
                 // No navegador Web/PWA, usa o signInWithPopup oficial do Firebase SDK
                 const provider = new GoogleAuthProvider();
@@ -36,19 +35,32 @@ export default function LoginClient() {
                 provider.addScope('profile');
                 provider.setCustomParameters({ prompt: 'select_account' });
 
-                await signInWithPopup(auth, provider);
+                res = await signInWithPopup(auth, provider);
             }
 
-            // Após login bem-sucedido, o AuthContext detecta via onAuthStateChanged
-            // e faz o redirect automaticamente
+            logActivity({
+                level: 'INFO',
+                category: 'AUTH',
+                action: 'USER_LOGIN',
+                message: `USER_LOGIN: Login efetuado via Google por ${res.user?.email || 'usuário'}`,
+                user: res.user?.email || undefined,
+                userId: res.user?.uid || undefined,
+                details: `Método: Google OAuth | Origem: ${Capacitor.isNativePlatform() ? 'App Nativo' : 'Navegador Web'}`
+            });
+
             router.push('/dashboard');
         } catch (error: any) {
             console.error("Erro no login com Google:", error);
-            // Ignora cancelamento pelo usuário
-            if (error.code !== 'auth/popup-closed-by-user' && error.code !== '12501' && error.message !== 'canceled') {
+            if (
+                error.code !== 'auth/popup-closed-by-user' && 
+                error.code !== 'auth/cancelled-popup-request' && 
+                error.code !== '12501' && 
+                error.message !== 'canceled'
+            ) {
                 setError("Erro ao conectar com Google. Use o login com e-mail ou tente novamente.");
                 setShowEmailLogin(true);
             }
+        } finally {
             setLoading(false);
         }
     };
@@ -64,7 +76,18 @@ export default function LoginClient() {
         setError('');
 
         try {
-            await signInWithEmailAndPassword(auth, email, password);
+            const userCred = await signInWithEmailAndPassword(auth, email, password);
+            
+            logActivity({
+                level: 'INFO',
+                category: 'AUTH',
+                action: 'USER_LOGIN',
+                message: `USER_LOGIN: Login efetuado via E-mail por ${userCred.user?.email || email}`,
+                user: userCred.user?.email || email,
+                userId: userCred.user?.uid || undefined,
+                details: `Método: E-mail/Senha`
+            });
+
             router.push('/dashboard');
         } catch (error: any) {
             console.error("Erro no login com e-mail:", error);

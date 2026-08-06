@@ -10,6 +10,7 @@ import {
     increment
 } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
+import { logActivity } from '@/lib/services/audit_logs';
 
 const TABLE = 'addresses';
 
@@ -68,7 +69,53 @@ export async function saveAddress(id: string | null, data: any) {
                 }, { merge: true });
             }
 
+            const changes: string[] = [];
+            Object.keys(data).forEach(key => {
+                if (key === 'updatedAt') return;
+                let oldVal = oldData[key];
+                let newVal = data[key];
+
+                // Se for campo de data (inactivatedAt/createdAt), converte ambos para string formatada pt-BR
+                if (key === 'inactivatedAt') {
+                    const formatVal = (v: any) => {
+                        if (v === null || v === undefined || v === '') return '';
+                        if (v?.toDate && typeof v.toDate === 'function') {
+                            return v.toDate().toLocaleString('pt-BR');
+                        }
+                        if (typeof v === 'string') {
+                            const d = new Date(v);
+                            return isNaN(d.getTime()) ? v : d.toLocaleString('pt-BR');
+                        }
+                        if (typeof v === 'number') {
+                            return new Date(v).toLocaleString('pt-BR');
+                        }
+                        return '';
+                    };
+                    oldVal = formatVal(oldVal);
+                    newVal = formatVal(newVal);
+                }
+
+                const strOld = oldVal === null || oldVal === undefined ? '' : String(oldVal);
+                const strNew = newVal === null || newVal === undefined ? '' : String(newVal);
+
+                if (strOld !== strNew) {
+                    changes.push(`${key}: "${strOld || 'Vazio'}" -> "${strNew || 'Vazio'}"`);
+                }
+            });
+
             await batch.commit();
+
+            const diffText = changes.length > 0 ? changes.join(' | ') : 'Nenhuma alteração de valor detectada';
+
+            logActivity({
+                level: 'SUCCESS',
+                category: 'TERRITORY',
+                action: 'ADDRESS_UPDATE',
+                message: `ADDRESS_UPDATE: Endereço "${data.street || oldData.street || ''}, ${data.number || oldData.number || ''}" atualizado`,
+                congregationId: data.congregationId || oldData.congregationId,
+                details: `Alterações: [${diffText}] | CityID: ${data.cityId || oldData.cityId || ''}`
+            });
+
             return { success: true, id };
         } else {
             // 2. Criação
@@ -94,6 +141,16 @@ export async function saveAddress(id: string | null, data: any) {
             }
 
             await batch.commit();
+
+            logActivity({
+                level: 'SUCCESS',
+                category: 'TERRITORY',
+                action: 'ADDRESS_CREATE',
+                message: `ADDRESS_CREATE: Adicionado novo endereço "${data.street || ''}, ${data.number || ''}"`,
+                congregationId: data.congregationId,
+                details: `CityID: ${data.cityId || ''} | Bairro: ${data.neighborhood || ''}`
+            });
+
             return { success: true, id: newAddressRef.id };
         }
     } catch (error: any) {
@@ -129,6 +186,15 @@ export async function deleteAddress(id: string) {
         }
 
         await batch.commit();
+
+        logActivity({
+            level: 'WARN',
+            category: 'TERRITORY',
+            action: 'ADDRESS_DELETE',
+            message: `ADDRESS_DELETE: Endereço "${addrData.street || ''}, ${addrData.number || ''}" excluído`,
+            congregationId: addrData.congregationId,
+            details: `ID: ${id} | CityID: ${cityId || ''}`
+        });
 
         return { success: true };
     } catch (error: any) {

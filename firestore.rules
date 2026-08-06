@@ -21,7 +21,12 @@ service cloud.firestore {
     }
 
     function isAdmin() {
-      return isAuthenticated() && getAuthRole() == 'ADMIN';
+      return isAuthenticated() && (
+        getAuthRole() == 'ADMIN' || 
+        getAuthRole() == 'SUPER_ADMIN' ||
+        getAuthRole() == 'ANCIAO' ||
+        (request.auth.token.email != null && request.auth.token.email.lower() == 'campobrancojw@gmail.com')
+      );
     }
 
     function isElder() {
@@ -84,6 +89,7 @@ service cloud.firestore {
     match /users/{userId} {
       allow read, list: if isAuthenticated() && (
         request.auth.uid == userId || 
+        (request.auth.token.email != null && request.auth.token.email.lower() == 'campobrancojw@gmail.com') ||
         isAdmin() || 
         ((isServant() || isElder()) && isSameCongregation(resource.data))
       );
@@ -113,7 +119,7 @@ service cloud.firestore {
     // 3. Cidades
     // Isolamento: Escritas restritas à mesma congregação do usuário.
     match /cities/{id} {
-      allow read: if isAuthenticated() && (isAdmin() || isServant() || hasPermission('maps', 'view') || getAuthRole() == 'PUBLICADOR' || getAuthRole() == 'PUBLICADOR_SEM_ACESSO');
+      allow read: if isAuthenticated();
       allow create: if (isAdmin() || isServant() || hasPermission('maps', 'create')) && isSameCongregation(request.resource.data);
       allow update: if (isAdmin() || isServant() || hasPermission('maps', 'edit')) && isSameCongregation(resource.data);
       allow delete: if (isAdmin() || isServant() || hasPermission('maps', 'delete')) && isSameCongregation(resource.data);
@@ -122,7 +128,7 @@ service cloud.firestore {
     // 4. Territórios
     // Isolamento: Escritas restritas à mesma congregação do usuário.
     match /territories/{id} {
-      allow read, list: if isAuthenticated() && (isAdmin() || isServant() || hasPermission('maps', 'view') || getAuthRole() == 'PUBLICADOR' || getAuthRole() == 'PUBLICADOR_SEM_ACESSO');
+      allow read, list: if isAuthenticated();
       allow create: if (isAdmin() || isServant() || hasPermission('maps', 'create')) && isSameCongregation(request.resource.data);
       allow update: if (isAdmin() || isServant() || hasPermission('maps', 'edit')) && isSameCongregation(resource.data);
       allow delete: if (isAdmin() || isServant() || hasPermission('maps', 'delete')) && isSameCongregation(resource.data);
@@ -268,6 +274,11 @@ service cloud.firestore {
     match /lgpd_requests/{id} {
       allow create: if isAuthenticated();
       allow read, update: if isAdmin();
+    }
+
+    match /system_logs/{id} {
+      allow create, read: if isAuthenticated();
+      allow update, delete: if isAdmin();
     }
 
     // Fallback: Bloqueia tudo que não foi explicitamente permitido

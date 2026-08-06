@@ -9,6 +9,7 @@ import { doc, onSnapshot, getDoc } from "firebase/firestore";
 import { auth, db } from "@/lib/firebase";
 import { UserPermissions, getRoleFlags, checkPermission } from "@/lib/rbac";
 import { ensureUserProfileMutation, updateUserNotificationsMutation } from "@/lib/contracts/mutations/authMutations";
+import { logActivity } from "@/lib/services/audit_logs";
 
 // Tipagem do contexto de autenticação
 interface AuthContextType {
@@ -182,26 +183,34 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         const unsubscribe = onSnapshot(userRef, async (userSnap) => {
             try {
                 const data = userSnap.exists() ? userSnap.data() : null;
-                // Chamar a mutação de garantia do perfil
-                ensureUserProfileMutation({
-                    uid: user.uid,
-                    email: user.email,
-                    displayName: user.displayName,
-                    masterEmail: process.env.NEXT_PUBLIC_MASTER_EMAIL || '',
-                    existingData: data
-                });
+                const masterEmail = (process.env.NEXT_PUBLIC_MASTER_EMAIL || '').trim().toLowerCase();
+                const userEmail = (user.email || '').trim().toLowerCase();
+                const isMaster = masterEmail && userEmail === masterEmail;
+
+                if (isMaster) {
+                    setRole('ADMIN');
+                }
 
                 if (userSnap.exists() && data) {
-                        setRole(data.role || 'PUBLICADOR');
-                        setPermissions(normalizePermissions(data.permissions ?? null));
-                        setCongregationId(data.congregationId || null);
-                        setProfileName(data.name || user.displayName || user.email);
-                        setNotificationsEnabledInternal(data.notificationsEnabled ?? true);
+                    const assignedRole = isMaster ? 'ADMIN' : (data.role || 'PUBLICADOR');
+                    console.log(`[AUTH] Perfil carregado -> User: ${user.email} | Role: ${assignedRole} | CongregationId: ${data.congregationId || 'NULL'}`);
+                    setRole(assignedRole);
+                    setPermissions(normalizePermissions(data.permissions ?? null));
+                    setCongregationId(data.congregationId || null);
+                    setProfileName(data.name || user.displayName || user.email);
+                    setNotificationsEnabledInternal(data.notificationsEnabled ?? true);
+                } else {
+                    console.log(`[AUTH] Documento de perfil não encontrado em users/${user.uid}`);
+                    if (!isMaster) {
+                        setRole('PUBLICADOR');
+                        setCongregationId(null);
                     }
+                }
             } catch (error) {
                 console.error("[AUTH] Erro no listener de perfil:", error);
             } finally {
-                setLoading(false);
+                // Sincronização completa concluída: só libera após o ciclo do React processar
+                setTimeout(() => setLoading(false), 50);
             }
         }, (error) => {
             console.error("[AUTH] Erro fatal no listener de perfil:", error);
@@ -267,9 +276,36 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
     // Realiza logout do Firebase
     const logout = async () => {
+        const currentUserEmail = user?.email;
+        const currentUid = user?.uid;
+        const currentRole = role;
+
+        try {
+            await logActivity({
+                level: 'INFO',
+                category: 'AUTH',
+                action: 'USER_LOGOUT',
+                message: `USER_LOGOUT: Usuário ${currentUserEmail || 'autenticado'} encerrou a sessão`,
+                user: currentUserEmail || undefined,
+                userId: currentUid || undefined,
+                role: currentRole || undefined,
+                congregationId: congregationId || undefined,
+                details: `Encerramento de sessão efetuado pelo usuário`
+            });
+        } catch (e) {
+            console.error("Erro ao registrar log de logout:", e);
+        }
+
         await signOut(auth);
-        const isSecure = window.location.protocol === 'https:';
-        document.cookie = `__session=; path=/; expires=Thu, 01 Jan 1970 00:00:00 GMT; SameSite=Lax${isSecure ? '; Secure' : ''}`;
+        setUser(null);
+        setRole(null);
+        setPermissions(null);
+        setCongregationId(null);
+        setProfileName(null);
+        if (typeof document !== 'undefined') {
+            const isSecure = window.location.protocol === 'https:';
+            document.cookie = `__session=; path=/; expires=Thu, 01 Jan 1970 00:00:00 GMT; SameSite=Lax${isSecure ? '; Secure' : ''}`;
+        }
     };
 
     // Atualiza a preferência de notificações do usuário no Firestore

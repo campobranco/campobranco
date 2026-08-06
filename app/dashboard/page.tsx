@@ -108,8 +108,11 @@ export default function DashboardPage() {
     const totalNotifications = pendingMapsCount + expiringMaps.length + (isElder ? idleTerritories.length : 0) + (cityCompletion && cityCompletion.percentage === 100 ? 1 : 0);
 
     useEffect(() => {
-        if (!loading && !user) router.push('/login');
-        else if (!loading && user && !congregationId && role !== 'ADMIN') router.push('/sem-congregacao');
+        if (!loading && !user) {
+            router.push('/login');
+        } else if (!loading && user && !congregationId && role !== 'ADMIN' && role !== 'ANCIAO' && role !== 'SERVO') {
+            router.push('/sem-congregacao');
+        }
     }, [user, loading, congregationId, role, router]);
 
     useEffect(() => {
@@ -237,15 +240,15 @@ export default function DashboardPage() {
                 const visitsRef = collection(db, 'visits');
                 const historyRef = collection(db, 'shared_lists');
 
-                const qCities = targetCong ? query(citiesRef, where('congregationId', '==', targetCong)) : query(citiesRef, where('congregationId', '==', null));
-                const qTerritories = targetCong ? query(territoriesRef, where('congregationId', '==', targetCong)) : query(territoriesRef, where('congregationId', '==', null));
+                const qCities = targetCong ? query(citiesRef, where('congregationId', '==', targetCong)) : query(citiesRef, limit(100));
+                const qTerritories = targetCong ? query(territoriesRef, where('congregationId', '==', targetCong)) : query(territoriesRef, limit(200));
                 const qAddresses = targetCong
                     ? query(addressesRef, and(where('congregationId', '==', targetCong), where('isActive', '==', true)))
-                    : query(addressesRef, and(where('congregationId', '==', null), where('isActive', '==', true)));
+                    : query(addressesRef, where('isActive', '==', true), limit(500));
 
-                const qPoints = targetCong ? query(pointsRef, where('congregationId', '==', targetCong)) : query(pointsRef, where('congregationId', '==', null));
-                const qVisits = targetCong ? query(visitsRef, where('congregationId', '==', targetCong)) : query(visitsRef, where('congregationId', '==', null));
-                const qHistory = targetCong ? query(historyRef, where('congregationId', '==', targetCong)) : query(historyRef, where('congregationId', '==', null));
+                const qPoints = targetCong ? query(pointsRef, where('congregationId', '==', targetCong)) : query(pointsRef, limit(100));
+                const qVisits = targetCong ? query(visitsRef, where('congregationId', '==', targetCong)) : query(visitsRef, limit(300));
+                const qHistory = targetCong ? query(historyRef, where('congregationId', '==', targetCong)) : query(historyRef, limit(100));
 
                 const [citiesSnap, territoriesSnap, addressesSnap, pointsSnap, visitsSnap, historySnap] = await Promise.all([
                     getDocs(qCities), getDocs(qTerritories), getDocs(qAddresses),
@@ -315,9 +318,11 @@ export default function DashboardPage() {
                 if (coveredCount >= validTerritories.length && validTerritories.length > 0) setCityCompletion({ cityName: "Território Completo", percentage: 100 });
             } catch (e) { console.error("Stats error:", e); }
         };
+        if (loading) return;
+        if (!congregationId && role !== 'ADMIN') return;
         fetchStats();
         fetchSharedHistory();
-    }, [congregationId, role, isElder, isServant, user?.uid, fetchSharedHistory]);
+    }, [congregationId, role, isElder, isServant, user?.uid, loading, fetchSharedHistory]);
 
     const handleCopyLink = async (id: string) => {
         try { await navigator.clipboard.writeText(window.location.origin + "/share?id=" + id); toast.success("Link copiado!"); }
@@ -504,7 +509,7 @@ export default function DashboardPage() {
                 </div>
 
                 {role === 'ADMIN' && !congregationId && (
-                    <section className="bg-primary/5 border border-primary/20 rounded-2xl p-6 space-y-4 animate-in fade-in slide-in-from-top-4 duration-500">
+                    <section className="bg-surface border border-surface-border rounded-2xl p-6 space-y-4 shadow-sm animate-in fade-in slide-in-from-top-4 duration-500">
                         <div className="flex items-center gap-3">
                             <div className="w-12 h-12 bg-primary/10 rounded-xl flex items-center justify-center text-primary">
                                 <Building2 className="w-6 h-6" />

@@ -6,7 +6,7 @@
 
 import { initializeApp, getApps, getApp, FirebaseApp } from 'firebase/app';
 import { getAuth, Auth, setPersistence, browserLocalPersistence, connectAuthEmulator } from 'firebase/auth';
-import { initializeFirestore, persistentLocalCache, getFirestore, Firestore, connectFirestoreEmulator } from 'firebase/firestore';
+import { initializeFirestore, persistentLocalCache, persistentMultipleTabManager, getFirestore, Firestore, connectFirestoreEmulator } from 'firebase/firestore';
 import { FIREBASE_CONFIG, FIRESTORE_DATABASE_ID } from './config';
 
 // Inicializa o app apenas uma vez (evita duplicatas em hot-reload do Next.js)
@@ -28,11 +28,13 @@ if (typeof window !== 'undefined') {
     });
 }
 
-// Configura Firestore com cache persistente no cliente (browser/WebView) e padrão no SSR
+// Configura Firestore com cache persistente multi-aba no cliente (browser/WebView) e padrão no SSR
 let db: Firestore;
 if (typeof window !== 'undefined') {
     db = initializeFirestore(app, {
-        localCache: persistentLocalCache({})
+        localCache: persistentLocalCache({
+            tabManager: persistentMultipleTabManager()
+        })
     }, FIRESTORE_DATABASE_ID);
 } else {
     db = getFirestore(app, FIRESTORE_DATABASE_ID);

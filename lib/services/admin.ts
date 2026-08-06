@@ -1,5 +1,6 @@
 import { collection, query, where, getDocs, doc, getDoc, setDoc, deleteDoc, writeBatch, updateDoc } from 'firebase/firestore';
 import { db } from '../firebase';
+import { logActivity } from './audit_logs';
 
 /**
  * Busca todas as congregações
@@ -152,11 +153,37 @@ export async function updateUser(userId: string, data: any) {
         if (!userId) throw new Error("ID do usuário inválido");
 
         const userRef = doc(db, 'users', userId);
+        const oldSnap = await getDoc(userRef);
+        const oldData = oldSnap.exists() ? oldSnap.data() : null;
+        const targetEmail = oldData?.email || userId;
 
         await setDoc(userRef, {
             ...data,
             updatedAt: new Date().toISOString()
         }, { merge: true });
+
+        // Identifica alterações de privilégios/cargos e permissões
+        const changes: string[] = [];
+        if (data.role && oldData?.role !== data.role) {
+            changes.push(`Cargo: "${oldData?.role || 'Sem Cargo'}" -> "${data.role}"`);
+        }
+        if (data.congregationId !== undefined && oldData?.congregationId !== data.congregationId) {
+            changes.push(`Congregação: "${oldData?.congregationId || 'Sem Congregação'}" -> "${data.congregationId || 'Sem Congregação'}"`);
+        }
+        if (data.permissions) {
+            changes.push(`Permissões atualizadas`);
+        }
+
+        const actionName = data.role ? 'USER_ROLE_UPDATE' : 'USER_UPDATE';
+
+        logActivity({
+            level: 'WARN',
+            category: 'MEMBERS',
+            action: actionName,
+            message: `${actionName}: Privilégios/Dados do membro "${targetEmail}" alterados`,
+            congregationId: data.congregationId || oldData?.congregationId,
+            details: `Alterações: [${changes.join(' | ') || 'Atualização de perfil'}] | TargetUID: ${userId}`
+        });
 
         return { success: true };
     } catch (error: any) {

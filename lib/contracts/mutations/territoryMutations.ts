@@ -1,5 +1,6 @@
 import { createSharedList, processSharedListAction } from '@/lib/services/shared_lists';
 import { MutationResult } from './types';
+import { logActivity } from '@/lib/services/audit_logs';
 
 export interface AssignTerritoryInput {
     title: string;
@@ -53,6 +54,15 @@ export async function assignTerritoryMutation(input: AssignTerritoryInput): Prom
             message: result.error || 'Falha ao designar.' 
         };
     }
+
+    logActivity({
+        level: 'INFO',
+        category: 'ASSIGNMENTS',
+        action: 'MAP_ASSIGN',
+        message: `MAP_ASSIGN: Cartão/Território "${input.title}" designado para ${input.assignedName || 'Publicador'}`,
+        congregationId: input.congregationId,
+        details: `ShareID: ${result.id} | Tipo: ${input.type}`
+    });
 
     return { 
         success: true, 

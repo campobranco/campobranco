@@ -63,6 +63,7 @@ import {
     AlertCircle,
     Key,
     Store,
+    Terminal,
 } from 'lucide-react';
 import Link from 'next/link';
 // import NotificationToggle from '@/app/components/NotificationToggle'; // Removed
@@ -1108,6 +1109,13 @@ const [uploading, setUploading] = useState(false);
                                         >
                                             <Bug className="w-4 h-4" />
                                             Bug Reports
+                                        </Link>
+                                        <Link
+                                            href="/admin/logs"
+                                            className="inline-block bg-background hover:bg-blue-50 dark:hover:bg-blue-950/20 text-blue-600 border border-blue-200 dark:border-blue-900/30 font-bold py-2 px-4 rounded-lg transition-colors shadow-sm flex items-center gap-2"
+                                        >
+                                            <Terminal className="w-4 h-4" />
+                                            Logs do Sistema
                                         </Link>
                                     </div>
 

@@ -19,6 +19,7 @@ import {
 } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
 import { canDeleteTerritory } from '../domain/territoryRules';
+import { logActivity } from '@/lib/services/audit_logs';
 
 const TABLE = 'territories';
 
@@ -127,6 +128,15 @@ export async function createTerritory(data: {
 
         await batch.commit();
 
+        logActivity({
+            level: 'SUCCESS',
+            category: 'TERRITORY',
+            action: 'MAP_CARD_CREATE',
+            message: `MAP_CARD_CREATE: Cartão/Território "${data.name}" criado`,
+            congregationId: data.congregationId,
+            details: `ID: ${newTerritoryRef.id} | CityID: ${data.cityId}`
+        });
+
         return { success: true, id: newTerritoryRef.id };
     } catch (error: any) {
         console.error('Error creating territory:', error);
@@ -136,10 +146,39 @@ export async function createTerritory(data: {
 
 export async function updateTerritory(id: string, data: any) {
     try {
+        const oldSnap = await getDoc(doc(db, TABLE, id));
+        const oldData = oldSnap.exists() ? oldSnap.data() : null;
+        const territoryName = data.name || oldData?.name || id;
+
+        // Calcula a diferença de valores campo a campo
+        const changes: string[] = [];
+        if (oldData) {
+            Object.keys(data).forEach(key => {
+                if (key === 'updatedAt') return;
+                const oldVal = oldData[key];
+                const newVal = data[key];
+                if (JSON.stringify(oldVal) !== JSON.stringify(newVal)) {
+                    changes.push(`${key}: "${oldVal ?? ''}" -> "${newVal ?? ''}"`);
+                }
+            });
+        }
+
         await updateDoc(doc(db, TABLE, id), {
             ...data,
             updatedAt: serverTimestamp(),
         });
+
+        const diffText = changes.length > 0 ? changes.join(' | ') : 'Nenhuma alteração de valor detectada';
+
+        logActivity({
+            level: 'INFO',
+            category: 'TERRITORY',
+            action: 'MAP_CARD_UPDATE',
+            message: `MAP_CARD_UPDATE: Cartão/Território "${territoryName}" atualizado`,
+            congregationId: data.congregationId || oldData?.congregationId,
+            details: `Alterações: [${diffText}] | ID: ${id}`
+        });
+
         return { success: true };
     } catch (error: any) {
         console.error('Error updating territory:', error);
@@ -192,6 +231,15 @@ export async function deleteTerritory(id: string) {
         }
 
         await batch.commit();
+
+        logActivity({
+            level: 'WARN',
+            category: 'TERRITORY',
+            action: 'MAP_CARD_DELETE',
+            message: `MAP_CARD_DELETE: Cartão/Território "${terrData.name || ''}" excluído`,
+            congregationId: terrData.congregationId,
+            details: `ID: ${id} | CityID: ${cityId}`
+        });
 
         return { success: true };
     } catch (error: any) {

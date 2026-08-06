@@ -14,7 +14,7 @@ export default function NoCongregationPage() {
         if (!loading) {
             if (!user) {
                 router.push('/login');
-            } else if (role === 'ADMIN') {
+            } else if (role === 'ADMIN' || role === 'ANCIAO' || role === 'SERVO') {
                 router.push('/dashboard');
             } else if (congregationId) {
                 // Se o usuário já tem congregação, redireciona para o dashboard
@@ -24,8 +24,13 @@ export default function NoCongregationPage() {
     }, [user, loading, role, congregationId, router]);
 
     const handleLogout = async () => {
-        await logout();
-        router.push('/login');
+        try {
+            await logout();
+        } catch (e) {
+            console.error("Erro ao fazer logout:", e);
+        } finally {
+            window.location.href = '/login';
+        }
     };
 
     return (
