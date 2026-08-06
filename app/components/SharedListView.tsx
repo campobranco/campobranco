@@ -135,7 +135,7 @@ export default function SharedListView({ id: propId }: SharedListViewProps) {
                 const { list, items: fetchedItems, visits, congregationType: type } = resData as any;
 
                 setListData(list as any);
-                setCongregationType(type || 'TRADITIONAL');
+                setCongregationType(type || 'SIGN_LANGUAGE');
 
                 // Show responsibility modal if no one is assigned, list is active, and user IS logged in
                 const hasResponsible = list.assignedTo || list.assignedName;
