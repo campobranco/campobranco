@@ -418,25 +418,32 @@ export async function getSharedListWithData(id: string) {
 
         const congregationId = list.congregationId;
         if (congregationId) {
-            try {
-                const congSnap = await getDoc(doc(db, 'congregations', congregationId));
-                if (congSnap.exists()) {
-                    const congData = congSnap.data() as any;
-                    const type = congData.type;
-                    const category = (congData.category || '').toLowerCase();
-                    const isSign = type === 'SIGN_LANGUAGE' || category.includes('sinais') || category.includes('libras') || category.includes('surdo') || category.includes('ls') || !congData.category;
-                    const isForeign = type === 'FOREIGN_LANGUAGE' || category.includes('estrangeiro');
+            const congIdLower = congregationId.toLowerCase();
+            if (congIdLower.startsWith('ls') || congIdLower.includes('ls-') || congIdLower.includes('sinais') || congIdLower.includes('libras')) {
+                congregationType = 'SIGN_LANGUAGE';
+            } else {
+                try {
+                    const congSnap = await getDoc(doc(db, 'congregations', congregationId));
+                    if (congSnap.exists()) {
+                        const congData = congSnap.data() as any;
+                        const type = congData.type;
+                        const category = (congData.category || '').toLowerCase();
+                        const isSign = type === 'SIGN_LANGUAGE' || category.includes('sinais') || category.includes('libras') || category.includes('surdo') || category.includes('ls') || !congData.category;
+                        const isForeign = type === 'FOREIGN_LANGUAGE' || category.includes('estrangeiro');
 
-                    if (isSign) {
-                        congregationType = 'SIGN_LANGUAGE';
-                    } else if (isForeign) {
-                        congregationType = 'FOREIGN_LANGUAGE';
-                    } else if (type === 'TRADITIONAL' || category.includes('tradicional')) {
-                        congregationType = 'TRADITIONAL';
+                        if (isSign) {
+                            congregationType = 'SIGN_LANGUAGE';
+                        } else if (isForeign) {
+                            congregationType = 'FOREIGN_LANGUAGE';
+                        } else if (type === 'TRADITIONAL' || category.includes('tradicional')) {
+                            congregationType = 'TRADITIONAL';
+                        } else {
+                            congregationType = 'SIGN_LANGUAGE';
+                        }
                     }
+                } catch (err: any) {
+                    console.warn('Could not read congregation for shared list (might be public access):', err.message);
                 }
-            } catch (err: any) {
-                console.warn('Could not read congregation for shared list (might be public access):', err.message);
             }
         }
 

@@ -275,6 +275,12 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
         let active = true;
         const fetchCong = async () => {
+            const congIdLower = congregationId.toLowerCase();
+            if (congIdLower.startsWith('ls') || congIdLower.includes('ls-') || congIdLower.includes('sinais') || congIdLower.includes('libras')) {
+                if (active) setCongregationType('SIGN_LANGUAGE');
+                return;
+            }
+
             try {
                 const congRef = doc(db, 'congregations', congregationId);
                 const congSnap = await getDoc(congRef);
