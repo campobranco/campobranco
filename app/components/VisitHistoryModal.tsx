@@ -74,6 +74,27 @@ export default function VisitHistoryModal({
                         id: d.id,
                         ...d.data()
                     }));
+
+                    // Se não houver visitas na coleção 'visits', consulta o documento do próprio endereço
+                    if (rawVisits.length === 0) {
+                        const addrSnap = await getDoc(doc(db, 'addresses', addressId));
+                        if (addrSnap.exists()) {
+                            const addrData = addrSnap.data();
+                            if (addrData.visitStatus && addrData.visitStatus !== 'none') {
+                                const visitDate = addrData.updatedAt?.toDate?.()?.toISOString() 
+                                    || addrData.lastVisitedAt 
+                                    || new Date().toISOString();
+                                rawVisits.push({
+                                    id: `addr-status-${addressId}`,
+                                    addressId,
+                                    status: addrData.visitStatus,
+                                    visitDate,
+                                    notes: addrData.observations || (addrData.visitStatus === 'doNotVisit' ? 'Endereço marcado como Pediu para não ser visitado' : 'Registro de status de visita'),
+                                    publisherName: addrData.updatedBy || 'Sistema'
+                                });
+                            }
+                        }
+                    }
                 }
 
                 // Deduplicar visitas por ID único do documento
