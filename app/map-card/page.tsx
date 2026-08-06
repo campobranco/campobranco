@@ -291,11 +291,47 @@ export default function MapCardPage() {
         }
     }, [congregationId]);
 
+    const loadAddressPins = useCallback(async (congId: string) => {
+        try {
+            const resAddr = await getAddresses(congId);
+            if (resAddr.success && Array.isArray(resAddr.addresses)) {
+                const pinsMap = new Map<string, AddressPinItem[]>();
+                resAddr.addresses.forEach((addr: any) => {
+                    if (!addr.territoryId || addr.isActive === false) return;
+                    const coords = parseAddressCoords(addr);
+                    if (coords) {
+                        const existing = pinsMap.get(addr.territoryId) || [];
+                        existing.push({
+                            id: addr.id,
+                            territoryId: addr.territoryId,
+                            street: addr.street || '',
+                            number: addr.number,
+                            lat: coords.lat,
+                            lng: coords.lng,
+                            residentName: addr.residentName ? String(addr.residentName).trim() : ''
+                        });
+                        pinsMap.set(addr.territoryId, existing);
+                    }
+                });
+                setTerritoryPinsMap(pinsMap);
+            }
+        } catch (err) {
+            console.warn("Erro ao buscar pinos de endereço:", err);
+        }
+    }, []);
+
     useEffect(() => {
         if (!authLoading) {
             fetchData();
+            if (cardMode === 'address-pins') {
+                const storedCongId = typeof window !== 'undefined' ? localStorage.getItem('selectedCongregationId') : null;
+                const targetCongId = congregationId || storedCongId || 'ls-catanduva';
+                if (targetCongId) {
+                    loadAddressPins(targetCongId);
+                }
+            }
         }
-    }, [authLoading, fetchData]);
+    }, [authLoading, fetchData, cardMode, congregationId, loadAddressPins]);
 
     // Troca Estrita de Modo: Desabilita e descarrega os outros modelos quando um modo é selecionado
     const handleSwitchCardMode = (newMode: MapCardMode) => {
@@ -309,30 +345,7 @@ export default function MapCardPage() {
             const targetCongId = congregationId || storedCongId || 'ls-catanduva';
 
             if (targetCongId) {
-                getAddresses(targetCongId).then(resAddr => {
-                    if (resAddr.success && Array.isArray(resAddr.addresses)) {
-                        const pinsMap = new Map<string, AddressPinItem[]>();
-                        resAddr.addresses.forEach((addr: any) => {
-                            if (!addr.territoryId || addr.isActive === false) return;
-                            const coords = parseAddressCoords(addr);
-                            if (coords) {
-                                const existing = pinsMap.get(addr.territoryId) || [];
-                                const rName = addr.residentName || addr.resident_name || addr.resident || addr.name || addr.morador || addr.nome || addr.residentNameStr || '';
-                                existing.push({
-                                    id: addr.id,
-                                    territoryId: addr.territoryId,
-                                    street: addr.street || 'Endereço',
-                                    number: addr.number,
-                                    lat: coords.lat,
-                                    lng: coords.lng,
-                                    residentName: String(rName).trim()
-                                });
-                                pinsMap.set(addr.territoryId, existing);
-                            }
-                        });
-                        setTerritoryPinsMap(pinsMap);
-                    }
-                }).catch(err => console.warn("Erro ao buscar pinos de endereço:", err));
+                loadAddressPins(targetCongId);
             }
         } else if (newMode === 'polygons') {
             toast.info("Modo 3: Polígonos de Território (Em desenvolvimento)");
