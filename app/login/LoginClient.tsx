@@ -9,7 +9,7 @@ import { AlertCircle, Mail, Lock } from 'lucide-react';
 import { Capacitor } from '@capacitor/core';
 import { FirebaseAuthentication } from '@capacitor-firebase/authentication';
 import { useAppIcon } from '@/app/context/AppIconContext';
-import { logActivity } from '@/lib/services/audit_logs';
+import { logActivityMutation as logActivity } from '@/lib/contracts/mutations/auditMutations';
 
 export default function LoginClient() {
     const [loading, setLoading] = useState(false);

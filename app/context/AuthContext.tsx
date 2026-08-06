@@ -9,7 +9,7 @@ import { doc, onSnapshot, getDoc } from "firebase/firestore";
 import { auth, db } from "@/lib/firebase";
 import { UserPermissions, getRoleFlags, checkPermission } from "@/lib/rbac";
 import { ensureUserProfileMutation, updateUserNotificationsMutation } from "@/lib/contracts/mutations/authMutations";
-import { logActivity } from "@/lib/services/audit_logs";
+import { logActivityMutation as logActivity } from "@/lib/contracts/mutations/auditMutations";
 
 // Tipagem do contexto de autenticação
 interface AuthContextType {

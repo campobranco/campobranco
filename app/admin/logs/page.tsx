@@ -6,7 +6,7 @@
 import { useState, useEffect } from 'react';
 import { useAuth } from '@/app/context/AuthContext';
 import { useRouter } from 'next/navigation';
-import { getSystemLogs, SystemLog, LogLevel } from '@/lib/services/audit_logs';
+import { getSystemLogsQuery as getSystemLogs, SystemLog, LogLevel } from '@/lib/contracts/mutations/auditMutations';
 import {
     Terminal,
     ChevronLeft,
