@@ -179,6 +179,7 @@ export default function MapCardPage() {
     const a4Groups = chunkArray(filteredTerritories, 4);
 
     const handlePrint = () => {
+        toast.dismiss();
         const previousTitle = document.title;
         document.title = `S-12-T_Cartoes_de_Mapa_${printLayoutMode.toUpperCase()}`;
         window.print();
@@ -285,6 +286,9 @@ export default function MapCardPage() {
             {/* Configuração Estrita de Dimensões para Impressão PDF / Papel */}
             <style jsx global>{`
                 @media print {
+                    .no-print, header, nav, aside, [data-sonner-toaster], [data-sonner-toast], .toaster, #toast-container, .toast, [role="status"], [role="alert"] {
+                        display: none !important;
+                    }
                     @page {
                         size: ${printLayoutMode === 'a4-grid' ? '297mm 210mm' : '148mm 105mm'};
                         margin: 0;
