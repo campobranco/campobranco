@@ -3,9 +3,10 @@
 import { useState, useEffect, useCallback, useRef, useLayoutEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { useAuth } from '@/app/context/AuthContext';
-import { ChevronLeft, Printer, MapPin, Building2, Filter, Loader2, LayoutGrid, FileText, Trash2, ImagePlus } from 'lucide-react';
+import { ChevronLeft, Printer, MapPin, Building2, Filter, Loader2, LayoutGrid, FileText, Trash2, ImagePlus, Layers, Map as MapIcon } from 'lucide-react';
 import { getRegistryData } from '@/lib/services/reports';
 import { updateTerritory } from '@/lib/services/territories';
+import { getAddresses } from '@/lib/services/addresses';
 import { toast } from 'sonner';
 
 interface TerritoryItem {
@@ -17,7 +18,117 @@ interface TerritoryItem {
     imageUrl?: string;
 }
 
-// Otimização de alta nitidez HD para renderização perfeita e legível de nomes de ruas e vetores em impressão
+interface AddressPinItem {
+    id: string;
+    territoryId: string;
+    street: string;
+    number?: string;
+    lat: number;
+    lng: number;
+}
+
+// Extrai coordenadas numéricas válidas de lat/lng, objeto coordinates ou link do Google Maps
+function parseAddressCoords(addr: any): { lat: number; lng: number } | null {
+    if (typeof addr.lat === 'number' && typeof addr.lng === 'number' && !isNaN(addr.lat) && !isNaN(addr.lng)) {
+        return { lat: addr.lat, lng: addr.lng };
+    }
+    if (addr.coordinates && typeof addr.coordinates.lat === 'number' && typeof addr.coordinates.lng === 'number') {
+        return { lat: addr.coordinates.lat, lng: addr.coordinates.lng };
+    }
+    if (addr.googleMapsLink && typeof addr.googleMapsLink === 'string') {
+        const atMatch = addr.googleMapsLink.match(/@(-?\d+\.\d+),(-?\d+\.\d+)/);
+        if (atMatch) return { lat: parseFloat(atMatch[1]), lng: parseFloat(atMatch[2]) };
+
+        const qMatch = addr.googleMapsLink.match(/[?&]q=(-?\d+\.\d+),(-?\d+\.\d+)/);
+        if (qMatch) return { lat: parseFloat(qMatch[1]), lng: parseFloat(qMatch[2]) };
+    }
+    return null;
+}
+
+// Componente de Mapa por Pinos de Endereço (Leaflet com auto-fitBounds)
+function AddressPinsMap({ pins, territoryName }: { pins: AddressPinItem[]; territoryName: string }) {
+    const mapContainerRef = useRef<HTMLDivElement>(null);
+    const mapInstanceRef = useRef<any>(null);
+
+    useEffect(() => {
+        if (!mapContainerRef.current || pins.length === 0) return;
+        const L = (window as any).L;
+        if (!L) return;
+
+        // Se já existir uma instância previa no contêiner, destruímos
+        if (mapInstanceRef.current) {
+            mapInstanceRef.current.remove();
+            mapInstanceRef.current = null;
+        }
+
+        try {
+            // Inicializa o mapa sem controles de zoom pra ficar limpo no cartão
+            const map = L.map(mapContainerRef.current, {
+                zoomControl: false,
+                attributionControl: false,
+                dragging: false,
+                scrollWheelZoom: false,
+                doubleClickZoom: false,
+                touchZoom: false
+            });
+
+            L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+                maxZoom: 19
+            }).addTo(map);
+
+            const bounds = L.latLngBounds([]);
+
+            pins.forEach((pin, idx) => {
+                bounds.extend([pin.lat, pin.lng]);
+
+                // Ícone de pino estilizado numerado em verde
+                const customIcon = L.divIcon({
+                    className: 'custom-pin-icon',
+                    html: `<div style="background-color: #059669; color: white; width: 22px; height: 22px; border-radius: 50%; border: 2px solid white; display: flex; align-items: center; justify-content: center; font-weight: bold; font-size: 10px; box-shadow: 0 2px 4px rgba(0,0,0,0.3); font-family: sans-serif;">${idx + 1}</div>`,
+                    iconSize: [22, 22],
+                    iconAnchor: [11, 11]
+                });
+
+                L.marker([pin.lat, pin.lng], { icon: customIcon })
+                    .addTo(map)
+                    .bindPopup(`<b>${pin.street}${pin.number ? `, ${pin.number}` : ''}</b>`);
+            });
+
+            if (pins.length === 1) {
+                map.setView([pins[0].lat, pins[0].lng], 16);
+            } else {
+                map.fitBounds(bounds, { padding: [30, 30], maxZoom: 18 });
+            }
+
+            mapInstanceRef.current = map;
+        } catch (err) {
+            console.error("Erro ao inicializar mapa Leaflet:", err);
+        }
+
+        return () => {
+            if (mapInstanceRef.current) {
+                mapInstanceRef.current.remove();
+                mapInstanceRef.current = null;
+            }
+        };
+    }, [pins]);
+
+    if (pins.length === 0) {
+        return (
+            <div className="absolute inset-0 bg-slate-50 border border-dashed border-slate-300 flex flex-col items-center justify-center p-3 text-center">
+                <MapPin className="w-6 h-6 text-amber-500 mb-1 opacity-70" />
+                <p className="font-sans font-bold text-[11px] text-slate-700">Nenhum pino de endereço configurado</p>
+                <p className="font-sans text-[9.5px] text-slate-500 mt-0.5 max-w-[200px]">
+                    Cadastre coordenadas (lat/lng) nos endereços deste território para gerar o mapa automático.
+                </p>
+            </div>
+        );
+    }
+
+    return <div ref={mapContainerRef} className="absolute inset-0 w-full h-full z-0" />;
+}
+
+// Otimização de imagem leve (~30KB) compatível com transportes gRPC do Firestore Web Channel
 async function processTerritoryMapImage(file: File): Promise<string> {
     return new Promise<string>((resolve, reject) => {
         const reader = new FileReader();
@@ -27,8 +138,8 @@ async function processTerritoryMapImage(file: File): Promise<string> {
                 const canvas = document.createElement('canvas');
                 let width = img.width;
                 let height = img.height;
-                const maxWidth = 1200;
-                const maxHeight = 800;
+                const maxWidth = 650;
+                const maxHeight = 450;
 
                 if (width > maxWidth) {
                     height = Math.round((height * maxWidth) / width);
@@ -48,7 +159,7 @@ async function processTerritoryMapImage(file: File): Promise<string> {
                 ctx.imageSmoothingQuality = 'high';
 
                 ctx.drawImage(img, 0, 0, width, height);
-                const compressedDataUrl = canvas.toDataURL('image/jpeg', 0.85);
+                const compressedDataUrl = canvas.toDataURL('image/jpeg', 0.65);
                 resolve(compressedDataUrl);
             };
             img.onerror = () => reject(new Error("Erro ao carregar arquivo de imagem"));
@@ -112,9 +223,11 @@ export default function MapCardPage() {
 
     const [territories, setTerritories] = useState<TerritoryItem[]>([]);
     const [cities, setCities] = useState<{ id: string; name: string }[]>([]);
+    const [territoryPinsMap, setTerritoryPinsMap] = useState<Map<string, AddressPinItem[]>>(new Map());
     const [selectedCityId, setSelectedCityId] = useState<string>('ALL');
     const [selectedTerritoryId, setSelectedTerritoryId] = useState<string>('ALL');
     const [printLayoutMode, setPrintLayoutMode] = useState<'a6' | 'a4-grid'>('a4-grid');
+    const [mapDisplayMode, setMapDisplayMode] = useState<'image' | 'pins'>('image');
     const [pageLoading, setPageLoading] = useState(true);
 
     // Direct Image Upload Ref & State
@@ -127,7 +240,11 @@ export default function MapCardPage() {
 
         setPageLoading(true);
         try {
-            const resData = await getRegistryData(congregationId);
+            const [resData, resAddr] = await Promise.all([
+                getRegistryData(congregationId),
+                getAddresses(congregationId)
+            ]);
+
             if (!resData.success) throw new Error(resData.error || "Erro ao buscar territórios");
 
             const cityMap = new Map<string, string>();
@@ -145,6 +262,28 @@ export default function MapCardPage() {
                 cityName: cityMap.get(t.cityId),
                 imageUrl: t.imageUrl
             }));
+
+            // Mapeamento dos pinos de endereço por território
+            const pinsMap = new Map<string, AddressPinItem[]>();
+            if (resAddr.success && Array.isArray(resAddr.addresses)) {
+                resAddr.addresses.forEach((addr: any) => {
+                    if (!addr.territoryId || addr.isActive === false) return;
+                    const coords = parseAddressCoords(addr);
+                    if (coords) {
+                        const existing = pinsMap.get(addr.territoryId) || [];
+                        existing.push({
+                            id: addr.id,
+                            territoryId: addr.territoryId,
+                            street: addr.street || 'Endereço',
+                            number: addr.number,
+                            lat: coords.lat,
+                            lng: coords.lng
+                        });
+                        pinsMap.set(addr.territoryId, existing);
+                    }
+                });
+            }
+            setTerritoryPinsMap(pinsMap);
 
             // Ordenação numérica pelo número do território
             terrs.sort((a, b) => a.name.localeCompare(b.name, undefined, { numeric: true }));
@@ -237,23 +376,19 @@ export default function MapCardPage() {
         try {
             const compressedUrl = await processTerritoryMapImage(file);
             
-            // Atualização Otimista Instantânea na UI (0ms)
-            setTerritories(prev => prev.map(t => t.id === tId ? { ...t, imageUrl: compressedUrl } : t));
-            setUploadingTerritoryId(null);
-            setActiveUploadTerritoryId(null);
-            toast.success("Imagem do mapa salva!");
+            // Persistência síncrona no Firestore Cloud Database
+            const res = await updateTerritory(tId, { imageUrl: compressedUrl });
+            if (!res.success) throw new Error(res.error || "Erro ao salvar no banco");
 
-            // Persistência totalmente em background sem travar a UI
-            updateTerritory(tId, { imageUrl: compressedUrl }).catch(err => {
-                console.error("Erro na sincronização em background:", err);
-                toast.error("Erro ao sincronizar imagem no banco.");
-            });
+            // Atualização do estado local da UI
+            setTerritories(prev => prev.map(t => t.id === tId ? { ...t, imageUrl: compressedUrl } : t));
+            toast.success("Imagem do mapa salva com sucesso no banco de dados!");
         } catch (err: any) {
-            console.error("Erro ao processar imagem:", err);
-            toast.error("Erro ao processar imagem do mapa.");
+            console.error("Erro ao salvar imagem no banco:", err);
+            toast.error(`Erro ao salvar imagem: ${err.message || 'Falha no salvamento'}`);
+        } finally {
             setUploadingTerritoryId(null);
             setActiveUploadTerritoryId(null);
-        } finally {
             if (e.target) e.target.value = '';
         }
     };
@@ -324,6 +459,32 @@ export default function MapCardPage() {
                 </div>
 
                 <div className="flex flex-wrap items-center gap-3">
+                    {/* Alternador de Modo de Mapa: Imagem Manual vs Pinos de Endereços */}
+                    <div className="flex items-center bg-background border border-surface-border rounded-xl p-1 gap-1">
+                        <button
+                            onClick={() => setMapDisplayMode('image')}
+                            className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold transition-all ${
+                                mapDisplayMode === 'image'
+                                    ? 'bg-amber-600 text-white shadow-sm'
+                                    : 'text-muted hover:text-main'
+                            }`}
+                        >
+                            <ImagePlus className="w-3.5 h-3.5" />
+                            Opção 1: Imagem Manual
+                        </button>
+                        <button
+                            onClick={() => setMapDisplayMode('pins')}
+                            className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold transition-all ${
+                                mapDisplayMode === 'pins'
+                                    ? 'bg-emerald-600 text-white shadow-sm'
+                                    : 'text-muted hover:text-main'
+                            }`}
+                        >
+                            <MapIcon className="w-3.5 h-3.5" />
+                            Opção 2: Pinos dos Endereços
+                        </button>
+                    </div>
+
                     {/* Seletor do Formato de Impressão */}
                     <div className="flex items-center bg-background border border-surface-border rounded-xl p-1 gap-1">
                         <button
@@ -335,7 +496,7 @@ export default function MapCardPage() {
                             }`}
                         >
                             <LayoutGrid className="w-3.5 h-3.5" />
-                            4 por página (A4: 297x210 mm)
+                            4 por página (A4)
                         </button>
                         <button
                             onClick={() => setPrintLayoutMode('a6')}
@@ -346,7 +507,7 @@ export default function MapCardPage() {
                             }`}
                         >
                             <FileText className="w-3.5 h-3.5" />
-                            Individual (A6: 148x105 mm)
+                            Individual (A6)
                         </button>
                     </div>
 
@@ -425,6 +586,7 @@ export default function MapCardPage() {
                                 {group.map((t) => {
                                     const localidadeText = formatLocalidade(t.description, t.cityName);
                                     const isUploadingThis = uploadingTerritoryId === t.id;
+                                    const pins = territoryPinsMap.get(t.id) || [];
 
                                     return (
                                         <div
@@ -457,9 +619,9 @@ export default function MapCardPage() {
                                                     </div>
                                                 </div>
 
-                                                {/* Área do Mapa (Clique Direto Abre o Seletor de Arquivos) */}
+                                                {/* Área do Mapa */}
                                                 <div
-                                                    onClick={() => !isUploadingThis && handleTriggerImageUpload(t.id)}
+                                                    onClick={() => mapDisplayMode === 'image' && !isUploadingThis && handleTriggerImageUpload(t.id)}
                                                     className="relative flex-1 min-h-[36mm] my-1 flex flex-col justify-end items-center overflow-hidden cursor-pointer group/map"
                                                 >
                                                     {isUploadingThis ? (
@@ -467,7 +629,11 @@ export default function MapCardPage() {
                                                             <Loader2 className="w-6 h-6 animate-spin text-primary" />
                                                             <span>Processando mapa HD...</span>
                                                         </div>
+                                                    ) : mapDisplayMode === 'pins' ? (
+                                                        /* OPÇÃO 2: MAPA POR PINOS DOS ENDEREÇOS (ENQUADRAMENTO AUTOMÁTICO) */
+                                                        <AddressPinsMap pins={pins} territoryName={t.name} />
                                                     ) : t.imageUrl ? (
+                                                        /* OPÇÃO 1: IMAGEM SALVA OU ENVIADA MANUALLY */
                                                         <>
                                                             <img
                                                                 src={t.imageUrl}
@@ -532,6 +698,7 @@ export default function MapCardPage() {
                         {filteredTerritories.map((t) => {
                             const localidadeText = formatLocalidade(t.description, t.cityName);
                             const isUploadingThis = uploadingTerritoryId === t.id;
+                            const pins = territoryPinsMap.get(t.id) || [];
 
                             return (
                                 <div
@@ -564,9 +731,9 @@ export default function MapCardPage() {
                                             </div>
                                         </div>
 
-                                        {/* Área do Mapa (Clique Direto Abre o Seletor de Arquivos) */}
+                                        {/* Área do Mapa */}
                                         <div
-                                            onClick={() => !isUploadingThis && handleTriggerImageUpload(t.id)}
+                                            onClick={() => mapDisplayMode === 'image' && !isUploadingThis && handleTriggerImageUpload(t.id)}
                                             className="relative flex-1 min-h-[36mm] my-1 flex flex-col justify-end items-center overflow-hidden cursor-pointer group/map"
                                         >
                                             {isUploadingThis ? (
@@ -574,7 +741,11 @@ export default function MapCardPage() {
                                                     <Loader2 className="w-6 h-6 animate-spin text-primary" />
                                                     <span>Processando mapa HD...</span>
                                                 </div>
+                                            ) : mapDisplayMode === 'pins' ? (
+                                                /* OPÇÃO 2: MAPA POR PINOS DOS ENDEREÇOS (ENQUADRAMENTO AUTOMÁTICO) */
+                                                <AddressPinsMap pins={pins} territoryName={t.name} />
                                             ) : t.imageUrl ? (
+                                                /* OPÇÃO 1: IMAGEM SALVA OU ENVIADA MANUALLY */
                                                 <>
                                                     <img
                                                         src={t.imageUrl}
