@@ -236,7 +236,10 @@ export default function MapCardPage() {
     const [uploadingTerritoryId, setUploadingTerritoryId] = useState<string | null>(null);
 
     const fetchData = useCallback(async () => {
-        if (!congregationId) return;
+        if (!congregationId) {
+            setPageLoading(false);
+            return;
+        }
 
         setPageLoading(true);
         try {
@@ -270,8 +273,14 @@ export default function MapCardPage() {
     }, [congregationId]);
 
     useEffect(() => {
-        fetchData();
-    }, [fetchData]);
+        if (!authLoading) {
+            if (congregationId) {
+                fetchData();
+            } else {
+                setPageLoading(false);
+            }
+        }
+    }, [authLoading, congregationId, fetchData]);
 
     // Troca Estrita de Modo: Desabilita e descarrega os outros modelos quando um modo é selecionado
     const handleSwitchCardMode = (newMode: MapCardMode) => {
