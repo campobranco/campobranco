@@ -16,10 +16,16 @@ if (typeof window !== 'undefined') {
     };
 
     console.error = (...args) => {
-        const errorMsg = String(args[0] || '');
-        // Ignora erros comuns de extensões do navegador que poluem o console
-        if (errorMsg.includes('message channel closed') || errorMsg.includes('Extension context invalidated')) {
-            originalError.apply(console, args);
+        const fullMessage = args.map(a => (typeof a === 'object' ? (a?.message || JSON.stringify(a)) : String(a))).join(' ');
+        // Ignora erros comuns de extensões do navegador e avisos internos de reconnect do SDK do Firestore
+        if (
+            fullMessage.includes('message channel closed') ||
+            fullMessage.includes('Extension context invalidated') ||
+            fullMessage.includes('resource-exhausted') ||
+            fullMessage.includes('maximum backoff delay') ||
+            fullMessage.includes('Write stream exhausted') ||
+            fullMessage.includes('@firebase/firestore')
+        ) {
             return;
         }
 
