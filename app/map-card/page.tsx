@@ -89,19 +89,18 @@ function AddressPinsMap({ pins }: { pins: AddressPinItem[] }) {
                     iconAnchor: [11, 11]
                 });
 
-                // Prioridade para o Nome dos Moradores (ex: Carlos e Vanessa, Gabrieli)
                 const resident = pin.residentName?.trim();
-                const addressFallback = `${pin.street}${pin.number ? `, ${pin.number}` : ''}`;
-                const labelText = resident && resident !== '' ? resident : addressFallback;
+                const marker = L.marker([pin.lat, pin.lng], { icon: customIcon }).addTo(map);
 
-                L.marker([pin.lat, pin.lng], { icon: customIcon })
-                    .addTo(map)
-                    .bindTooltip(labelText, {
+                // Sem fallbacks: exibe o rótulo APENAS se o nome do morador estiver cadastrado
+                if (resident && resident !== '') {
+                    marker.bindTooltip(resident, {
                         permanent: true,
                         direction: 'top',
                         offset: [0, -10],
                         className: 'fixed-address-label'
                     });
+                }
             });
 
             if (pins.length === 1) {
@@ -303,7 +302,7 @@ export default function MapCardPage() {
             const storedCongId = typeof window !== 'undefined' ? localStorage.getItem('selectedCongregationId') : null;
             const targetCongId = congregationId || storedCongId || 'ls-catanduva';
 
-            if (territoryPinsMap.size === 0 && targetCongId) {
+            if (targetCongId) {
                 getAddresses(targetCongId).then(resAddr => {
                     if (resAddr.success && Array.isArray(resAddr.addresses)) {
                         const pinsMap = new Map<string, AddressPinItem[]>();
@@ -312,6 +311,7 @@ export default function MapCardPage() {
                             const coords = parseAddressCoords(addr);
                             if (coords) {
                                 const existing = pinsMap.get(addr.territoryId) || [];
+                                const rName = addr.residentName || addr.resident_name || addr.resident || addr.name || '';
                                 existing.push({
                                     id: addr.id,
                                     territoryId: addr.territoryId,
@@ -319,7 +319,7 @@ export default function MapCardPage() {
                                     number: addr.number,
                                     lat: coords.lat,
                                     lng: coords.lng,
-                                    residentName: addr.residentName || addr.resident_name || addr.name || ''
+                                    residentName: String(rName).trim()
                                 });
                                 pinsMap.set(addr.territoryId, existing);
                             }
