@@ -59,25 +59,58 @@ export default function VisitHistoryModal({
             setLoading(true);
             try {
                 let rawVisits: any[] = [];
-                
-                // 1. Consulta registros de relatórios de visita na coleção 'visits'
-                if (isSharedView && sharedVisits) {
-                    rawVisits = sharedVisits.filter((v: any) => v.addressId === addressId);
-                } else {
-                    const visitsRef = collection(db, 'visits');
-                    const q = query(
-                        visitsRef,
-                        where('addressId', '==', addressId)
-                    );
 
-                    const snapshot = await getDocs(q);
-                    rawVisits = snapshot.docs.map(d => ({
-                        id: d.id,
-                        ...d.data()
-                    }));
+                // 1. Consulta histórico de registros na coleção 'shared_list_snapshots' onde itemId == addressId
+                try {
+                    const snapRef = collection(db, 'shared_list_snapshots');
+                    const snapQuery = query(snapRef, where('itemId', '==', addressId));
+                    const snapDocs = await getDocs(snapQuery);
+
+                    snapDocs.docs.forEach(d => {
+                        const data = d.data();
+                        const status = data.visitStatus;
+                        if (status && status !== 'none') {
+                            const visitDate = data.lastVisitedAt 
+                                || (data.updatedAt?.toDate ? data.updatedAt.toDate().toISOString() : null)
+                                || (data.createdAt?.toDate ? data.createdAt.toDate().toISOString() : null);
+
+                            if (visitDate) {
+                                rawVisits.push({
+                                    id: d.id,
+                                    addressId: addressId,
+                                    status: status,
+                                    visitDate: visitDate,
+                                    notes: data.notes || data.observations || '',
+                                    userId: data.lastVisitedBy || data.userId || null,
+                                    publisherName: data.publisherName || ''
+                                });
+                            }
+                        }
+                    });
+                } catch (e) {
+                    console.warn("[VISIT_HISTORY] Error fetching from shared_list_snapshots:", e);
                 }
 
-                // 2. Consulta o status de visita e observações gravadas diretamente no próprio documento do endereço ('addresses')
+                // 2. Consulta registros de relatórios de visita na coleção 'visits'
+                if (isSharedView && sharedVisits) {
+                    const visitsForAddr = sharedVisits.filter((v: any) => v.addressId === addressId);
+                    rawVisits.push(...visitsForAddr);
+                } else {
+                    try {
+                        const visitsRef = collection(db, 'visits');
+                        const q = query(visitsRef, where('addressId', '==', addressId));
+                        const snapshot = await getDocs(q);
+                        const vList = snapshot.docs.map(d => ({
+                            id: d.id,
+                            ...d.data()
+                        }));
+                        rawVisits.push(...vList);
+                    } catch (e) {
+                        console.warn("[VISIT_HISTORY] Error fetching from visits collection:", e);
+                    }
+                }
+
+                // 3. Consulta status atual do documento do próprio endereço na coleção 'addresses'
                 try {
                     const addrSnap = await getDoc(doc(db, 'addresses', addressId));
                     if (addrSnap.exists()) {
@@ -93,8 +126,9 @@ export default function VisitHistoryModal({
                                     addressId: addressId,
                                     status: addrData.visitStatus,
                                     visitDate: dateVal,
-                                    observations: addrData.observations || '',
-                                    publisherName: addrData.lastVisitedBy || addrData.updatedBy || ''
+                                    notes: addrData.observations || '',
+                                    userId: addrData.lastVisitedBy || null,
+                                    publisherName: addrData.updatedBy || ''
                                 });
                             }
                         }
