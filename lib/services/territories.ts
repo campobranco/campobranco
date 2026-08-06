@@ -146,40 +146,22 @@ export async function createTerritory(data: {
 
 export async function updateTerritory(id: string, data: any) {
     try {
-        const oldSnap = await getDoc(doc(db, TABLE, id));
-        const oldData = oldSnap.exists() ? oldSnap.data() : null;
-        const territoryName = data.name || oldData?.name || id;
-
-        // Calcula a diferença de valores campo a campo
-        const changes: string[] = [];
-        if (oldData) {
-            Object.keys(data).forEach(key => {
-                if (key === 'updatedAt') return;
-                const oldVal = oldData[key];
-                const newVal = data[key];
-                if (JSON.stringify(oldVal) !== JSON.stringify(newVal)) {
-                    changes.push(`${key}: "${oldVal ?? ''}" -> "${newVal ?? ''}"`);
-                }
-            });
-        }
-
         await updateDoc(doc(db, TABLE, id), {
             ...data,
             updatedAt: serverTimestamp(),
         });
 
-        const diffText = changes.length > 0 ? changes.join(' | ') : 'Nenhuma alteração de valor detectada';
-
+        // Log de auditoria em background sem bloquear a resposta da UI
         logActivity({
             level: 'INFO',
             category: 'TERRITORY',
             action: 'MAP_CARD_UPDATE',
-            message: `MAP_CARD_UPDATE: Cartão/Território "${territoryName}" atualizado`,
-            congregationId: data.congregationId || oldData?.congregationId,
-            details: `Alterações: [${diffText}] | ID: ${id}`
-        });
+            message: `MAP_CARD_UPDATE: Território "${data.name || id}" atualizado`,
+            congregationId: data.congregationId,
+            details: `Campos atualizados: [${Object.keys(data).filter(k => k !== 'updatedAt').join(', ')}] | ID: ${id}`
+        }).catch(err => console.warn("Erro ao gravar log de auditoria:", err));
 
-        return { success: true };
+        return { success: true, id };
     } catch (error: any) {
         console.error('Error updating territory:', error);
         return { success: false, error: error.message };

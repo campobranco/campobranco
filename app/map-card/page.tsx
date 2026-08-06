@@ -3,7 +3,7 @@
 import { useState, useEffect, useCallback, useRef, useLayoutEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { useAuth } from '@/app/context/AuthContext';
-import { ChevronLeft, Printer, MapPin, Building2, Filter, Loader2, LayoutGrid, FileText, Upload, Trash2 } from 'lucide-react';
+import { ChevronLeft, Printer, MapPin, Building2, Filter, Loader2, LayoutGrid, FileText, Trash2, ImagePlus } from 'lucide-react';
 import { getRegistryData } from '@/lib/services/reports';
 import { updateTerritory } from '@/lib/services/territories';
 import { toast } from 'sonner';
@@ -17,7 +17,7 @@ interface TerritoryItem {
     imageUrl?: string;
 }
 
-// Micro-compressão de imagem no cliente a ~15KB (100% compatível com plano gratuito Firebase Spark sem necessitar de Cloud Storage)
+// Otimização de alta nitidez HD para renderização perfeita e legível de nomes de ruas e vetores em impressão
 async function processTerritoryMapImage(file: File): Promise<string> {
     return new Promise<string>((resolve, reject) => {
         const reader = new FileReader();
@@ -27,8 +27,8 @@ async function processTerritoryMapImage(file: File): Promise<string> {
                 const canvas = document.createElement('canvas');
                 let width = img.width;
                 let height = img.height;
-                const maxWidth = 500;
-                const maxHeight = 350;
+                const maxWidth = 1200;
+                const maxHeight = 800;
 
                 if (width > maxWidth) {
                     height = Math.round((height * maxWidth) / width);
@@ -44,8 +44,11 @@ async function processTerritoryMapImage(file: File): Promise<string> {
                 const ctx = canvas.getContext('2d');
                 if (!ctx) return reject(new Error("Erro no contexto gráfico do canvas"));
 
+                ctx.imageSmoothingEnabled = true;
+                ctx.imageSmoothingQuality = 'high';
+
                 ctx.drawImage(img, 0, 0, width, height);
-                const compressedDataUrl = canvas.toDataURL('image/jpeg', 0.55);
+                const compressedDataUrl = canvas.toDataURL('image/jpeg', 0.85);
                 resolve(compressedDataUrl);
             };
             img.onerror = () => reject(new Error("Erro ao carregar arquivo de imagem"));
@@ -114,7 +117,7 @@ export default function MapCardPage() {
     const [printLayoutMode, setPrintLayoutMode] = useState<'a6' | 'a4-grid'>('a4-grid');
     const [pageLoading, setPageLoading] = useState(true);
 
-    // Direct Image Upload State & Input Ref
+    // Direct Image Upload Ref & State
     const fileInputRef = useRef<HTMLInputElement>(null);
     const [activeUploadTerritoryId, setActiveUploadTerritoryId] = useState<string | null>(null);
     const [uploadingTerritoryId, setUploadingTerritoryId] = useState<string | null>(null);
@@ -232,36 +235,40 @@ export default function MapCardPage() {
 
         try {
             const compressedUrl = await processTerritoryMapImage(file);
-            const res = await updateTerritory(tId, { imageUrl: compressedUrl });
-            if (!res.success) throw new Error(res.error || "Erro ao salvar no banco");
-
+            
+            // Atualização Otimista Instantânea na UI (0ms)
             setTerritories(prev => prev.map(t => t.id === tId ? { ...t, imageUrl: compressedUrl } : t));
-            toast.success("Imagem do mapa salva com sucesso!");
-        } catch (err: any) {
-            console.error("Erro ao processar imagem:", err);
-            toast.error("Erro ao salvar imagem do mapa.");
-        } finally {
             setUploadingTerritoryId(null);
             setActiveUploadTerritoryId(null);
+            toast.success("Imagem do mapa salva!");
+
+            // Persistência totalmente em background sem travar a UI
+            updateTerritory(tId, { imageUrl: compressedUrl }).catch(err => {
+                console.error("Erro na sincronização em background:", err);
+                toast.error("Erro ao sincronizar imagem no banco.");
+            });
+        } catch (err: any) {
+            console.error("Erro ao processar imagem:", err);
+            toast.error("Erro ao processar imagem do mapa.");
+            setUploadingTerritoryId(null);
+            setActiveUploadTerritoryId(null);
+        } finally {
             if (e.target) e.target.value = '';
         }
     };
 
-    const handleRemoveImage = async (tId: string, e: React.MouseEvent) => {
+    const handleRemoveImage = (tId: string, e: React.MouseEvent) => {
         e.stopPropagation();
-        setUploadingTerritoryId(tId);
-        try {
-            const res = await updateTerritory(tId, { imageUrl: '' });
-            if (!res.success) throw new Error(res.error || "Erro ao remover imagem");
 
-            setTerritories(prev => prev.map(t => t.id === tId ? { ...t, imageUrl: '' } : t));
-            toast.success("Imagem removida!");
-        } catch (err: any) {
-            console.error("Erro ao remover imagem:", err);
-            toast.error("Erro ao remover imagem.");
-        } finally {
-            setUploadingTerritoryId(null);
-        }
+        // Remoção Otimista Instantânea na UI (0ms)
+        setTerritories(prev => prev.map(t => t.id === tId ? { ...t, imageUrl: '' } : t));
+        toast.success("Imagem removida!");
+
+        // Persistência em background
+        updateTerritory(tId, { imageUrl: '' }).catch(err => {
+            console.error("Erro ao remover imagem no banco:", err);
+            toast.error("Erro ao sincronizar remoção de imagem.");
+        });
     };
 
     return (
@@ -298,7 +305,7 @@ export default function MapCardPage() {
             `}</style>
 
             {/* Cabeçalho de Ações e Filtros (oculto na impressão) */}
-            <header className="bg-surface border-b border-surface-border sticky top-0 z-20 px-6 py-4 flex flex-wrap items-center justify-between gap-4 no-print shadow-sm font-sans">
+            <header className="bg-surface border-b border-surface-border sticky top-0 z-50 px-6 py-4 flex flex-wrap items-center justify-between gap-4 no-print shadow-md font-sans">
                 <div className="flex items-center gap-3">
                     <button onClick={() => router.back()} className="p-2 hover:bg-background rounded-full transition-colors">
                         <ChevronLeft className="w-5 h-5 text-muted" />
@@ -420,29 +427,6 @@ export default function MapCardPage() {
                                             key={t.id}
                                             className="w-[148.5mm] h-[105mm] border border-dashed border-gray-400 print:border-black px-7 py-4 flex flex-col justify-between box-border overflow-hidden bg-white relative group"
                                         >
-                                            {/* Botões de Ação Sempre Visíveis na Tela (Ocultos Apenas na Impressão) */}
-                                            <div className="no-print absolute top-2 right-2 z-30 flex items-center gap-1">
-                                                {t.imageUrl && (
-                                                    <button
-                                                        onClick={(e) => handleRemoveImage(t.id, e)}
-                                                        disabled={isUploadingThis}
-                                                        className="bg-rose-600 hover:bg-rose-700 text-white p-1.5 rounded-lg shadow-md transition-colors disabled:opacity-50"
-                                                        title="Remover Imagem do Mapa"
-                                                    >
-                                                        <Trash2 className="w-3.5 h-3.5" />
-                                                    </button>
-                                                )}
-                                                <button
-                                                    onClick={() => handleTriggerImageUpload(t.id)}
-                                                    disabled={isUploadingThis}
-                                                    className="bg-primary hover:bg-primary-dark text-white px-2.5 py-1 rounded-lg shadow-md flex items-center gap-1 text-[10px] font-sans font-bold transition-all disabled:opacity-50"
-                                                    title="Escolher Imagem do Mapa"
-                                                >
-                                                    {isUploadingThis ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Upload className="w-3.5 h-3.5" />}
-                                                    {isUploadingThis ? 'Enviando...' : t.imageUrl ? 'Trocar' : 'Imagem'}
-                                                </button>
-                                            </div>
-
                                             {/* Bloco Superior (Título + Cabeçalho com Pontilhado Contínuo Sobposto + Área do Mapa) */}
                                             <div className="flex-1 flex flex-col justify-between">
                                                 <div>
@@ -477,18 +461,40 @@ export default function MapCardPage() {
                                                     {isUploadingThis ? (
                                                         <div className="absolute inset-0 bg-white/90 flex flex-col items-center justify-center gap-2 font-sans text-xs font-bold text-primary z-20">
                                                             <Loader2 className="w-6 h-6 animate-spin text-primary" />
-                                                            <span>Salvando mapa...</span>
+                                                            <span>Processando mapa HD...</span>
                                                         </div>
                                                     ) : t.imageUrl ? (
-                                                        <img
-                                                            src={t.imageUrl}
-                                                            alt={`Mapa do Território ${t.name}`}
-                                                            className="absolute inset-0 w-full h-full object-cover object-center"
-                                                        />
+                                                        <>
+                                                            <img
+                                                                src={t.imageUrl}
+                                                                alt={`Mapa do Território ${t.name}`}
+                                                                className="absolute inset-0 w-full h-full object-cover object-center"
+                                                            />
+                                                            {/* Botão sutil de apagar no canto da imagem (exibido apenas ao passar o mouse sobre a imagem na web) */}
+                                                            <div className="no-print absolute top-1.5 right-1.5 z-20 opacity-0 group-hover/map:opacity-100 transition-opacity">
+                                                                <button
+                                                                    onClick={(e) => handleRemoveImage(t.id, e)}
+                                                                    className="bg-rose-600/90 hover:bg-rose-700 text-white p-1.5 rounded-lg shadow-md transition-colors"
+                                                                    title="Remover Imagem do Mapa"
+                                                                >
+                                                                    <Trash2 className="w-3.5 h-3.5" />
+                                                                </button>
+                                                            </div>
+                                                        </>
                                                     ) : (
-                                                        <p className="font-serif font-bold text-[9px] text-black text-center relative z-10 bg-white px-2 py-0 mb-0">
-                                                            (Cole o mapa acima ou desenhe o território)
-                                                        </p>
+                                                        <>
+                                                            {/* Ícone no Centro da Área (Apenas na Tela Web) */}
+                                                            <div className="no-print absolute inset-0 flex items-center justify-center pointer-events-none z-10 pb-4">
+                                                                <div className="p-2.5 rounded-full bg-emerald-50 text-emerald-600 border border-emerald-200 group-hover/map:bg-emerald-600 group-hover/map:text-white transition-all shadow-sm">
+                                                                    <ImagePlus className="w-5 h-5" />
+                                                                </div>
+                                                            </div>
+
+                                                            {/* Texto Oficial na Posição Original (No Rodapé da Área do Mapa) */}
+                                                            <p className="font-serif font-bold text-[9px] text-black text-center relative z-10 bg-white px-2 py-0 mb-0">
+                                                                (Cole o mapa acima ou desenhe o território)
+                                                            </p>
+                                                        </>
                                                     )}
                                                 </div>
                                             </div>
@@ -528,29 +534,6 @@ export default function MapCardPage() {
                                     key={t.id}
                                     className="bg-white text-black border border-black px-7 py-4 shadow-lg print:shadow-none print:border-none w-[148mm] h-[105mm] mx-auto flex flex-col justify-between break-after-page s12-font select-none box-border overflow-hidden group relative"
                                 >
-                                    {/* Botões de Ação Sempre Visíveis na Tela */}
-                                    <div className="no-print absolute top-2 right-2 z-30 flex items-center gap-1">
-                                        {t.imageUrl && (
-                                            <button
-                                                onClick={(e) => handleRemoveImage(t.id, e)}
-                                                disabled={isUploadingThis}
-                                                className="bg-rose-600 hover:bg-rose-700 text-white p-1.5 rounded-lg shadow-md transition-colors disabled:opacity-50"
-                                                title="Remover Imagem do Mapa"
-                                            >
-                                                <Trash2 className="w-3.5 h-3.5" />
-                                            </button>
-                                        )}
-                                        <button
-                                            onClick={() => handleTriggerImageUpload(t.id)}
-                                            disabled={isUploadingThis}
-                                            className="bg-primary hover:bg-primary-dark text-white px-2.5 py-1 rounded-lg shadow-md flex items-center gap-1 text-[10px] font-sans font-bold transition-all disabled:opacity-50"
-                                            title="Escolher Imagem do Mapa"
-                                        >
-                                            {isUploadingThis ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Upload className="w-3.5 h-3.5" />}
-                                            {isUploadingThis ? 'Enviando...' : t.imageUrl ? 'Trocar' : 'Imagem'}
-                                        </button>
-                                    </div>
-
                                     {/* Bloco Superior (Título + Cabeçalho com Pontilhado Contínuo Sobposto + Área do Mapa) */}
                                     <div className="flex-1 flex flex-col justify-between">
                                         <div>
@@ -585,18 +568,40 @@ export default function MapCardPage() {
                                             {isUploadingThis ? (
                                                 <div className="absolute inset-0 bg-white/90 flex flex-col items-center justify-center gap-2 font-sans text-xs font-bold text-primary z-20">
                                                     <Loader2 className="w-6 h-6 animate-spin text-primary" />
-                                                    <span>Salvando mapa...</span>
+                                                    <span>Processando mapa HD...</span>
                                                 </div>
                                             ) : t.imageUrl ? (
-                                                <img
-                                                    src={t.imageUrl}
-                                                    alt={`Mapa do Território ${t.name}`}
-                                                    className="absolute inset-0 w-full h-full object-cover object-center"
-                                                />
+                                                <>
+                                                    <img
+                                                        src={t.imageUrl}
+                                                        alt={`Mapa do Território ${t.name}`}
+                                                        className="absolute inset-0 w-full h-full object-cover object-center"
+                                                    />
+                                                    {/* Botão sutil de apagar no canto da imagem (exibido apenas ao passar o mouse sobre a imagem na web) */}
+                                                    <div className="no-print absolute top-1.5 right-1.5 z-20 opacity-0 group-hover/map:opacity-100 transition-opacity">
+                                                        <button
+                                                            onClick={(e) => handleRemoveImage(t.id, e)}
+                                                            className="bg-rose-600/90 hover:bg-rose-700 text-white p-1.5 rounded-lg shadow-md transition-colors"
+                                                            title="Remover Imagem do Mapa"
+                                                        >
+                                                            <Trash2 className="w-3.5 h-3.5" />
+                                                        </button>
+                                                    </div>
+                                                </>
                                             ) : (
-                                                <p className="font-serif font-bold text-[9px] text-black text-center relative z-10 bg-white px-2 py-0 mb-0">
-                                                    (Cole o mapa acima ou desenhe o território)
-                                                </p>
+                                                <>
+                                                    {/* Ícone no Centro da Área (Apenas na Tela Web) */}
+                                                    <div className="no-print absolute inset-0 flex items-center justify-center pointer-events-none z-10 pb-4">
+                                                        <div className="p-2.5 rounded-full bg-emerald-50 text-emerald-600 border border-emerald-200 group-hover/map:bg-emerald-600 group-hover/map:text-white transition-all shadow-sm">
+                                                            <ImagePlus className="w-5 h-5" />
+                                                        </div>
+                                                    </div>
+
+                                                    {/* Texto Oficial na Posição Original (No Rodapé da Área do Mapa) */}
+                                                    <p className="font-serif font-bold text-[9px] text-black text-center relative z-10 bg-white px-2 py-0 mb-0">
+                                                        (Cole o mapa acima ou desenhe o território)
+                                                    </p>
+                                                </>
                                             )}
                                         </div>
                                     </div>
