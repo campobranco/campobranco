@@ -24,6 +24,8 @@ import {
     User
 } from 'lucide-react';
 import { useAuth } from '@/app/context/AuthContext';
+import { db } from '@/lib/firebase';
+import { doc, getDoc } from 'firebase/firestore';
 import { toast } from 'sonner';
 
 
@@ -47,8 +49,26 @@ export default function VisitReportModal({
     forcedCongregationType
 }: VisitReportModalProps) {
     const { congregationType: authType } = useAuth();
-    // Prioriza o tipo de congregação do usuário ativo via useAuth() sobre props/forced
-    const congregationType = authType || propType || forcedCongregationType || null;
+    const [fetchedCategory, setFetchedCategory] = useState<string | null>(null);
+
+    // 1. Busca direta da congregação do endereço no Firestore usando address.congregationId
+    useEffect(() => {
+        const congId = address.congregationId || address.data?.congregationId;
+        if (congId) {
+            getDoc(doc(db, 'congregations', congId)).then(snap => {
+                if (snap.exists()) {
+                    const data = snap.data();
+                    const category = data.category || data.type || null;
+                    setFetchedCategory(category);
+                }
+            }).catch(err => {
+                console.error("[VISIT_MODAL] Erro ao buscar congregação do endereço:", err);
+            });
+        }
+    }, [address.congregationId, address.data?.congregationId]);
+
+    // 2. Categoria direta do documento da congregação (sem fallbacks ou inferências)
+    const congregationType = fetchedCategory || propType || forcedCongregationType || authType || null;
 
     const [loading, setLoading] = useState(false);
     const [status, setStatus] = useState<'contacted' | 'partial' | 'notContacted' | 'moved' | 'doNotVisit' | 'contested' | ''>(
