@@ -424,10 +424,12 @@ export async function getSharedListWithData(id: string) {
                     const congData = congSnap.data() as any;
                     const type = congData.type;
                     const category = (congData.category || '').toLowerCase();
+                    const isSign = type === 'SIGN_LANGUAGE' || category.includes('sinais') || category.includes('libras') || category.includes('surdo') || category.includes('ls') || !congData.category;
+                    const isForeign = type === 'FOREIGN_LANGUAGE' || category.includes('estrangeiro');
 
-                    if (type === 'SIGN_LANGUAGE' || category.includes('sinais')) {
+                    if (isSign) {
                         congregationType = 'SIGN_LANGUAGE';
-                    } else if (type === 'FOREIGN_LANGUAGE' || category.includes('estrangeiro')) {
+                    } else if (isForeign) {
                         congregationType = 'FOREIGN_LANGUAGE';
                     } else if (type === 'TRADITIONAL' || category.includes('tradicional')) {
                         congregationType = 'TRADITIONAL';

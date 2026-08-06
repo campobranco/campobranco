@@ -283,9 +283,12 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
                     setTermType(data.termType || 'city');
                     const type = data.type || '';
                     const cat = (data.category || '').toLowerCase();
-                    if (type === 'SIGN_LANGUAGE' || cat.includes('sinais') || !data.category) {
+                    const isSign = type === 'SIGN_LANGUAGE' || cat.includes('sinais') || cat.includes('libras') || cat.includes('surdo') || cat.includes('ls') || !data.category;
+                    const isForeign = type === 'FOREIGN_LANGUAGE' || cat.includes('estrangeiro');
+
+                    if (isSign) {
                         setCongregationType('SIGN_LANGUAGE');
-                    } else if (type === 'FOREIGN_LANGUAGE' || cat.includes('estrangeiro')) {
+                    } else if (isForeign) {
                         setCongregationType('FOREIGN_LANGUAGE');
                     } else {
                         setCongregationType('TRADITIONAL');
