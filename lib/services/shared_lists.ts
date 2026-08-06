@@ -414,17 +414,26 @@ export async function getSharedListWithData(id: string) {
             }
         }
 
-        // Busca categoria da congregação e normaliza para o tipo usado no App
-        let congregationType: 'TRADITIONAL' | 'SIGN_LANGUAGE' | 'FOREIGN_LANGUAGE' = 'TRADITIONAL';
+        let congregationType: 'TRADITIONAL' | 'SIGN_LANGUAGE' | 'FOREIGN_LANGUAGE' = 'SIGN_LANGUAGE';
+
         const congregationId = list.congregationId;
         if (congregationId) {
             try {
                 const congSnap = await getDoc(doc(db, 'congregations', congregationId));
                 if (congSnap.exists()) {
-                    const category = ((congSnap.data() as any).category || '').toLowerCase();
-                    if (category.includes('sinais')) congregationType = 'SIGN_LANGUAGE';
-                    else if (category.includes('estrangeiro')) congregationType = 'FOREIGN_LANGUAGE';
-                    else congregationType = 'TRADITIONAL';
+                    const congData = congSnap.data() as any;
+                    const type = congData.type || '';
+                    const category = (congData.category || '').toLowerCase();
+
+                    if (type === 'SIGN_LANGUAGE' || category.includes('sinais') || !congData.category) {
+                        congregationType = 'SIGN_LANGUAGE';
+                    } else if (type === 'FOREIGN_LANGUAGE' || category.includes('estrangeiro')) {
+                        congregationType = 'FOREIGN_LANGUAGE';
+                    } else if (type === 'TRADITIONAL' || category.includes('tradicional')) {
+                        congregationType = 'TRADITIONAL';
+                    } else {
+                        congregationType = 'SIGN_LANGUAGE';
+                    }
                 }
             } catch (err: any) {
                 console.warn('Could not read congregation for shared list (might be public access):', err.message);
