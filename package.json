@@ -1,6 +1,6 @@
 {
   "name": "campobranco",
-  "version": "0.10.70-beta",
+  "version": "0.10.71-beta",
   "private": true,
   "type": "module",
   "scripts": {

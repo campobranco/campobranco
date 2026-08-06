@@ -60,6 +60,7 @@ export default function VisitHistoryModal({
             try {
                 let rawVisits: any[] = [];
                 
+                // 1. Consulta registros de relatórios de visita na coleção 'visits'
                 if (isSharedView && sharedVisits) {
                     rawVisits = sharedVisits.filter((v: any) => v.addressId === addressId);
                 } else {
@@ -76,7 +77,33 @@ export default function VisitHistoryModal({
                     }));
                 }
 
-                // Deduplicar visitas por ID único do documento
+                // 2. Consulta o status de visita e observações gravadas diretamente no próprio documento do endereço ('addresses')
+                try {
+                    const addrSnap = await getDoc(doc(db, 'addresses', addressId));
+                    if (addrSnap.exists()) {
+                        const addrData = addrSnap.data();
+                        if (addrData.visitStatus && addrData.visitStatus !== 'none') {
+                            const dateVal = addrData.lastVisitedAt 
+                                || (addrData.updatedAt?.toDate ? addrData.updatedAt.toDate().toISOString() : null)
+                                || (addrData.createdAt?.toDate ? addrData.createdAt.toDate().toISOString() : null);
+
+                            if (dateVal) {
+                                rawVisits.push({
+                                    id: `address-status-${addressId}`,
+                                    addressId: addressId,
+                                    status: addrData.visitStatus,
+                                    visitDate: dateVal,
+                                    observations: addrData.observations || '',
+                                    publisherName: addrData.lastVisitedBy || addrData.updatedBy || ''
+                                });
+                            }
+                        }
+                    }
+                } catch (e) {
+                    console.warn("[VISIT_HISTORY] Could not fetch address document status:", e);
+                }
+
+                // 3. Deduplicar visitas por ID único do documento
                 const seenVisitIds = new Set<string>();
                 rawVisits = rawVisits.filter((v: any) => {
                     if (!v.id || seenVisitIds.has(v.id)) return false;
@@ -84,10 +111,10 @@ export default function VisitHistoryModal({
                     return true;
                 });
 
-                // Ordenação local descente por data da visita
+                // 4. Ordenação local descendente por data da visita
                 rawVisits.sort((a: any, b: any) => {
-                    const dateA = new Date(a.visitDate || 0).getTime();
-                    const dateB = new Date(b.visitDate || 0).getTime();
+                    const dateA = new Date(a.visitDate || a.createdAt || 0).getTime();
+                    const dateB = new Date(b.visitDate || b.createdAt || 0).getTime();
                     return dateB - dateA;
                 });
 
@@ -95,14 +122,12 @@ export default function VisitHistoryModal({
                 rawVisits = rawVisits.slice(0, 50);
 
                 // Busca nomes reais para os usuários de forma otimizada
-                const userIds = Array.from(new Set(rawVisits.map((v: any) => v.userId).filter(id => id)));
+                const userIds = Array.from(new Set(rawVisits.map((v: any) => v.userId).filter(Boolean)));
                 const userNamesMap = new Map<string, string>();
 
                 if (userIds.length > 0) {
                     try {
-                        // Nota: Firestore não tem 'in' para documentos simples, buscamos um por um ou via 'in' na coleção
                         const usersRef = collection(db, 'users');
-                        // O limite de 'in' no Firestore é 30, o que é seguro aqui para 50 visitas
                         const userQuery = query(usersRef, where(documentId(), 'in', userIds.slice(0, 30)));
                         const userSnapshot = await getDocs(userQuery);
 
@@ -110,15 +135,15 @@ export default function VisitHistoryModal({
                             userNamesMap.set(d.id, d.data().name);
                         });
                     } catch (e) {
-                        console.warn("[VISIT_HISTORY] Could not fetch real user names (possibly restricted shared view):", e);
+                        console.warn("[VISIT_HISTORY] Could not fetch real user names:", e);
                     }
                 }
 
                 const mergedVisits = rawVisits.map((v: any) => ({
                     ...v,
-                    displayName: userNamesMap.get(v.userId) || v.userName || v.publisherName || 'Publicador',
-                    visitDate: v.visitDate,
-                    tagsSnapshot: v.tagsSnapshot
+                    displayName: (v.userId && userNamesMap.get(v.userId)) || v.publisherName || v.userName || 'Publicador',
+                    visitDate: v.visitDate || v.createdAt,
+                    observations: v.observations || v.notes || ''
                 }));
 
                 setVisits(mergedVisits);
