@@ -88,9 +88,15 @@ function AddressPinsMap({ pins }: { pins: AddressPinItem[] }) {
                     iconAnchor: [11, 11]
                 });
 
+                const labelText = `${pin.street}${pin.number ? `, ${pin.number}` : ''}`;
                 L.marker([pin.lat, pin.lng], { icon: customIcon })
                     .addTo(map)
-                    .bindPopup(`<b>${pin.street}${pin.number ? `, ${pin.number}` : ''}</b>`);
+                    .bindTooltip(labelText, {
+                        permanent: true,
+                        direction: 'top',
+                        offset: [0, -10],
+                        className: 'fixed-address-label'
+                    });
             });
 
             if (pins.length === 1) {
@@ -456,6 +462,21 @@ export default function MapCardPage() {
                 }
                 .s12-font {
                     font-family: 'Times New Roman', Times, Georgia, serif;
+                }
+                .fixed-address-label {
+                    background-color: rgba(255, 255, 255, 0.95) !important;
+                    border: 1px solid #059669 !important;
+                    color: #065f46 !important;
+                    font-weight: bold !important;
+                    font-size: 9.5px !important;
+                    padding: 2px 6px !important;
+                    border-radius: 4px !important;
+                    box-shadow: 0 1.5px 4px rgba(0,0,0,0.2) !important;
+                    font-family: system-ui, -apple-system, sans-serif !important;
+                    white-space: nowrap !important;
+                }
+                .fixed-address-label::before {
+                    border-top-color: #059669 !important;
                 }
             `}</style>
 
