@@ -84,6 +84,8 @@ function AddressPinsMap({ pins }: { pins: AddressPinItem[] }) {
             }).addTo(map);
 
             const bounds = L.latLngBounds([]);
+            // Alternância direcional (topo, direita, baixo, esquerda) para evitar sobreposição entre cards
+            const directions: Array<'top' | 'right' | 'bottom' | 'left'> = ['top', 'right', 'bottom', 'left'];
 
             pins.forEach((pin, idx) => {
                 bounds.extend([pin.lat, pin.lng]);
@@ -100,10 +102,18 @@ function AddressPinsMap({ pins }: { pins: AddressPinItem[] }) {
 
                 // Sem fallbacks: exibe o rótulo APENAS se o nome do morador estiver cadastrado
                 if (resident && resident !== '') {
+                    const dir = directions[idx % directions.length];
+                    const offsetMap: Record<string, [number, number]> = {
+                        top: [0, -12],
+                        right: [12, 0],
+                        bottom: [0, 12],
+                        left: [-12, 0]
+                    };
+
                     marker.bindTooltip(resident, {
                         permanent: true,
-                        direction: 'top',
-                        offset: [0, -10],
+                        direction: dir,
+                        offset: offsetMap[dir],
                         className: 'fixed-address-label'
                     });
                 }
@@ -112,7 +122,7 @@ function AddressPinsMap({ pins }: { pins: AddressPinItem[] }) {
             if (pins.length === 1) {
                 map.setView([pins[0].lat, pins[0].lng], 16);
             } else {
-                map.fitBounds(bounds, { padding: [30, 30], maxZoom: 18 });
+                map.fitBounds(bounds, { padding: [40, 40], maxZoom: 18 });
             }
 
             mapInstanceRef.current = map;
@@ -500,9 +510,10 @@ export default function MapCardPage() {
                     font-family: system-ui, -apple-system, sans-serif !important;
                     white-space: nowrap !important;
                 }
-                .fixed-address-label::before {
-                    border-top-color: #059669 !important;
-                }
+                .leaflet-tooltip-top.fixed-address-label::before { border-top-color: #059669 !important; }
+                .leaflet-tooltip-bottom.fixed-address-label::before { border-bottom-color: #059669 !important; }
+                .leaflet-tooltip-right.fixed-address-label::before { border-right-color: #059669 !important; }
+                .leaflet-tooltip-left.fixed-address-label::before { border-left-color: #059669 !important; }
             `}</style>
 
             {/* Cabeçalho de Ações e Filtros (oculto na impressão) */}
