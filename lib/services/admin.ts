@@ -22,11 +22,23 @@ export async function getCongregations() {
 /**
  * Salva ou cria uma congregação
  */
+export const VALID_CONGREGATION_CATEGORIES = ['TRADITIONAL', 'SIGN_LANGUAGE', 'FOREIGN_LANGUAGE'] as const;
+
 export async function saveCongregation(data: any) {
     try {
         const { id, name, city, category, termType, customId } = data;
-        let finalId = customId || id;
 
+        // Normalização e validação estrita de schema (enum de categorias válidas)
+        let normalizedCategory = category;
+        if (category === 'Tradicional' || category === 'tradicional') normalizedCategory = 'TRADITIONAL';
+        else if (category === 'Língua de Sinais' || category === 'sinais' || category === 'LS') normalizedCategory = 'SIGN_LANGUAGE';
+        else if (category === 'Língua Estrangeira') normalizedCategory = 'FOREIGN_LANGUAGE';
+
+        if (normalizedCategory && !VALID_CONGREGATION_CATEGORIES.includes(normalizedCategory as any)) {
+            throw new Error(`Categoria de congregação inválida: '${category}'. Use apenas: ${VALID_CONGREGATION_CATEGORIES.join(', ')}`);
+        }
+
+        let finalId = customId || id;
         if (!finalId) {
             finalId = name.toLowerCase().replace(/\s+/g, '-').replace(/[^a-z0-9-]/g, '');
         }
@@ -35,7 +47,8 @@ export async function saveCongregation(data: any) {
         await setDoc(congRef, {
             name,
             city,
-            category,
+            category: normalizedCategory,
+            type: normalizedCategory,
             termType,
             updatedAt: new Date().toISOString()
         }, { merge: true });
