@@ -275,30 +275,14 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
         let active = true;
         const fetchCong = async () => {
-            const congIdLower = congregationId.toLowerCase();
-            if (congIdLower.startsWith('ls') || congIdLower.includes('ls-') || congIdLower.includes('sinais') || congIdLower.includes('libras')) {
-                if (active) setCongregationType('SIGN_LANGUAGE');
-                return;
-            }
-
             try {
                 const congRef = doc(db, 'congregations', congregationId);
                 const congSnap = await getDoc(congRef);
                 if (active && congSnap.exists()) {
                     const data = congSnap.data();
                     setTermType(data.termType || 'city');
-                    const type = data.type || '';
-                    const cat = (data.category || '').toLowerCase();
-                    const isSign = type === 'SIGN_LANGUAGE' || cat.includes('sinais') || cat.includes('libras') || cat.includes('surdo') || cat.includes('ls') || !data.category;
-                    const isForeign = type === 'FOREIGN_LANGUAGE' || cat.includes('estrangeiro');
-
-                    if (isSign) {
-                        setCongregationType('SIGN_LANGUAGE');
-                    } else if (isForeign) {
-                        setCongregationType('FOREIGN_LANGUAGE');
-                    } else {
-                        setCongregationType('TRADITIONAL');
-                    }
+                    const resolvedType = data.category || data.type || null;
+                    setCongregationType(resolvedType as any);
                 }
             } catch (err) {
                 console.error("[AUTH] Erro ao buscar configurações da congregação:", err);
