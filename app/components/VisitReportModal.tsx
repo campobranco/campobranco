@@ -47,9 +47,8 @@ export default function VisitReportModal({
     forcedCongregationType
 }: VisitReportModalProps) {
     const { congregationType: authType } = useAuth();
-    // Resolve type: Prop > Forced > Auth > Default
-    // CRITICAL: If forcedCongregationType is provided, it MUST take precedence over authType to avoid showing 4 buttons on traditional links for Sinais users.
-    const congregationType = propType || forcedCongregationType || authType || 'TRADITIONAL';
+    // Resolve type: Prop > Forced > Auth > Default (SIGN_LANGUAGE)
+    const congregationType = propType || forcedCongregationType || authType || 'SIGN_LANGUAGE';
 
     const [loading, setLoading] = useState(false);
     const [status, setStatus] = useState<'contacted' | 'partial' | 'notContacted' | 'moved' | 'doNotVisit' | 'contested' | ''>(

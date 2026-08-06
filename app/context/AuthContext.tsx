@@ -281,10 +281,15 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
                 if (active && congSnap.exists()) {
                     const data = congSnap.data();
                     setTermType(data.termType || 'city');
+                    const type = data.type || '';
                     const cat = (data.category || '').toLowerCase();
-                    if (cat.includes('sinais')) setCongregationType('SIGN_LANGUAGE');
-                    else if (cat.includes('estrangeiro')) setCongregationType('FOREIGN_LANGUAGE');
-                    else setCongregationType('TRADITIONAL');
+                    if (type === 'SIGN_LANGUAGE' || cat.includes('sinais') || !data.category) {
+                        setCongregationType('SIGN_LANGUAGE');
+                    } else if (type === 'FOREIGN_LANGUAGE' || cat.includes('estrangeiro')) {
+                        setCongregationType('FOREIGN_LANGUAGE');
+                    } else {
+                        setCongregationType('TRADITIONAL');
+                    }
                 }
             } catch (err) {
                 console.error("[AUTH] Erro ao buscar configurações da congregação:", err);
