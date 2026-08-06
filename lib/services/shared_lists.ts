@@ -414,7 +414,7 @@ export async function getSharedListWithData(id: string) {
             }
         }
 
-        let congregationType: 'TRADITIONAL' | 'SIGN_LANGUAGE' | 'FOREIGN_LANGUAGE' = 'SIGN_LANGUAGE';
+        let congregationType: 'TRADITIONAL' | 'SIGN_LANGUAGE' | 'FOREIGN_LANGUAGE' | null = null;
 
         const congregationId = list.congregationId;
         if (congregationId) {
@@ -422,25 +422,24 @@ export async function getSharedListWithData(id: string) {
                 const congSnap = await getDoc(doc(db, 'congregations', congregationId));
                 if (congSnap.exists()) {
                     const congData = congSnap.data() as any;
-                    const type = congData.type || '';
+                    const type = congData.type;
                     const category = (congData.category || '').toLowerCase();
 
-                    if (type === 'SIGN_LANGUAGE' || category.includes('sinais') || !congData.category) {
+                    if (type === 'SIGN_LANGUAGE' || category.includes('sinais')) {
                         congregationType = 'SIGN_LANGUAGE';
                     } else if (type === 'FOREIGN_LANGUAGE' || category.includes('estrangeiro')) {
                         congregationType = 'FOREIGN_LANGUAGE';
                     } else if (type === 'TRADITIONAL' || category.includes('tradicional')) {
                         congregationType = 'TRADITIONAL';
-                    } else {
-                        congregationType = 'SIGN_LANGUAGE';
                     }
                 }
             } catch (err: any) {
                 console.warn('Could not read congregation for shared list (might be public access):', err.message);
-                if (list.congregationType) {
-                    congregationType = list.congregationType;
-                }
             }
+        }
+
+        if (!congregationType && list.congregationType) {
+            congregationType = list.congregationType;
         }
 
         return {

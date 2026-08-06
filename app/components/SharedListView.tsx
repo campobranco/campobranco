@@ -68,7 +68,7 @@ interface SharedListViewProps {
 export default function SharedListView({ id: propId }: SharedListViewProps) {
     const searchParams = useSearchParams();
     const id = propId || searchParams.get('id');
-    const { user, profileName, role } = useAuth();
+    const { user, profileName, role, congregationType: userCongregationType } = useAuth();
     const router = useRouter();
 
     const [loading, setLoading] = useState(true);
@@ -135,7 +135,7 @@ export default function SharedListView({ id: propId }: SharedListViewProps) {
                 const { list, items: fetchedItems, visits, congregationType: type } = resData as any;
 
                 setListData(list as any);
-                setCongregationType(type || 'SIGN_LANGUAGE');
+                setCongregationType(type || userCongregationType || null);
 
                 // Show responsibility modal if no one is assigned, list is active, and user IS logged in
                 const hasResponsible = list.assignedTo || list.assignedName;
