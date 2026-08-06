@@ -3,11 +3,13 @@
 import { useState, useEffect, useCallback, useRef, useLayoutEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { useAuth } from '@/app/context/AuthContext';
-import { ChevronLeft, Printer, MapPin, Building2, Filter, Loader2, LayoutGrid, FileText, Trash2, ImagePlus, Layers, Map as MapIcon } from 'lucide-react';
+import { ChevronLeft, Printer, MapPin, Building2, Filter, Loader2, LayoutGrid, FileText, Trash2, ImagePlus, Map as MapIcon, Sliders, Hexagon } from 'lucide-react';
 import { getRegistryData } from '@/lib/services/reports';
 import { updateTerritory } from '@/lib/services/territories';
 import { getAddresses } from '@/lib/services/addresses';
 import { toast } from 'sonner';
+
+type MapCardMode = 'manual-image' | 'address-pins' | 'polygons';
 
 interface TerritoryItem {
     id: string;
@@ -45,8 +47,8 @@ function parseAddressCoords(addr: any): { lat: number; lng: number } | null {
     return null;
 }
 
-// Componente de Mapa por Pinos de Endereço (Leaflet com auto-fitBounds)
-function AddressPinsMap({ pins, territoryName }: { pins: AddressPinItem[]; territoryName: string }) {
+// Componente de Mapa por Pinos de Endereço (Modo 2 - Leaflet com auto-fitBounds)
+function AddressPinsMap({ pins }: { pins: AddressPinItem[] }) {
     const mapContainerRef = useRef<HTMLDivElement>(null);
     const mapInstanceRef = useRef<any>(null);
 
@@ -55,14 +57,12 @@ function AddressPinsMap({ pins, territoryName }: { pins: AddressPinItem[]; terri
         const L = (window as any).L;
         if (!L) return;
 
-        // Se já existir uma instância previa no contêiner, destruímos
         if (mapInstanceRef.current) {
             mapInstanceRef.current.remove();
             mapInstanceRef.current = null;
         }
 
         try {
-            // Inicializa o mapa sem controles de zoom pra ficar limpo no cartão
             const map = L.map(mapContainerRef.current, {
                 zoomControl: false,
                 attributionControl: false,
@@ -81,7 +81,6 @@ function AddressPinsMap({ pins, territoryName }: { pins: AddressPinItem[]; terri
             pins.forEach((pin, idx) => {
                 bounds.extend([pin.lat, pin.lng]);
 
-                // Ícone de pino estilizado numerado em verde
                 const customIcon = L.divIcon({
                     className: 'custom-pin-icon',
                     html: `<div style="background-color: #059669; color: white; width: 22px; height: 22px; border-radius: 50%; border: 2px solid white; display: flex; align-items: center; justify-content: center; font-weight: bold; font-size: 10px; box-shadow: 0 2px 4px rgba(0,0,0,0.3); font-family: sans-serif;">${idx + 1}</div>`,
@@ -128,7 +127,7 @@ function AddressPinsMap({ pins, territoryName }: { pins: AddressPinItem[]; terri
     return <div ref={mapContainerRef} className="absolute inset-0 w-full h-full z-0" />;
 }
 
-// Otimização de imagem leve (~30KB) compatível com transportes gRPC do Firestore Web Channel
+// Otimização leve (~30KB) compatível com transportes gRPC do Firestore Web Channel
 async function processTerritoryMapImage(file: File): Promise<string> {
     return new Promise<string>((resolve, reject) => {
         const reader = new FileReader();
@@ -179,7 +178,6 @@ function AutoFitText({ text, maxFontSize = 12, minFontSize = 7.5 }: { text: stri
         const span = spanRef.current;
         if (!container || !span) return;
 
-        // Reset text size to max to measure natural scroll width
         span.style.fontSize = `${maxFontSize}px`;
         span.style.letterSpacing = 'normal';
 
@@ -227,10 +225,12 @@ export default function MapCardPage() {
     const [selectedCityId, setSelectedCityId] = useState<string>('ALL');
     const [selectedTerritoryId, setSelectedTerritoryId] = useState<string>('ALL');
     const [printLayoutMode, setPrintLayoutMode] = useState<'a6' | 'a4-grid'>('a4-grid');
-    const [mapDisplayMode, setMapDisplayMode] = useState<'image' | 'pins'>('image');
+    
+    // Modo Ativo Estrito (Modo 1: Imagem Manual | Modo 2: Pinos de Endereços | Modo 3: Polígonos)
+    const [cardMode, setCardMode] = useState<MapCardMode>('manual-image');
     const [pageLoading, setPageLoading] = useState(true);
 
-    // Direct Image Upload Ref & State
+    // Direct Image Upload Ref & State (Ativo APENAS no Modo 1)
     const fileInputRef = useRef<HTMLInputElement>(null);
     const [activeUploadTerritoryId, setActiveUploadTerritoryId] = useState<string | null>(null);
     const [uploadingTerritoryId, setUploadingTerritoryId] = useState<string | null>(null);
@@ -259,7 +259,6 @@ export default function MapCardPage() {
                 imageUrl: t.imageUrl
             }));
 
-            // Ordenação numérica pelo número do território
             terrs.sort((a, b) => a.name.localeCompare(b.name, undefined, { numeric: true }));
             setTerritories(terrs);
         } catch (err: any) {
@@ -274,32 +273,41 @@ export default function MapCardPage() {
         fetchData();
     }, [fetchData]);
 
-    // Carregamento sob demanda (on-demand) dos pinos de endereços apenas se a Opção 2 for clicada
-    const handleSelectMapMode = (mode: 'image' | 'pins') => {
-        setMapDisplayMode(mode);
-        if (mode === 'pins' && territoryPinsMap.size === 0 && congregationId) {
-            getAddresses(congregationId).then(resAddr => {
-                if (resAddr.success && Array.isArray(resAddr.addresses)) {
-                    const pinsMap = new Map<string, AddressPinItem[]>();
-                    resAddr.addresses.forEach((addr: any) => {
-                        if (!addr.territoryId || addr.isActive === false) return;
-                        const coords = parseAddressCoords(addr);
-                        if (coords) {
-                            const existing = pinsMap.get(addr.territoryId) || [];
-                            existing.push({
-                                id: addr.id,
-                                territoryId: addr.territoryId,
-                                street: addr.street || 'Endereço',
-                                number: addr.number,
-                                lat: coords.lat,
-                                lng: coords.lng
-                            });
-                            pinsMap.set(addr.territoryId, existing);
-                        }
-                    });
-                    setTerritoryPinsMap(pinsMap);
-                }
-            }).catch(err => console.warn("Erro ao buscar pinos de endereço:", err));
+    // Troca Estrita de Modo: Desabilita e descarrega os outros modelos quando um modo é selecionado
+    const handleSwitchCardMode = (newMode: MapCardMode) => {
+        setCardMode(newMode);
+
+        if (newMode === 'manual-image') {
+            toast.info("Modo 1 Ativo: Imagem Manual (Modos 2 e 3 desabilitados)");
+        } else if (newMode === 'address-pins') {
+            toast.info("Modo 2 Ativo: Pinos dos Endereços (Modos 1 e 3 desabilitados)");
+            // Carrega pinos de endereços estritamente sob demanda para o Modo 2
+            if (territoryPinsMap.size === 0 && congregationId) {
+                getAddresses(congregationId).then(resAddr => {
+                    if (resAddr.success && Array.isArray(resAddr.addresses)) {
+                        const pinsMap = new Map<string, AddressPinItem[]>();
+                        resAddr.addresses.forEach((addr: any) => {
+                            if (!addr.territoryId || addr.isActive === false) return;
+                            const coords = parseAddressCoords(addr);
+                            if (coords) {
+                                const existing = pinsMap.get(addr.territoryId) || [];
+                                existing.push({
+                                    id: addr.id,
+                                    territoryId: addr.territoryId,
+                                    street: addr.street || 'Endereço',
+                                    number: addr.number,
+                                    lat: coords.lat,
+                                    lng: coords.lng
+                                });
+                                pinsMap.set(addr.territoryId, existing);
+                            }
+                        });
+                        setTerritoryPinsMap(pinsMap);
+                    }
+                }).catch(err => console.warn("Erro ao buscar pinos de endereço:", err));
+            }
+        } else if (newMode === 'polygons') {
+            toast.info("Modo 3: Polígonos de Território (Em desenvolvimento)");
         }
     };
 
@@ -309,7 +317,6 @@ export default function MapCardPage() {
         return true;
     });
 
-    // Função para agrupar em blocos de 4 para a grade A4 Horizontal (2 colunas x 2 linhas)
     const chunkArray = <T,>(arr: T[], chunkSize: number): T[][] => {
         const results: T[][] = [];
         for (let i = 0; i < arr.length; i += chunkSize) {
@@ -354,8 +361,9 @@ export default function MapCardPage() {
         return trimmed;
     };
 
-    // Direct Image Upload Trigger
+    // Direct Image Upload (Permitido EXCLUSIVAMENTE no Modo 1)
     const handleTriggerImageUpload = (tId: string) => {
+        if (cardMode !== 'manual-image') return;
         setActiveUploadTerritoryId(tId);
         if (fileInputRef.current) {
             fileInputRef.current.value = '';
@@ -379,11 +387,9 @@ export default function MapCardPage() {
         try {
             const compressedUrl = await processTerritoryMapImage(file);
             
-            // Persistência síncrona no Firestore Cloud Database
             const res = await updateTerritory(tId, { imageUrl: compressedUrl });
             if (!res.success) throw new Error(res.error || "Erro ao salvar no banco");
 
-            // Atualização do estado local da UI
             setTerritories(prev => prev.map(t => t.id === tId ? { ...t, imageUrl: compressedUrl } : t));
             toast.success("Imagem do mapa salva com sucesso no banco de dados!");
         } catch (err: any) {
@@ -398,12 +404,11 @@ export default function MapCardPage() {
 
     const handleRemoveImage = (tId: string, e: React.MouseEvent) => {
         e.stopPropagation();
+        if (cardMode !== 'manual-image') return;
 
-        // Remoção Otimista Instantânea na UI (0ms)
         setTerritories(prev => prev.map(t => t.id === tId ? { ...t, imageUrl: '' } : t));
         toast.success("Imagem removida!");
 
-        // Persistência em background
         updateTerritory(tId, { imageUrl: '' }).catch(err => {
             console.error("Erro ao remover imagem no banco:", err);
             toast.error("Erro ao sincronizar remoção de imagem.");
@@ -412,7 +417,6 @@ export default function MapCardPage() {
 
     return (
         <div className="min-h-screen bg-background text-main pb-12 print:bg-white print:text-black print:p-0 print:pb-0 font-serif">
-            {/* Input nativo de arquivo oculto */}
             <input
                 type="file"
                 ref={fileInputRef}
@@ -421,7 +425,6 @@ export default function MapCardPage() {
                 className="hidden"
             />
 
-            {/* Configuração Estrita de Dimensões para Impressão PDF / Papel */}
             <style jsx global>{`
                 @media print {
                     .no-print, header, nav, aside, [data-sonner-toaster], [data-sonner-toast], .toaster, #toast-container, .toast, [role="status"], [role="alert"] {
@@ -462,30 +465,19 @@ export default function MapCardPage() {
                 </div>
 
                 <div className="flex flex-wrap items-center gap-3">
-                    {/* Alternador de Modo de Mapa: Imagem Manual vs Pinos de Endereços */}
-                    <div className="flex items-center bg-background border border-surface-border rounded-xl p-1 gap-1">
-                        <button
-                            onClick={() => handleSelectMapMode('image')}
-                            className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold transition-all ${
-                                mapDisplayMode === 'image'
-                                    ? 'bg-amber-600 text-white shadow-sm'
-                                    : 'text-muted hover:text-main'
-                            }`}
+                    {/* Seletor Estrito de Modo de Exibição do Cartão */}
+                    <div className="flex items-center bg-background border border-surface-border rounded-xl px-3 py-1.5 gap-2 text-xs font-semibold">
+                        <Sliders className="w-4 h-4 text-amber-500" />
+                        <span className="text-muted">Modo de Mapa:</span>
+                        <select
+                            value={cardMode}
+                            onChange={(e) => handleSwitchCardMode(e.target.value as MapCardMode)}
+                            className="bg-transparent text-main font-bold outline-none cursor-pointer"
                         >
-                            <ImagePlus className="w-3.5 h-3.5" />
-                            Opção 1: Imagem Manual
-                        </button>
-                        <button
-                            onClick={() => handleSelectMapMode('pins')}
-                            className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold transition-all ${
-                                mapDisplayMode === 'pins'
-                                    ? 'bg-emerald-600 text-white shadow-sm'
-                                    : 'text-muted hover:text-main'
-                            }`}
-                        >
-                            <MapIcon className="w-3.5 h-3.5" />
-                            Opção 2: Pinos dos Endereços
-                        </button>
+                            <option value="manual-image" className="bg-surface text-main">Modo 1: Imagem Manual</option>
+                            <option value="address-pins" className="bg-surface text-main">Modo 2: Pinos dos Endereços</option>
+                            <option value="polygons" className="bg-surface text-main" disabled>Modo 3: Polígonos (Em Breve)</option>
+                        </select>
                     </div>
 
                     {/* Seletor do Formato de Impressão */}
@@ -589,22 +581,19 @@ export default function MapCardPage() {
                                 {group.map((t) => {
                                     const localidadeText = formatLocalidade(t.description, t.cityName);
                                     const isUploadingThis = uploadingTerritoryId === t.id;
-                                    const pins = territoryPinsMap.get(t.id) || [];
+                                    const pins = cardMode === 'address-pins' ? (territoryPinsMap.get(t.id) || []) : [];
 
                                     return (
                                         <div
                                             key={t.id}
                                             className="w-[148.5mm] h-[105mm] border border-dashed border-gray-400 print:border-black px-7 py-4 flex flex-col justify-between box-border overflow-hidden bg-white relative group"
                                         >
-                                            {/* Bloco Superior (Título + Cabeçalho com Pontilhado Contínuo Sobposto + Área do Mapa) */}
                                             <div className="flex-1 flex flex-col justify-between">
                                                 <div>
-                                                    {/* Título Oficial S-12-T (Title Case) */}
                                                     <h2 className="text-center font-serif text-[21px] font-bold tracking-normal text-black mb-3">
                                                         Cartão de Mapa de Território
                                                     </h2>
 
-                                                    {/* Linha de Cabeçalho: Localidade ... Terr. N.º ... */}
                                                     <div className="flex items-baseline justify-between font-serif text-[12px] font-bold text-black mb-2">
                                                         <div className="flex items-baseline flex-1 min-w-0 mr-2">
                                                             <span className="shrink-0 font-bold mr-1.5">Localidade</span>
@@ -622,57 +611,64 @@ export default function MapCardPage() {
                                                     </div>
                                                 </div>
 
-                                                {/* Área do Mapa */}
+                                                {/* Área do Mapa Estritamente ISOLADA por Modo */}
                                                 <div
-                                                    onClick={() => mapDisplayMode === 'image' && !isUploadingThis && handleTriggerImageUpload(t.id)}
-                                                    className="relative flex-1 min-h-[36mm] my-1 flex flex-col justify-end items-center overflow-hidden cursor-pointer group/map"
+                                                    onClick={() => cardMode === 'manual-image' && !isUploadingThis && handleTriggerImageUpload(t.id)}
+                                                    className={`relative flex-1 min-h-[36mm] my-1 flex flex-col justify-end items-center overflow-hidden group/map ${
+                                                        cardMode === 'manual-image' ? 'cursor-pointer' : 'cursor-default'
+                                                    }`}
                                                 >
-                                                    {isUploadingThis ? (
-                                                        <div className="absolute inset-0 bg-white/90 flex flex-col items-center justify-center gap-2 font-sans text-xs font-bold text-primary z-20">
-                                                            <Loader2 className="w-6 h-6 animate-spin text-primary" />
-                                                            <span>Processando mapa HD...</span>
-                                                        </div>
-                                                    ) : mapDisplayMode === 'pins' ? (
-                                                        /* OPÇÃO 2: MAPA POR PINOS DOS ENDEREÇOS (ENQUADRAMENTO AUTOMÁTICO) */
-                                                        <AddressPinsMap pins={pins} territoryName={t.name} />
-                                                    ) : t.imageUrl ? (
-                                                        /* OPÇÃO 1: IMAGEM SALVA OU ENVIADA MANUALLY */
-                                                        <>
-                                                            <img
-                                                                src={t.imageUrl}
-                                                                alt={`Mapa do Território ${t.name}`}
-                                                                className="absolute inset-0 w-full h-full object-cover object-center"
-                                                            />
-                                                            {/* Botão sutil de apagar no canto da imagem (exibido apenas ao passar o mouse sobre a imagem na web) */}
-                                                            <div className="no-print absolute top-1.5 right-1.5 z-20 opacity-0 group-hover/map:opacity-100 transition-opacity">
-                                                                <button
-                                                                    onClick={(e) => handleRemoveImage(t.id, e)}
-                                                                    className="bg-rose-600/90 hover:bg-rose-700 text-white p-1.5 rounded-lg shadow-md transition-colors"
-                                                                    title="Remover Imagem do Mapa"
-                                                                >
-                                                                    <Trash2 className="w-3.5 h-3.5" />
-                                                                </button>
+                                                    {cardMode === 'manual-image' ? (
+                                                        /* MODO 1: IMAGEM MANUAL EXCLUSIVO */
+                                                        isUploadingThis ? (
+                                                            <div className="absolute inset-0 bg-white/90 flex flex-col items-center justify-center gap-2 font-sans text-xs font-bold text-primary z-20">
+                                                                <Loader2 className="w-6 h-6 animate-spin text-primary" />
+                                                                <span>Processando mapa HD...</span>
                                                             </div>
-                                                        </>
-                                                    ) : (
-                                                        <>
-                                                            {/* Ícone no Centro da Área (Apenas na Tela Web) */}
-                                                            <div className="no-print absolute inset-0 flex items-center justify-center pointer-events-none z-10 pb-4">
-                                                                <div className="p-2.5 rounded-full bg-emerald-50 text-emerald-600 border border-emerald-200 group-hover/map:bg-emerald-600 group-hover/map:text-white transition-all shadow-sm">
-                                                                    <ImagePlus className="w-5 h-5" />
+                                                        ) : t.imageUrl ? (
+                                                            <>
+                                                                <img
+                                                                    src={t.imageUrl}
+                                                                    alt={`Mapa do Território ${t.name}`}
+                                                                    className="absolute inset-0 w-full h-full object-cover object-center"
+                                                                />
+                                                                <div className="no-print absolute top-1.5 right-1.5 z-20 opacity-0 group-hover/map:opacity-100 transition-opacity">
+                                                                    <button
+                                                                        onClick={(e) => handleRemoveImage(t.id, e)}
+                                                                        className="bg-rose-600/90 hover:bg-rose-700 text-white p-1.5 rounded-lg shadow-md transition-colors"
+                                                                        title="Remover Imagem do Mapa"
+                                                                    >
+                                                                        <Trash2 className="w-3.5 h-3.5" />
+                                                                    </button>
                                                                 </div>
-                                                            </div>
-
-                                                            {/* Texto Oficial na Posição Original (No Rodapé da Área do Mapa) */}
-                                                            <p className="font-serif font-bold text-[9px] text-black text-center relative z-10 bg-white px-2 py-0 mb-0">
-                                                                (Cole o mapa acima ou desenhe o território)
-                                                            </p>
-                                                        </>
+                                                            </>
+                                                        ) : (
+                                                            <>
+                                                                <div className="no-print absolute inset-0 flex items-center justify-center pointer-events-none z-10 pb-4">
+                                                                    <div className="p-2.5 rounded-full bg-emerald-50 text-emerald-600 border border-emerald-200 group-hover/map:bg-emerald-600 group-hover/map:text-white transition-all shadow-sm">
+                                                                        <ImagePlus className="w-5 h-5" />
+                                                                    </div>
+                                                                </div>
+                                                                <p className="font-serif font-bold text-[9px] text-black text-center relative z-10 bg-white px-2 py-0 mb-0">
+                                                                    (Cole o mapa acima ou desenhe o território)
+                                                                </p>
+                                                            </>
+                                                        )
+                                                    ) : cardMode === 'address-pins' ? (
+                                                        /* MODO 2: PINOS DOS ENDEREÇOS EXCLUSIVO */
+                                                        <AddressPinsMap pins={pins} />
+                                                    ) : (
+                                                        /* MODO 3: POLÍGONOS (EM BREVE) */
+                                                        <div className="absolute inset-0 bg-slate-50 border border-dashed border-slate-300 flex flex-col items-center justify-center p-3 text-center">
+                                                            <Hexagon className="w-6 h-6 text-purple-500 mb-1 opacity-70" />
+                                                            <p className="font-sans font-bold text-[11px] text-slate-700">Modo 3: Desenho por Polígonos</p>
+                                                            <p className="font-sans text-[9.5px] text-slate-500 mt-0.5">Em desenvolvimento futuro.</p>
+                                                        </div>
                                                     )}
                                                 </div>
                                             </div>
 
-                                            {/* Rodapé Oficial S-12-T (3 linhas compactas com alinhamento tipográfico perfeito) */}
+                                            {/* Rodapé Oficial S-12-T */}
                                             <div className="w-full font-serif font-bold text-[10.5px] leading-[1.3] text-black mb-1 select-none">
                                                 <span className="block text-justify [text-align-last:justify] w-full">
                                                     Guarde este cartão no envelope. Tome cuidado para não o manchar, marcar
@@ -701,22 +697,19 @@ export default function MapCardPage() {
                         {filteredTerritories.map((t) => {
                             const localidadeText = formatLocalidade(t.description, t.cityName);
                             const isUploadingThis = uploadingTerritoryId === t.id;
-                            const pins = territoryPinsMap.get(t.id) || [];
+                            const pins = cardMode === 'address-pins' ? (territoryPinsMap.get(t.id) || []) : [];
 
                             return (
                                 <div
                                     key={t.id}
                                     className="bg-white text-black border border-black px-7 py-4 shadow-lg print:shadow-none print:border-none w-[148mm] h-[105mm] mx-auto flex flex-col justify-between break-after-page s12-font select-none box-border overflow-hidden group relative"
                                 >
-                                    {/* Bloco Superior (Título + Cabeçalho com Pontilhado Contínuo Sobposto + Área do Mapa) */}
                                     <div className="flex-1 flex flex-col justify-between">
                                         <div>
-                                            {/* Título Principal S-12-T */}
                                             <h1 className="text-center font-serif text-[21px] font-bold tracking-normal text-black mb-3">
                                                 Cartão de Mapa de Território
                                             </h1>
 
-                                            {/* Cabeçalho: Localidade ... Terr. N.º ... */}
                                             <div className="flex items-baseline justify-between font-serif text-[12px] font-bold text-black mb-2">
                                                 <div className="flex items-baseline flex-1 min-w-0 mr-2">
                                                     <span className="shrink-0 font-bold mr-1.5">Localidade</span>
@@ -734,57 +727,64 @@ export default function MapCardPage() {
                                             </div>
                                         </div>
 
-                                        {/* Área do Mapa */}
+                                        {/* Área do Mapa Estritamente ISOLADA por Modo */}
                                         <div
-                                            onClick={() => mapDisplayMode === 'image' && !isUploadingThis && handleTriggerImageUpload(t.id)}
-                                            className="relative flex-1 min-h-[36mm] my-1 flex flex-col justify-end items-center overflow-hidden cursor-pointer group/map"
+                                            onClick={() => cardMode === 'manual-image' && !isUploadingThis && handleTriggerImageUpload(t.id)}
+                                            className={`relative flex-1 min-h-[36mm] my-1 flex flex-col justify-end items-center overflow-hidden group/map ${
+                                                cardMode === 'manual-image' ? 'cursor-pointer' : 'cursor-default'
+                                            }`}
                                         >
-                                            {isUploadingThis ? (
-                                                <div className="absolute inset-0 bg-white/90 flex flex-col items-center justify-center gap-2 font-sans text-xs font-bold text-primary z-20">
-                                                    <Loader2 className="w-6 h-6 animate-spin text-primary" />
-                                                    <span>Processando mapa HD...</span>
-                                                </div>
-                                            ) : mapDisplayMode === 'pins' ? (
-                                                /* OPÇÃO 2: MAPA POR PINOS DOS ENDEREÇOS (ENQUADRAMENTO AUTOMÁTICO) */
-                                                <AddressPinsMap pins={pins} territoryName={t.name} />
-                                            ) : t.imageUrl ? (
-                                                /* OPÇÃO 1: IMAGEM SALVA OU ENVIADA MANUALLY */
-                                                <>
-                                                    <img
-                                                        src={t.imageUrl}
-                                                        alt={`Mapa do Território ${t.name}`}
-                                                        className="absolute inset-0 w-full h-full object-cover object-center"
-                                                    />
-                                                    {/* Botão sutil de apagar no canto da imagem (exibido apenas ao passar o mouse sobre a imagem na web) */}
-                                                    <div className="no-print absolute top-1.5 right-1.5 z-20 opacity-0 group-hover/map:opacity-100 transition-opacity">
-                                                        <button
-                                                            onClick={(e) => handleRemoveImage(t.id, e)}
-                                                            className="bg-rose-600/90 hover:bg-rose-700 text-white p-1.5 rounded-lg shadow-md transition-colors"
-                                                            title="Remover Imagem do Mapa"
-                                                        >
-                                                            <Trash2 className="w-3.5 h-3.5" />
-                                                        </button>
+                                            {cardMode === 'manual-image' ? (
+                                                /* MODO 1: IMAGEM MANUAL EXCLUSIVO */
+                                                isUploadingThis ? (
+                                                    <div className="absolute inset-0 bg-white/90 flex flex-col items-center justify-center gap-2 font-sans text-xs font-bold text-primary z-20">
+                                                        <Loader2 className="w-6 h-6 animate-spin text-primary" />
+                                                        <span>Processando mapa HD...</span>
                                                     </div>
-                                                </>
-                                            ) : (
-                                                <>
-                                                    {/* Ícone no Centro da Área (Apenas na Tela Web) */}
-                                                    <div className="no-print absolute inset-0 flex items-center justify-center pointer-events-none z-10 pb-4">
-                                                        <div className="p-2.5 rounded-full bg-emerald-50 text-emerald-600 border border-emerald-200 group-hover/map:bg-emerald-600 group-hover/map:text-white transition-all shadow-sm">
-                                                            <ImagePlus className="w-5 h-5" />
+                                                ) : t.imageUrl ? (
+                                                    <>
+                                                        <img
+                                                            src={t.imageUrl}
+                                                            alt={`Mapa do Território ${t.name}`}
+                                                            className="absolute inset-0 w-full h-full object-cover object-center"
+                                                        />
+                                                        <div className="no-print absolute top-1.5 right-1.5 z-20 opacity-0 group-hover/map:opacity-100 transition-opacity">
+                                                            <button
+                                                                onClick={(e) => handleRemoveImage(t.id, e)}
+                                                                className="bg-rose-600/90 hover:bg-rose-700 text-white p-1.5 rounded-lg shadow-md transition-colors"
+                                                                title="Remover Imagem do Mapa"
+                                                                >
+                                                                <Trash2 className="w-3.5 h-3.5" />
+                                                            </button>
                                                         </div>
-                                                    </div>
-
-                                                    {/* Texto Oficial na Posição Original (No Rodapé da Área do Mapa) */}
-                                                    <p className="font-serif font-bold text-[9px] text-black text-center relative z-10 bg-white px-2 py-0 mb-0">
-                                                        (Cole o mapa acima ou desenhe o território)
-                                                    </p>
-                                                </>
+                                                    </>
+                                                ) : (
+                                                    <>
+                                                        <div className="no-print absolute inset-0 flex items-center justify-center pointer-events-none z-10 pb-4">
+                                                            <div className="p-2.5 rounded-full bg-emerald-50 text-emerald-600 border border-emerald-200 group-hover/map:bg-emerald-600 group-hover/map:text-white transition-all shadow-sm">
+                                                                <ImagePlus className="w-5 h-5" />
+                                                            </div>
+                                                        </div>
+                                                        <p className="font-serif font-bold text-[9px] text-black text-center relative z-10 bg-white px-2 py-0 mb-0">
+                                                            (Cole o mapa acima ou desenhe o território)
+                                                        </p>
+                                                    </>
+                                                )
+                                            ) : cardMode === 'address-pins' ? (
+                                                /* MODO 2: PINOS DOS ENDEREÇOS EXCLUSIVO */
+                                                <AddressPinsMap pins={pins} />
+                                            ) : (
+                                                /* MODO 3: POLÍGONOS (EM BREVE) */
+                                                <div className="absolute inset-0 bg-slate-50 border border-dashed border-slate-300 flex flex-col items-center justify-center p-3 text-center">
+                                                    <Hexagon className="w-6 h-6 text-purple-500 mb-1 opacity-70" />
+                                                    <p className="font-sans font-bold text-[11px] text-slate-700">Modo 3: Desenho por Polígonos</p>
+                                                    <p className="font-sans text-[9.5px] text-slate-500 mt-0.5">Em desenvolvimento futuro.</p>
+                                                </div>
                                             )}
                                         </div>
                                     </div>
 
-                                    {/* Rodapé Oficial S-12-T (3 linhas compactas com alinhamento tipográfico perfeito) */}
+                                    {/* Rodapé Oficial S-12-T */}
                                     <div className="w-full font-serif font-bold text-[10.5px] leading-[1.3] text-black mb-1 select-none">
                                         <span className="block text-justify [text-align-last:justify] w-full">
                                             Guarde este cartão no envelope. Tome cuidado para não o manchar, marcar
