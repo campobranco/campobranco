@@ -27,6 +27,7 @@ interface AddressPinItem {
     number?: string;
     lat: number;
     lng: number;
+    residentName?: string;
 }
 
 // Extrai coordenadas numéricas válidas de lat/lng, objeto coordinates ou link do Google Maps
@@ -88,7 +89,11 @@ function AddressPinsMap({ pins }: { pins: AddressPinItem[] }) {
                     iconAnchor: [11, 11]
                 });
 
-                const labelText = `${pin.street}${pin.number ? `, ${pin.number}` : ''}`;
+                // Prioridade para o Nome dos Moradores (ex: Carlos e Vanessa, Gabrieli)
+                const resident = pin.residentName?.trim();
+                const addressFallback = `${pin.street}${pin.number ? `, ${pin.number}` : ''}`;
+                const labelText = resident && resident !== '' ? resident : addressFallback;
+
                 L.marker([pin.lat, pin.lng], { icon: customIcon })
                     .addTo(map)
                     .bindTooltip(labelText, {
@@ -313,7 +318,8 @@ export default function MapCardPage() {
                                     street: addr.street || 'Endereço',
                                     number: addr.number,
                                     lat: coords.lat,
-                                    lng: coords.lng
+                                    lng: coords.lng,
+                                    residentName: addr.residentName || addr.resident_name || addr.name || ''
                                 });
                                 pinsMap.set(addr.territoryId, existing);
                             }
