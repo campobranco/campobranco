@@ -118,10 +118,14 @@ export default function AdminUsersPage() {
         };
         fetchCongs();
 
-        // Listeners para usuários - Ordenar por data de criação para ver novos primeiro
-        let usersQuery = query(collection(db, 'users'), orderBy('createdAt', 'desc'));
-        if (!isAdminRoleGlobal && congregationId) {
+        let usersQuery;
+        if (isAdminRoleGlobal) {
+            usersQuery = query(collection(db, 'users'), orderBy('createdAt', 'desc'));
+        } else if (congregationId) {
             usersQuery = query(collection(db, 'users'), where('congregationId', '==', congregationId), orderBy('createdAt', 'desc'));
+        } else {
+            setLoadingData(false);
+            return;
         }
 
         const unsubscribe = onSnapshot(usersQuery, (snapshot) => {
@@ -310,15 +314,20 @@ export default function AdminUsersPage() {
         <div className="min-h-screen bg-background pb-32 font-sans text-main">
             {/* Header seguindo o padrão padrão do app (ex: ReportsPage) */}
             <header className="bg-surface sticky top-0 z-30 px-6 py-4 border-b border-surface-border flex items-center justify-between shadow-sm">
-                <div className="flex items-center gap-3">
-                    <div className="bg-emerald-600 p-2 rounded-lg text-white shadow-lg shadow-emerald-500/20">
-                        <Users className="w-5 h-5" />
-                    </div>
-                    <div>
-                        <h1 className="font-bold text-lg text-main tracking-tight leading-tight">Membros</h1>
-                        <p className="text-[10px] text-muted font-bold uppercase tracking-widest">
-                            {isAdminRoleGlobal ? `Administração Global (${users.length} usuários)` : `Gestão da Congregação (${users.length} membros)`}
-                        </p>
+                <div className="flex items-center gap-4">
+                    <Link href="/settings" className="p-2 hover:bg-background rounded-full transition-colors">
+                        <ChevronLeft className="w-6 h-6 text-muted" />
+                    </Link>
+                    <div className="flex items-center gap-3">
+                        <div className="bg-emerald-600 p-2 rounded-lg text-white shadow-lg shadow-emerald-500/20">
+                            <Users className="w-5 h-5" />
+                        </div>
+                        <div>
+                            <h1 className="font-bold text-lg text-main tracking-tight leading-tight">Membros</h1>
+                            <p className="text-[10px] text-muted font-bold uppercase tracking-widest">
+                                {isAdminRoleGlobal ? `Administração Global (${users.length} usuários)` : `Gestão da Congregação (${users.length} membros)`}
+                            </p>
+                        </div>
                     </div>
                 </div>
 
@@ -328,6 +337,7 @@ export default function AdminUsersPage() {
                 >
                     <UserPlus2 className="w-4 h-4" />
                     <span className="hidden sm:inline">Adicionar</span>
+
                 </button>
             </header>
 

@@ -2,6 +2,7 @@ import {
     collection, 
     doc, 
     addDoc, 
+    getDoc,
     getDocs, 
     updateDoc, 
     deleteDoc, 
@@ -11,6 +12,7 @@ import {
     serverTimestamp 
 } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
+import { logActivity } from '@/lib/services/audit_logs';
 
 const COLLECTION_NAME = 'reference_points';
 
@@ -85,6 +87,16 @@ export async function createReferencePoint(data: {
         };
 
         const docRef = await addDoc(collection(db, COLLECTION_NAME), pointData);
+
+        logActivity({
+            level: 'SUCCESS',
+            category: 'TERRITORY',
+            action: 'REFERENCE_POINT_CREATE',
+            message: `REFERENCE_POINT_CREATE: Ponto de referência "${data.name}" criado`,
+            congregationId: data.congregationId,
+            details: `ID: ${docRef.id} | Obs: ${data.observations || 'N/A'}`
+        });
+
         return { success: true, id: docRef.id };
     } catch (error: any) {
         console.error('Error creating reference point:', error);
@@ -102,6 +114,11 @@ export async function updateReferencePoint(id: string, data: {
     lng: number;
 }) {
     try {
+        const refPointDoc = doc(db, COLLECTION_NAME, id);
+        const oldSnap = await getDoc(refPointDoc);
+        const oldData = oldSnap.exists() ? oldSnap.data() : null;
+        const refName = data.name || oldData?.name || id;
+
         const updateData = {
             name: data.name,
             observations: data.observations || '',
@@ -110,7 +127,17 @@ export async function updateReferencePoint(id: string, data: {
             updatedAt: serverTimestamp(),
         };
 
-        await updateDoc(doc(db, COLLECTION_NAME, id), updateData);
+        await updateDoc(refPointDoc, updateData);
+
+        logActivity({
+            level: 'INFO',
+            category: 'TERRITORY',
+            action: 'REFERENCE_POINT_UPDATE',
+            message: `REFERENCE_POINT_UPDATE: Ponto de referência "${refName}" atualizado`,
+            congregationId: oldData?.congregationId || '',
+            details: `ID: ${id}`
+        });
+
         return { success: true };
     } catch (error: any) {
         console.error('Error updating reference point:', error);
@@ -123,7 +150,22 @@ export async function updateReferencePoint(id: string, data: {
  */
 export async function deleteReferencePoint(id: string) {
     try {
-        await deleteDoc(doc(db, COLLECTION_NAME, id));
+        const refPointDoc = doc(db, COLLECTION_NAME, id);
+        const oldSnap = await getDoc(refPointDoc);
+        const oldData = oldSnap.exists() ? oldSnap.data() : null;
+        const refName = oldData?.name || id;
+
+        await deleteDoc(refPointDoc);
+
+        logActivity({
+            level: 'WARN',
+            category: 'TERRITORY',
+            action: 'REFERENCE_POINT_DELETE',
+            message: `REFERENCE_POINT_DELETE: Ponto de referência "${refName}" removido`,
+            congregationId: oldData?.congregationId || '',
+            details: `ID: ${id}`
+        });
+
         return { success: true };
     } catch (error: any) {
         console.error('Error deleting reference point:', error);

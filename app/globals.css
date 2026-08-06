@@ -167,3 +167,20 @@ input[type="checkbox"]:focus-visible {
 input[type="checkbox"]:hover:not(:checked) {
   border-color: var(--primary);
 }
+
+/* Date input native picker indicator visibility for dark mode */
+input[type="date"] {
+  color-scheme: light;
+}
+
+.dark input[type="date"] {
+  color-scheme: dark;
+}
+
+input[type="date"]::-webkit-calendar-picker-indicator {
+  cursor: pointer;
+}
+
+.dark input[type="date"]::-webkit-calendar-picker-indicator {
+  filter: invert(0.85);
+}

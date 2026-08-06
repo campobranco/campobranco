@@ -26,3 +26,8 @@ export async function logActivityMutation(input: LogActivityInput) {
 export async function getSystemLogsQuery(max: number = 100) {
     return await getSystemLogs(max);
 }
+
+export async function logPermissionDeniedMutation(action: string, category: LogCategory = 'AUTH', details?: string) {
+    const { logPermissionDenied } = await import('@/lib/services/audit_logs');
+    return await logPermissionDenied(action, category, details);
+}

@@ -58,7 +58,7 @@ export default function BottomNav() {
                             <div className={`p-2 rounded-lg transition-all duration-300 ${active ? 'bg-primary-light/50 dark:bg-primary-dark/30 shadow-sm' : ''}`}>
                                 <Icon className={`w-6 h-6 ${active ? 'fill-current' : ''}`} strokeWidth={active ? 2.5 : 2} />
                             </div>
-                            <span className={`text-[10px] font-bold tracking-wide transition-all ${active ? 'opacity-100 scale-100' : 'opacity-0 scale-50 hidden'}`}>
+                            <span className={`text-[10px] font-bold tracking-wide transition-all ${active ? 'text-primary dark:text-primary-light font-extrabold' : 'text-muted'}`}>
                                 {item.label}
                             </span>
                             {active && (

@@ -118,47 +118,49 @@ export default function NewPointModal({ isOpen, onClose, cityId, congregationId,
 
     return (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm animate-in fade-in duration-300">
-            <div className="bg-white rounded-lg w-full max-w-sm p-6 shadow-2xl animate-in zoom-in-95 duration-300">
+            <div className="bg-surface border border-surface-border rounded-2xl w-full max-w-sm p-6 shadow-2xl animate-in zoom-in-95 duration-300">
                 <div className="flex justify-between items-center mb-6">
-                    <h2 className="text-xl font-bold text-gray-900 flex items-center gap-2">
-                        <Plus className="w-6 h-6 text-amber-600" />
+                    <h2 className="text-xl font-bold text-main flex items-center gap-2">
+                        <Plus className="w-6 h-6 text-amber-500" />
                         Novo Ponto
                     </h2>
-                    <button onClick={onClose}><X className="w-5 h-5 text-gray-400" /></button>
+                    <button onClick={onClose} className="p-1 hover:bg-background rounded-lg transition-colors">
+                        <X className="w-5 h-5 text-muted hover:text-main" />
+                    </button>
                 </div>
 
                 <form onSubmit={handleCreatePoint} className="space-y-4">
                     <div>
-                        <label className="block text-xs font-bold text-gray-500 uppercase tracking-wider mb-2">Nome do Local</label>
+                        <label className="block text-xs font-bold text-muted uppercase tracking-wider mb-2">Nome do Local</label>
                         <input
                             type="text"
                             value={name}
                             onChange={(e) => setName(e.target.value)}
-                            className="w-full bg-gray-50 border-none rounded-lg p-4 font-bold text-gray-900 focus:ring-2 focus:ring-amber-500/20 outline-none"
+                            className="w-full bg-background border border-surface-border rounded-xl p-4 font-bold text-main focus:ring-2 focus:ring-amber-500/20 outline-none transition-all placeholder:text-muted"
                             placeholder="Ex: Praça Central"
                             autoFocus
                         />
                     </div>
                     <div>
-                        <label className="block text-xs font-bold text-gray-500 uppercase tracking-wider mb-2">Endereço</label>
+                        <label className="block text-xs font-bold text-muted uppercase tracking-wider mb-2">Endereço</label>
                         <input
                             type="text"
                             value={address}
                             onChange={(e) => setAddress(e.target.value)}
-                            className="w-full bg-gray-50 border-none rounded-lg p-4 font-medium text-gray-900 focus:ring-2 focus:ring-amber-500/20 outline-none"
+                            className="w-full bg-background border border-surface-border rounded-xl p-4 font-medium text-main focus:ring-2 focus:ring-amber-500/20 outline-none transition-all placeholder:text-muted"
                             placeholder="Rua..."
                         />
                     </div>
 
                     <div className="space-y-4">
                         <div>
-                            <label className="block text-[10px] font-bold text-gray-400 uppercase mb-2">Google Maps</label>
+                            <label className="block text-[10px] font-bold text-muted uppercase mb-2">Google Maps</label>
                             <div className="relative">
                                 <input
                                     type="text"
                                     value={googleMapsLink}
                                     onChange={(e) => setGoogleMapsLink(e.target.value)}
-                                    className="w-full bg-gray-50 border-none rounded-lg p-3 pr-10 text-xs font-medium text-gray-900 focus:ring-2 focus:ring-amber-500/20 outline-none"
+                                    className="w-full bg-background border border-surface-border rounded-xl p-3 pr-10 text-xs font-medium text-main focus:ring-2 focus:ring-amber-500/20 outline-none transition-all placeholder:text-muted"
                                     placeholder="Link..."
                                 />
                                 <img
@@ -169,13 +171,13 @@ export default function NewPointModal({ isOpen, onClose, cityId, congregationId,
                             </div>
                         </div>
                         <div>
-                            <label className="block text-[10px] font-bold text-gray-400 uppercase mb-2">Waze</label>
+                            <label className="block text-[10px] font-bold text-muted uppercase mb-2">Waze</label>
                             <div className="relative">
                                 <input
                                     type="text"
                                     value={wazeLink}
                                     onChange={(e) => setWazeLink(e.target.value)}
-                                    className="w-full bg-gray-50 border-none rounded-lg p-3 pr-10 text-xs font-medium text-gray-900 focus:ring-2 focus:ring-amber-500/20 outline-none"
+                                    className="w-full bg-background border border-surface-border rounded-xl p-3 pr-10 text-xs font-medium text-main focus:ring-2 focus:ring-amber-500/20 outline-none transition-all placeholder:text-muted"
                                     placeholder="Link..."
                                 />
                                 <img
@@ -187,12 +189,12 @@ export default function NewPointModal({ isOpen, onClose, cityId, congregationId,
                         </div>
                     </div>
                     <div>
-                        <label className="block text-xs font-bold text-gray-500 uppercase tracking-wider mb-2">Horário (Opcional)</label>
+                        <label className="block text-xs font-bold text-muted uppercase tracking-wider mb-2">Horário (Opcional)</label>
                         <input
                             type="text"
                             value={schedule}
                             onChange={(e) => setSchedule(e.target.value)}
-                            className="w-full bg-gray-50 border-none rounded-xl p-4 font-medium text-gray-900 focus:ring-2 focus:ring-amber-500/20 outline-none"
+                            className="w-full bg-background border border-surface-border rounded-xl p-4 font-medium text-main focus:ring-2 focus:ring-amber-500/20 outline-none transition-all placeholder:text-muted"
                             placeholder="Ex: Segundas, 08:00 - 12:00"
                         />
                     </div>
@@ -204,13 +206,13 @@ export default function NewPointModal({ isOpen, onClose, cityId, congregationId,
                                 setPickerTempCoords(lat && lng ? { lat, lng } : null);
                                 setIsMapPickerOpen(true);
                             }}
-                            className="w-full py-2 bg-blue-50 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400 rounded-lg font-bold text-xs uppercase tracking-wider hover:bg-blue-100 dark:hover:bg-blue-900/50 transition-colors flex items-center justify-center gap-2"
+                            className="w-full py-2.5 bg-blue-500/10 text-blue-500 dark:text-blue-400 rounded-xl font-bold text-xs uppercase tracking-wider hover:bg-blue-500/20 transition-colors flex items-center justify-center gap-2 border border-blue-500/20"
                         >
                             <MapPin className="w-4 h-4" /> Selecionar Pino no Mapa
                         </button>
                     </div>
 
-                    <button type="submit" className="w-full py-3.5 bg-gray-900 text-white rounded-lg font-bold shadow-lg mt-2 flex items-center justify-center gap-2">
+                    <button type="submit" className="w-full py-3.5 bg-primary hover:bg-primary-dark text-white rounded-xl font-bold shadow-lg shadow-primary/20 mt-2 flex items-center justify-center gap-2 transition-all active:scale-95">
                         {loading ? <Loader2 className="w-5 h-5 animate-spin" /> : 'Criar Ponto'}
                     </button>
                 </form>

@@ -5,10 +5,17 @@ export async function getRegistryData(congregationId: string) {
     try {
         if (!congregationId) throw new Error("ID da congregação é obrigatório.");
 
-        // Fetch territories
+        // Fetch territories and normalize entity schema
         const terrQuery = query(collection(db, 'territories'), where('congregationId', '==', congregationId));
         const terrSnap = await getDocs(terrQuery);
-        const territories = terrSnap.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+        const territories = terrSnap.docs.map(doc => {
+            const data = doc.data();
+            return {
+                id: doc.id,
+                ...data,
+                description: data.description ?? data.notes ?? '',
+            };
+        });
 
         // Fetch cities
         const cityQuery = query(collection(db, 'cities'), where('congregationId', '==', congregationId));

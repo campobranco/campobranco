@@ -157,7 +157,7 @@ export default function CSVActionButtons({
                     e.stopPropagation();
                     setIsMenuOpen(!isMenuOpen);
                 }}
-                className="p-2.5 bg-surface border border-surface-border text-muted hover:text-primary hover:border-primary-light rounded-xl shadow-sm transition-all flex items-center justify-center group"
+                className="p-2.5 bg-surface border border-surface-border text-muted hover:text-primary hover:bg-surface-highlight rounded-xl shadow-sm transition-all flex items-center justify-center group"
                 title="Ações de Dados"
             >
                 <MoreHorizontal className="w-5 h-5 group-hover:scale-110 transition-transform" />

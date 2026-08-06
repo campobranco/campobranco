@@ -55,10 +55,15 @@ export default function UserManagementList({ congregationId }: { congregationId?
 
     useEffect(() => {
         let q;
-        if (congregationId) {
+        if (isAdminRoleGlobal) {
+            q = congregationId
+                ? query(collection(db, 'users'), where('congregationId', '==', congregationId), orderBy('name'))
+                : query(collection(db, 'users'), orderBy('name'));
+        } else if (congregationId) {
             q = query(collection(db, 'users'), where('congregationId', '==', congregationId), orderBy('name'));
         } else {
-            q = query(collection(db, 'users'), orderBy('name'));
+            setLoadingData(false);
+            return;
         }
 
         const unsubscribe = onSnapshot(q, (snapshot) => {

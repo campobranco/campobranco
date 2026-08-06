@@ -12,6 +12,7 @@ import { useRouter } from 'next/navigation';
 import { ArrowLeft, Database, Trash2, Link as LinkIcon, AlertTriangle, Check, Loader2, Pencil } from 'lucide-react';
 import Link from 'next/link';
 import { toast } from 'sonner';
+import BottomNav from '@/app/components/BottomNav';
 import ConfirmationModal from '@/app/components/ConfirmationModal';
 // TODO(mutations): migrate to mutation layer - legacy module (admin/report/dashboard)
 // eslint-disable-next-line no-restricted-imports
@@ -698,6 +699,7 @@ export default function OrphanedDataPage() {
                 description={confirmModal.message}
                 variant={confirmModal.variant}
             />
+            <BottomNav />
         </div >
     );
 }

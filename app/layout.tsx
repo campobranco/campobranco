@@ -66,6 +66,32 @@ export default function RootLayout({
         <meta charSet="utf-8" />
         <script dangerouslySetInnerHTML={{
           __html: `
+          // Inicialização síncrona do tema antes do render da página (previne FOUC / flash de tema)
+          try {
+            const savedPrefs = localStorage.getItem('app-preferences');
+            let mode = 'system';
+            if (savedPrefs) {
+              const parsed = JSON.parse(savedPrefs);
+              if (parsed.themeMode) mode = parsed.themeMode;
+            }
+            let isDark = false;
+            if (mode === 'dark') {
+              isDark = true;
+            } else if (mode === 'light') {
+              isDark = false;
+            } else if (mode === 'auto') {
+              const hour = new Date().getHours();
+              isDark = hour >= 19 || hour < 7;
+            } else if (mode === 'system') {
+              isDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
+            }
+            if (isDark) {
+              document.documentElement.classList.add('dark');
+            } else {
+              document.documentElement.classList.remove('dark');
+            }
+          } catch (e) {}
+
           // Injetando versão do app para o script
           const CURRENT_VERSION = "${appVersion}";
           

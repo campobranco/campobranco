@@ -15,6 +15,7 @@ import {
     serverTimestamp
 } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
+import { logActivity } from '@/lib/services/audit_logs';
 
 const TABLE = 'witnessing_points';
 
@@ -77,6 +78,16 @@ export async function createWitnessingPoint(data: {
         };
 
         const docRef = await addDoc(collection(db, TABLE), pointData);
+
+        logActivity({
+            level: 'SUCCESS',
+            category: 'WITNESSING',
+            action: 'POINT_CREATE',
+            message: `POINT_CREATE: Ponto de testemunho "${data.name}" cadastrado`,
+            congregationId: data.congregationId,
+            details: `ID: ${docRef.id} | Endereço: ${data.address || 'N/A'} | Horário: ${data.schedule || 'N/A'}`
+        });
+
         return { success: true, id: docRef.id };
     } catch (error: any) {
         console.error('Error creating witnessing point:', error);
@@ -113,6 +124,22 @@ export async function updateWitnessingPointDetails(id: string, data: {
     wazeLink?: string;
 }) {
     try {
+        const pointRef = doc(db, TABLE, id);
+        const oldSnap = await getDoc(pointRef);
+        const oldData = oldSnap.exists() ? oldSnap.data() : null;
+        const pointName = data.name || oldData?.name || id;
+
+        const changes: string[] = [];
+        if (oldData) {
+            if (data.name !== undefined && oldData.name !== data.name) changes.push(`nome: "${oldData.name ?? ''}" -> "${data.name}"`);
+            if (data.address !== undefined && oldData.address !== data.address) changes.push(`endereço: "${oldData.address ?? ''}" -> "${data.address}"`);
+            if (data.schedule !== undefined && oldData.schedule !== data.schedule) changes.push(`horário: "${oldData.schedule ?? ''}" -> "${data.schedule}"`);
+            if (data.latitude !== undefined && oldData.lat !== data.latitude) changes.push(`lat: "${oldData.lat ?? ''}" -> "${data.latitude}"`);
+            if (data.longitude !== undefined && oldData.lng !== data.longitude) changes.push(`lng: "${oldData.lng ?? ''}" -> "${data.longitude}"`);
+            if (data.googleMapsLink !== undefined && oldData.googleMapsLink !== data.googleMapsLink) changes.push(`mapsLink: "${oldData.googleMapsLink ?? ''}" -> "${data.googleMapsLink}"`);
+            if (data.wazeLink !== undefined && oldData.wazeLink !== data.wazeLink) changes.push(`wazeLink: "${oldData.wazeLink ?? ''}" -> "${data.wazeLink}"`);
+        }
+
         const updateData: any = {
             name: data.name,
             address: data.address,
@@ -125,7 +152,18 @@ export async function updateWitnessingPointDetails(id: string, data: {
         if (data.googleMapsLink !== undefined) updateData.googleMapsLink = data.googleMapsLink;
         if (data.wazeLink !== undefined) updateData.wazeLink = data.wazeLink;
 
-        await updateDoc(doc(db, TABLE, id), updateData);
+        await updateDoc(pointRef, updateData);
+
+        const diffText = changes.length > 0 ? changes.join(' | ') : 'Nenhuma alteração de valor detectada';
+
+        logActivity({
+            level: 'SUCCESS',
+            category: 'WITNESSING',
+            action: 'POINT_UPDATE',
+            message: `POINT_UPDATE: Ponto de testemunho "${pointName}" atualizado`,
+            congregationId: oldData?.congregationId || '',
+            details: `Alterações: [${diffText}] | ID: ${id}`
+        });
 
         return { success: true };
     } catch (error: any) {
@@ -139,22 +177,53 @@ export async function updateWitnessingPointDetails(id: string, data: {
  */
 export async function deleteWitnessingPoint(id: string) {
     try {
-        await deleteDoc(doc(db, TABLE, id));
+        const pointRef = doc(db, TABLE, id);
+        const oldSnap = await getDoc(pointRef);
+        const oldData = oldSnap.exists() ? oldSnap.data() : null;
+        const pointName = oldData?.name || id;
+
+        await deleteDoc(pointRef);
+
+        logActivity({
+            level: 'WARN',
+            category: 'WITNESSING',
+            action: 'POINT_DELETE',
+            message: `POINT_DELETE: Ponto de testemunho "${pointName}" removido`,
+            congregationId: oldData?.congregationId || '',
+            details: `ID: ${id} | Endereço: ${oldData?.address || 'N/A'}`
+        });
+
         return { success: true };
     } catch (error: any) {
         console.error('Error deleting witnessing point:', error);
         return { success: false, error: error.message || 'Failed to delete point' };
     }
 }
+
 /**
  * Registra check-in/out em um ponto de testemunho
  */
 export async function checkInWitnessingPoint(id: string, updates: any) {
     try {
-        await updateDoc(doc(db, TABLE, id), {
+        const pointRef = doc(db, TABLE, id);
+        const oldSnap = await getDoc(pointRef);
+        const oldData = oldSnap.exists() ? oldSnap.data() : null;
+        const pointName = oldData?.name || id;
+
+        await updateDoc(pointRef, {
             ...updates,
             updatedAt: serverTimestamp(),
         });
+
+        logActivity({
+            level: 'INFO',
+            category: 'WITNESSING',
+            action: updates.status === 'OCCUPIED' ? 'POINT_CHECKIN' : 'POINT_CHECKOUT',
+            message: `POINT_${updates.status === 'OCCUPIED' ? 'CHECKIN' : 'CHECKOUT'}: Registrado no ponto "${pointName}"`,
+            congregationId: oldData?.congregationId || '',
+            details: `ID: ${id} | Status: ${updates.status || 'N/A'}`
+        });
+
         return { success: true };
     } catch (error: any) {
         console.error('Error check-in witnessing point:', error);

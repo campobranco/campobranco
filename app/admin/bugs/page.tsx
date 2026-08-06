@@ -28,6 +28,7 @@ import {
 } from 'lucide-react';
 import Link from 'next/link';
 import { toast } from 'sonner';
+import BottomNav from '@/app/components/BottomNav';
 import { format } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 
@@ -419,6 +420,7 @@ export default function BugReportsAdminPage() {
                     </div>
                 </div>
             )}
+            <BottomNav />
         </div>
     );
 }

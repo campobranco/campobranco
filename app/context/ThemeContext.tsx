@@ -18,15 +18,48 @@ interface ThemeContextType {
 const ThemeContext = createContext<ThemeContextType>({
     textSize: 16,
     displayScale: 1,
-    themeMode: 'light',
+    themeMode: 'system',
     updatePreferences: async () => { }
 });
 
 export function ThemeProvider({ children }: { children: React.ReactNode }) {
     const { user } = useAuth();
-    const [textSize, setTextSize] = useState(16);
-    const [displayScale, setDisplayScale] = useState(1);
-    const [themeMode, setThemeMode] = useState<ThemeMode>('light');
+    const [textSize, setTextSize] = useState<number>(() => {
+        if (typeof window !== 'undefined') {
+            try {
+                const saved = localStorage.getItem("app-preferences");
+                if (saved) {
+                    const parsed = JSON.parse(saved);
+                    if (parsed.textSize) return parsed.textSize;
+                }
+            } catch (e) {}
+        }
+        return 16;
+    });
+    const [displayScale, setDisplayScale] = useState<number>(() => {
+        if (typeof window !== 'undefined') {
+            try {
+                const saved = localStorage.getItem("app-preferences");
+                if (saved) {
+                    const parsed = JSON.parse(saved);
+                    if (parsed.displayScale) return parsed.displayScale;
+                }
+            } catch (e) {}
+        }
+        return 1;
+    });
+    const [themeMode, setThemeMode] = useState<ThemeMode>(() => {
+        if (typeof window !== 'undefined') {
+            try {
+                const saved = localStorage.getItem("app-preferences");
+                if (saved) {
+                    const parsed = JSON.parse(saved);
+                    if (parsed.themeMode) return parsed.themeMode;
+                }
+            } catch (e) {}
+        }
+        return 'system';
+    });
     const [loaded, setLoaded] = useState(false);
 
     // Apply styles
@@ -64,8 +97,6 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
         applyTheme();
 
         // Listeners/Intervals
-        const cleanup = () => { };
-
         if (themeMode === 'system') {
             const mediaQuery = window.matchMedia('(prefers-color-scheme: dark)');
             const handleChange = () => applyTheme();
@@ -80,38 +111,34 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
         localStorage.setItem("app-preferences", JSON.stringify({ textSize, displayScale, themeMode }));
     }, [textSize, displayScale, themeMode]);
 
-    // Load from LocalStorage (fast)
+    // Fast mark loaded
     useEffect(() => {
-        const saved = localStorage.getItem("app-preferences");
-        if (saved) {
-            try {
-                const parsed = JSON.parse(saved);
-                if (parsed.textSize) setTextSize(parsed.textSize);
-                if (parsed.displayScale) setDisplayScale(parsed.displayScale);
-                if (parsed.themeMode) setThemeMode(parsed.themeMode);
-            } catch (e) {
-                console.warn("Failed to parse local preferences");
-            }
-        }
         setLoaded(true);
     }, []);
 
-    // Sincroniza preferências do Firestore (fonte authoritative, sobrepõe LocalStorage)
+    // Sincroniza preferências do Firestore (fonte authoritative, sobrepõe LocalStorage se válido)
     useEffect(() => {
         let isMounted = true;
         if (user && loaded) {
             const fetchPrefs = async () => {
                 try {
-                    // Busca o campo 'preferences' do documento do usuário no Firestore
                     const userRef = doc(db, 'users', user.uid);
                     const userSnap = await getDoc(userRef);
 
                     if (isMounted && userSnap.exists()) {
                         const prefs = userSnap.data()?.preferences as any;
-                        if (prefs) {
+                        if (prefs && prefs.themeMode) {
+                            setThemeMode(prefs.themeMode);
                             if (prefs.textSize) setTextSize(prefs.textSize);
                             if (prefs.displayScale) setDisplayScale(prefs.displayScale);
-                            if (prefs.themeMode) setThemeMode(prefs.themeMode);
+                        } else {
+                            // Se o Firestore não possui preferências gravadas, envia a preferência local atual
+                            const currentPrefs = {
+                                textSize,
+                                displayScale,
+                                themeMode
+                            };
+                            updateDoc(userRef, { preferences: currentPrefs }).catch(() => {});
                         }
                     }
                 } catch (error) {

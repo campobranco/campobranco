@@ -109,14 +109,30 @@ export async function logActivity(params: {
 }
 
 /**
+ * Registra falhas de permissão / acesso negado no Firestore.
+ */
+export async function logPermissionDenied(action: string, category: LogCategory = 'AUTH', details?: string) {
+    try {
+        await logActivity({
+            level: 'WARN',
+            category,
+            action: 'PERMISSION_DENIED',
+            message: `PERMISSAO_NEGADA: Tentativa de executar "${action}" sem privilégios suficientes`,
+            details: details || 'Operação bloqueada por falta de permissão ou regra de acesso'
+        });
+    } catch (e) {
+        console.error('Falha ao registrar log de permissão negada:', e);
+    }
+}
+
+/**
  * Busca logs do sistema ordenados do mais recente para o mais antigo.
  */
 export async function getSystemLogs(max: number = 100): Promise<{ success: boolean; logs?: SystemLog[]; error?: string }> {
     try {
         const logsRef = collection(db, COLLECTION);
-        let q = query(logsRef, orderBy('timestamp', 'desc'), limit(max));
-
-        const snapshot = await getDocs(collection(db, COLLECTION));
+        const q = query(logsRef, orderBy('timestamp', 'desc'), limit(max));
+        const snapshot = await getDocs(q);
 
         const logs: SystemLog[] = snapshot.docs.map(doc => {
             const data = doc.data();

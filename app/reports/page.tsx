@@ -15,6 +15,7 @@ import {
     CheckCircle2,
     Calendar,
     Map as MapIcon,
+    MapPin,
     ArrowRight,
     ChevronLeft,
     ChevronRight,
@@ -597,22 +598,41 @@ export default function ReportsPage() {
                         {canViewS13 && (
                             <div>
                                 <h2 className="font-bold text-main text-lg mb-4 px-1">Registros</h2>
-                                <a href="/reports/registry" className="block bg-surface p-6 rounded-lg shadow-sm border border-surface-border hover:border-primary-light dark:hover:border-primary-dark transition-all group">
-                                    <div className="flex items-center justify-between">
-                                        <div className="flex items-center gap-3">
-                                            <div className="p-2 bg-primary-light/50 rounded-lg text-primary dark:bg-primary-dark/30 dark:text-primary-light group-hover:scale-110 transition-transform">
-                                                <FileText className="w-5 h-5" />
+                                <div className="flex flex-col gap-4">
+                                    <a href="/reports/registry" className="block bg-surface p-6 rounded-lg shadow-sm border border-surface-border hover:border-primary-light dark:hover:border-primary-dark transition-all group">
+                                        <div className="flex items-center justify-between">
+                                            <div className="flex items-center gap-3">
+                                                <div className="p-2 bg-primary-light/50 rounded-lg text-primary dark:bg-primary-dark/30 dark:text-primary-light group-hover:scale-110 transition-transform">
+                                                    <FileText className="w-5 h-5" />
+                                                </div>
+                                                <div>
+                                                    <h3 className="font-bold text-main group-hover:text-primary dark:group-hover:text-primary-light transition-colors">Registro de Designação de Território</h3>
+                                                    <p className="text-xs text-muted">Acesse o formulário S-13-T 01/22 com histórico de designações.</p>
+                                                </div>
                                             </div>
-                                            <div>
-                                                <h3 className="font-bold text-main group-hover:text-primary dark:group-hover:text-primary-light transition-colors">Registro de Designação de Território</h3>
-                                                <p className="text-xs text-muted">Acesse o formulário S-13 com histórico de designações.</p>
+                                            <div className="bg-gray-100 dark:bg-gray-800 p-2 rounded-full">
+                                                <ArrowRight className="w-5 h-5 text-gray-400" />
                                             </div>
                                         </div>
-                                        <div className="bg-gray-100 dark:bg-gray-800 p-2 rounded-full">
-                                            <ArrowRight className="w-5 h-5 text-gray-400" />
+                                    </a>
+
+                                    <a href="/map-card" className="block bg-surface p-6 rounded-lg shadow-sm border border-surface-border hover:border-primary-light dark:hover:border-primary-dark transition-all group">
+                                        <div className="flex items-center justify-between">
+                                            <div className="flex items-center gap-3">
+                                                <div className="p-2 bg-amber-500/10 rounded-lg text-amber-500 dark:bg-amber-500/20 dark:text-amber-400 group-hover:scale-110 transition-transform">
+                                                    <MapPin className="w-5 h-5" />
+                                                </div>
+                                                <div>
+                                                    <h3 className="font-bold text-main group-hover:text-primary dark:group-hover:text-primary-light transition-colors">Cartão de Mapa de Território</h3>
+                                                    <p className="text-xs text-muted">Acesse o formulário S-12-T 6/72 com mapa e registro de designações.</p>
+                                                </div>
+                                            </div>
+                                            <div className="bg-gray-100 dark:bg-gray-800 p-2 rounded-full">
+                                                <ArrowRight className="w-5 h-5 text-gray-400" />
+                                            </div>
                                         </div>
-                                    </div>
-                                </a>
+                                    </a>
+                                </div>
                             </div>
                         )}
                     </>

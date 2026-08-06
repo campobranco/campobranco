@@ -31,6 +31,7 @@ import {
 } from 'lucide-react';
 import Link from 'next/link';
 import { toast } from 'sonner';
+import BottomNav from '@/app/components/BottomNav';
 
 const LEVEL_CONFIG: Record<LogLevel, { label: string, badge: string, icon: any }> = {
     'INFO': { label: 'INFO', badge: 'bg-blue-100 text-blue-700 dark:bg-blue-900/40 dark:text-blue-300 border-blue-200 dark:border-blue-800', icon: Info },
@@ -361,7 +362,7 @@ export default function SystemLogsAdminPage() {
                                     type="date" 
                                     value={startDate}
                                     onChange={(e) => setStartDate(e.target.value)}
-                                    className="py-1 px-2 bg-background border border-surface-border rounded-lg text-xs text-main"
+                                    className="py-1 px-2 bg-background border border-surface-border rounded-lg text-xs text-main cursor-pointer"
                                 />
                             </div>
                             <div className="flex items-center gap-1.5">
@@ -370,7 +371,7 @@ export default function SystemLogsAdminPage() {
                                     type="date" 
                                     value={endDate}
                                     onChange={(e) => setEndDate(e.target.value)}
-                                    className="py-1 px-2 bg-background border border-surface-border rounded-lg text-xs text-main"
+                                    className="py-1 px-2 bg-background border border-surface-border rounded-lg text-xs text-main cursor-pointer"
                                 />
                             </div>
                             {(startDate || endDate) && (
@@ -455,7 +456,12 @@ export default function SystemLogsAdminPage() {
                                                     <div className="flex items-center gap-1.5">
                                                         <span>{log.user || 'Sistema'}</span>
                                                         {log.role && (
-                                                            <span className="bg-primary/10 text-primary border border-primary/20 text-[9px] px-1 py-0.2 rounded font-bold uppercase">
+                                                            <span className={`text-[9px] px-1.5 py-0.5 rounded font-bold uppercase tracking-wider ${
+                                                                log.role === 'ADMIN' ? 'bg-red-500/15 text-red-400' :
+                                                                log.role === 'ANCIAO' ? 'bg-purple-500/15 text-purple-400' :
+                                                                log.role === 'SERVO' ? 'bg-blue-500/15 text-blue-400' :
+                                                                'bg-emerald-500/15 text-emerald-400'
+                                                            }`}>
                                                                 {log.role}
                                                             </span>
                                                         )}
@@ -550,6 +556,7 @@ export default function SystemLogsAdminPage() {
                     </div>
                 </div>
             )}
+            <BottomNav />
         </div>
     );
 }

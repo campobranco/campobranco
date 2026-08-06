@@ -173,6 +173,36 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         return () => unsubscribe();
     }, []);
 
+    // Intercepta e registra automaticamente todas as falhas globais de permissão (permission-denied)
+    useEffect(() => {
+        if (typeof window === 'undefined') return;
+
+        const handleUnhandledRejection = (event: PromiseRejectionEvent) => {
+            const error = event.reason;
+            const errMsg = error?.message || String(error || '');
+            const errCode = error?.code || '';
+
+            if (
+                errCode === 'permission-denied' ||
+                errMsg.toLowerCase().includes('permission-denied') ||
+                errMsg.toLowerCase().includes('insufficient permissions') ||
+                errMsg.toLowerCase().includes('permissão')
+            ) {
+                console.warn('[SECURITY] Falha de permissão capturada globalmente:', errMsg);
+                logActivity({
+                    level: 'WARN',
+                    category: 'AUTH',
+                    action: 'PERMISSION_DENIED',
+                    message: `PERMISSAO_NEGADA: Acesso bloqueado por falta de privilégio`,
+                    details: `Mensagem: ${errMsg} | Código: ${errCode || 'N/A'}`
+                });
+            }
+        };
+
+        window.addEventListener('unhandledrejection', handleUnhandledRejection);
+        return () => window.removeEventListener('unhandledrejection', handleUnhandledRejection);
+    }, []);
+
     // Ouve mudanças no perfil do usuário no Firestore em TEMPO REAL
     useEffect(() => {
         if (!user) return;
