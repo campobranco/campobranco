@@ -1,14 +1,29 @@
 import { collection, query, where, getDocs } from 'firebase/firestore';
 import { db } from '../firebase';
 
-export async function getRegistryData(congregationId: string) {
+export async function getRegistryData(congregationId: string, includeSharedLists: boolean = false) {
     try {
         if (!congregationId) throw new Error("ID da congregação é obrigatório.");
 
-        // Fetch territories and normalize entity schema
         const terrQuery = query(collection(db, 'territories'), where('congregationId', '==', congregationId));
-        const terrSnap = await getDocs(terrQuery);
-        const territories = terrSnap.docs.map(doc => {
+        const cityQuery = query(collection(db, 'cities'), where('congregationId', '==', congregationId));
+
+        const promises: Promise<any>[] = [
+            getDocs(terrQuery),
+            getDocs(cityQuery)
+        ];
+
+        if (includeSharedLists) {
+            const listsQuery = query(collection(db, 'shared_lists'), where('congregationId', '==', congregationId));
+            promises.push(getDocs(listsQuery));
+        }
+
+        const results = await Promise.all(promises);
+        const terrSnap = results[0];
+        const citySnap = results[1];
+        const listsSnap = includeSharedLists ? results[2] : null;
+
+        const territories = terrSnap.docs.map((doc: any) => {
             const data = doc.data();
             return {
                 id: doc.id,
@@ -17,15 +32,8 @@ export async function getRegistryData(congregationId: string) {
             };
         });
 
-        // Fetch cities
-        const cityQuery = query(collection(db, 'cities'), where('congregationId', '==', congregationId));
-        const citySnap = await getDocs(cityQuery);
-        const cities = citySnap.docs.map(doc => ({ id: doc.id, ...doc.data() }));
-
-        // Fetch shared_lists
-        const listsQuery = query(collection(db, 'shared_lists'), where('congregationId', '==', congregationId));
-        const listsSnap = await getDocs(listsQuery);
-        const shared_lists = listsSnap.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+        const cities = citySnap.docs.map((doc: any) => ({ id: doc.id, ...doc.data() }));
+        const shared_lists = listsSnap ? listsSnap.docs.map((doc: any) => ({ id: doc.id, ...doc.data() })) : [];
 
         return { success: true, territories, cities, shared_lists };
     } catch (error: any) {

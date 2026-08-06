@@ -239,11 +239,15 @@ export default function MapCardPage() {
         if (!congregationId) return;
 
         setPageLoading(true);
+
+        // Timer de segurança estrito: força o fim do spinner em no máximo 1.5 segundos
+        const safetyTimer = setTimeout(() => {
+            setPageLoading(false);
+        }, 1500);
+
         try {
-            const [resData, resAddr] = await Promise.all([
-                getRegistryData(congregationId),
-                getAddresses(congregationId)
-            ]);
+            const resData = await getRegistryData(congregationId);
+            clearTimeout(safetyTimer);
 
             if (!resData.success) throw new Error(resData.error || "Erro ao buscar territórios");
 
@@ -263,35 +267,40 @@ export default function MapCardPage() {
                 imageUrl: t.imageUrl
             }));
 
-            // Mapeamento dos pinos de endereço por território
-            const pinsMap = new Map<string, AddressPinItem[]>();
-            if (resAddr.success && Array.isArray(resAddr.addresses)) {
-                resAddr.addresses.forEach((addr: any) => {
-                    if (!addr.territoryId || addr.isActive === false) return;
-                    const coords = parseAddressCoords(addr);
-                    if (coords) {
-                        const existing = pinsMap.get(addr.territoryId) || [];
-                        existing.push({
-                            id: addr.id,
-                            territoryId: addr.territoryId,
-                            street: addr.street || 'Endereço',
-                            number: addr.number,
-                            lat: coords.lat,
-                            lng: coords.lng
-                        });
-                        pinsMap.set(addr.territoryId, existing);
-                    }
-                });
-            }
-            setTerritoryPinsMap(pinsMap);
-
             // Ordenação numérica pelo número do território
             terrs.sort((a, b) => a.name.localeCompare(b.name, undefined, { numeric: true }));
             setTerritories(terrs);
+            setPageLoading(false);
+
+            // Carrega os pinos de endereços em background para nunca travar a renderização inicial da página
+            getAddresses(congregationId).then(resAddr => {
+                if (resAddr.success && Array.isArray(resAddr.addresses)) {
+                    const pinsMap = new Map<string, AddressPinItem[]>();
+                    resAddr.addresses.forEach((addr: any) => {
+                        if (!addr.territoryId || addr.isActive === false) return;
+                        const coords = parseAddressCoords(addr);
+                        if (coords) {
+                            const existing = pinsMap.get(addr.territoryId) || [];
+                            existing.push({
+                                id: addr.id,
+                                territoryId: addr.territoryId,
+                                street: addr.street || 'Endereço',
+                                number: addr.number,
+                                lat: coords.lat,
+                                lng: coords.lng
+                            });
+                            pinsMap.set(addr.territoryId, existing);
+                        }
+                    });
+                    setTerritoryPinsMap(pinsMap);
+                }
+            }).catch(err => console.warn("Erro ao carregar pinos em background:", err));
+
         } catch (err: any) {
             console.error("Erro ao carregar dados do formulário S-12:", err);
             toast.error("Erro ao carregar cartões de mapa.");
         } finally {
+            clearTimeout(safetyTimer);
             setPageLoading(false);
         }
     }, [congregationId]);
