@@ -520,7 +520,7 @@ export default function CongregationsPage() {
                                         className="w-full bg-background border border-surface-border rounded-lg py-3 px-4 text-sm font-bold focus:ring-2 focus:ring-primary-light/500/20 focus:border-primary-light/500 transition-all text-main appearance-none"
                                     >
                                         <option value="" disabled>Selecione o tipo...</option>
-                                        <option value="Tradicional">Tradicional</option>
+                                        <option value="TRADITIONAL">Tradicional</option>
                                         <option value="SIGN_LANGUAGE">Língua de Sinais</option>
                                         <option value="FOREIGN_LANGUAGE">Língua Estrangeira</option>
                                     </select>

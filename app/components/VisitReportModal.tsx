@@ -58,8 +58,13 @@ export default function VisitReportModal({
             getDoc(doc(db, 'congregations', congId)).then(snap => {
                 if (snap.exists()) {
                     const data = snap.data();
-                    const category = data.category || data.type || null;
-                    setFetchedCategory(category);
+                    const rawCat = data.category || data.type || null;
+                    let resolvedType = rawCat;
+                    if (rawCat === 'Tradicional' || rawCat === 'tradicional') resolvedType = 'TRADITIONAL';
+                    else if (rawCat === 'Língua de Sinais' || rawCat === 'sinais' || rawCat === 'LS') resolvedType = 'SIGN_LANGUAGE';
+                    else if (rawCat === 'Língua Estrangeira') resolvedType = 'FOREIGN_LANGUAGE';
+
+                    setFetchedCategory(resolvedType);
                 }
             }).catch(err => {
                 console.error("[VISIT_MODAL] Erro ao buscar congregação do endereço:", err);
