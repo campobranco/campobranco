@@ -28,18 +28,26 @@ export const AppIconProvider: React.FC<{ children: React.ReactNode }> = ({ child
 
         if (!canaryDetected) return;
 
-        // 1. Favicon no navegador (Favicon de aba)
-        const favicons = document.querySelectorAll<HTMLLinkElement>("link[rel*='icon']");
-        if (favicons.length > 0) {
-            favicons.forEach((fav) => {
-                fav.href = '/favicon-c.ico';
-            });
-        } else {
-            const newFavicon = document.createElement('link');
-            newFavicon.rel = 'shortcut icon';
-            newFavicon.href = '/favicon-c.ico';
-            document.head.appendChild(newFavicon);
-        }
+        // 1. Favicon no navegador (Favicon de aba) - remove existentes para evitar cache/duplicatas e força -c
+        const existingIcons = document.querySelectorAll<HTMLLinkElement>("link[rel*='icon']");
+        existingIcons.forEach((el) => el.remove());
+
+        const newFavicon = document.createElement('link');
+        newFavicon.rel = 'icon';
+        newFavicon.type = 'image/x-icon';
+        newFavicon.href = '/favicon-c.ico';
+        document.head.appendChild(newFavicon);
+
+        const newSvgIcon = document.createElement('link');
+        newSvgIcon.rel = 'icon';
+        newSvgIcon.type = 'image/svg+xml';
+        newSvgIcon.href = '/app-icon-c.svg';
+        document.head.appendChild(newSvgIcon);
+
+        const newShortcutIcon = document.createElement('link');
+        newShortcutIcon.rel = 'shortcut icon';
+        newShortcutIcon.href = '/favicon-c.ico';
+        document.head.appendChild(newShortcutIcon);
 
         // 2. Apple Touch Icon
         const appleIcons = document.querySelectorAll<HTMLLinkElement>("link[rel*='apple-touch-icon']");
