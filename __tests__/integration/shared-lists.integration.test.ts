@@ -12,7 +12,7 @@ process.env.NEXT_PUBLIC_FIREBASE_APP_ID = '1:1234567890:web:mockappid';
 process.env.NEXT_PUBLIC_FIREBASE_DATABASE_ID = '(default)';
 
 import admin from 'firebase-admin';
-import { createSharedList, findActiveSharedList } from '../../lib/services/shared_lists';
+import { createSharedList, findActiveSharedList, returnExpiredTerritoryAssignments } from '../../lib/services/shared_lists';
 
 // Inicializa o app admin do Firebase caso não esteja inicializado
 if (!admin.apps.length) {
@@ -298,6 +298,48 @@ describe('Integration: Shared Links — Firestore Emulator', () => {
         // Valida que a nova versão física (CAS) foi gravada no documento determinístico
         const listSnap = await db.collection('shared_lists').doc(newResult.id).get();
         expect(listSnap.data()?.version).toBe(2); // Era versão 1, agora deve ser versão 2 (CAS Versionado)
+    });
+
+    test('Cenário 8: Processamento e devolução automática de designações expiradas (Idempotência e Métricas)', async () => {
+        // 1. Cria uma lista compartilhada expirada no passado (expiresAt = 1 hora atrás)
+        const expiredDate = new Date(Date.now() - 3600000);
+        const result = await createSharedList({
+            title: 'Lista Expirada Teste',
+            type: 'territory',
+            items: ['T-001'],
+            congregationId: 'CONG-XYZ',
+            assignedTo: 'user-123',
+            assignedName: 'User Test',
+            territories: [{ id: 'T-001', name: 'T-001', status: 'Disponível' }]
+        });
+        expect(result.success).toBe(true);
+
+        // Força no Firestore o expiresAt no passado
+        await db.collection('shared_lists').doc(result.id).update({
+            expiresAt: admin.firestore.Timestamp.fromDate(expiredDate)
+        });
+
+        // 2. Executa a função de devolução automática
+        const stats = await returnExpiredTerritoryAssignments('CONG-XYZ');
+
+        expect(stats.foundCount).toBeGreaterThanOrEqual(1);
+        expect(stats.processedCount).toBeGreaterThanOrEqual(1);
+        expect(stats.errorCount).toBe(0);
+        expect(typeof stats.hasMore).toBe('boolean');
+        expect(typeof stats.durationMs).toBe('number');
+
+        // Verifica que o território T-001 foi desvinculado e voltou a "Disponível"
+        const terrSnap = await db.collection('territories').doc('T-001').get();
+        expect(terrSnap.data()?.status).toBe('Disponível');
+
+        // Verifica que a lista passou para "completed"
+        const listSnap = await db.collection('shared_lists').doc(result.id).get();
+        expect(listSnap.data()?.status).toBe('completed');
+
+        // 3. Execução secundária para testar Idempotência estrita (deve encontrar 0 listas ativas expiradas)
+        const secondRunStats = await returnExpiredTerritoryAssignments('CONG-XYZ');
+        expect(secondRunStats.foundCount).toBe(0);
+        expect(secondRunStats.processedCount).toBe(0);
     });
 
     afterAll(async () => {

@@ -13,10 +13,12 @@ import {
     query, 
     where, 
     orderBy,
+    limit,
     serverTimestamp,
     writeBatch,
     runTransaction,
-    Timestamp 
+    Timestamp,
+    DocumentReference
 } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
 import { canAssignTerritory, canReturnTerritory } from '../domain/territoryRules';
@@ -24,6 +26,10 @@ import { canAssignTerritory, canReturnTerritory } from '../domain/territoryRules
 const LISTS_TABLE = 'shared_lists';
 const SNAPSHOTS_TABLE = 'shared_list_snapshots';
 const VISITS_TABLE = 'visits';
+
+const POST_RETURN_READONLY_HOURS = 24;
+const AUTO_RETURN_FETCH_LIMIT = 50;
+const AUTO_RETURN_BATCH_SIZE = 5;
 
 function coerceToArrays(territory: any): {
     activeLinkIds: string[];
@@ -542,7 +548,7 @@ export async function processSharedListAction(id: string, action: string, payloa
             // FASE 3: ESCRITAS (Sem leitura daqui pra baixo)
             if (action === 'returnMap') {
                 const expiresAt = new Date();
-                expiresAt.setHours(expiresAt.getHours() + 24);
+                expiresAt.setHours(expiresAt.getHours() + POST_RETURN_READONLY_HOURS);
 
                 for (const { terrRef, terrDoc } of territoryDocs) {
                     if (terrDoc.exists()) {
@@ -706,3 +712,180 @@ export async function processSharedListAction(id: string, action: string, payloa
         return { success: false, error: error.message };
     }
 }
+
+/**
+ * Executa a devolução atômica interna de uma lista compartilhada expirada.
+ * Re-lê o documento dentro da transação para consistência ACID e revalida status e expiração.
+ */
+async function returnSharedListInternal(docRef: DocumentReference): Promise<{ success: boolean; skipped?: boolean; error?: string }> {
+    try {
+        let wasSkipped = false;
+        await runTransaction(db, async (transaction) => {
+            const listSnap = await transaction.get(docRef);
+            if (!listSnap.exists()) {
+                throw new Error('Lista não encontrada');
+            }
+
+            const listData = listSnap.data() as any;
+            const now = new Date();
+
+            // Revalidação atômica de status e prazo no milissegundo de escrita
+            if (listData.status !== 'active') {
+                wasSkipped = true;
+                return;
+            }
+
+            if (listData.expiresAt) {
+                const expires = listData.expiresAt.toDate ? listData.expiresAt.toDate() : new Date(listData.expiresAt);
+                if (now <= expires) {
+                    wasSkipped = true;
+                    return;
+                }
+            }
+
+            // Leituras transacionais dos territórios vinculados
+            const territoryDocs = [];
+            if (listData.items && Array.isArray(listData.items)) {
+                for (const tId of listData.items) {
+                    const terrRef = doc(db, 'territories', tId);
+                    const terrDoc = await transaction.get(terrRef);
+                    territoryDocs.push({ terrRef, terrDoc });
+                }
+            }
+
+            // Escritas transacionais
+            const graceExpiresAt = new Date();
+            graceExpiresAt.setHours(graceExpiresAt.getHours() + POST_RETURN_READONLY_HOURS);
+
+            for (const { terrRef, terrDoc } of territoryDocs) {
+                if (terrDoc.exists()) {
+                    const tData = terrDoc.data() as any;
+                    const { activeLinkIds, assignedToUsers } = coerceToArrays(tData);
+                    const newActiveLinkIds = activeLinkIds.filter((tid: string) => tid !== docRef.id);
+                    const newAssignedToUsers = listData.assignedTo
+                        ? assignedToUsers.filter((uid: string) => uid !== listData.assignedTo)
+                        : assignedToUsers;
+
+                    const isStillAssigned = newActiveLinkIds.length > 0;
+
+                    transaction.update(terrRef, {
+                        status: isStillAssigned ? 'Emprestado' : 'Disponível',
+                        activeLinkIds: newActiveLinkIds,
+                        assignedToUsers: newAssignedToUsers,
+                        activeLinkId: null,
+                        assignedTo: null,
+                        updatedAt: serverTimestamp()
+                    });
+                }
+            }
+
+            transaction.update(docRef, {
+                status: 'completed',
+                returnedAt: serverTimestamp(),
+                expiresAt: Timestamp.fromDate(graceExpiresAt)
+            });
+        });
+
+        return { success: true, skipped: wasSkipped };
+    } catch (error: any) {
+        console.error(`[returnSharedListInternal] Erro ao devolver lista ${docRef.id}:`, error);
+        return { success: false, error: error.message };
+    }
+}
+
+/**
+ * Busca e devolve automaticamente designações de território expiradas.
+ * Executa em lotes paralelos configuráveis (AUTO_RETURN_BATCH_SIZE) respeitando o limite global (AUTO_RETURN_FETCH_LIMIT).
+ */
+export async function returnExpiredTerritoryAssignments(congregationId?: string): Promise<{
+    foundCount: number;
+    processedCount: number;
+    skippedCount: number;
+    errorCount: number;
+    hasMore: boolean;
+    durationMs: number;
+    errors: string[];
+}> {
+    const startTime = Date.now();
+    const now = new Date();
+
+    let foundCount = 0;
+    let processedCount = 0;
+    let skippedCount = 0;
+    let errorCount = 0;
+    let hasMore = false;
+    const errors: string[] = [];
+
+    try {
+        // Query estrita N+1 no Firestore para determinação exata de hasMore
+        let q = query(
+            collection(db, LISTS_TABLE),
+            where('status', '==', 'active'),
+            where('expiresAt', '<=', Timestamp.fromDate(now)),
+            limit(AUTO_RETURN_FETCH_LIMIT + 1)
+        );
+
+        if (congregationId) {
+            q = query(
+                collection(db, LISTS_TABLE),
+                where('congregationId', '==', congregationId),
+                where('status', '==', 'active'),
+                where('expiresAt', '<=', Timestamp.fromDate(now)),
+                limit(AUTO_RETURN_FETCH_LIMIT + 1)
+            );
+        }
+
+        const snap = await getDocs(q);
+        hasMore = snap.docs.length > AUTO_RETURN_FETCH_LIMIT;
+        const docs = snap.docs.slice(0, AUTO_RETURN_FETCH_LIMIT);
+        foundCount = docs.length;
+
+        if (foundCount === 0) {
+            return {
+                foundCount: 0,
+                processedCount: 0,
+                skippedCount: 0,
+                errorCount: 0,
+                hasMore: false,
+                durationMs: Date.now() - startTime,
+                errors: []
+            };
+        }
+
+        // Sub-lotes paralelos de tamanho AUTO_RETURN_BATCH_SIZE
+        for (let i = 0; i < docs.length; i += AUTO_RETURN_BATCH_SIZE) {
+            const batchDocs = docs.slice(i, i + AUTO_RETURN_BATCH_SIZE);
+            const results = await Promise.all(
+                batchDocs.map(d => returnSharedListInternal(d.ref))
+            );
+
+            results.forEach(res => {
+                if (res.success) {
+                    if (res.skipped) {
+                        skippedCount++;
+                    } else {
+                        processedCount++;
+                    }
+                } else {
+                    errorCount++;
+                    if (res.error) errors.push(res.error);
+                }
+            });
+        }
+    } catch (error: any) {
+        console.error('[returnExpiredTerritoryAssignments] Erro na consulta do Firestore:', error);
+        errors.push(error.message || 'Erro ao consultar listas expiradas');
+        errorCount++;
+    }
+
+    return {
+        foundCount,
+        processedCount,
+        skippedCount,
+        errorCount,
+        hasMore,
+        durationMs: Date.now() - startTime,
+        errors
+    };
+}
+

@@ -1,6 +1,7 @@
 "use client";
 
 import { Suspense, useEffect, useState, useCallback } from "react";
+import { formatExpirationTime } from "@/lib/utils/formatters";
 import { useSearchParams, useRouter } from 'next/navigation';
 import { useAuth } from "@/app/context/AuthContext";
 import {
@@ -296,20 +297,6 @@ function CardsContent() {
         if (isNaN(date.getTime())) return 'N/A';
 
         return date.toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit' });
-    };
-
-    const formatExpirationTime = (expiresAtValue: any) => {
-        if (!expiresAtValue) return "Por tempo indeterminado";
-        const expiresAt = typeof expiresAtValue.toDate === 'function' ? expiresAtValue.toDate() : new Date(expiresAtValue);
-        const now = new Date();
-        const diffMs = expiresAt.getTime() - now.getTime();
-        if (diffMs <= 0) return "Vencido";
-        const diffHours = diffMs / (1000 * 60 * 60);
-        const diffDays = Math.ceil(diffHours / 24);
-        if (diffDays > 1000) return "Por tempo indeterminado";
-        if (diffHours < 1) return "Vence em menos de uma hora";
-        if (diffHours < 24) return `Vence em ${Math.floor(diffHours)} horas`;
-        return `Faltam ${diffDays} dias`;
     };
 
     return (
