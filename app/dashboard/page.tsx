@@ -512,16 +512,20 @@ export default function DashboardPage() {
                         <span className="text-[10px] text-muted font-bold uppercase">Início</span>
                     </div>
                 </div>
-                <div className="flex items-center gap-2">
+                <div className="flex items-center gap-1.5 sm:gap-2 shrink-0">
                     {congregationName && (
-                        <span className="px-3 py-1 text-[10px] font-bold rounded-full bg-surface-border text-main flex items-center gap-1.5 border border-surface-border shadow-sm">
-                            <Building2 className="w-3 h-3 text-primary" /> {congregationName}
+                        <span 
+                            title={congregationName} 
+                            className="px-2.5 py-1 text-[10px] font-bold rounded-full bg-surface-border text-main flex items-center gap-1 border border-surface-border shadow-sm max-w-[110px] sm:max-w-[160px] md:max-w-none truncate"
+                        >
+                            <Building2 className="w-3 h-3 text-primary shrink-0" />
+                            <span className="truncate">{congregationName}</span>
                         </span>
                     )}
-                    <span className={`px-3 py-1 text-[10px] font-bold rounded-full uppercase flex items-center gap-1 ${isElder ? 'bg-indigo-100 text-indigo-700' : isServant ? 'bg-primary-light text-primary' : 'bg-gray-100 text-muted'}`}>
-                        <Shield className="w-3 h-3" /> {roleLabel}
+                    <span className={`px-2.5 py-1 text-[10px] font-bold rounded-full uppercase flex items-center gap-1 shrink-0 ${isElder ? 'bg-indigo-100 text-indigo-700' : isServant ? 'bg-primary-light text-primary' : 'bg-gray-100 text-muted'}`}>
+                        <Shield className="w-3 h-3 shrink-0" /> {roleLabel}
                     </span>
-                    <Link href="/notifications" className="relative p-1.5 text-muted hover:text-primary transition-colors">
+                    <Link href="/notifications" className="relative p-1.5 text-muted hover:text-primary transition-colors shrink-0">
                         <Bell className="w-5 h-5" />
                         {totalNotifications > 0 && <span className="absolute -top-0.5 -right-0.5 bg-red-500 text-white text-[9px] font-bold min-w-[16px] h-4 px-1 rounded-full flex items-center justify-center border-2 border-surface">{totalNotifications}</span>}
                     </Link>

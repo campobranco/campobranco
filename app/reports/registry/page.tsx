@@ -404,50 +404,48 @@ export default function RegistryPage() {
     return (
         <div className="min-h-screen bg-background dark:bg-gray-950 text-main pb-10 print:bg-white print:text-black print:min-h-0">
             {/* Cabeçalho */}
-            <header className="bg-surface dark:bg-gray-900 border-b border-surface-border dark:border-gray-800 sticky top-0 z-20 px-6 py-4 flex items-center justify-between no-print">
-                <div className="flex items-center gap-3">
-                    <button onClick={() => router.back()} className="p-2 hover:bg-surface-highlight dark:hover:bg-gray-800 rounded-full transition-colors">
+            <header className="bg-surface dark:bg-gray-900 border-b border-surface-border dark:border-gray-800 sticky top-0 z-20 px-3 sm:px-6 py-3 sm:py-4 flex flex-wrap items-center justify-between gap-2 sm:gap-4 no-print">
+                <div className="flex items-center gap-1.5 sm:gap-3 shrink-0">
+                    <button onClick={() => router.back()} className="p-1.5 sm:p-2 hover:bg-surface-highlight dark:hover:bg-gray-800 rounded-full transition-colors">
                         <ChevronLeft className="w-5 h-5 text-muted" />
                     </button>
-                    <h1 className="text-xl font-bold text-main">Registro de Designação</h1>
+                    <h1 className="text-sm sm:text-xl font-bold text-main truncate max-w-[140px] xs:max-w-[180px] sm:max-w-none">
+                        Registro S-13
+                    </h1>
                 </div>
 
-                <div className="flex items-center gap-4">
-
-
-                    <div className="flex items-center gap-2 bg-gray-100 dark:bg-gray-900 rounded-lg p-1 border border-transparent dark:border-gray-800">
+                <div className="flex items-center gap-2 sm:gap-4 shrink-0">
+                    <div className="flex items-center gap-1 bg-gray-100 dark:bg-gray-900 rounded-lg p-0.5 sm:p-1 border border-transparent dark:border-gray-800">
                         <button
                             onClick={() => setCurrentServiceYear(prev => prev - 1)}
                             className="p-1 hover:bg-white dark:hover:bg-gray-800 rounded-md shadow-sm transition-all text-main"
                         >
-                            <ChevronLeft className="w-4 h-4" />
+                            <ChevronLeft className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
                         </button>
-                        <span className="text-sm font-bold min-w-[100px] text-center text-main">
+                        <span className="text-xs sm:text-sm font-bold min-w-[75px] sm:min-w-[100px] text-center text-main">
                             {getServiceYearLabel(currentServiceYear)}
                         </span>
                         <button
                             onClick={() => setCurrentServiceYear(prev => prev + 1)}
                             className="p-1 hover:bg-white dark:hover:bg-gray-800 rounded-md shadow-sm transition-all text-main"
                         >
-                            <ChevronRight className="w-4 h-4" />
+                            <ChevronRight className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
                         </button>
                     </div>
 
-                    <div className="flex items-center gap-4 no-print">
-                        <button
-                            onClick={() => setIsPrintSettingsOpen(true)}
-                            className="bg-primary hover:bg-primary-dark text-white font-bold py-2 px-4 rounded-lg flex items-center gap-2 transition-colors shadow-sm"
-                        >
-                            <Download className="w-4 h-4" />
-                            Imprimir
-                        </button>
-                    </div>
+                    <button
+                        onClick={() => setIsPrintSettingsOpen(true)}
+                        className="bg-primary hover:bg-primary-dark text-white font-bold py-1.5 px-2.5 sm:py-2 sm:px-4 rounded-lg flex items-center gap-1.5 transition-colors shadow-sm text-xs sm:text-sm"
+                    >
+                        <Download className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
+                        <span className="hidden xs:inline">Imprimir</span>
+                    </button>
                 </div>
             </header>
 
 
 
-            <main className="max-w-[1200px] mx-auto p-8 overflow-x-auto print-container">
+            <main className="max-w-[1200px] mx-auto p-3 sm:p-8 overflow-x-auto print-container">
                 <div className="text-center mb-6 hidden print:block">
                     {/* Só exibe este cabeçalho global se NÃO estiver imprimindo (ou via CSS abaixo) */}
                 </div>
