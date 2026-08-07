@@ -291,6 +291,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
                 if (active && congSnap.exists()) {
                     const data = congSnap.data();
                     setTermType(data.termType || 'city');
+                    setCongregationName(data.name || null);
                     const rawCat = data.category || data.type || null;
                     let resolvedType = rawCat;
                     if (rawCat === 'Tradicional' || rawCat === 'tradicional') resolvedType = 'TRADITIONAL';
@@ -298,6 +299,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
                     else if (rawCat === 'Língua Estrangeira') resolvedType = 'FOREIGN_LANGUAGE';
 
                     setCongregationType(resolvedType as any);
+                } else if (active) {
+                    setCongregationName(null);
                 }
             } catch (err) {
                 console.error("[AUTH] Erro ao buscar configurações da congregação:", err);
