@@ -729,24 +729,16 @@ const [uploading, setUploading] = useState(false);
                             <div>
                                 <h3 className="text-lg font-bold text-main">{profileName || user.displayName || 'Usuário'}</h3>
                                 <p className="text-muted text-sm">{user.email}</p>
-                                <div className="mt-2 flex items-center gap-2 flex-wrap">
-                                    <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-[10px] font-bold uppercase tracking-wide bg-primary-light/50 text-primary-dark dark:bg-primary-dark/30 dark:text-primary-light">
-                                        <Shield className="w-3 h-3" />
-                                        {(() => {
-                                            switch (role) {
-                                                case 'ADMIN': return 'Admin';
-                                                case 'ANCIAO': return 'Superintendente de Serviço';
-                                                case 'SERVO': return 'Servo de Territórios';
-                                                default: return 'Publicador';
-                                            }
-                                        })()}
-                                    </div>
-                                    {actualCongName && (
-                                        <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-[10px] font-bold uppercase tracking-wide bg-surface-border text-main border border-surface-border">
-                                            <Building2 className="w-3 h-3 text-primary" />
-                                            {actualCongName}
-                                        </div>
-                                    )}
+                                <div className="mt-2 inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-[10px] font-bold uppercase tracking-wide bg-primary-light/50 text-primary-dark dark:bg-primary-dark/30 dark:text-primary-light">
+                                    <Shield className="w-3 h-3" />
+                                    {(() => {
+                                        switch (role) {
+                                            case 'ADMIN': return 'Admin';
+                                            case 'ANCIAO': return 'Superintendente de Serviço';
+                                            case 'SERVO': return 'Servo de Territórios';
+                                            default: return 'Publicador';
+                                        }
+                                    })()}
                                 </div>
                             </div>
                         </div>
