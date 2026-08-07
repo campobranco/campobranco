@@ -128,9 +128,20 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
                     if (isMounted && userSnap.exists()) {
                         const prefs = userSnap.data()?.preferences as any;
                         if (prefs && prefs.themeMode) {
-                            setThemeMode(prefs.themeMode);
+                            const newText = prefs.textSize || textSize;
+                            const newScale = prefs.displayScale || displayScale;
+                            const newTheme = prefs.themeMode;
+
+                            setThemeMode(newTheme);
                             if (prefs.textSize) setTextSize(prefs.textSize);
                             if (prefs.displayScale) setDisplayScale(prefs.displayScale);
+
+                            // Atualização imediata do localStorage para o script de inicialização do <head>
+                            localStorage.setItem("app-preferences", JSON.stringify({
+                                textSize: newText,
+                                displayScale: newScale,
+                                themeMode: newTheme
+                            }));
                         } else {
                             // Se o Firestore não possui preferências gravadas, envia a preferência local atual
                             const currentPrefs = {

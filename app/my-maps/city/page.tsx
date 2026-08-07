@@ -434,7 +434,7 @@ function CityListContent() {
 
     if (!congregationId) {
         return (
-            <div className="min-h-screen flex items-center justify-center bg-[#f8fafc] text-muted">
+            <div className="min-h-screen flex items-center justify-center bg-background text-muted">
                 Congregação não encontrada.
             </div>
         );
@@ -1101,7 +1101,7 @@ function CityListContent() {
 export default function CityListPage() {
     return (
         <Suspense fallback={
-            <div className="min-h-screen flex items-center justify-center bg-[#f8fafc]">
+            <div className="min-h-screen flex items-center justify-center bg-background">
                 <Loader2 className="w-8 h-8 animate-spin text-primary" />
             </div>
         }>

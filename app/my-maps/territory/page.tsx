@@ -504,7 +504,7 @@ function TerritoryListContent() {
     }
 
     if (!congregationId || !cityId) {
-        return <div className="min-h-screen flex items-center justify-center bg-[#f8fafc] text-muted">Informações incompletas.</div>;
+        return <div className="min-h-screen flex items-center justify-center bg-background text-muted">Informações incompletas.</div>;
     }
 
     // View state
