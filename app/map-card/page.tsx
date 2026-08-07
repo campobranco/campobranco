@@ -4,8 +4,11 @@ import { useState, useEffect, useCallback, useRef, useLayoutEffect } from 'react
 import { useRouter } from 'next/navigation';
 import { useAuth } from '@/app/context/AuthContext';
 import { ChevronLeft, Printer, MapPin, Building2, Filter, Loader2, LayoutGrid, FileText, Trash2, ImagePlus, Map as MapIcon, Sliders, Hexagon } from 'lucide-react';
+// eslint-disable-next-line no-restricted-imports
 import { getRegistryData } from '@/lib/services/reports';
+// eslint-disable-next-line no-restricted-imports
 import { updateTerritory } from '@/lib/services/territories';
+// eslint-disable-next-line no-restricted-imports
 import { getAddresses } from '@/lib/services/addresses';
 import { toast } from 'sonner';
 

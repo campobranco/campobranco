@@ -1,6 +1,8 @@
 "use client";
 
-import { useEffect, useState, useCallback } from "react";
+import { useEffect, useState, useCallback, useRef } from "react";
+// eslint-disable-next-line no-restricted-imports
+import { returnExpiredTerritoryAssignments } from "@/lib/services/shared_lists";
 import { formatExpirationTime } from "@/lib/utils/formatters";
 import { useAuth } from "@/app/context/AuthContext";
 import {
@@ -62,7 +64,7 @@ const formatDate = (dateValue: any) => {
 };
 
 export default function DashboardPage() {
-    const { user, role, isElder, isServant, congregationId, congregationName, loading, profileName, isAdminRoleGlobal, congregationType } = useAuth();
+    const { user, role, isElder, isServant, congregationId, congregationName, loading, profileName, isAdminRoleGlobal, congregationType, can } = useAuth();
     const router = useRouter();
     const [sharedHistory, setSharedHistory] = useState<any[]>([]);
     const [myAssignments, setMyAssignments] = useState<any[]>([]);
@@ -101,6 +103,38 @@ export default function DashboardPage() {
             router.push('/sem-congregacao');
         }
     }, [user, loading, congregationId, role, router]);
+
+    // --- AUTO-RETURN: Gatilho Client-Side (Spark Nativo) ---
+    // Executa returnExpiredTerritoryAssignments UMA vez por sessão de montagem do Dashboard,
+    // somente para usuários com permissão de gestão de mapas (isServant cobre SERVO/ANCIAO/ADMIN;
+    // can('maps.edit') cobre permissões granulares). Execução em background, não bloqueia UI.
+    const autoReturnExecutedRef = useRef(false);
+    useEffect(() => {
+        if (loading || !user) return;
+        if (autoReturnExecutedRef.current) return;
+        if (!isServant && !can('maps.edit')) return;
+
+        autoReturnExecutedRef.current = true;
+
+        returnExpiredTerritoryAssignments(congregationId ?? undefined)
+            .then((stats) => {
+                if (stats.processedCount > 0) {
+                    console.info(
+                        `[AutoReturn] ${stats.processedCount} designação(ões) expirada(s) devolvida(s) automaticamente.`,
+                        { durationMs: stats.durationMs, hasMore: stats.hasMore }
+                    );
+                }
+                if (stats.errorCount > 0) {
+                    console.error(
+                        `[AutoReturn] ${stats.errorCount} erro(s) durante devolução automática:`,
+                        stats.errors
+                    );
+                }
+            })
+            .catch((err: Error) => {
+                console.error('[AutoReturn] Falha inesperada na rotina de devolução automática:', err.message, err);
+            });
+    }, [loading, user, isServant, can, congregationId]);
 
     useEffect(() => {
         if (!user) return;

@@ -1,4 +1,26 @@
 {
+  "LogActivityInput": {
+    "input": [
+      "level",
+      "category",
+      "action",
+      "message",
+      "user",
+      "userId",
+      "role",
+      "congregationId",
+      "correlationId",
+      "userAgent",
+      "details"
+    ],
+    "output": [
+      "success",
+      "code",
+      "message",
+      "error",
+      "data"
+    ]
+  },
   "EnsureUserProfileInput": {
     "input": [
       "uid",
