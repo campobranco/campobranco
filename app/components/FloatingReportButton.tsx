@@ -28,6 +28,9 @@ export default function FloatingReportButton() {
     // Estado de alerta: contador de erros capturados no console
     const [errorCount, setErrorCount] = useState(0);
     const [isPulsing, setIsPulsing] = useState(false);
+    
+    // Estado para controle do esconde/mostra parcial na borda direita
+    const [isExpanded, setIsExpanded] = useState(false);
 
     // Escuta o evento customizado disparado pelo logger quando um erro ocorre
     useEffect(() => {
@@ -37,8 +40,32 @@ export default function FloatingReportButton() {
         };
 
         window.addEventListener('console-error', handleConsoleError as EventListener);
-        return () => window.removeEventListener('console-error', handleConsoleError as EventListener);
+        
+        // Fecha/recolhe o botão ao clicar fora dele
+        const handleClickOutside = (e: MouseEvent) => {
+            const btn = document.getElementById('floating-report-button');
+            if (btn && !btn.contains(e.target as Node)) {
+                setIsExpanded(false);
+            }
+        };
+
+        window.addEventListener('mousedown', handleClickOutside);
+        return () => {
+            window.removeEventListener('console-error', handleConsoleError as EventListener);
+            window.removeEventListener('mousedown', handleClickOutside);
+        };
     }, []);
+
+    const handleButtonClick = async () => {
+        // 1º Clique: Se não estiver expandido, apenas expande totalmente
+        if (!isExpanded) {
+            setIsExpanded(true);
+            return;
+        }
+
+        // 2º Clique (já expandido): Dispara o fluxo de captura e relatório
+        handleOpen();
+    };
 
     const handleOpen = async () => {
         // Ao abrir, reseta o estado de alerta
@@ -196,28 +223,31 @@ export default function FloatingReportButton() {
     return (
         <button
             id="floating-report-button"
-            onClick={handleOpen}
+            onClick={handleButtonClick}
             disabled={loading}
-            className={`fixed top-1/2 -translate-y-1/2 right-6 z-50 p-3 rounded-full shadow-lg border transition-all group print:hidden
+            className={`fixed top-1/2 -translate-y-1/2 right-0 z-50 p-3 rounded-l-full shadow-2xl border-l border-t border-b transition-all duration-300 group print:hidden flex items-center gap-2
+                ${isExpanded ? 'translate-x-0 shadow-red-500/20' : 'translate-x-1/2 opacity-90 hover:opacity-100'}
                 ${isPulsing
-                    ? 'bg-red-500 text-white border-red-600 shadow-red-500/40 animate-pulse scale-110'
-                    : 'bg-white dark:bg-slate-800 text-red-500 hover:text-red-600 border-gray-200 dark:border-slate-700 hover:scale-110'
+                    ? 'bg-red-500 text-white border-red-600 shadow-red-500/40 animate-pulse'
+                    : 'bg-white dark:bg-slate-800 text-red-500 hover:text-red-600 border-gray-200 dark:border-slate-700'
                 }`}
-            title="Reportar Erro"
+            title={isExpanded ? "Clique para Reportar Erro" : "Expandir Botão de Erro"}
         >
-            {loading ? <Loader2 className="w-6 h-6 animate-spin" /> : <Bug className="w-6 h-6" />}
+            {loading ? <Loader2 className="w-6 h-6 animate-spin shrink-0" /> : <Bug className="w-6 h-6 shrink-0" />}
 
             {/* Badge com contador de erros */}
             {errorCount > 0 && (
-                <span className="absolute -top-1.5 -right-1.5 bg-yellow-400 text-black text-[10px] font-extrabold w-5 h-5 rounded-full flex items-center justify-center shadow-md">
+                <span className="absolute -top-1.5 -left-1.5 bg-yellow-400 text-black text-[10px] font-extrabold w-5 h-5 rounded-full flex items-center justify-center shadow-md">
                     {errorCount > 9 ? '9+' : errorCount}
                 </span>
             )}
 
-            {/* Tooltip */}
-            <span className="absolute right-full mr-3 top-1/2 -translate-y-1/2 bg-gray-900 text-white text-xs font-bold px-2 py-1 rounded-lg opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap pointer-events-none">
-                {isPulsing ? `${errorCount} erro(s) detectado(s)!` : 'Reportar Erro'}
-            </span>
+            {/* Tooltip explicativo quando expandido */}
+            {isExpanded && (
+                <span className="text-xs font-bold whitespace-nowrap pr-1 animate-in fade-in duration-200">
+                    Reportar Erro
+                </span>
+            )}
         </button>
     );
 }

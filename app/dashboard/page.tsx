@@ -504,26 +504,20 @@ export default function DashboardPage() {
 
     return (
         <div className="bg-background min-h-screen pb-24 font-sans text-main">
-            <header className="bg-surface sticky top-0 z-30 px-6 py-4 border-b border-surface-border flex justify-between items-center">
-                <div className="flex items-center gap-3">
-                    <img src={appIconSrc} alt="Logo" width="40" height="40" className="object-contain" />
-                    <div>
-                        <span className="font-bold text-lg text-main block leading-tight">Campo Branco</span>
-                        <span className="text-[10px] text-muted font-bold uppercase">Início</span>
+            <header className="bg-surface sticky top-0 z-30 px-4 sm:px-6 py-3 sm:py-4 border-b border-surface-border flex items-center justify-between gap-2">
+                <div className="flex items-center gap-2 sm:gap-3 min-w-0">
+                    <img src={appIconSrc} alt="Logo" width="36" height="36" className="object-contain shrink-0 sm:w-10 sm:h-10" />
+                    <div className="min-w-0">
+                        <span className="font-bold text-base sm:text-lg text-main block leading-tight truncate">Campo Branco</span>
+                        <span className="text-[10px] text-muted font-bold uppercase hidden sm:block">Início</span>
                     </div>
                 </div>
-                <div className="flex items-center gap-1.5 sm:gap-2 shrink-0">
-                    {congregationName && (
-                        <span 
-                            title={congregationName} 
-                            className="px-2.5 py-1 text-[10px] font-bold rounded-full bg-surface-border text-main flex items-center gap-1 border border-surface-border shadow-sm max-w-[110px] sm:max-w-[160px] md:max-w-none truncate"
-                        >
-                            <Building2 className="w-3 h-3 text-primary shrink-0" />
-                            <span className="truncate">{congregationName}</span>
-                        </span>
-                    )}
-                    <span className={`px-2.5 py-1 text-[10px] font-bold rounded-full uppercase flex items-center gap-1 shrink-0 ${isElder ? 'bg-indigo-100 text-indigo-700' : isServant ? 'bg-primary-light text-primary' : 'bg-gray-100 text-muted'}`}>
-                        <Shield className="w-3 h-3 shrink-0" /> {roleLabel}
+                <div className="flex items-center gap-2 shrink-0">
+                    <span 
+                        className={`px-2.5 py-1 text-[10px] font-bold rounded-full uppercase flex items-center gap-1.5 shrink-0 ${isElder ? 'bg-indigo-100 text-indigo-700 dark:bg-indigo-950/60 dark:text-indigo-300' : isServant ? 'bg-primary-light text-primary dark:bg-primary-dark/40' : 'bg-surface-border text-muted'}`}
+                    >
+                        <Shield className="w-3 h-3 shrink-0" />
+                        <span>{roleLabel}</span>
                     </span>
                     <Link href="/notifications" className="relative p-1.5 text-muted hover:text-primary transition-colors shrink-0">
                         <Bell className="w-5 h-5" />
@@ -535,11 +529,18 @@ export default function DashboardPage() {
             <main className="px-6 py-6 max-w-xl mx-auto space-y-10">
                 <div>
                     <h1 className="text-2xl font-bold text-main tracking-tight">Olá, {(profileName || user?.displayName || user?.email)?.split(' ')[0] || 'Irmão'}</h1>
-                    <p className="text-muted text-sm">
-                        {role === 'ADMIN' && !congregationId 
-                            ? 'Você está em modo de gestão global (sem congregação vinculada).' 
-                            : 'Aqui está o resumo para sua função.'}
-                    </p>
+                    {congregationName ? (
+                        <div className="flex items-center gap-1.5 text-sm font-semibold text-primary mt-0.5">
+                            <Building2 className="w-4 h-4 shrink-0" />
+                            <span>{congregationName}</span>
+                        </div>
+                    ) : (
+                        <p className="text-muted text-sm mt-0.5">
+                            {role === 'ADMIN' && !congregationId 
+                                ? 'Você está em modo de gestão global (sem congregação vinculada).' 
+                                : 'Aqui está o resumo para sua função.'}
+                        </p>
+                    )}
                 </div>
 
                 {role === 'ADMIN' && !congregationId && (

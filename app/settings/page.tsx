@@ -694,12 +694,6 @@ const [uploading, setUploading] = useState(false);
                             <p className="text-xs text-muted font-medium">Gerencie sua conta e o sistema</p>
                         </div>
                     </div>
-                    {actualCongName && (
-                        <div className="px-3 py-1 text-[10px] font-bold rounded-full bg-surface-border text-main flex items-center gap-1.5 border border-surface-border shadow-sm">
-                            <Building2 className="w-3 h-3 text-primary" />
-                            {actualCongName}
-                        </div>
-                    )}
                 </div>
             </header>
 
@@ -729,6 +723,12 @@ const [uploading, setUploading] = useState(false);
                             <div>
                                 <h3 className="text-lg font-bold text-main">{profileName || user.displayName || 'Usuário'}</h3>
                                 <p className="text-muted text-sm">{user.email}</p>
+                                {actualCongName && (
+                                    <div className="mt-1 flex items-center gap-1.5 text-xs font-semibold text-primary">
+                                        <Building2 className="w-3.5 h-3.5 shrink-0" />
+                                        <span>{actualCongName}</span>
+                                    </div>
+                                )}
                                 <div className="mt-2 inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-[10px] font-bold uppercase tracking-wide bg-primary-light/50 text-primary-dark dark:bg-primary-dark/30 dark:text-primary-light">
                                     <Shield className="w-3 h-3" />
                                     {(() => {
@@ -968,17 +968,22 @@ const [uploading, setUploading] = useState(false);
                         <hr className="border-surface-border" />
 
                         <section className="space-y-4 animate-in slide-in-from-bottom-5 fade-in duration-500">
-                            <div className="flex items-center gap-2 text-primary dark:text-primary-light mb-2">
-                                <Shield className="w-5 h-5" />
-                                <h2 className="text-sm font-bold uppercase tracking-widest flex items-center gap-2">
-                                    Painel do Administrador
-                                    {actualCongName && (
-                                        <span className="normal-case tracking-normal px-2.5 py-0.5 text-[11px] font-bold rounded-full bg-surface-border text-main border border-surface-border flex items-center gap-1">
-                                            <Building2 className="w-3 h-3 text-primary" />
-                                            {actualCongName}
-                                        </span>
-                                    )}
-                                </h2>
+                            <div className="flex flex-wrap items-center justify-between gap-2 text-primary dark:text-primary-light mb-2">
+                                <div className="flex items-center gap-2">
+                                    <Shield className="w-5 h-5 shrink-0" />
+                                    <h2 className="text-sm font-bold uppercase tracking-widest">
+                                        Painel do Administrador
+                                    </h2>
+                                </div>
+                                {actualCongName && (
+                                    <span 
+                                        title={actualCongName}
+                                        className="normal-case tracking-normal px-2.5 py-1 text-[10px] sm:text-[11px] font-bold rounded-full bg-surface-border text-main border border-surface-border flex items-center gap-1.5 shrink-0 max-w-[160px] sm:max-w-[240px] md:max-w-none whitespace-nowrap"
+                                    >
+                                        <Building2 className="w-3 h-3 text-primary shrink-0" />
+                                        <span className="truncate">{actualCongName}</span>
+                                    </span>
+                                )}
                             </div>
 
                             {/* Member Management */}
