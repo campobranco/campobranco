@@ -53,7 +53,7 @@ function ShareSetupContent() {
     const [loading, setLoading] = useState(true);
     const [territories, setTerritories] = useState<any[]>([]);
     const [cityName, setCityName] = useState<string>('');
-    const [expiration, setExpiration] = useState('14d');
+    const [expiration, setExpiration] = useState('never');
     const [generatedLink, setGeneratedLink] = useState<string | null>(null);
     const [generating, setGenerating] = useState(false);
     const [loadError, setLoadError] = useState('');
@@ -339,7 +339,7 @@ function ShareSetupContent() {
                 <section className="space-y-6">
                     <div className="space-y-2">
                         <label className="text-sm font-bold text-muted uppercase tracking-wider flex items-center gap-2">
-                            <Calendar className="w-4 h-4" /> Validado do Link
+                            <Calendar className="w-4 h-4" /> Validade do Link
                         </label>
                         <p className="text-xs text-muted">Defina por quanto tempo este link ficará acessível.</p>
                         <select
@@ -349,9 +349,9 @@ function ShareSetupContent() {
                             className="w-full bg-surface border border-surface-border rounded-xl p-4 text-main font-semibold focus:ring-2 focus:ring-primary-light/500/20 outline-none transition-all disabled:opacity-50 disabled:bg-gray-100 dark:disabled:bg-gray-800"
                         >
                             <option value="7d">7 Dias</option>
-                            <option value="14d">14 Dias (Padrão)</option>
+                            <option value="14d">14 Dias</option>
                             <option value="30d">30 Dias</option>
-                            <option value="never">Nunca Expira</option>
+                            <option value="never">Nunca Expira (Padrão)</option>
                         </select>
                     </div>
 
