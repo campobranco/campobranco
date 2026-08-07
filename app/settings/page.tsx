@@ -971,7 +971,9 @@ const [uploading, setUploading] = useState(false);
                                         </div>
                                         <div>
                                             <h3 className="font-bold text-main">Gestão de Membros</h3>
-                                            <p className="text-xs text-muted">{members.length} membros na congregação</p>
+                                            <p className="text-xs text-muted">
+                                                {members.length} {members.length === 1 ? 'membro' : 'membros'} na congregação {actualCongName && actualCongName !== 'Nenhuma' ? `(${actualCongName})` : ''}
+                                            </p>
                                         </div>
                                     </div>
                                     <button
