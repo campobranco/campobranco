@@ -82,6 +82,8 @@ export async function findActiveSharedList(
     }
 }
 
+export const VALID_SHARED_LIST_TYPES = ['territory', 'LIST_CARDS'] as const;
+
 export async function createSharedList(data: {
     title: string;
     type: 'territory' | 'LIST_CARDS';
@@ -92,6 +94,25 @@ export async function createSharedList(data: {
     expiresInHours?: number;
     territories?: any[];
 }) {
+    if (!data.title || !data.title.trim()) {
+        throw new Error('Título da lista compartilhada é obrigatório.');
+    }
+    if (!data.type || !VALID_SHARED_LIST_TYPES.includes(data.type as any)) {
+        throw new Error(`Tipo de lista compartilhada inválido: '${data.type}'. Use: ${VALID_SHARED_LIST_TYPES.join(', ')}`);
+    }
+    if (!data.congregationId || !data.congregationId.trim()) {
+        throw new Error('ID da congregação é obrigatório.');
+    }
+    if (!data.assignedTo || !data.assignedTo.trim()) {
+        throw new Error('ID do destinatário (assignedTo) é obrigatório.');
+    }
+    if (!data.assignedName || !data.assignedName.trim()) {
+        throw new Error('Nome do destinatário (assignedName) é obrigatório.');
+    }
+    if (!data.items || !Array.isArray(data.items) || data.items.length === 0) {
+        throw new Error('Lista de itens compartilhados não pode estar vazia.');
+    }
+
     try {
         // PRE-FETCH: Lemos dados que não exigem bloqueio (Endereços) fora do retry loop
         let addressesDocs: any[] = [];

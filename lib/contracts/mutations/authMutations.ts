@@ -18,10 +18,12 @@ export const VALID_USER_ROLES = ['ADMIN', 'SUPER_ADMIN', 'ANCIAO', 'SERVO', 'PUB
 
 export async function ensureUserProfileMutation(input: EnsureUserProfileInput): Promise<MutationResult> {
     if (!input.uid) return { success: false, message: 'UID do usuário obrigatório.' };
+    if (!input.email || !input.email.trim()) return { success: false, message: 'E-mail do usuário obrigatório.' };
+    if (!input.displayName || !input.displayName.trim()) return { success: false, message: 'Nome do usuário obrigatório.' };
 
-    const userEmail = (input.email || '').trim().toLowerCase();
-    const masterEmail = input.masterEmail.trim().toLowerCase();
-    const isMaster = masterEmail && userEmail === masterEmail;
+    const userEmail = input.email.trim().toLowerCase();
+    const masterEmail = (input.masterEmail || '').trim().toLowerCase();
+    const isMaster = Boolean(masterEmail && userEmail === masterEmail);
     
     const assignedRole = isMaster ? 'ADMIN' : 'PUBLICADOR';
     if (!VALID_USER_ROLES.includes(assignedRole as any)) {
@@ -44,8 +46,8 @@ export async function ensureUserProfileMutation(input: EnsureUserProfileInput): 
             // Perfil novo
             console.log(`[AUTH MUTATION] Criando novo perfil. Admin? ${isMaster}`);
             await setDoc(userRef, {
-                name: input.displayName || (isMaster ? 'Admin' : 'Membro'),
-                email: input.email,
+                name: input.displayName.trim(),
+                email: userEmail,
                 role: assignedRole,
                 congregationId: null,
                 updatedAt: serverTimestamp(),
