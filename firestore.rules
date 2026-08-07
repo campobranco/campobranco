@@ -66,12 +66,16 @@ service cloud.firestore {
       return data.get('congregationId', null);
     }
 
-    // Verifica se o recurso pertence à mesma congregação do usuário autenticado.
+    // Verifica se o recurso pertence à mesma congregação do usuário autenticado (ou se o usuário é Admin global).
     // Usado para isolamento multi-tenant em coleções que possuem congregationId.
     function isSameCongregation(resourceData) {
-      return isAuthenticated() &&
-             exists(/databases/$(database)/documents/users/$(request.auth.uid)) &&
-             getCongId(getUserData()) == getCongId(resourceData);
+      return isAuthenticated() && (
+        isAdmin() ||
+        (
+          exists(/databases/$(database)/documents/users/$(request.auth.uid)) &&
+          getCongId(getUserData()) == getCongId(resourceData)
+        )
+      );
     }
 
     // --- REGRAS POR COLEÇÃO ---
