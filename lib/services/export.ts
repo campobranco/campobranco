@@ -136,7 +136,7 @@ export async function exportDataToCSV(congregationId: string, cityId?: string | 
                 row.address ? (addr.isStudent ? 'true' : 'false') : '',
                 row.address ? (addr.isNeurodivergent ? 'true' : 'false') : '',
                 addr.gender || '',
-                addr.observations || addr.notes || '',
+                addr.observations || '',
                 addr.lastVisitResult || '',
                 row.address ? (addr.sortOrder || 0) : ''
             ];
