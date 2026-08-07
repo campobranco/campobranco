@@ -1,5 +1,6 @@
 import { collection, query, where, getDocs, doc, getDoc } from 'firebase/firestore';
 import { db } from '../firebase';
+import { logActivity } from './audit_logs';
 
 export async function exportDataToCSV(congregationId: string, cityId?: string | null, territoryId?: string | null) {
     if (!congregationId) {
@@ -159,6 +160,21 @@ export async function exportDataToCSV(congregationId: string, cityId?: string | 
         link.click();
         document.body.removeChild(link);
         URL.revokeObjectURL(url);
+
+        logActivity({
+            level: 'INFO',
+            category: 'REPORTS',
+            action: 'TERRITORY_EXPORT',
+            message: `TERRITORY_EXPORT: Exportação de dados territoriais em CSV (${addresses.length} endereços)`,
+            congregationId,
+            metadata: {
+                format: 'CSV',
+                entity: 'territories',
+                totalAddresses: addresses.length,
+                cityIdFilter: cityId || null,
+                territoryIdFilter: territoryId || null
+            }
+        });
 
         return { success: true };
     } catch (error: any) {

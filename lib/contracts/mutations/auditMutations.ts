@@ -1,4 +1,4 @@
-import { logActivity, getSystemLogs, SystemLog, LogLevel, LogCategory } from '@/lib/services/audit_logs';
+import { logActivity, getSystemLogs, SystemLog, LogLevel, LogCategory, GetSystemLogsOptions, GetSystemLogsResult } from '@/lib/services/audit_logs';
 
 export type { SystemLog, LogLevel, LogCategory };
 
@@ -19,12 +19,12 @@ export interface LogActivityInput {
 /**
  * Contrato de Mutações e Consultas para Logs de Auditoria
  */
-export async function logActivityMutation(input: LogActivityInput) {
+export async function logActivityMutation(input: Parameters<typeof logActivity>[0]) {
     return await logActivity(input);
 }
 
-export async function getSystemLogsQuery(max: number = 100) {
-    return await getSystemLogs(max);
+export async function getSystemLogsQuery(options: GetSystemLogsOptions | number = {}): Promise<GetSystemLogsResult> {
+    return await getSystemLogs(options);
 }
 
 export async function logPermissionDeniedMutation(action: string, category: LogCategory = 'AUTH', details?: string) {

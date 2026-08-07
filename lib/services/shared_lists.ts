@@ -22,6 +22,7 @@ import {
 } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
 import { canAssignTerritory, canReturnTerritory } from '../domain/territoryRules';
+import { logActivity } from './audit_logs';
 
 const LISTS_TABLE = 'shared_lists';
 const SNAPSHOTS_TABLE = 'shared_list_snapshots';
@@ -380,6 +381,15 @@ export async function updateSharedListStatus(id: string, status: 'active' | 'com
 export async function deleteSharedList(id: string) {
     try {
         await deleteDoc(doc(db, LISTS_TABLE, id));
+
+        logActivity({
+            level: 'WARN',
+            category: 'ASSIGNMENTS',
+            action: 'SHARED_LIST_DELETE',
+            message: `SHARED_LIST_DELETE: Cartão compartilhado "${id}" excluído`,
+            targetId: id
+        });
+
         return { success: true };
     } catch (error: any) {
         console.error('Error deleting shared list:', error);
@@ -863,6 +873,22 @@ export async function returnExpiredTerritoryAssignments(congregationId?: string)
                 } else {
                     errorCount++;
                     if (res.error) errors.push(res.error);
+                }
+            });
+        }
+        if (processedCount > 0) {
+            logActivity({
+                level: 'INFO',
+                category: 'ASSIGNMENTS',
+                action: 'MAP_AUTO_RETURN',
+                message: `MAP_AUTO_RETURN: ${processedCount} designação(ões) expirada(s) devolvida(s) automaticamente`,
+                congregationId: congregationId || undefined,
+                metadata: {
+                    processedCount,
+                    foundCount,
+                    skippedCount,
+                    errorCount,
+                    durationMs: Date.now() - startTime
                 }
             });
         }

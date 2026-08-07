@@ -5,7 +5,8 @@ import { useAuth } from '@/app/context/AuthContext';
 import { db } from '@/lib/firebase';
 // TODO(mutations): migrate to mutation layer - legacy module (admin/report/dashboard)
 // eslint-disable-next-line no-restricted-imports
-import { addDoc, collection, deleteDoc, doc, updateDoc } from 'firebase/firestore';
+import { addDoc, collection, doc, updateDoc } from 'firebase/firestore';
+import { deleteSharedListMutation as deleteSharedList } from '@/lib/contracts/mutations/territoryMutations';
 import { ChevronLeft, ChevronRight, Plus, Save, X, Edit2, Trash2, Calendar, User, FileText, Download, Printer, Building2 } from "lucide-react";
 import ConfirmationModal from '@/app/components/ConfirmationModal';
 import Link from 'next/link';
@@ -347,8 +348,10 @@ export default function RegistryPage() {
             onConfirm: async () => {
                 setIsDeleting(true);
                 try {
-                    const listRef = doc(db, 'shared_lists', id);
-                    await deleteDoc(listRef);
+                    const res = await deleteSharedList(id);
+                    if (!res.success) {
+                        throw new Error(res.error || "Erro ao excluir registro.");
+                    }
 
                     toast.success("Registro removido.");
                     fetchData();

@@ -7,6 +7,7 @@ import { Users, Loader2, CheckCircle, AlertCircle } from 'lucide-react';
 import { toast } from 'sonner';
 import ConfirmationModal from '@/app/components/ConfirmationModal';
 import { db } from '@/lib/firebase';
+import { logActivityMutation as logActivity } from '@/lib/contracts/mutations/auditMutations';
 import {
     collection,
     query,
@@ -100,6 +101,17 @@ function InviteContent() {
                 email: user.email,
                 name: profileName || user.email?.split('@')[0]
             }, { merge: true });
+
+            logActivity({
+                level: 'INFO',
+                category: 'MEMBERS',
+                action: 'ACCOUNT_INVITE_ACCEPTED',
+                message: `ACCOUNT_INVITE_ACCEPTED: Convite aceito pelo usuário "${user.email}" para a congregação "${congregationName}"`,
+                congregationId: congregationId,
+                targetId: user.uid,
+                targetUser: user.email || undefined,
+                details: `Congregação: ${congregationName} | Token: ${token}`
+            });
 
             setSuccess(true);
             // Force refresh to ensure AuthContext picks up the change

@@ -1,6 +1,7 @@
 import { doc, setDoc, serverTimestamp } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
 import { MutationResult } from './types';
+import { logActivity } from '@/lib/services/audit_logs';
 
 export interface EnsureUserProfileInput {
     uid: string;
@@ -52,6 +53,17 @@ export async function ensureUserProfileMutation(input: EnsureUserProfileInput): 
                 congregationId: null,
                 updatedAt: serverTimestamp(),
                 createdAt: serverTimestamp(),
+            });
+
+            // Fire-and-forget: não bloqueia o fluxo de autenticação
+            logActivity({
+                level: 'INFO',
+                category: 'MEMBERS',
+                action: 'ACCOUNT_CREATED',
+                message: `ACCOUNT_CREATED: Novo perfil criado para "${userEmail}"`,
+                targetId: input.uid,
+                targetUser: userEmail,
+                details: `Cargo inicial: ${assignedRole} | É Admin? ${isMaster}`
             });
         }
 

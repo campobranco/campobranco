@@ -2,6 +2,8 @@
 
 import { Suspense, useEffect, useState, useCallback } from "react";
 import { formatExpirationTime } from "@/lib/utils/formatters";
+import { deleteSharedListMutation as deleteSharedList } from "@/lib/contracts/mutations/territoryMutations";
+import { logActivityMutation as logActivity } from "@/lib/contracts/mutations/auditMutations";
 import { useSearchParams, useRouter } from 'next/navigation';
 import { useAuth } from "@/app/context/AuthContext";
 import {
@@ -13,9 +15,6 @@ import {
 // TODO(mutations): migrate to mutation layer - legacy module (admin/report/dashboard)
 // eslint-disable-next-line no-restricted-imports
     updateDoc,
-// TODO(mutations): migrate to mutation layer - legacy module (admin/report/dashboard)
-// eslint-disable-next-line no-restricted-imports
-    deleteDoc,
     limit,
     orderBy,
     serverTimestamp,
@@ -193,8 +192,10 @@ function CardsContent() {
         setConfirmModal(null);
         setLoading(true);
         try {
-            const listRef = doc(db, "shared_lists", id);
-            await deleteDoc(listRef);
+            const res = await deleteSharedList(id);
+            if (!res.success) {
+                throw new Error(res.error || "Erro ao excluir.");
+            }
 
             setLists(prev => prev.filter(item => item.id !== id));
             toast.success("Cartão excluído com sucesso.");
@@ -215,9 +216,18 @@ function CardsContent() {
                 assignedName: null,
                 updatedAt: serverTimestamp()
             });
-            fetchLists();
+
+            logActivity({
+                level: 'WARN',
+                category: 'ASSIGNMENTS',
+                action: 'SHARED_LIST_REVOKE',
+                message: `SHARED_LIST_REVOKE: Responsável removido do cartão "${id}"`,
+                targetId: id
+            });
+
+            setLists(prev => prev.map(item => item.id === id ? { ...item, assignedTo: null, assignedName: null } : item));
             toast.success("Responsável removido.");
-        } catch (err) {
+        } catch (err: any) {
             console.error("Error removing responsible:", err);
             toast.error("Erro ao remover responsável.");
         }

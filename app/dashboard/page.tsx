@@ -2,7 +2,7 @@
 
 import { useEffect, useState, useCallback, useRef } from "react";
 // eslint-disable-next-line no-restricted-imports
-import { returnExpiredTerritoryAssignments } from "@/lib/services/shared_lists";
+import { returnExpiredTerritoryAssignments, deleteSharedList } from "@/lib/services/shared_lists";
 import { formatExpirationTime } from "@/lib/utils/formatters";
 import { useAuth } from "@/app/context/AuthContext";
 import {
@@ -361,7 +361,11 @@ export default function DashboardPage() {
     const handleDeleteShare = async (id: string) => {
         setConfirmModal(null);
         try {
-            await deleteDoc(doc(db, 'shared_lists', id));
+            const res = await deleteSharedList(id);
+            if (!res.success) {
+                toast.error(res.error || "Erro ao excluir.");
+                return;
+            }
             toast.success("Cartão removido.");
             setSharedHistory(prev => prev.filter(item => item.id !== id));
             setMyAssignments(prev => {

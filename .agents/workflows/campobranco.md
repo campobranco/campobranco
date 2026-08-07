@@ -251,3 +251,51 @@ Sempre considerar:
 ### Regra de Ouro
 
 Se um novo colaborador não consegue rodar o projeto em poucos minutos, o projeto está errado.
+
+## Restrições Arquiteturais Absolutas
+
+Estas regras possuem prioridade máxima dentro do projeto e não devem ser reinterpretadas durante a implementação.
+
+### Ambiente Oficial
+
+O único ambiente suportado pelo projeto é:
+
+- Firebase Spark
+- Next.js com `output: 'export'`
+- Aplicação estática hospedada no Firebase Hosting
+- Execução baseada em cliente (client-side)
+
+### Proibições Arquiteturais
+
+Não considerar, sugerir, planejar ou implementar soluções baseadas em:
+
+- ambientes com servidor executando código em runtime;
+- endpoints HTTP dinâmicos;
+- rotinas agendadas externas;
+- processamento backend separado;
+- serviços que exigem alteração de plano;
+- recursos que dependam de cobrança;
+- arquiteturas fora do modelo estático definido.
+
+Essas alternativas não fazem parte do escopo arquitetural do projeto.
+
+### Regra de Decisão
+
+Ao identificar uma necessidade que normalmente seria resolvida com recursos não disponíveis no ambiente oficial:
+
+1. Não propor migração de infraestrutura.
+2. Não sugerir serviços alternativos.
+3. Não criar abstrações para simular esses recursos.
+4. Redesenhar a solução considerando exclusivamente as capacidades existentes no Firebase Spark e execução client-side.
+
+### Critério Obrigatório
+
+Toda solução proposta deve responder:
+
+> "Esta implementação funciona dentro do modelo Firebase Spark + Next.js Static Export?"
+
+Se a resposta for não:
+
+- a solução deve ser descartada;
+- o requisito deve ser reavaliado dentro das limitações existentes;
+- nenhuma alternativa fora da arquitetura oficial deve ser apresentada como opção.

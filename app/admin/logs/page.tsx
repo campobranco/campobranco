@@ -6,7 +6,7 @@
 import { useState, useEffect } from 'react';
 import { useAuth } from '@/app/context/AuthContext';
 import { useRouter } from 'next/navigation';
-import { getSystemLogsQuery as getSystemLogs, SystemLog, LogLevel } from '@/lib/contracts/mutations/auditMutations';
+import { getSystemLogsQuery as getSystemLogs, SystemLog, LogLevel, LogCategory } from '@/lib/contracts/mutations/auditMutations';
 import {
     Terminal,
     ChevronLeft,
@@ -45,9 +45,12 @@ export default function SystemLogsAdminPage() {
     const router = useRouter();
     const [logs, setLogs] = useState<SystemLog[]>([]);
     const [loadingLogs, setLoadingLogs] = useState<boolean>(true);
+    const [loadingMore, setLoadingMore] = useState<boolean>(false);
+    const [lastDoc, setLastDoc] = useState<any>(null);
+    const [hasMore, setHasMore] = useState<boolean>(false);
     const [searchTerm, setSearchTerm] = useState('');
     const [selectedLevel, setSelectedLevel] = useState<LogLevel | 'ALL'>('ALL');
-    const [selectedCategory, setSelectedCategory] = useState<string>('ALL');
+    const [selectedCategory, setSelectedCategory] = useState<LogCategory | 'ALL'>('ALL');
     const [startDate, setStartDate] = useState<string>('');
     const [endDate, setEndDate] = useState<string>('');
     const [selectedLog, setSelectedLog] = useState<SystemLog | null>(null);
@@ -56,31 +59,53 @@ export default function SystemLogsAdminPage() {
         if (!authLoading && !isAdminRoleGlobal) {
             router.push('/');
         } else if (!authLoading && isAdminRoleGlobal) {
-            fetchLogs();
+            // Reinicia sempre que filtros de categoria ou level mudam (nova query no Firestore)
+            fetchLogs(true);
         }
-    }, [authLoading, isAdminRoleGlobal, router]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [authLoading, isAdminRoleGlobal, router, selectedCategory, selectedLevel]);
 
-    const fetchLogs = async () => {
-        setLoadingLogs(true);
-        const res = await getSystemLogs(300);
+    const fetchLogs = async (reset = false) => {
+        const isFirstPage = reset || lastDoc === null;
+        if (isFirstPage) {
+            setLoadingLogs(true);
+            setLogs([]);
+            setLastDoc(null);
+        } else {
+            setLoadingMore(true);
+        }
+
+        const opts: { pageSize: number; startAfterDoc?: any; category?: LogCategory; level?: LogLevel } = {
+            pageSize: 50,
+        };
+        if (!isFirstPage && lastDoc) opts.startAfterDoc = lastDoc;
+        if (selectedCategory !== 'ALL') opts.category = selectedCategory as LogCategory;
+        if (selectedLevel !== 'ALL') opts.level = selectedLevel as LogLevel;
+
+        const res = await getSystemLogs(opts);
         if (res.success && res.logs) {
-            setLogs(res.logs);
+            setLogs(prev => isFirstPage ? res.logs! : [...prev, ...res.logs!]);
+            setLastDoc(res.lastDoc ?? null);
+            setHasMore(res.hasMore ?? false);
         } else {
             toast.error(res.error || 'Erro ao carregar logs');
         }
+
         setLoadingLogs(false);
+        setLoadingMore(false);
     };
 
     const filteredLogs = logs.filter(log => {
-        const matchesLevel = selectedLevel === 'ALL' || log.level === selectedLevel;
-        const matchesCategory = selectedCategory === 'ALL' || log.category === selectedCategory;
-        const matchesSearch = log.message.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        // Busca textual em memória (sem índice Firestore)
+        const matchesSearch = !searchTerm ||
+            log.message.toLowerCase().includes(searchTerm.toLowerCase()) ||
             log.category.toLowerCase().includes(searchTerm.toLowerCase()) ||
             (log.user && log.user.toLowerCase().includes(searchTerm.toLowerCase())) ||
             (log.correlationId && log.correlationId.toLowerCase().includes(searchTerm.toLowerCase())) ||
+            (log.action && log.action.toLowerCase().includes(searchTerm.toLowerCase())) ||
             (log.details && log.details.toLowerCase().includes(searchTerm.toLowerCase()));
 
-        // Filtro de intervalo de datas (Date Range)
+        // Filtro de datas em memória (sem índice composto)
         let matchesDate = true;
         if (log.timestampMs) {
             if (startDate) {
@@ -93,7 +118,7 @@ export default function SystemLogsAdminPage() {
             }
         }
 
-        return matchesLevel && matchesCategory && matchesSearch && matchesDate;
+        return matchesSearch && matchesDate;
     });
 
     const exportToCSV = () => {
@@ -290,7 +315,7 @@ export default function SystemLogsAdminPage() {
                             JSON
                         </button>
                         <button 
-                            onClick={fetchLogs}
+                            onClick={() => fetchLogs(true)}
                             disabled={loadingLogs}
                             className="flex items-center gap-2 text-xs font-bold bg-surface border border-surface-border hover:bg-background px-3 py-2 rounded-lg transition-colors text-muted hover:text-main disabled:opacity-50"
                         >
@@ -320,7 +345,9 @@ export default function SystemLogsAdminPage() {
                         <div>
                             <select
                                 value={selectedLevel}
-                                onChange={(e) => setSelectedLevel(e.target.value as LogLevel | 'ALL')}
+                                onChange={(e) => {
+                                    setSelectedLevel(e.target.value as LogLevel | 'ALL');
+                                }}
                                 className="w-full py-2 px-3 bg-background border border-surface-border rounded-xl text-sm focus:outline-none focus:border-primary text-main"
                             >
                                 <option value="ALL">Todos os Níveis (Severity)</option>
@@ -334,7 +361,9 @@ export default function SystemLogsAdminPage() {
                         <div>
                             <select
                                 value={selectedCategory}
-                                onChange={(e) => setSelectedCategory(e.target.value)}
+                                onChange={(e) => {
+                                    setSelectedCategory(e.target.value as LogCategory | 'ALL');
+                                }}
                                 className="w-full py-2 px-3 bg-background border border-surface-border rounded-xl text-sm focus:outline-none focus:border-primary text-main"
                             >
                                 <option value="ALL">Todas as Categorias</option>
@@ -345,6 +374,7 @@ export default function SystemLogsAdminPage() {
                                 <option value="WITNESSING">WITNESSING (Testemunho)</option>
                                 <option value="REPORTS">REPORTS (Relatórios S-13)</option>
                                 <option value="AUTH">AUTH (Autenticação/Segurança)</option>
+                                <option value="ADMIN">ADMIN (Administração)</option>
                             </select>
                         </div>
                     </div>
@@ -385,7 +415,8 @@ export default function SystemLogsAdminPage() {
                         </div>
 
                         <span className="text-muted font-mono font-medium">
-                            Exibindo {filteredLogs.length} de {logs.length} eventos
+                            {filteredLogs.length} evento{filteredLogs.length !== 1 ? 's' : ''} carregados
+                            {hasMore && <span className="text-primary"> · há mais</span>}
                         </span>
                     </div>
                 </div>
@@ -478,6 +509,23 @@ export default function SystemLogsAdminPage() {
                         </table>
                     </div>
                 </div>
+
+                {/* Botão Carregar Mais */}
+                {hasMore && (
+                    <div className="flex justify-center pt-2 pb-4">
+                        <button
+                            onClick={() => fetchLogs(false)}
+                            disabled={loadingMore}
+                            className="flex items-center gap-2 text-sm font-bold bg-surface border border-surface-border hover:bg-background px-6 py-3 rounded-xl transition-colors text-muted hover:text-main disabled:opacity-50"
+                        >
+                            {loadingMore ? (
+                                <><Loader2 className="w-4 h-4 animate-spin" /> Carregando...</>
+                            ) : (
+                                <><RefreshCw className="w-4 h-4" /> Carregar mais 50 eventos</>
+                            )}
+                        </button>
+                    </div>
+                )}
             </main>
 
             {/* Modal / Drawer de Detalhes do Log */}

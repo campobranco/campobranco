@@ -87,6 +87,16 @@ export async function deleteCongregation(id: string, force: boolean = false) {
         }
 
         await deleteDoc(doc(db, 'congregations', id));
+
+        logActivity({
+            level: 'WARN',
+            category: 'ADMIN',
+            action: 'CONGREGATION_DELETE',
+            message: `CONGREGATION_DELETE: Congregação "${id}" excluída${force ? ' (deleção forçada com cascata)' : ''}`,
+            targetId: id,
+            details: `Modo: ${force ? 'Force (cascata)' : 'Normal'} | ID: ${id}`
+        });
+
         return { success: true };
     } catch (error: any) {
         console.error("Error deleting congregation:", error);
@@ -144,6 +154,20 @@ export async function migrateCongregation(oldId: string, newId: string) {
 
         // 4. Delete old congregation
         await deleteDoc(oldCongRef);
+
+        logActivity({
+            level: 'WARN',
+            category: 'ADMIN',
+            action: 'CONGREGATION_MIGRATED',
+            message: `CONGREGATION_MIGRATED: Congregação migrada de "${oldId}" para "${newId}"`,
+            targetId: newId,
+            details: `Origem: ${oldId} | Destino: ${newId}`,
+            metadata: {
+                oldId,
+                newId,
+                collectionsAffected: ['cities', 'users', 'territories', 'addresses', 'witnessing_points', 'shared_lists', 'visits']
+            }
+        });
 
         return { success: true };
     } catch (error: any) {
@@ -222,7 +246,21 @@ export async function deleteUser(userId: string) {
         }
 
         // 2. Excluir o usuário
+        const userDocSnap = await getDoc(doc(db, 'users', userId));
+        const userData = userDocSnap.exists() ? userDocSnap.data() : null;
+
         await deleteDoc(doc(db, 'users', userId));
+
+        logActivity({
+            level: 'WARN',
+            category: 'MEMBERS',
+            action: 'USER_DELETE',
+            message: `USER_DELETE: Membro "${userData?.email || userData?.name || userId}" removido do sistema`,
+            congregationId: userData?.congregationId || undefined,
+            targetId: userId,
+            targetUser: userData?.email || userData?.name || userId,
+            details: `Cargo anterior: ${userData?.role || 'PUBLICADOR'} | CongregationID: ${userData?.congregationId || 'N/A'}`
+        });
 
         return { success: true };
     } catch (error: any) {

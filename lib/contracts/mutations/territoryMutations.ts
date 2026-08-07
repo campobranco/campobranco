@@ -1,4 +1,4 @@
-import { createSharedList, processSharedListAction } from '@/lib/services/shared_lists';
+import { createSharedList, processSharedListAction, deleteSharedList } from '@/lib/services/shared_lists';
 import { MutationResult } from './types';
 import { logActivity } from '@/lib/services/audit_logs';
 
@@ -85,6 +85,22 @@ export async function returnTerritoryMutation(input: ReturnTerritoryInput): Prom
     };
 
     const result = await processSharedListAction(input.shareId, 'returnTerritory', payload);
+
+    if (result.success) {
+        logActivity({
+            level: 'INFO',
+            category: 'ASSIGNMENTS',
+            action: input.undo ? 'MAP_TERRITORY_RETURN_UNDO' : 'MAP_TERRITORY_RETURN',
+            message: input.undo
+                ? `MAP_TERRITORY_RETURN_UNDO: Devolução de território desfeita por "${input.userName || 'Usuário'}"`
+                : `MAP_TERRITORY_RETURN: Território devolvido por "${input.userName || 'Usuário'}"`,
+            congregationId: input.userCongregationId,
+            targetId: input.territoryId,
+            targetUser: input.userName || undefined,
+            details: `ShareID: ${input.shareId} | TerritoryID: ${input.territoryId} | Undo: ${!!input.undo}`
+        });
+    }
+
     return { success: result.success, message: result.message, error: result.error };
 }
 
@@ -101,6 +117,20 @@ export async function returnMapMutation(input: ReturnMapInput): Promise<Mutation
     };
 
     const result = await processSharedListAction(input.shareId, 'returnMap', payload);
+
+    if (result.success) {
+        logActivity({
+            level: 'INFO',
+            category: 'ASSIGNMENTS',
+            action: 'MAP_RETURN',
+            message: `MAP_RETURN: Mapa devolvido por "${input.userName || 'Usuário'}"`,
+            congregationId: input.userCongregationId,
+            targetId: input.shareId,
+            targetUser: input.userName || undefined,
+            details: `ShareID: ${input.shareId} | Devolvido por: ${input.userName || input.userId}`
+        });
+    }
+
     return { success: result.success, message: result.message, error: result.error };
 }
 
@@ -123,5 +153,24 @@ export async function acceptResponsibilityMutation(input: AcceptResponsibilityIn
     };
 
     const result = await processSharedListAction(input.shareId, 'acceptResponsibility', payload);
+
+    if (result.success) {
+        logActivity({
+            level: 'INFO',
+            category: 'ASSIGNMENTS',
+            action: 'MAP_ACCEPTED',
+            message: `MAP_ACCEPTED: Responsabilidade de mapa aceita por "${input.userName || input.userId}"`,
+            congregationId: input.userCongregationId,
+            targetId: input.shareId,
+            targetUser: input.userName || input.userId,
+            details: `ShareID: ${input.shareId} | Aceito por: ${input.userName || input.userId}`
+        });
+    }
+
     return { success: result.success, message: result.message, error: result.error };
+}
+
+export async function deleteSharedListMutation(id: string): Promise<MutationResult> {
+    const result = await deleteSharedList(id);
+    return { success: result.success, error: result.error };
 }
