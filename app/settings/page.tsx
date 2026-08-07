@@ -684,22 +684,14 @@ const [uploading, setUploading] = useState(false);
         <div className="min-h-screen bg-background pb-24 font-sans text-main">
             {/* Header */}
             <header className="bg-surface border-b border-surface-border sticky top-0 z-30 px-6 py-4">
-                <div className="max-w-5xl mx-auto flex items-center justify-between">
-                    <div className="flex items-center gap-3">
-                        <div className="bg-primary p-2 rounded-xl text-white shadow-lg shadow-primary-light/30">
-                            <Settings className="w-5 h-5" />
-                        </div>
-                        <div>
-                            <h1 className="text-xl font-bold text-main tracking-tight">Configurações</h1>
-                            <p className="text-xs text-muted font-medium">Gerencie sua conta e o sistema</p>
-                        </div>
+                <div className="max-w-5xl mx-auto flex items-center gap-3">
+                    <div className="bg-primary p-2 rounded-xl text-white shadow-lg shadow-primary-light/30">
+                        <Settings className="w-5 h-5" />
                     </div>
-                    {actualCongName && (
-                        <div className="px-3 py-1 text-[10px] font-bold rounded-full bg-surface-border text-main flex items-center gap-1.5 border border-surface-border shadow-sm">
-                            <Building2 className="w-3 h-3 text-primary" />
-                            {actualCongName}
-                        </div>
-                    )}
+                    <div>
+                        <h1 className="text-xl font-bold text-main tracking-tight">Configurações</h1>
+                        <p className="text-xs text-muted font-medium">Gerencie sua conta e o sistema</p>
+                    </div>
                 </div>
             </header>
 
@@ -970,7 +962,15 @@ const [uploading, setUploading] = useState(false);
                         <section className="space-y-4 animate-in slide-in-from-bottom-5 fade-in duration-500">
                             <div className="flex items-center gap-2 text-primary dark:text-primary-light mb-2">
                                 <Shield className="w-5 h-5" />
-                                <h2 className="text-sm font-bold uppercase tracking-widest">Painel do Administrador</h2>
+                                <h2 className="text-sm font-bold uppercase tracking-widest flex items-center gap-2">
+                                    Painel do Administrador
+                                    {actualCongName && (
+                                        <span className="normal-case tracking-normal px-2.5 py-0.5 text-[11px] font-bold rounded-full bg-surface-border text-main border border-surface-border flex items-center gap-1">
+                                            <Building2 className="w-3 h-3 text-primary" />
+                                            {actualCongName}
+                                        </span>
+                                    )}
+                                </h2>
                             </div>
 
                             {/* Member Management */}
@@ -983,7 +983,7 @@ const [uploading, setUploading] = useState(false);
                                         <div>
                                             <h3 className="font-bold text-main">Gestão de Membros</h3>
                                             <p className="text-xs text-muted">
-                                                {members.length} {members.length === 1 ? 'membro' : 'membros'} na congregação {actualCongName ? `(${actualCongName})` : ''}
+                                                {members.length} {members.length === 1 ? 'membro' : 'membros'} na congregação
                                             </p>
                                         </div>
                                     </div>
