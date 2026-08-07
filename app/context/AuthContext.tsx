@@ -240,7 +240,14 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
                     setProfileName(data.name || user.displayName || user.email);
                     setNotificationsEnabledInternal(data.notificationsEnabled ?? true);
                 } else {
-                    console.log(`[AUTH] Documento de perfil não encontrado em users/${user.uid}`);
+                    console.log(`[AUTH] Documento de perfil não encontrado em users/${user.uid}. Criando com createdAt...`);
+                    await ensureUserProfileMutation({
+                        uid: user.uid,
+                        email: user.email,
+                        displayName: user.displayName,
+                        masterEmail
+                    });
+
                     if (isMaster) {
                         setRole('ADMIN');
                         const storedCong = typeof window !== 'undefined' ? localStorage.getItem('selectedCongregationId') : null;
