@@ -240,9 +240,9 @@ export default function AdminUsersPage() {
             setShowCreateModal(false);
             setNewUser({ name: '', email: '', congregationId: '' });
             toast.success("Usuário criado com sucesso!");
-        } catch (error) {
+        } catch (error: any) {
             console.error("Erro ao criar usuário:", error);
-            toast.error("Erro ao criar usuário.");
+            toast.error(error?.message ? `Erro ao criar usuário: ${error.message}` : "Erro ao criar usuário.");
         } finally {
             setLoadingData(false);
         }

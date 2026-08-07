@@ -78,7 +78,8 @@ service cloud.firestore {
 
     // 1. Congregações
     match /congregations/{congregation_id} {
-      allow read: if isAuthenticated(); // Restrito a usuários logados (Privacidade)
+      // Leitura para usuários logados ou convidados acessando congregações com token de convite ativo (uso seguro de .get)
+      allow read: if isAuthenticated() || (resource != null && resource.data.get('inviteToken', null) != null);
       allow create, delete: if isAdmin();
       allow update: if isAuthenticated() && (isAdmin() || (isServant() && (congregation_id == getCongId(get(/databases/$(database)/documents/users/$(request.auth.uid)).data))));
     }
@@ -93,16 +94,26 @@ service cloud.firestore {
         isAdmin() || 
         ((isServant() || isElder()) && isSameCongregation(resource.data))
       );
-      allow create: if isAuthenticated() && request.auth.uid == userId;
+      allow create: if isAuthenticated() && (
+        request.auth.uid == userId || 
+        isAdmin() || 
+        ((isElder() || isServant()) && isSameCongregation(request.resource.data))
+      );
       allow update: if isAuthenticated() && (
         // Admin pode alterar qualquer campo de qualquer usuário
         isAdmin() ||
-        // Próprio usuário pode atualizar seu perfil, MAS não pode alterar campos privilegiados
+        // Próprio usuário pode atualizar seu perfil, MAS não pode alterar cargo/permissões
         (
           request.auth.uid == userId &&
           !('role' in request.resource.data.diff(resource.data).affectedKeys()) &&
           !('permissions' in request.resource.data.diff(resource.data).affectedKeys()) &&
-          !('congregationId' in request.resource.data.diff(resource.data).affectedKeys())
+          (
+            !('congregationId' in request.resource.data.diff(resource.data).affectedKeys()) ||
+            (
+              resource.data.get('congregationId', null) == null &&
+              request.resource.data.get('congregationId', null) != null
+            )
+          )
         ) ||
         // Servo/Ancião da mesma congregação pode editar, MAS não pode alterar campos privilegiados
         (

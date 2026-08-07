@@ -22,8 +22,8 @@ import {
 import { db } from '@/lib/firebase';
 import {
     doc,
-// TODO(mutations): migrate to mutation layer - legacy module (admin/report/dashboard)
-// eslint-disable-next-line no-restricted-imports
+    // TODO(mutations): migrate to mutation layer - legacy module (admin/report/dashboard)
+    // eslint-disable-next-line no-restricted-imports
     updateDoc,
 } from 'firebase/firestore';
 import Link from 'next/link';
@@ -551,7 +551,7 @@ export default function CongregationsPage() {
                                     <p className="text-[10px] text-muted italic">Isso definirá a URL da congregação.</p>
                                     {editingCongregation && (
                                         <p className="text-[10px] text-orange-500 font-bold mt-1">
-                                            âš ï¸ Alterar o ID pode quebrar links existentes se houver dados vinculados!
+                                            Alterar o ID pode quebrar links existentes se houver dados vinculados!
                                         </p>
                                     )}
                                 </div>

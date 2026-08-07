@@ -1,6 +1,6 @@
 {
   "name": "campobranco",
-  "version": "0.11.61-beta",
+  "version": "0.11.62-beta",
   "private": true,
   "type": "module",
   "scripts": {
@@ -17,8 +17,10 @@
     "test:integration": "jest __tests__/integration",
     "seed:integration": "node --loader ts-node/esm __tests__/integration/seed.ts",
     "contracts:check": "node --loader ts-node/esm scripts/contracts-check.ts",
-    "deploy:rules": "firebase deploy --only firestore:rules",
-    "deploy:hosting": "firebase deploy --only hosting"
+    "firebase:check": "node scripts/check-firebase-project.mjs",
+    "deploy:rules": "npm run firebase:check && firebase deploy --only firestore:rules --project campobrancodev",
+    "deploy:hosting": "npm run firebase:check && firebase deploy --only hosting --project campobrancodev",
+    "deploy": "npm run firebase:check && firebase deploy --project campobrancodev"
   },
   "dependencies": {
     "@capacitor-firebase/authentication": "^8.3.0",

@@ -314,7 +314,7 @@ export default function MapCardPage() {
 
     const fetchData = useCallback(async () => {
         const storedCongId = typeof window !== 'undefined' ? localStorage.getItem('selectedCongregationId') : null;
-        const targetCongId = congregationId || storedCongId || 'ls-catanduva';
+        const targetCongId = congregationId || storedCongId || null;
 
         if (!targetCongId) {
             setPageLoading(false);
@@ -386,7 +386,7 @@ export default function MapCardPage() {
             fetchData();
             if (cardMode === 'address-pins') {
                 const storedCongId = typeof window !== 'undefined' ? localStorage.getItem('selectedCongregationId') : null;
-                const targetCongId = congregationId || storedCongId || 'ls-catanduva';
+                const targetCongId = congregationId || storedCongId || null;
                 if (targetCongId) {
                     loadAddressPins(targetCongId);
                 }
@@ -403,7 +403,7 @@ export default function MapCardPage() {
         } else if (newMode === 'address-pins') {
             toast.info("Modo 2 Ativo: Pinos dos Endereços (Modos 1 e 3 desabilitados)");
             const storedCongId = typeof window !== 'undefined' ? localStorage.getItem('selectedCongregationId') : null;
-            const targetCongId = congregationId || storedCongId || 'ls-catanduva';
+            const targetCongId = congregationId || storedCongId || null;
 
             if (targetCongId) {
                 loadAddressPins(targetCongId);

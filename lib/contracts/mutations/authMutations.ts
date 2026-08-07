@@ -1,4 +1,4 @@
-import { doc, setDoc, serverTimestamp } from 'firebase/firestore';
+import { doc, setDoc, serverTimestamp, collection, query, where, getDocs, deleteDoc } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
 import { MutationResult } from './types';
 import { logActivity } from '@/lib/services/audit_logs';
@@ -20,11 +20,12 @@ export const VALID_USER_ROLES = ['ADMIN', 'SUPER_ADMIN', 'ANCIAO', 'SERVO', 'PUB
 export async function ensureUserProfileMutation(input: EnsureUserProfileInput): Promise<MutationResult> {
     if (!input.uid) return { success: false, message: 'UID do usuário obrigatório.' };
     if (!input.email || !input.email.trim()) return { success: false, message: 'E-mail do usuário obrigatório.' };
-    if (!input.displayName || !input.displayName.trim()) return { success: false, message: 'Nome do usuário obrigatório.' };
 
     const userEmail = input.email.trim().toLowerCase();
     const masterEmail = (input.masterEmail || '').trim().toLowerCase();
     const isMaster = Boolean(masterEmail && userEmail === masterEmail);
+    
+    const userName = (input.displayName && input.displayName.trim()) ? input.displayName.trim() : userEmail.split('@')[0];
     
     const assignedRole = isMaster ? 'ADMIN' : 'PUBLICADOR';
     if (!VALID_USER_ROLES.includes(assignedRole as any)) {
@@ -44,26 +45,61 @@ export async function ensureUserProfileMutation(input: EnsureUserProfileInput): 
                 await setDoc(userRef, { role: 'ADMIN', updatedAt: serverTimestamp() }, { merge: true });
             }
         } else {
-            // Perfil novo
-            console.log(`[AUTH MUTATION] Criando novo perfil. Admin? ${isMaster}`);
+            // Perfil novo: verifica se existe pré-cadastro administrativo com ID temporário/aleatório para o mesmo e-mail
+            let preCreatedData: any = null;
+            let preCreatedDocId: string | null = null;
+
+            try {
+                const usersColl = collection(db, 'users');
+                const preQuery = query(usersColl, where('email', '==', userEmail));
+                const preSnap = await getDocs(preQuery);
+
+                if (!preSnap.empty) {
+                    const preDoc = preSnap.docs.find(d => d.id !== input.uid);
+                    if (preDoc) {
+                        preCreatedDocId = preDoc.id;
+                        preCreatedData = preDoc.data();
+                        console.log(`[AUTH MUTATION] Pré-cadastro encontrado em users/${preCreatedDocId} para ${userEmail}`);
+                    }
+                }
+            } catch (searchErr) {
+                console.warn(`[AUTH MUTATION] Não foi possível verificar pré-cadastros por e-mail:`, searchErr);
+            }
+
+            const finalName = preCreatedData?.name || userName;
+            const finalRole = isMaster ? 'ADMIN' : (preCreatedData?.role || assignedRole);
+            const finalCongId = preCreatedData?.congregationId || null;
+            const finalPermissions = preCreatedData?.permissions || null;
+
+            console.log(`[AUTH MUTATION] Criando/vinculando perfil para users/${input.uid}. Admin? ${isMaster}`);
             await setDoc(userRef, {
-                name: input.displayName.trim(),
+                name: finalName,
                 email: userEmail,
-                role: assignedRole,
-                congregationId: null,
+                role: finalRole,
+                congregationId: finalCongId,
+                permissions: finalPermissions,
                 updatedAt: serverTimestamp(),
-                createdAt: serverTimestamp(),
+                createdAt: preCreatedData?.createdAt || serverTimestamp(),
             });
 
-            // Fire-and-forget: não bloqueia o fluxo de autenticação
+            // Se existia documento temporário anterior com ID pré-gerado, efetua a limpeza sem duplicar registros
+            if (preCreatedDocId) {
+                try {
+                    console.log(`[AUTH MUTATION] Removendo documento pré-cadastro temporário: users/${preCreatedDocId}`);
+                    await deleteDoc(doc(db, 'users', preCreatedDocId));
+                } catch (delErr) {
+                    console.warn(`[AUTH MUTATION] Erro ao remover pré-cadastro temporário ${preCreatedDocId}:`, delErr);
+                }
+            }
+
             logActivity({
                 level: 'INFO',
                 category: 'MEMBERS',
                 action: 'ACCOUNT_CREATED',
-                message: `ACCOUNT_CREATED: Novo perfil criado para "${userEmail}"`,
+                message: `ACCOUNT_CREATED: Perfil gravado e vinculado para "${userEmail}"`,
                 targetId: input.uid,
                 targetUser: userEmail,
-                details: `Cargo inicial: ${assignedRole} | É Admin? ${isMaster}`
+                details: `Cargo: ${finalRole} | Congregação: ${finalCongId || 'N/A'} | Migrado de pré-cadastro? ${Boolean(preCreatedDocId)}`
             });
         }
 

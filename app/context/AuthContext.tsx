@@ -230,35 +230,48 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
                     setRole(assignedRole);
                     setPermissions(normalizePermissions(data.permissions ?? null));
                     
-                    const storedCong = typeof window !== 'undefined' ? localStorage.getItem('selectedCongregationId') : null;
-                    const finalCongId = data.congregationId || storedCong || (isMaster ? 'ls-catanduva' : null);
+                    const userCongId = data.congregationId || null;
+                    const finalCongId = userCongId;
+
                     setCongregationId(finalCongId);
                     if (finalCongId && typeof window !== 'undefined') {
                         localStorage.setItem('selectedCongregationId', finalCongId);
+                    } else if (!finalCongId && typeof window !== 'undefined') {
+                        localStorage.removeItem('selectedCongregationId');
                     }
 
                     setProfileName(data.name || user.displayName || user.email);
                     setNotificationsEnabledInternal(data.notificationsEnabled ?? true);
                 } else {
                     console.log(`[AUTH] Documento de perfil não encontrado em users/${user.uid}. Criando com createdAt...`);
-                    await ensureUserProfileMutation({
+                    const res = await ensureUserProfileMutation({
                         uid: user.uid,
                         email: user.email,
                         displayName: user.displayName,
                         masterEmail
                     });
 
+                    if (!res.success) {
+                        console.error(`[AUTH] Falha crítica ao criar perfil para ${user.email}:`, res.message);
+                        logActivity({
+                            level: 'ERROR',
+                            category: 'AUTH',
+                            action: 'PROFILE_CREATION_FAILED',
+                            message: `FALHA_CRIACAO_PERFIL: Erro ao gerar documento users/${user.uid}`,
+                            details: `Mensagem: ${res.message || 'Erro desconhecido'}`
+                        });
+                    }
+
                     if (isMaster) {
                         setRole('ADMIN');
                         const storedCong = typeof window !== 'undefined' ? localStorage.getItem('selectedCongregationId') : null;
-                        const finalCongId = storedCong || 'ls-catanduva';
-                        setCongregationId(finalCongId);
-                        if (typeof window !== 'undefined') {
-                            localStorage.setItem('selectedCongregationId', finalCongId);
-                        }
+                        setCongregationId(storedCong || null);
                     } else {
                         setRole('PUBLICADOR');
                         setCongregationId(null);
+                        if (typeof window !== 'undefined') {
+                            localStorage.removeItem('selectedCongregationId');
+                        }
                     }
                 }
             } catch (error) {
@@ -357,6 +370,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         setPermissions(null);
         setCongregationId(null);
         setProfileName(null);
+        if (typeof window !== 'undefined') {
+            localStorage.removeItem('selectedCongregationId');
+        }
         if (typeof document !== 'undefined') {
             const isSecure = window.location.protocol === 'https:';
             document.cookie = `__session=; path=/; expires=Thu, 01 Jan 1970 00:00:00 GMT; SameSite=Lax${isSecure ? '; Secure' : ''}`;
