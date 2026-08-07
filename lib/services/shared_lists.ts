@@ -109,12 +109,6 @@ export async function createSharedList(data: {
     if (!data.congregationId || !data.congregationId.trim()) {
         throw new Error('ID da congregação é obrigatório.');
     }
-    if (!data.assignedTo || !data.assignedTo.trim()) {
-        throw new Error('ID do destinatário (assignedTo) é obrigatório.');
-    }
-    if (!data.assignedName || !data.assignedName.trim()) {
-        throw new Error('Nome do destinatário (assignedName) é obrigatório.');
-    }
     if (!data.items || !Array.isArray(data.items) || data.items.length === 0) {
         throw new Error('Lista de itens compartilhados não pode estar vazia.');
     }
