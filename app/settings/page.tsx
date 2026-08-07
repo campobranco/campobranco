@@ -684,14 +684,22 @@ const [uploading, setUploading] = useState(false);
         <div className="min-h-screen bg-background pb-24 font-sans text-main">
             {/* Header */}
             <header className="bg-surface border-b border-surface-border sticky top-0 z-30 px-6 py-4">
-                <div className="max-w-5xl mx-auto flex items-center gap-3">
-                    <div className="bg-primary p-2 rounded-xl text-white shadow-lg shadow-primary-light/30">
-                        <Settings className="w-5 h-5" />
+                <div className="max-w-5xl mx-auto flex items-center justify-between">
+                    <div className="flex items-center gap-3">
+                        <div className="bg-primary p-2 rounded-xl text-white shadow-lg shadow-primary-light/30">
+                            <Settings className="w-5 h-5" />
+                        </div>
+                        <div>
+                            <h1 className="text-xl font-bold text-main tracking-tight">Configurações</h1>
+                            <p className="text-xs text-muted font-medium">Gerencie sua conta e o sistema</p>
+                        </div>
                     </div>
-                    <div>
-                        <h1 className="text-xl font-bold text-main tracking-tight">Configurações</h1>
-                        <p className="text-xs text-muted font-medium">Gerencie sua conta e o sistema</p>
-                    </div>
+                    {actualCongName && (
+                        <div className="px-3 py-1 text-[10px] font-bold rounded-full bg-surface-border text-main flex items-center gap-1.5 border border-surface-border shadow-sm">
+                            <Building2 className="w-3 h-3 text-primary" />
+                            {actualCongName}
+                        </div>
+                    )}
                 </div>
             </header>
 
@@ -721,16 +729,24 @@ const [uploading, setUploading] = useState(false);
                             <div>
                                 <h3 className="text-lg font-bold text-main">{profileName || user.displayName || 'Usuário'}</h3>
                                 <p className="text-muted text-sm">{user.email}</p>
-                                <div className="mt-2 inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-[10px] font-bold uppercase tracking-wide bg-primary-light/50 text-primary-dark dark:bg-primary-dark/30 dark:text-primary-light">
-                                    <Shield className="w-3 h-3" />
-                                    {(() => {
-                                        switch (role) {
-                                            case 'ADMIN': return 'Admin';
-                                            case 'ANCIAO': return 'Superintendente de Serviço';
-                                            case 'SERVO': return 'Servo de Territórios';
-                                            default: return 'Publicador';
-                                        }
-                                    })()}
+                                <div className="mt-2 flex items-center gap-2 flex-wrap">
+                                    <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-[10px] font-bold uppercase tracking-wide bg-primary-light/50 text-primary-dark dark:bg-primary-dark/30 dark:text-primary-light">
+                                        <Shield className="w-3 h-3" />
+                                        {(() => {
+                                            switch (role) {
+                                                case 'ADMIN': return 'Admin';
+                                                case 'ANCIAO': return 'Superintendente de Serviço';
+                                                case 'SERVO': return 'Servo de Territórios';
+                                                default: return 'Publicador';
+                                            }
+                                        })()}
+                                    </div>
+                                    {actualCongName && (
+                                        <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-[10px] font-bold uppercase tracking-wide bg-surface-border text-main border border-surface-border">
+                                            <Building2 className="w-3 h-3 text-primary" />
+                                            {actualCongName}
+                                        </div>
+                                    )}
                                 </div>
                             </div>
                         </div>
