@@ -137,11 +137,17 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
                             if (prefs.displayScale) setDisplayScale(prefs.displayScale);
 
                             // Atualização imediata do localStorage para o script de inicialização do <head>
-                            localStorage.setItem("app-preferences", JSON.stringify({
-                                textSize: newText,
-                                displayScale: newScale,
-                                themeMode: newTheme
-                            }));
+                            if (typeof window !== 'undefined') {
+                                try {
+                                    localStorage.setItem("app-preferences", JSON.stringify({
+                                        textSize: newText,
+                                        displayScale: newScale,
+                                        themeMode: newTheme
+                                    }));
+                                } catch (e) {
+                                    console.error("Erro ao gravar app-preferences no localStorage:", e);
+                                }
+                            }
                         } else {
                             // Se o Firestore não possui preferências gravadas, envia a preferência local atual
                             const currentPrefs = {
