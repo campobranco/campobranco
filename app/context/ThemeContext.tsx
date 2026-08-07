@@ -144,9 +144,7 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
                                         displayScale: newScale,
                                         themeMode: newTheme
                                     }));
-                                } catch (e) {
-                                    console.error("Erro ao gravar app-preferences no localStorage:", e);
-                                }
+                                } catch {}
                             }
                         } else {
                             // Se o Firestore não possui preferências gravadas, envia a preferência local atual
