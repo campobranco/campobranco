@@ -292,13 +292,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
                     const data = congSnap.data();
                     setTermType(data.termType || 'city');
                     setCongregationName(data.name || null);
-                    const rawCat = data.category || data.type || null;
-                    let resolvedType = rawCat;
-                    if (rawCat === 'Tradicional' || rawCat === 'tradicional') resolvedType = 'TRADITIONAL';
-                    else if (rawCat === 'Língua de Sinais' || rawCat === 'sinais' || rawCat === 'LS') resolvedType = 'SIGN_LANGUAGE';
-                    else if (rawCat === 'Língua Estrangeira') resolvedType = 'FOREIGN_LANGUAGE';
-
-                    setCongregationType(resolvedType as any);
+                    setCongregationType(data.category || null);
                 } else if (active) {
                     setCongregationName(null);
                 }

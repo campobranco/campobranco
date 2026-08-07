@@ -414,11 +414,7 @@ export default function CongregationsPage() {
                                                         setEditingCongregation(cong);
                                                         setNewName(cong.name);
                                                         setNewCity(cong.city || '');
-                                                        let cat = cong.category || '';
-                                                        const lowerCat = cat.toLowerCase();
-                                                        if (lowerCat.includes('sinais') || lowerCat.includes('sign')) cat = 'SIGN_LANGUAGE';
-                                                        else if (lowerCat.includes('estrangeira') || lowerCat.includes('foreign')) cat = 'FOREIGN_LANGUAGE';
-                                                        setNewCategory(cat);
+                                                        setNewCategory(cong.category || 'TRADITIONAL');
                                                         setNewTermType(cong.termType || 'city');
                                                         setCustomId(cong.id);
                                                         setIsCreateModalOpen(true);

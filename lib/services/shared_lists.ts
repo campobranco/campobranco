@@ -432,13 +432,7 @@ export async function getSharedListWithData(id: string) {
                 const congSnap = await getDoc(doc(db, 'congregations', congregationId));
                 if (congSnap.exists()) {
                     const congData = congSnap.data() as any;
-                    const rawCat = congData.category || congData.type || null;
-                    let resolvedType = rawCat;
-                    if (rawCat === 'Tradicional' || rawCat === 'tradicional') resolvedType = 'TRADITIONAL';
-                    else if (rawCat === 'Língua de Sinais' || rawCat === 'sinais' || rawCat === 'LS') resolvedType = 'SIGN_LANGUAGE';
-                    else if (rawCat === 'Língua Estrangeira') resolvedType = 'FOREIGN_LANGUAGE';
-
-                    congregationType = resolvedType;
+                    congregationType = congData.category || null;
                 }
             } catch (err: any) {
                 console.warn('Could not read congregation for shared list (might be public access):', err.message);
