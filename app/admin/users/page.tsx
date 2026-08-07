@@ -120,9 +120,9 @@ export default function AdminUsersPage() {
 
         let usersQuery;
         if (isAdminRoleGlobal) {
-            usersQuery = query(collection(db, 'users'), orderBy('createdAt', 'desc'));
+            usersQuery = query(collection(db, 'users'));
         } else if (congregationId) {
-            usersQuery = query(collection(db, 'users'), where('congregationId', '==', congregationId), orderBy('createdAt', 'desc'));
+            usersQuery = query(collection(db, 'users'), where('congregationId', '==', congregationId));
         } else {
             setLoadingData(false);
             return;
@@ -133,6 +133,14 @@ export default function AdminUsersPage() {
                 id: doc.id,
                 ...doc.data()
             })) as UserProfile[];
+
+            // Ordenação segura em memória para não ignorar documentos sem o campo createdAt
+            usersData.sort((a: any, b: any) => {
+                const dateA = a.createdAt ? new Date(a.createdAt).getTime() : 0;
+                const dateB = b.createdAt ? new Date(b.createdAt).getTime() : 0;
+                return dateB - dateA;
+            });
+
             setUsers(usersData);
             setLoadingData(false);
         }, (error) => {
