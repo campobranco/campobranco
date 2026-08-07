@@ -75,7 +75,7 @@ const formatExpirationTime = (expiresAtValue: any) => {
 };
 
 export default function DashboardPage() {
-    const { user, role, isElder, isServant, congregationId, loading, profileName, isAdminRoleGlobal, congregationType } = useAuth();
+    const { user, role, isElder, isServant, congregationId, congregationName, loading, profileName, isAdminRoleGlobal, congregationType } = useAuth();
     const router = useRouter();
     const [sharedHistory, setSharedHistory] = useState<any[]>([]);
     const [myAssignments, setMyAssignments] = useState<any[]>([]);
@@ -488,6 +488,11 @@ export default function DashboardPage() {
                     </div>
                 </div>
                 <div className="flex items-center gap-2">
+                    {congregationName && (
+                        <span className="px-3 py-1 text-[10px] font-bold rounded-full bg-surface-border text-main flex items-center gap-1.5 border border-surface-border shadow-sm">
+                            <Building2 className="w-3 h-3 text-primary" /> {congregationName}
+                        </span>
+                    )}
                     <span className={`px-3 py-1 text-[10px] font-bold rounded-full uppercase flex items-center gap-1 ${isElder ? 'bg-indigo-100 text-indigo-700' : isServant ? 'bg-primary-light text-primary' : 'bg-gray-100 text-muted'}`}>
                         <Shield className="w-3 h-3" /> {roleLabel}
                     </span>

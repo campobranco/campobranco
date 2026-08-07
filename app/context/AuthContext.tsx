@@ -17,6 +17,7 @@ interface AuthContextType {
     loading: boolean;
     role: string | null;
     congregationId: string | null;
+    congregationName: string | null;
     logout: () => Promise<void>;
     profileName: string | null;
     isAdminRoleGlobal: boolean;
@@ -86,6 +87,7 @@ const AuthContext = createContext<AuthContextType>({
     loading: true,
     role: null,
     congregationId: null,
+    congregationName: null,
     logout: async () => {},
     profileName: null,
     isAdminRoleGlobal: false,
@@ -122,6 +124,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     const [role, setRole] = useState<string | null>(null);
     const [permissions, setPermissions] = useState<UserPermissions | null>(null);
     const [congregationId, setCongregationId] = useState<string | null>(null);
+    const [congregationName, setCongregationName] = useState<string | null>(null);
     const [profileName, setProfileName] = useState<string | null>(null);
     const [termType, setTermType] = useState<'city' | 'neighborhood'>('city');
     const [congregationType, setCongregationType] = useState<'TRADITIONAL' | 'SIGN_LANGUAGE' | 'FOREIGN_LANGUAGE' | null>(null);
@@ -375,6 +378,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
             loading,
             role,
             congregationId,
+            congregationName,
             profileName,
             logout,
             isAdminRoleGlobal,
