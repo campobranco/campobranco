@@ -684,14 +684,22 @@ const [uploading, setUploading] = useState(false);
         <div className="min-h-screen bg-background pb-24 font-sans text-main">
             {/* Header */}
             <header className="bg-surface border-b border-surface-border sticky top-0 z-30 px-6 py-4">
-                <div className="max-w-5xl mx-auto flex items-center gap-3">
-                    <div className="bg-primary p-2 rounded-xl text-white shadow-lg shadow-primary-light/30">
-                        <Settings className="w-5 h-5" />
+                <div className="max-w-5xl mx-auto flex items-center justify-between">
+                    <div className="flex items-center gap-3">
+                        <div className="bg-primary p-2 rounded-xl text-white shadow-lg shadow-primary-light/30">
+                            <Settings className="w-5 h-5" />
+                        </div>
+                        <div>
+                            <h1 className="text-xl font-bold text-main tracking-tight">Configurações</h1>
+                            <p className="text-xs text-muted font-medium">Gerencie sua conta e o sistema</p>
+                        </div>
                     </div>
-                    <div>
-                        <h1 className="text-xl font-bold text-main tracking-tight">Configurações</h1>
-                        <p className="text-xs text-muted font-medium">Gerencie sua conta e o sistema</p>
-                    </div>
+                    {actualCongName && (
+                        <div className="px-3 py-1 text-[10px] font-bold rounded-full bg-surface-border text-main flex items-center gap-1.5 border border-surface-border shadow-sm">
+                            <Building2 className="w-3 h-3 text-primary" />
+                            {actualCongName}
+                        </div>
+                    )}
                 </div>
             </header>
 
