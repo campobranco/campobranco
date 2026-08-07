@@ -267,10 +267,9 @@ export async function createSharedList(data: {
             }
 
             if (data.type === 'territory' && data.territories && Array.isArray(data.territories)) {
-                const snapshotsRef = collection(db, SNAPSHOTS_TABLE);
-                
                 data.territories.forEach((t: any) => {
-                    const snapRef = doc(snapshotsRef);
+                    const snapDocId = `${businessKey}_${t.id}`;
+                    const snapRef = doc(db, SNAPSHOTS_TABLE, snapDocId);
                     transaction.set(snapRef, {
                         sharedListId: businessKey,
                         congregationId: data.congregationId,
@@ -282,7 +281,8 @@ export async function createSharedList(data: {
                 });
 
                 addressesDocs.forEach(d => {
-                    const snapRef = doc(snapshotsRef);
+                    const snapDocId = `${businessKey}_${d.id}`;
+                    const snapRef = doc(db, SNAPSHOTS_TABLE, snapDocId);
                     transaction.set(snapRef, {
                         sharedListId: businessKey,
                         congregationId: data.congregationId,
