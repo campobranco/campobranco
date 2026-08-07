@@ -227,8 +227,8 @@ export default function LoginClient() {
                         </form>
                     )}
 
-                    <div className="mt-8 text-center border-t border-gray-100 dark:border-gray-850 pt-6">
-                        <p className="text-[10px] text-gray-400 dark:text-gray-500 font-bold uppercase tracking-[0.2em]">Exclusivo para membros autorizados</p>
+                    <div className="mt-8 text-center border-t border-surface-border pt-6">
+                        <p className="text-[10px] text-muted font-bold uppercase tracking-[0.2em]">Exclusivo para membros autorizados</p>
                     </div>
                 </div>
             </div>
