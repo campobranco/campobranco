@@ -28,13 +28,8 @@ export async function saveCongregation(data: any) {
     try {
         const { id, name, city, category, termType, customId } = data;
 
-        // Normalização e validação estrita de schema (enum de categorias válidas)
-        let normalizedCategory = category;
-        if (category === 'Tradicional' || category === 'tradicional') normalizedCategory = 'TRADITIONAL';
-        else if (category === 'Língua de Sinais' || category === 'sinais' || category === 'LS') normalizedCategory = 'SIGN_LANGUAGE';
-        else if (category === 'Língua Estrangeira') normalizedCategory = 'FOREIGN_LANGUAGE';
-
-        if (normalizedCategory && !VALID_CONGREGATION_CATEGORIES.includes(normalizedCategory as any)) {
+        // Validação estrita de schema (enum de categorias válidas)
+        if (category && !VALID_CONGREGATION_CATEGORIES.includes(category as any)) {
             throw new Error(`Categoria de congregação inválida: '${category}'. Use apenas: ${VALID_CONGREGATION_CATEGORIES.join(', ')}`);
         }
 
@@ -47,8 +42,7 @@ export async function saveCongregation(data: any) {
         await setDoc(congRef, {
             name,
             city,
-            category: normalizedCategory,
-            type: normalizedCategory,
+            category,
             termType,
             updatedAt: new Date().toISOString()
         }, { merge: true });

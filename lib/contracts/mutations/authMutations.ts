@@ -14,6 +14,8 @@ export interface EnsureUserProfileInput {
  * Contrato de Mutações de Autenticação e Perfil
  */
 
+export const VALID_USER_ROLES = ['ADMIN', 'SUPER_ADMIN', 'ANCIAO', 'SERVO', 'PUBLICADOR'] as const;
+
 export async function ensureUserProfileMutation(input: EnsureUserProfileInput): Promise<MutationResult> {
     if (!input.uid) return { success: false, message: 'UID do usuário obrigatório.' };
 
@@ -21,10 +23,18 @@ export async function ensureUserProfileMutation(input: EnsureUserProfileInput): 
     const masterEmail = input.masterEmail.trim().toLowerCase();
     const isMaster = masterEmail && userEmail === masterEmail;
     
+    const assignedRole = isMaster ? 'ADMIN' : 'PUBLICADOR';
+    if (!VALID_USER_ROLES.includes(assignedRole as any)) {
+        throw new Error(`Role de usuário inválida: '${assignedRole}'. Use: ${VALID_USER_ROLES.join(', ')}`);
+    }
+
     const userRef = doc(db, 'users', input.uid);
 
     try {
         if (input.existingData) {
+            if (input.existingData.role && !VALID_USER_ROLES.includes(input.existingData.role as any)) {
+                throw new Error(`Role de usuário existente inválida: '${input.existingData.role}'.`);
+            }
             // Se usuário já existe, mas é o Master e não está como ADMIN, corrija
             if (isMaster && input.existingData.role !== 'ADMIN') {
                 console.log(`[AUTH MUTATION] Corrigindo role do Master para ADMIN`);
@@ -36,7 +46,7 @@ export async function ensureUserProfileMutation(input: EnsureUserProfileInput): 
             await setDoc(userRef, {
                 name: input.displayName || (isMaster ? 'Admin' : 'Membro'),
                 email: input.email,
-                role: isMaster ? 'ADMIN' : 'PUBLICADOR',
+                role: assignedRole,
                 congregationId: null,
                 updatedAt: serverTimestamp(),
                 createdAt: serverTimestamp(),

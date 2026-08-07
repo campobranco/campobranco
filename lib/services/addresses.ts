@@ -39,8 +39,14 @@ export async function getAddresses(congregationId: string, cityId?: string | nul
     }
 }
 
+export const VALID_VISIT_STATUSES = ['none', 'contacted', 'partial', 'notContacted', 'moved', 'doNotVisit', 'contested'] as const;
+
 export async function saveAddress(id: string | null, data: any) {
     try {
+        if (data.visitStatus && !VALID_VISIT_STATUSES.includes(data.visitStatus as any)) {
+            throw new Error(`visitStatus inválido: "${data.visitStatus}". Use: ${VALID_VISIT_STATUSES.join(', ')}`);
+        }
+
         if (id) {
             // 1. Edição: busca o registro atual para detectar mudança em isActive
             const oldSnap = await getDoc(doc(db, TABLE, id));

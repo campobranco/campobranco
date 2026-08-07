@@ -49,11 +49,9 @@ interface Congregation {
 }
 
 const CATEGORY_LABELS: Record<string, string> = {
+    'TRADITIONAL': 'Tradicional',
     'SIGN_LANGUAGE': 'Língua de sinais',
-    'FOREIGN_LANGUAGE': 'Língua estrangeira',
-    'Tradicional': 'Tradicional',
-    'Língua de Sinais': 'Língua de sinais',
-    'Língua Estrangeira': 'Língua estrangeira'
+    'FOREIGN_LANGUAGE': 'Língua estrangeira'
 };
 
 export default function CongregationsPage() {
@@ -98,22 +96,7 @@ export default function CongregationsPage() {
             setLoading(true);
             const res = await getCongregations();
             if (!res.success) throw new Error(res.error || 'Erro ao carregar');
-            const list = res.congregations || [];
-            setCongregations(list);
-
-            // Self-healing: atualiza no Firestore qualquer congregação com categoria legada 'Tradicional'
-            list.forEach(async (c: any) => {
-                if (c.category === 'Tradicional' || c.category === 'tradicional') {
-                    console.log(`[SELF-HEALING] Corrigindo congregação ${c.id} para category 'TRADITIONAL' no Firestore...`);
-                    await saveCongregation({
-                        id: c.id,
-                        name: c.name,
-                        city: c.city || '',
-                        category: 'TRADITIONAL',
-                        termType: c.termType || 'city'
-                    });
-                }
-            });
+            setCongregations(res.congregations || []);
         } catch (error) {
             console.error("Error fetching congregations:", error);
             toast.error("Erro ao carregar congregações");
