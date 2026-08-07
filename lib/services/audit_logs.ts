@@ -94,7 +94,7 @@ export async function logActivity(params: {
             user: actorName,
             userId: actorUid,
             role: actorRole,
-            congregationId: params.congregationId || null,
+            congregationId: params.congregationId ?? null,
             correlationId: cid,
             userAgent: ua,
             timestampMs: nowMs,
