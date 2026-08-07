@@ -542,10 +542,10 @@ export default function SharedListView({ id: propId }: SharedListViewProps) {
 
     if (loading) {
         return (
-            <div className="min-h-screen flex items-center justify-center bg-[#f8fafc]">
+            <div className="min-h-screen flex items-center justify-center bg-background">
                 <div className="flex flex-col items-center gap-3">
                     <Loader2 className="w-8 h-8 text-primary animate-spin" />
-                    <p className="text-gray-400 text-sm font-bold animate-pulse">Carregando lista...</p>
+                    <p className="text-muted text-sm font-bold animate-pulse">Carregando lista...</p>
                 </div>
             </div>
         );
@@ -553,13 +553,13 @@ export default function SharedListView({ id: propId }: SharedListViewProps) {
 
     if (error) {
         return (
-            <div className="min-h-screen flex items-center justify-center bg-[#f8fafc] px-6">
+            <div className="min-h-screen flex items-center justify-center bg-background px-6">
                 <div className="text-center space-y-3">
                     <div className="w-16 h-16 bg-primary-light/30 rounded-full flex items-center justify-center mx-auto text-primary">
                         <MapIcon className="w-8 h-8" />
                     </div>
-                    <h1 className="text-xl font-bold text-gray-900">Ops!</h1>
-                    <p className="text-gray-500">{error}</p>
+                    <h1 className="text-xl font-bold text-main">Ops!</h1>
+                    <p className="text-muted">{error}</p>
                 </div>
             </div>
         );
@@ -854,13 +854,13 @@ export default function SharedListView({ id: propId }: SharedListViewProps) {
                 )
             )}
             {isResponsibilityModalOpen && (
-                <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center bg-black/50 backdrop-blur-sm p-4">
-                    <div className="bg-surface w-full max-w-sm rounded-[2rem] p-6 space-y-6 animate-in slide-in-from-bottom-5">
-                        <h2 className="text-xl font-black text-center">Aceitar Responsabilidade?</h2>
+                <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4 animate-in fade-in duration-200">
+                    <div className="bg-surface border border-surface-border w-full max-w-sm rounded-[2rem] p-6 space-y-6 shadow-2xl animate-in zoom-in-95 duration-200">
+                        <h2 className="text-xl font-black text-center text-main">Aceitar Responsabilidade?</h2>
                         <p className="text-center text-muted">Ao aceitar, você se compromete a trabalhar este território.</p>
                         <div className="space-y-3">
-                            <button onClick={handleAcceptResponsibility} disabled={accepting} className="w-full bg-primary text-white py-4 rounded-lg font-bold">{accepting ? "Aceitando..." : "Sim, Aceitar"}</button>
-                            <button onClick={() => setIsResponsibilityModalOpen(false)} className="w-full text-muted py-3 font-bold">Apenas Visualizar</button>
+                            <button onClick={handleAcceptResponsibility} disabled={accepting} className="w-full bg-primary hover:bg-primary-dark text-white py-4 rounded-xl font-bold transition-colors">{accepting ? "Aceitando..." : "Sim, Aceitar"}</button>
+                            <button onClick={() => setIsResponsibilityModalOpen(false)} className="w-full text-muted hover:text-main py-3 font-bold transition-colors">Apenas Visualizar</button>
                         </div>
                     </div>
                 </div>
