@@ -411,7 +411,7 @@ const [uploading, setUploading] = useState(false);
     const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
     const [confirmEmail, setConfirmEmail] = useState('');
     const [confirmCongName, setConfirmCongName] = useState('');
-    const [actualCongName, setActualCongName] = useState<string>('');
+    const [actualCongName, setActualCongName] = useState<string | null>(null);
     const [isDeleting, setIsDeleting] = useState(false);
 
     // Close menu on click outside
@@ -430,7 +430,7 @@ const [uploading, setUploading] = useState(false);
         }
     }, [user, loading, congregationId, isAdminRoleGlobal, router]);
 
-    // Fetch Actual Congregation Name for Delete Confirmation
+    // Fetch Actual Congregation Name from Firestore: congregations/[id].name
     useEffect(() => {
         const fetchCongName = async () => {
             if (congregationId) {
@@ -438,13 +438,16 @@ const [uploading, setUploading] = useState(false);
                     const congRef = doc(db, "congregations", congregationId);
                     const congSnap = await getDoc(congRef);
                     if (congSnap.exists()) {
-                        setActualCongName(congSnap.data().name);
+                        setActualCongName(congSnap.data().name || null);
+                    } else {
+                        setActualCongName(null);
                     }
                 } catch (error) {
                     console.error("Error fetching cong name:", error);
+                    setActualCongName(null);
                 }
             } else {
-                setActualCongName('Nenhuma');
+                setActualCongName(null);
             }
         };
         fetchCongName();
@@ -972,7 +975,7 @@ const [uploading, setUploading] = useState(false);
                                         <div>
                                             <h3 className="font-bold text-main">Gestão de Membros</h3>
                                             <p className="text-xs text-muted">
-                                                {members.length} {members.length === 1 ? 'membro' : 'membros'} na congregação {actualCongName && actualCongName !== 'Nenhuma' ? `(${actualCongName})` : ''}
+                                                {members.length} {members.length === 1 ? 'membro' : 'membros'} na congregação {actualCongName ? `(${actualCongName})` : ''}
                                             </p>
                                         </div>
                                     </div>
@@ -1370,7 +1373,7 @@ const [uploading, setUploading] = useState(false);
                                 disabled={
                                     isDeleting ||
                                     confirmEmail.toLowerCase().trim() !== user?.email?.toLowerCase().trim() ||
-                                    confirmCongName.toLowerCase().trim() !== actualCongName.toLowerCase().trim()
+                                    confirmCongName.toLowerCase().trim() !== (actualCongName || '').toLowerCase().trim()
                                 }
                                 className="flex-1 bg-red-600 hover:bg-red-700 text-white py-4 rounded-xl font-bold text-sm transition-all shadow-lg shadow-red-600/20 disabled:grayscale disabled:opacity-30 flex items-center justify-center gap-2"
                             >
