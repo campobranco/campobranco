@@ -395,7 +395,17 @@ export async function getSharedListWithData(id: string) {
             where('sharedListId', '==', id)
         );
         const snapshotsSnap = await getDocs(snapshotsQuery);
-        const items = snapshotsSnap.docs.map(d => ({ id: d.id, ...d.data() }));
+        
+        // Deduplica itens de snapshot por itemId para evitar duplicidade de contagem em links reutilizados
+        const itemsMap = new Map<string, any>();
+        snapshotsSnap.docs.forEach(d => {
+            const data = d.data() as any;
+            const itemId = data.itemId || d.id;
+            if (!itemsMap.has(itemId)) {
+                itemsMap.set(itemId, { id: d.id, ...data });
+            }
+        });
+        const items = Array.from(itemsMap.values());
 
         // Busca o histórico de visitas com tratamento de erro
         let visits: any[] = [];

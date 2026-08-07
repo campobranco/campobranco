@@ -191,18 +191,29 @@ export default function SharedListView({ id: propId }: SharedListViewProps) {
                     if (list.type === 'territory') {
                         if (fetchedItems && fetchedItems.length > 0) {
                             const territoryIds = (list.items || []);
-                            allAddresses = fetchedItems.filter((item: any) => {
+                            const rawAddresses = fetchedItems.filter((item: any) => {
                                 const sourceData = item.data || item;
                                 const tId = sourceData.territoryId;
-                                return tId && (territoryIds.includes(tId) || tId === list.territoryId);
+                                const isAddressType = item.type === 'address' || sourceData.street !== undefined;
+                                return isAddressType && tId && (territoryIds.includes(tId) || tId === list.territoryId);
                             }).map((item: any) => ({
                                 ...(item.data || item),
                                 id: item.itemId || item.id
                             }));
+
+                            // Deduplicação estrita por ID do endereço e filtro de endereços ativos (isActive !== false)
+                            const seenIds = new Set<string>();
+                            allAddresses = rawAddresses.filter((addr: any) => {
+                                const addrId = addr.id || addr.itemId;
+                                if (!addrId || seenIds.has(addrId)) return false;
+                                if (addr.isActive === false) return false;
+                                seenIds.add(addrId);
+                                return true;
+                            });
                         }
                     } else {
                         // For 'address' type, the items themselves are the addresses
-                        allAddresses = mergedItems;
+                        allAddresses = mergedItems.filter((addr: any) => addr.isActive !== false);
                     }
 
                     const counts: Record<string, number> = {};
