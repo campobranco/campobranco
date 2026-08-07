@@ -44,10 +44,13 @@ export const VALID_VISIT_STATUSES = ['none', 'contacted', 'partial', 'notContact
 export async function saveAddress(id: string | null, data: any) {
     try {
         if (!data.street || !data.street.trim()) {
-            throw new Error('Logradouro/Rua do endereço é obrigatório.');
+            throw new Error('street (Logradouro/Rua) do endereço é obrigatório.');
+        }
+        if (data.number === undefined || data.number === null) {
+            throw new Error('number (Número) do endereço é obrigatório.');
         }
         if (!data.congregationId || !data.congregationId.trim()) {
-            throw new Error('ID da congregação é obrigatório para o endereço.');
+            throw new Error('congregationId é obrigatório para o endereço.');
         }
         if (data.visitStatus && !VALID_VISIT_STATUSES.includes(data.visitStatus as any)) {
             throw new Error(`visitStatus inválido: "${data.visitStatus}". Use: ${VALID_VISIT_STATUSES.join(', ')}`);
