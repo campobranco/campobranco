@@ -98,8 +98,22 @@ export default function CongregationsPage() {
             setLoading(true);
             const res = await getCongregations();
             if (!res.success) throw new Error(res.error || 'Erro ao carregar');
-            setCongregations(res.congregations || []);
+            const list = res.congregations || [];
+            setCongregations(list);
 
+            // Self-healing: atualiza no Firestore qualquer congregação com categoria legada 'Tradicional'
+            list.forEach(async (c: any) => {
+                if (c.category === 'Tradicional' || c.category === 'tradicional') {
+                    console.log(`[SELF-HEALING] Corrigindo congregação ${c.id} para category 'TRADITIONAL' no Firestore...`);
+                    await saveCongregation({
+                        id: c.id,
+                        name: c.name,
+                        city: c.city || '',
+                        category: 'TRADITIONAL',
+                        termType: c.termType || 'city'
+                    });
+                }
+            });
         } catch (error) {
             console.error("Error fetching congregations:", error);
             toast.error("Erro ao carregar congregações");

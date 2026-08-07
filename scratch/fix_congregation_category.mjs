@@ -1,7 +1,7 @@
 import { initializeApp, getApps } from 'firebase/app';
 import { getFirestore, doc, updateDoc, getDoc } from 'firebase/firestore';
 import dotenv from 'dotenv';
-dotenv.config({ path: '.env.local' });
+dotenv.config({ path: '.env.development' });
 
 const firebaseConfig = {
     apiKey: process.env.NEXT_PUBLIC_FIREBASE_API_KEY,
@@ -11,6 +11,8 @@ const firebaseConfig = {
     messagingSenderId: process.env.NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID,
     appId: process.env.NEXT_PUBLIC_FIREBASE_APP_ID,
 };
+
+console.log("Firebase config loaded for project:", firebaseConfig.projectId);
 
 const app = getApps().length === 0 ? initializeApp(firebaseConfig) : getApps()[0];
 const db = getFirestore(app);
@@ -26,10 +28,16 @@ async function fixCongregationCategory() {
             updatedAt: new Date().toISOString()
         });
         const updatedSnap = await getDoc(congRef);
-        console.log("After update:", updatedSnap.data());
+        console.log("After update SUCCESS:", updatedSnap.data());
     } else {
         console.error("Document congregao-bom-pastor not found!");
     }
 }
 
-fixCongregationCategory().catch(console.error);
+fixCongregationCategory().then(() => {
+    console.log("Done!");
+    process.exit(0);
+}).catch((err) => {
+    console.error("Error updating doc:", err);
+    process.exit(1);
+});
