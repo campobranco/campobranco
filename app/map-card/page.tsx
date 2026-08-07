@@ -3,7 +3,9 @@
 import { useState, useEffect, useCallback, useRef, useLayoutEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { useAuth } from '@/app/context/AuthContext';
-import { ChevronLeft, Printer, MapPin, Building2, Filter, Loader2, LayoutGrid, FileText, Trash2, ImagePlus, Map as MapIcon, Sliders, Hexagon } from 'lucide-react';
+import { ChevronLeft, Printer, MapPin, Building2, Filter, Loader2, LayoutGrid, FileText, Trash2, ImagePlus, Map as MapIcon, Sliders, Hexagon, Download, FolderDown, X, Image as ImageIcon, CheckCircle2 } from 'lucide-react';
+import html2canvas from 'html2canvas';
+import { jsPDF } from 'jspdf';
 // eslint-disable-next-line no-restricted-imports
 import { getRegistryData } from '@/lib/services/reports';
 // eslint-disable-next-line no-restricted-imports
@@ -31,6 +33,48 @@ interface AddressPinItem {
     lat: number;
     lng: number;
     residentName?: string;
+}
+
+// Wrapper para auto-escalar a folha A4/A6 proporcionalmente em qualquer tela mobile sem cortar
+function ResponsiveSheet({ children, widthMm = 297, heightMm = 210 }: { children: React.ReactNode; widthMm?: number; heightMm?: number }) {
+    const containerRef = useRef<HTMLDivElement>(null);
+    const [scale, setScale] = useState(1);
+
+    useLayoutEffect(() => {
+        const handleResize = () => {
+            if (!containerRef.current) return;
+            const containerWidth = containerRef.current.clientWidth;
+            // Conversão de mm para px na web (96 DPI): 1mm = 3.7795275591px
+            const targetPx = widthMm * 3.7795275591;
+            if (containerWidth > 0 && containerWidth < targetPx) {
+                setScale(containerWidth / targetPx);
+            } else {
+                setScale(1);
+            }
+        };
+
+        handleResize();
+        window.addEventListener('resize', handleResize);
+        return () => window.removeEventListener('resize', handleResize);
+    }, [widthMm]);
+
+    const targetHeightPx = heightMm * 3.7795275591;
+    const marginAdjustment = scale < 1 ? -((1 - scale) * targetHeightPx) : 0;
+
+    return (
+        <div ref={containerRef} className="w-full flex justify-center overflow-visible print:w-auto print:block">
+            <div
+                style={{
+                    transform: scale < 1 ? `scale(${scale})` : undefined,
+                    transformOrigin: 'top center',
+                    marginBottom: scale < 1 ? `${marginAdjustment}px` : undefined,
+                }}
+                className="shrink-0 transition-transform duration-150 print:transform-none print:mb-0"
+            >
+                {children}
+            </div>
+        </div>
+    );
 }
 
 // Extrai coordenadas numéricas válidas (suportando números e strings) de lat/lng, objeto coordinates ou link do Google Maps
@@ -231,12 +275,11 @@ function AutoFitText({ text, maxFontSize = 12, minFontSize = 7.5 }: { text: stri
     }, [adjustFontSize]);
 
     return (
-        <div ref={containerRef} className="relative flex-1 min-w-0 flex items-baseline justify-center text-center overflow-hidden">
-            <div className="absolute inset-x-0 bottom-[1px] border-b-[1.5px] border-dotted border-black pointer-events-none z-0"></div>
+        <div ref={containerRef} className="w-full flex items-baseline justify-center text-center overflow-visible">
             <span
                 ref={spanRef}
                 style={{ fontSize: `${maxFontSize}px` }}
-                className="relative z-10 font-bold text-black bg-transparent px-1 whitespace-nowrap"
+                className="font-bold text-black whitespace-nowrap leading-normal"
             >
                 {text}
             </span>
@@ -253,7 +296,7 @@ export default function MapCardPage() {
     const [territoryPinsMap, setTerritoryPinsMap] = useState<Map<string, AddressPinItem[]>>(new Map());
     const [selectedCityId, setSelectedCityId] = useState<string>('ALL');
     const [selectedTerritoryId, setSelectedTerritoryId] = useState<string>('ALL');
-    const [printLayoutMode, setPrintLayoutMode] = useState<'a6' | 'a4-grid'>('a4-grid');
+    const [printLayoutMode, setPrintLayoutMode] = useState<'a6' | 'a4-grid'>('a6');
     
     // Modo Ativo Estrito (Modo 1: Imagem Manual | Modo 2: Pinos de Endereços | Modo 3: Polígonos)
     const [cardMode, setCardMode] = useState<MapCardMode>('manual-image');
@@ -263,6 +306,11 @@ export default function MapCardPage() {
     const fileInputRef = useRef<HTMLInputElement>(null);
     const [activeUploadTerritoryId, setActiveUploadTerritoryId] = useState<string | null>(null);
     const [uploadingTerritoryId, setUploadingTerritoryId] = useState<string | null>(null);
+
+    // Estados de Exportação e Download (PDF / PNGs)
+    const [isExportModalOpen, setIsExportModalOpen] = useState(false);
+    const [exporting, setExporting] = useState(false);
+    const [exportProgress, setExportProgress] = useState({ current: 0, total: 0, stepName: '' });
 
     const fetchData = useCallback(async () => {
         const storedCongId = typeof window !== 'undefined' ? localStorage.getItem('selectedCongregationId') : null;
@@ -381,7 +429,8 @@ export default function MapCardPage() {
 
     const a4Groups = chunkArray(filteredTerritories, 4);
 
-    const handlePrint = () => {
+    const handleNativePrint = () => {
+        setIsExportModalOpen(false);
         toast.dismiss();
         const previousTitle = document.title;
         document.title = `S-12-T_Cartoes_de_Mapa_${printLayoutMode.toUpperCase()}`;
@@ -389,6 +438,164 @@ export default function MapCardPage() {
         setTimeout(() => {
             document.title = previousTitle;
         }, 500);
+    };
+
+    const renderCanvasFromId = async (elementId: string, scale: number = 3) => {
+        const element = document.getElementById(elementId);
+        if (!element) return null;
+
+        return await html2canvas(element, {
+            scale,
+            useCORS: true,
+            allowTaint: true,
+            backgroundColor: '#ffffff',
+            logging: false,
+            windowWidth: 1920,
+            windowHeight: 1080,
+            onclone: (_clonedDoc, clonedElement) => {
+                clonedElement.style.transform = 'none';
+                clonedElement.style.margin = '0';
+
+                // Corrigir tamanho do border-dotted no canvas:
+                // html2canvas renderiza borders em pixels de canvas (scale × css-px).
+                // Para que a linha pontilhada no export tenha o mesmo peso visual que no browser,
+                // dividimos o border-width pelo scale → ao renderizar em 3×, 0.5px × 3 = 1.5px.
+                const scaledBorderWidth = `${1.5 / scale}px`;
+                clonedElement.querySelectorAll('[data-field-dotted]').forEach((el) => {
+                    const node = el as HTMLElement;
+                    node.style.borderBottomWidth = scaledBorderWidth;
+                    node.style.borderBottomStyle = 'dotted';
+                    node.style.borderBottomColor = '#000000';
+                    // html2canvas renderiza items-end ~2px acima do browser,
+                    // compensamos aumentando o paddingBottom apenas no clone
+                    node.style.paddingBottom = '7px';
+                    node.style.marginBottom = '0px';
+                });
+
+                let p = clonedElement.parentElement;
+                while (p && p !== _clonedDoc.body) {
+                    p.style.transform = 'none';
+                    p.style.margin = '0';
+                    p = p.parentElement;
+                }
+            },
+        });
+    };
+
+    const exportAllToPdf = async () => {
+        setExporting(true);
+        try {
+            if (printLayoutMode === 'a6') {
+                const total = filteredTerritories.length;
+                if (total === 0) return;
+                setExportProgress({ current: 0, total, stepName: 'Iniciando compilação do PDF A6...' });
+
+                const pdf = new jsPDF({ orientation: 'landscape', unit: 'mm', format: [148.5, 105] });
+
+                for (let i = 0; i < total; i++) {
+                    const t = filteredTerritories[i];
+                    setExportProgress({ current: i + 1, total, stepName: `Processando Território ${formatTerritoryNumber(t.name)}...` });
+                    const canvas = await renderCanvasFromId(`card-export-a6-${t.id}`, 2.5);
+                    if (canvas) {
+                        const imgData = canvas.toDataURL('image/png');
+                        if (i > 0) pdf.addPage([148.5, 105], 'landscape');
+                        pdf.addImage(imgData, 'PNG', 0, 0, 148.5, 105);
+                    }
+                }
+                pdf.save(`Cartoes_Territorio_A6_Todos_${new Date().toISOString().slice(0, 10)}.pdf`);
+                toast.success("PDF A6 baixado com sucesso!");
+            } else {
+                const total = a4Groups.length;
+                if (total === 0) return;
+                setExportProgress({ current: 0, total, stepName: 'Iniciando compilação do PDF A4...' });
+
+                const pdf = new jsPDF({ orientation: 'landscape', unit: 'mm', format: [297, 210] });
+
+                for (let i = 0; i < total; i++) {
+                    setExportProgress({ current: i + 1, total, stepName: `Processando página ${i + 1} de ${total}...` });
+                    const canvas = await renderCanvasFromId(`card-export-a4-${i}`, 2.5);
+                    if (canvas) {
+                        const imgData = canvas.toDataURL('image/png');
+                        if (i > 0) pdf.addPage([297, 210], 'landscape');
+                        pdf.addImage(imgData, 'PNG', 0, 0, 297, 210);
+                    }
+                }
+                pdf.save(`Cartoes_Territorio_A4_Todos_${new Date().toISOString().slice(0, 10)}.pdf`);
+                toast.success("PDF A4 baixado com sucesso!");
+            }
+        } catch (err: any) {
+            console.error("Erro ao exportar PDF:", err);
+            toast.error("Falha ao gerar o arquivo PDF. Tente novamente.");
+        } finally {
+            setExporting(false);
+            setIsExportModalOpen(false);
+        }
+    };
+
+    const exportIndividualPdfs = async () => {
+        setExporting(true);
+        try {
+            const total = filteredTerritories.length;
+            if (total === 0) return;
+            setExportProgress({ current: 0, total, stepName: 'Iniciando download de PDFs individuais...' });
+
+            for (let i = 0; i < total; i++) {
+                const t = filteredTerritories[i];
+                setExportProgress({ current: i + 1, total, stepName: `Gerando PDF do Território ${formatTerritoryNumber(t.name)}...` });
+                
+                const elementId = printLayoutMode === 'a6' ? `card-export-a6-${t.id}` : `card-export-a4-0`;
+                const canvas = await renderCanvasFromId(elementId, 2.5) || await renderCanvasFromId(`card-export-a6-${t.id}`, 2.5);
+                
+                if (canvas) {
+                    const imgData = canvas.toDataURL('image/png');
+                    const pdf = new jsPDF({ orientation: 'landscape', unit: 'mm', format: printLayoutMode === 'a6' ? [148.5, 105] : [297, 210] });
+                    pdf.addImage(imgData, 'PNG', 0, 0, printLayoutMode === 'a6' ? 148.5 : 297, printLayoutMode === 'a6' ? 105 : 210);
+                    
+                    const cleanCity = (t.cityName || '').replace(/[^a-zA-Z0-9]/g, '_');
+                    pdf.save(`Cartao_Territorio_${formatTerritoryNumber(t.name)}${cleanCity ? `_${cleanCity}` : ''}.pdf`);
+                    await new Promise(r => setTimeout(r, 400));
+                }
+            }
+            toast.success("Todos os arquivos PDF individuais foram baixados!");
+        } catch (err: any) {
+            console.error("Erro ao exportar PDFs individuais:", err);
+            toast.error("Falha ao baixar arquivos PDF individuais.");
+        } finally {
+            setExporting(false);
+            setIsExportModalOpen(false);
+        }
+    };
+
+    const exportIndividualPngs = async () => {
+        setExporting(true);
+        try {
+            const total = filteredTerritories.length;
+            if (total === 0) return;
+            setExportProgress({ current: 0, total, stepName: 'Iniciando download de imagens...' });
+
+            for (let i = 0; i < total; i++) {
+                const t = filteredTerritories[i];
+                setExportProgress({ current: i + 1, total, stepName: `Gerando imagem HD do Território ${formatTerritoryNumber(t.name)}...` });
+                
+                const canvas = await renderCanvasFromId(`card-export-a6-${t.id}`, 3);
+                
+                if (canvas) {
+                    const link = document.createElement('a');
+                    const cleanCity = (t.cityName || '').replace(/[^a-zA-Z0-9]/g, '_');
+                    link.download = `Cartao_Territorio_${formatTerritoryNumber(t.name)}${cleanCity ? `_${cleanCity}` : ''}.png`;
+                    link.href = canvas.toDataURL('image/png');
+                    link.click();
+                    await new Promise(r => setTimeout(r, 400));
+                }
+            }
+            toast.success("Todas as imagens individuais foram baixadas!");
+        } catch (err: any) {
+            console.error("Erro ao exportar imagens:", err);
+            toast.error("Falha ao baixar imagens individuais.");
+        } finally {
+            setExporting(false);
+            setIsExportModalOpen(false);
+        }
     };
 
     const formatLocalidade = (desc?: string, cityName?: string) => {
@@ -520,30 +727,32 @@ export default function MapCardPage() {
             `}</style>
 
             {/* Cabeçalho de Ações e Filtros (oculto na impressão) */}
-            <header className="bg-surface border-b border-surface-border sticky top-0 z-50 px-6 py-3.5 flex flex-col gap-3 no-print shadow-md font-sans">
+            <header className="bg-surface border-b border-surface-border sticky top-0 z-50 px-3.5 py-3 sm:px-6 sm:py-3.5 flex flex-col gap-3 no-print shadow-md font-sans">
                 {/* Linha Superior: Título à esquerda + Modo de Mapa à direita */}
-                <div className="flex flex-wrap items-center justify-between gap-4 w-full">
-                    <div className="flex items-center gap-3">
-                        <button onClick={() => router.back()} className="p-2 hover:bg-background rounded-full transition-colors">
+                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 w-full">
+                    <div className="flex items-center gap-2.5">
+                        <button onClick={() => router.back()} className="p-1.5 sm:p-2 hover:bg-background rounded-full transition-colors shrink-0">
                             <ChevronLeft className="w-5 h-5 text-muted" />
                         </button>
-                        <div>
-                            <h1 className="text-xl font-bold text-main flex items-center gap-2">
-                                <MapPin className="w-5 h-5 text-amber-500" />
-                                Cartão de Mapa de Território
+                        <div className="min-w-0">
+                            <h1 className="text-base sm:text-xl font-bold text-main flex items-center gap-2 truncate">
+                                <MapPin className="w-4 h-4 sm:w-5 sm:h-5 text-amber-500 shrink-0" />
+                                <span className="truncate">Cartão de Mapa de Território</span>
                             </h1>
-                            <p className="text-xs text-muted">Formulário S-12-T 6/72 (A6: 148 x 105 mm | A4: 297 x 210 mm)</p>
+                            <p className="text-[11px] sm:text-xs text-muted truncate">Formulário S-12-T 6/72</p>
                         </div>
                     </div>
 
-                    {/* Seletor Estrito de Modo de Exibição do Cartão (Posicionado no topo direito) */}
-                    <div className="flex items-center bg-background border border-surface-border rounded-xl px-3.5 py-2 gap-2 text-xs font-semibold shadow-sm">
-                        <Sliders className="w-4 h-4 text-amber-500" />
-                        <span className="text-muted">Modo de Mapa:</span>
+                    {/* Seletor Estrito de Modo de Exibição do Cartão */}
+                    <div className="flex items-center justify-between sm:justify-start bg-background border border-surface-border rounded-xl px-3 py-2 gap-2 text-xs font-semibold shadow-sm w-full sm:w-auto">
+                        <div className="flex items-center gap-2 shrink-0">
+                            <Sliders className="w-4 h-4 text-amber-500" />
+                            <span className="text-muted">Modo:</span>
+                        </div>
                         <select
                             value={cardMode}
                             onChange={(e) => handleSwitchCardMode(e.target.value as MapCardMode)}
-                            className="bg-transparent text-main font-bold outline-none cursor-pointer"
+                            className="bg-transparent text-main font-bold outline-none cursor-pointer flex-1 sm:flex-none text-right sm:text-left"
                         >
                             <option value="manual-image" className="bg-surface text-main">Modo 1: Imagem Manual</option>
                             <option value="address-pins" className="bg-surface text-main">Modo 2: Pinos dos Endereços</option>
@@ -553,12 +762,12 @@ export default function MapCardPage() {
                 </div>
 
                 {/* Linha Inferior: Layouts, Filtros de Cidade/Território e Impressão */}
-                <div className="flex flex-wrap items-center justify-end gap-3 w-full border-t border-surface-border/50 pt-2.5">
+                <div className="flex flex-col sm:flex-row sm:flex-wrap items-stretch sm:items-center justify-between sm:justify-end gap-2.5 w-full pt-1">
                     {/* Seletor do Formato de Impressão */}
-                    <div className="flex items-center bg-background border border-surface-border rounded-xl p-1 gap-1">
+                    <div className="grid grid-cols-2 sm:flex items-center bg-background border border-surface-border rounded-xl p-1 gap-1 w-full sm:w-auto">
                         <button
                             onClick={() => setPrintLayoutMode('a4-grid')}
-                            className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold transition-all ${
+                            className={`flex items-center justify-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold transition-all ${
                                 printLayoutMode === 'a4-grid'
                                     ? 'bg-primary text-white shadow-sm'
                                     : 'text-muted hover:text-main'
@@ -569,7 +778,7 @@ export default function MapCardPage() {
                         </button>
                         <button
                             onClick={() => setPrintLayoutMode('a6')}
-                            className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold transition-all ${
+                            className={`flex items-center justify-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold transition-all ${
                                 printLayoutMode === 'a6'
                                     ? 'bg-primary text-white shadow-sm'
                                     : 'text-muted hover:text-main'
@@ -580,57 +789,62 @@ export default function MapCardPage() {
                         </button>
                     </div>
 
-                    {/* Filtro de Cidade */}
-                    <div className="flex items-center gap-2 bg-background border border-surface-border rounded-xl px-3 py-1.5 text-xs font-semibold">
-                        <Filter className="w-3.5 h-3.5 text-muted" />
-                        <span className="text-muted">Cidade:</span>
-                        <select
-                            value={selectedCityId}
-                            onChange={(e) => {
-                                setSelectedCityId(e.target.value);
-                                setSelectedTerritoryId('ALL');
-                            }}
-                            className="bg-transparent text-main font-bold outline-none cursor-pointer"
-                        >
-                            <option value="ALL" className="bg-surface text-main">Todas as Cidades</option>
-                            {cities.map(c => (
-                                <option key={c.id} value={c.id} className="bg-surface text-main">{c.name}</option>
-                            ))}
-                        </select>
-                    </div>
-
-                    {/* Filtro de Território */}
-                    <div className="flex items-center gap-2 bg-background border border-surface-border rounded-xl px-3 py-1.5 text-xs font-semibold">
-                        <span className="text-muted">Território:</span>
-                        <select
-                            value={selectedTerritoryId}
-                            onChange={(e) => setSelectedTerritoryId(e.target.value)}
-                            className="bg-transparent text-main font-bold outline-none cursor-pointer"
-                        >
-                            <option value="ALL" className="bg-surface text-main">Todos ({filteredTerritories.length})</option>
-                            {territories
-                                .filter(t => selectedCityId === 'ALL' || t.cityId === selectedCityId)
-                                .map(t => (
-                                    <option key={t.id} value={t.id} className="bg-surface text-main">
-                                        Terr. {formatTerritoryNumber(t.name)} {t.cityName ? `(${t.cityName})` : ''}
-                                    </option>
+                    {/* Filtros em Grid em Mobile */}
+                    <div className="grid grid-cols-2 sm:flex sm:items-center gap-2 w-full sm:w-auto">
+                        {/* Filtro de Cidade */}
+                        <div className="flex items-center justify-between sm:justify-start gap-1.5 bg-background border border-surface-border rounded-xl px-2.5 py-1.5 text-xs font-semibold min-w-0">
+                            <div className="flex items-center gap-1 shrink-0">
+                                <Filter className="w-3.5 h-3.5 text-muted" />
+                                <span className="text-muted hidden xs:inline">Cidade:</span>
+                            </div>
+                            <select
+                                value={selectedCityId}
+                                onChange={(e) => {
+                                    setSelectedCityId(e.target.value);
+                                    setSelectedTerritoryId('ALL');
+                                }}
+                                className="bg-transparent text-main font-bold outline-none cursor-pointer truncate max-w-full"
+                            >
+                                <option value="ALL" className="bg-surface text-main">Todas as Cidades</option>
+                                {cities.map(c => (
+                                    <option key={c.id} value={c.id} className="bg-surface text-main">{c.name}</option>
                                 ))}
-                        </select>
+                            </select>
+                        </div>
+
+                        {/* Filtro de Território */}
+                        <div className="flex items-center justify-between sm:justify-start gap-1.5 bg-background border border-surface-border rounded-xl px-2.5 py-1.5 text-xs font-semibold min-w-0">
+                            <span className="text-muted shrink-0 hidden xs:inline">Território:</span>
+                            <select
+                                value={selectedTerritoryId}
+                                onChange={(e) => setSelectedTerritoryId(e.target.value)}
+                                className="bg-transparent text-main font-bold outline-none cursor-pointer truncate max-w-full"
+                            >
+                                <option value="ALL" className="bg-surface text-main">Todos ({filteredTerritories.length})</option>
+                                {territories
+                                    .filter(t => selectedCityId === 'ALL' || t.cityId === selectedCityId)
+                                    .map(t => (
+                                        <option key={t.id} value={t.id} className="bg-surface text-main">
+                                            Terr. {formatTerritoryNumber(t.name)} {t.cityName ? `(${t.cityName})` : ''}
+                                        </option>
+                                    ))}
+                            </select>
+                        </div>
                     </div>
 
                     <button
-                        onClick={handlePrint}
+                        onClick={() => setIsExportModalOpen(true)}
                         disabled={filteredTerritories.length === 0}
-                        className="bg-primary hover:bg-primary-dark text-white font-bold py-2.5 px-4 rounded-xl flex items-center gap-2 transition-all shadow-md shadow-primary/20 text-xs uppercase tracking-wider disabled:opacity-50"
+                        className="w-full sm:w-auto bg-primary hover:bg-primary-dark text-white font-bold py-2.5 px-4 rounded-xl flex items-center justify-center gap-2 transition-all shadow-md shadow-primary/20 text-xs uppercase tracking-wider disabled:opacity-50"
                     >
-                        <Printer className="w-4 h-4" />
-                        Imprimir / PDF
+                        <Download className="w-4 h-4" />
+                        Imprimir / Baixar
                     </button>
                 </div>
             </header>
 
             {/* Conteúdo Principal */}
-            <main className="max-w-[1250px] mx-auto p-4 md:p-8 print:p-0 print:max-w-none font-serif">
+            <main className="w-full max-w-[1250px] mx-auto p-2 sm:p-4 md:p-8 print:p-0 print:max-w-none font-serif overflow-hidden">
                 {pageLoading || authLoading ? (
                     <div className="text-center py-20 flex flex-col items-center gap-4 font-sans">
                         <Loader2 className="w-8 h-8 text-primary animate-spin" />
@@ -646,12 +860,13 @@ export default function MapCardPage() {
                     </div>
                 ) : printLayoutMode === 'a4-grid' ? (
                     /* MODALIDADE: 4 CARTÕES A6 (148.5 x 105 mm) POR FOLHA A4 LANDSCAPE (297 x 210 mm) */
-                    <div className="flex flex-col gap-10 print:gap-0">
+                    <div className="w-full pb-4 pt-1 flex flex-col items-center gap-10 print:gap-0">
                         {a4Groups.map((group, pageIndex) => (
-                            <div
-                                key={pageIndex}
-                                className="bg-white text-black border border-black print:border-none shadow-xl print:shadow-none w-[297mm] h-[210mm] mx-auto grid grid-cols-2 grid-rows-2 break-after-page select-none s12-font box-border overflow-hidden"
-                            >
+                            <ResponsiveSheet key={pageIndex} widthMm={297} heightMm={210}>
+                                <div
+                                    id={`card-export-a4-${pageIndex}`}
+                                    className="bg-white text-black border border-gray-300 print:border-none shadow-xl print:shadow-none w-[297mm] h-[210mm] mx-auto grid grid-cols-2 grid-rows-2 break-after-page select-none s12-font box-border overflow-hidden"
+                                >
                                 {group.map((t) => {
                                     const localidadeText = formatLocalidade(t.description, t.cityName);
                                     const isUploadingThis = uploadingTerritoryId === t.id;
@@ -660,7 +875,7 @@ export default function MapCardPage() {
                                     return (
                                         <div
                                             key={t.id}
-                                            className="w-[148.5mm] h-[105mm] border border-dashed border-gray-400 print:border-black px-7 py-4 flex flex-col justify-between box-border overflow-hidden bg-white relative group"
+                                            className="w-[148.5mm] h-[105mm] border border-gray-300 print:border-black px-7 py-4 flex flex-col justify-between box-border overflow-hidden bg-white relative group"
                                         >
                                             <div className="flex-1 flex flex-col justify-between">
                                                 <div>
@@ -669,15 +884,19 @@ export default function MapCardPage() {
                                                     </h2>
 
                                                     <div className="flex items-baseline justify-between font-serif text-[12px] font-bold text-black mb-2">
-                                                        <div className="flex items-baseline flex-1 min-w-0 mr-2">
-                                                            <span className="shrink-0 font-bold mr-1.5">Localidade</span>
-                                                            <AutoFitText text={localidadeText} />
+                                                        {/* Localidade */}
+                                                        <div className="flex items-baseline flex-1 min-w-0 mr-4">
+                                                            <span className="shrink-0 font-bold mr-1.5 text-black">Localidade</span>
+                                                            <div data-field-dotted className="flex-1 border-b-[1.5px] border-dotted border-black flex items-end justify-center pb-[0px] -mb-[1px]">
+                                                                <AutoFitText text={localidadeText} />
+                                                            </div>
                                                         </div>
-                                                        <div className="flex items-baseline shrink-0 w-24 ml-1">
-                                                            <span className="shrink-0 font-bold mr-1.5">Terr. N.º</span>
-                                                            <div className="relative flex-1 min-w-0 flex items-baseline justify-center text-center">
-                                                                <div className="absolute inset-x-0 bottom-[1px] border-b-[1.5px] border-dotted border-black pointer-events-none z-0"></div>
-                                                                <span className="relative z-10 font-bold text-black bg-transparent px-1 whitespace-nowrap">
+
+                                                        {/* Terr. N.º */}
+                                                        <div className="flex items-baseline shrink-0 w-28 ml-1">
+                                                            <span className="shrink-0 font-bold mr-1 text-black">Terr. N.º</span>
+                                                            <div data-field-dotted className="flex-1 border-b-[1.5px] border-dotted border-black flex items-end justify-center pb-[0px] -mb-[1px]">
+                                                                <span className="font-bold text-black whitespace-nowrap leading-tight">
                                                                     {formatTerritoryNumber(t.name)}
                                                                 </span>
                                                             </div>
@@ -723,7 +942,7 @@ export default function MapCardPage() {
                                                                         <ImagePlus className="w-5 h-5" />
                                                                     </div>
                                                                 </div>
-                                                                <p className="font-serif font-bold text-[9px] text-black text-center relative z-10 bg-white px-2 py-0 mb-0">
+                                                                <p className="font-serif font-bold text-[9.5px] text-black text-center relative z-10 bg-white px-2 py-0.5 mb-0 leading-normal">
                                                                     (Cole o mapa acima ou desenhe o território)
                                                                 </p>
                                                             </>
@@ -763,21 +982,23 @@ export default function MapCardPage() {
                                     );
                                 })}
                             </div>
+                        </ResponsiveSheet>
                         ))}
                     </div>
                 ) : (
                     /* MODALIDADE: CARTÃO INDIVIDUAL A6 HORIZONTAL (148mm x 105mm) */
-                    <div className="flex flex-col gap-10 print:gap-0">
+                    <div className="w-full pb-4 pt-1 flex flex-col items-center gap-10 print:gap-0">
                         {filteredTerritories.map((t) => {
                             const localidadeText = formatLocalidade(t.description, t.cityName);
                             const isUploadingThis = uploadingTerritoryId === t.id;
                             const pins = cardMode === 'address-pins' ? (territoryPinsMap.get(t.id) || []) : [];
 
                             return (
-                                <div
-                                    key={t.id}
-                                    className="bg-white text-black border border-black px-7 py-4 shadow-lg print:shadow-none print:border-none w-[148mm] h-[105mm] mx-auto flex flex-col justify-between break-after-page s12-font select-none box-border overflow-hidden group relative"
-                                >
+                                <ResponsiveSheet key={t.id} widthMm={148.5} heightMm={105}>
+                                    <div
+                                        id={`card-export-a6-${t.id}`}
+                                        className="bg-white text-black border border-gray-300 print:border-black px-7 py-4 shadow-lg print:shadow-none w-[148.5mm] h-[105mm] mx-auto flex flex-col justify-between break-after-page s12-font select-none box-border overflow-hidden group relative"
+                                    >
                                     <div className="flex-1 flex flex-col justify-between">
                                         <div>
                                             <h1 className="text-center font-serif text-[21px] font-bold tracking-normal text-black mb-3">
@@ -785,15 +1006,19 @@ export default function MapCardPage() {
                                             </h1>
 
                                             <div className="flex items-baseline justify-between font-serif text-[12px] font-bold text-black mb-2">
-                                                <div className="flex items-baseline flex-1 min-w-0 mr-2">
-                                                    <span className="shrink-0 font-bold mr-1.5">Localidade</span>
-                                                    <AutoFitText text={localidadeText} />
+                                                {/* Localidade */}
+                                                <div className="flex items-baseline flex-1 min-w-0 mr-4">
+                                                    <span className="shrink-0 font-bold mr-1.5 text-black">Localidade</span>
+                                                    <div data-field-dotted className="flex-1 border-b-[1.5px] border-dotted border-black flex items-end justify-center pb-[0px] -mb-[1px]">
+                                                        <AutoFitText text={localidadeText} />
+                                                    </div>
                                                 </div>
-                                                <div className="flex items-baseline shrink-0 w-24 ml-1">
-                                                    <span className="shrink-0 font-bold mr-1.5">Terr. N.º</span>
-                                                    <div className="relative flex-1 min-w-0 flex items-baseline justify-center text-center">
-                                                        <div className="absolute inset-x-0 bottom-[1px] border-b-[1.5px] border-dotted border-black pointer-events-none z-0"></div>
-                                                        <span className="relative z-10 font-bold text-black bg-transparent px-1 whitespace-nowrap">
+
+                                                {/* Terr. N.º */}
+                                                <div className="flex items-baseline shrink-0 w-28 ml-1">
+                                                    <span className="shrink-0 font-bold mr-1 text-black">Terr. N.º</span>
+                                                    <div data-field-dotted className="flex-1 border-b-[1.5px] border-dotted border-black flex items-end justify-center pb-[0px] -mb-[1px]">
+                                                        <span className="font-bold text-black whitespace-nowrap leading-tight">
                                                             {formatTerritoryNumber(t.name)}
                                                         </span>
                                                     </div>
@@ -839,7 +1064,7 @@ export default function MapCardPage() {
                                                                 <ImagePlus className="w-5 h-5" />
                                                             </div>
                                                         </div>
-                                                        <p className="font-serif font-bold text-[9px] text-black text-center relative z-10 bg-white px-2 py-0 mb-0">
+                                                        <p className="font-serif font-bold text-[9.5px] text-black text-center relative z-10 bg-white px-2 py-0.5 mb-0 leading-normal">
                                                             (Cole o mapa acima ou desenhe o território)
                                                         </p>
                                                     </>
@@ -875,12 +1100,136 @@ export default function MapCardPage() {
                                             <span>Impresso no Brasil</span>
                                         </div>
                                     </div>
-                                </div>
+                                    </div>
+                                </ResponsiveSheet>
                             );
                         })}
                     </div>
                 )}
             </main>
+
+            {/* Modal de Opções de Exportação e Impressão */}
+            {isExportModalOpen && (
+                <div className="fixed inset-0 z-[100] bg-black/60 backdrop-blur-sm flex items-center justify-center p-4 animate-in fade-in duration-200 no-print">
+                    <div className="bg-surface border border-surface-border rounded-2xl shadow-2xl max-w-lg w-full overflow-hidden flex flex-col max-h-[90vh]">
+                        {/* Header do Modal */}
+                        <div className="px-6 py-4 border-b border-surface-border flex items-center justify-between bg-surface sticky top-0">
+                            <div>
+                                <h2 className="text-lg font-bold text-main flex items-center gap-2">
+                                    <Download className="w-5 h-5 text-primary" />
+                                    Opções de Impressão e Download
+                                </h2>
+                                <p className="text-xs text-muted">
+                                    Escolha como deseja salvar ou imprimir os {filteredTerritories.length} cartões
+                                </p>
+                            </div>
+                            <button
+                                onClick={() => !exporting && setIsExportModalOpen(false)}
+                                disabled={exporting}
+                                className="p-2 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-full transition-colors disabled:opacity-30"
+                            >
+                                <X className="w-5 h-5 text-muted" />
+                            </button>
+                        </div>
+
+                        {/* Corpo do Modal */}
+                        <div className="p-6 space-y-4 overflow-y-auto font-sans">
+                            {exporting ? (
+                                <div className="py-8 text-center space-y-4">
+                                    <Loader2 className="w-10 h-10 text-primary animate-spin mx-auto" />
+                                    <div className="space-y-1">
+                                        <p className="font-bold text-main text-sm">{exportProgress.stepName}</p>
+                                        <p className="text-xs text-muted">
+                                            Progresso: {exportProgress.current} de {exportProgress.total}
+                                        </p>
+                                    </div>
+                                    <div className="w-full bg-gray-200 dark:bg-gray-800 h-2 rounded-full overflow-hidden max-w-xs mx-auto">
+                                        <div
+                                            className="bg-primary h-full transition-all duration-300"
+                                            style={{ width: `${exportProgress.total > 0 ? (exportProgress.current / exportProgress.total) * 100 : 0}%` }}
+                                        />
+                                    </div>
+                                </div>
+                            ) : (
+                                <>
+                                    {/* Opção 1: Todos Juntos num único PDF */}
+                                    <button
+                                        onClick={exportAllToPdf}
+                                        className="w-full p-4 rounded-xl border border-surface-border hover:border-primary/50 bg-background text-left transition-all group flex items-start gap-4"
+                                    >
+                                        <div className="p-3 bg-primary text-white rounded-xl shrink-0 group-hover:scale-105 transition-transform shadow-md">
+                                            <FileText className="w-6 h-6" />
+                                        </div>
+                                        <div className="space-y-1 min-w-0">
+                                            <h3 className="font-bold text-main text-sm flex items-center gap-2">
+                                                Baixar Todos em um Único PDF
+                                                <span className="text-[10px] bg-primary/10 text-primary px-2 py-0.5 rounded-full font-bold">Recomendado</span>
+                                            </h3>
+                                            <p className="text-xs text-muted leading-relaxed">
+                                                Gera um único PDF com todos os cartões juntos ({printLayoutMode === 'a6' ? '1 cartão A6 por página' : '4 por folha A4'}).
+                                            </p>
+                                        </div>
+                                    </button>
+
+                                    {/* Opção 2: PDFs Separados por Território */}
+                                    <button
+                                        onClick={exportIndividualPdfs}
+                                        className="w-full p-4 rounded-xl border border-surface-border hover:border-primary/50 bg-background text-left transition-all group flex items-start gap-4"
+                                    >
+                                        <div className="p-3 bg-blue-500/10 text-blue-600 dark:text-blue-400 rounded-xl shrink-0 group-hover:scale-105 transition-transform">
+                                            <FileText className="w-6 h-6" />
+                                        </div>
+                                        <div className="space-y-1 min-w-0">
+                                            <h3 className="font-bold text-main text-sm">
+                                                Baixar PDFs Separados (Um PDF por Território)
+                                            </h3>
+                                            <p className="text-xs text-muted leading-relaxed">
+                                                Baixa um arquivo .PDF independente de formato {printLayoutMode.toUpperCase()} para cada cartão de território.
+                                            </p>
+                                        </div>
+                                    </button>
+
+                                    {/* Opção 3: PNGs Separados por Território */}
+                                    <button
+                                        onClick={exportIndividualPngs}
+                                        className="w-full p-4 rounded-xl border border-surface-border hover:border-primary/50 bg-background text-left transition-all group flex items-start gap-4"
+                                    >
+                                        <div className="p-3 bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 rounded-xl shrink-0 group-hover:scale-105 transition-transform">
+                                            <FolderDown className="w-6 h-6" />
+                                        </div>
+                                        <div className="space-y-1 min-w-0">
+                                            <h3 className="font-bold text-main text-sm">
+                                                Baixar Imagens PNG Separadas (Uma Imagem por Território)
+                                            </h3>
+                                            <p className="text-xs text-muted leading-relaxed">
+                                                Baixa cada cartão de território como uma imagem HD de alta qualidade (.PNG).
+                                            </p>
+                                        </div>
+                                    </button>
+
+                                    {/* Opção 4: Imprimir nativo */}
+                                    <button
+                                        onClick={handleNativePrint}
+                                        className="w-full p-4 rounded-xl border border-surface-border hover:border-muted/50 bg-background text-left transition-all group flex items-start gap-4 opacity-80 hover:opacity-100"
+                                    >
+                                        <div className="p-3 bg-gray-100 dark:bg-gray-800 text-muted rounded-xl shrink-0 group-hover:scale-105 transition-transform">
+                                            <Printer className="w-6 h-6" />
+                                        </div>
+                                        <div className="space-y-1 min-w-0">
+                                            <h3 className="font-bold text-main text-sm">
+                                                Imprimir pelo Navegador (Impressora Nativa)
+                                            </h3>
+                                            <p className="text-xs text-muted leading-relaxed">
+                                                Abre a janela de impressão nativa do sistema (recomendado para computadores com impressoras A4 comuns).
+                                            </p>
+                                        </div>
+                                    </button>
+                                </>
+                            )}
+                        </div>
+                    </div>
+                </div>
+            )}
         </div>
     );
 }

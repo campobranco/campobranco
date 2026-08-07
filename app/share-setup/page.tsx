@@ -308,14 +308,14 @@ function ShareSetupContent() {
     return (
         <div className="min-h-screen bg-background font-sans text-main pb-20">
             {/* Header */}
-            <header className="sticky top-0 z-30 bg-surface border-b border-surface-border px-6 py-4 flex items-center gap-4">
-                <button onClick={() => router.back()} className="p-2 -ml-2 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-full transition-colors">
-                    <ArrowLeft className="w-6 h-6 text-muted" />
+            <header className="sticky top-0 z-30 bg-surface border-b border-surface-border px-4 py-3 sm:px-6 sm:py-4 flex items-center gap-3">
+                <button onClick={() => router.back()} className="p-1.5 -ml-1.5 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-full transition-colors">
+                    <ArrowLeft className="w-5 h-5 sm:w-6 sm:h-6 text-muted" />
                 </button>
-                <h1 className="font-bold text-lg text-main">Configurar Link</h1>
+                <h1 className="font-bold text-base sm:text-lg text-main">Configurar Link</h1>
             </header>
 
-            <main className="max-w-xl mx-auto px-6 py-8 space-y-8">
+            <main className="max-w-xl mx-auto px-4 sm:px-6 py-6 sm:py-8 space-y-6 sm:space-y-8">
 
                 {/* Summary Section */}
                 <section className="space-y-4">
