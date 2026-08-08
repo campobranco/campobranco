@@ -3,7 +3,7 @@
 import { useState } from 'react';
 import { auth } from '@/lib/firebase';
 import { GoogleAuthProvider, signInWithPopup, signInWithEmailAndPassword } from 'firebase/auth';
-import { useRouter } from 'next/navigation';
+import { useRouter, useSearchParams } from 'next/navigation';
 import { AlertCircle, Mail, Lock } from 'lucide-react';
 
 import { Capacitor } from '@capacitor/core';
@@ -18,6 +18,33 @@ export default function LoginClient() {
     const [email, setEmail] = useState('');
     const [password, setPassword] = useState('');
     const router = useRouter();
+    const searchParams = useSearchParams();
+
+    const getRedirectUrl = () => {
+        const redirectParam = searchParams.get('redirect') || searchParams.get('callbackUrl');
+        if (!redirectParam) return '/dashboard';
+
+        let decoded = redirectParam;
+        try {
+            decoded = decodeURIComponent(redirectParam);
+        } catch (e) {}
+
+        // Permite caminhos que começam com '/' mas não com '//' (que poderiam indicar protocolo oculto)
+        const isRelative = /^\/[^\/].*$/.test(decoded);
+        if (isRelative) return decoded;
+
+        // Se for URL absoluta, garante que aponta para o mesmo origin
+        if (typeof window !== 'undefined') {
+            try {
+                const parsed = new URL(decoded, window.location.origin);
+                if (parsed.origin === window.location.origin) {
+                    return parsed.pathname + parsed.search;
+                }
+            } catch (e) {}
+        }
+
+        return '/dashboard';
+    };
 
     const handleGoogleLogin = async () => {
         setLoading(true);
@@ -48,7 +75,7 @@ export default function LoginClient() {
                 details: `Método: Google OAuth | Origem: ${Capacitor.isNativePlatform() ? 'App Nativo' : 'Navegador Web'}`
             });
 
-            router.push('/dashboard');
+            router.push(getRedirectUrl());
         } catch (error: any) {
             console.error("Erro no login com Google:", error);
             if (
@@ -88,7 +115,7 @@ export default function LoginClient() {
                 details: `Método: E-mail/Senha`
             });
 
-            router.push('/dashboard');
+            router.push(getRedirectUrl());
         } catch (error: any) {
             console.error("Erro no login com e-mail:", error);
             switch (error.code) {
