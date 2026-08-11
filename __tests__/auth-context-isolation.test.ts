@@ -1,3 +1,5 @@
+import { resolveUserCongregationId } from '../app/context/AuthContext';
+
 describe('AuthContext - Tenant Isolation & Anti-Fallback Protocol', () => {
     let mockStorage: Record<string, string> = {};
 
@@ -12,49 +14,50 @@ describe('AuthContext - Tenant Isolation & Anti-Fallback Protocol', () => {
         localStorageMock.clear();
     });
 
-    it('Cenário A: Usuário comum sem congregação (congregationId == null) NUNCA herda selectedCongregationId do localStorage', () => {
-        // Simula login prévio de usuário da Congregação Bom Pastor no navegador
+    it('Cenário A: resolveUserCongregationId NUNCA herda selectedCongregationId do localStorage quando Firestore é null', () => {
+        // Simula localStorage poluído por login anterior no navegador
         localStorageMock.setItem('selectedCongregationId', 'congregao-bom-pastor');
 
-        // Simula dado retornado do Firestore para um novo usuário comum sem congregação
+        // Dado real vindo do Firestore
         const firestoreUserData = {
             role: 'PUBLICADOR',
             congregationId: null,
             email: 'novousuario@gmail.com'
         };
 
-        const userCongId = firestoreUserData.congregationId || null;
+        // Executa a FUNÇÃO REAL DA APLICAÇÃO
+        const result = resolveUserCongregationId(firestoreUserData.congregationId);
 
-        // Fonte Única da Verdade 100% vinda do Firestore (sem exceções ou fallbacks de localStorage)
-        const finalCongId = userCongId;
-
-        // Validações
-        expect(finalCongId).toBeNull();
-        expect(finalCongId).not.toBe('congregao-bom-pastor');
+        // Validações estritas da função real
+        expect(result).toBeNull();
+        expect(result).not.toBe('congregao-bom-pastor');
     });
 
-    it('Cenário B: Logout de qualquer usuário deve limpar selectedCongregationId do localStorage', () => {
-        // Simula sessão ativa com congregação selecionada
-        localStorageMock.setItem('selectedCongregationId', 'congregao-bom-pastor');
-        expect(localStorageMock.getItem('selectedCongregationId')).toBe('congregao-bom-pastor');
-
-        // Simula ação de logout
-        localStorageMock.removeItem('selectedCongregationId');
-
-        // Valida que a chave foi limpa
-        expect(localStorageMock.getItem('selectedCongregationId')).toBeNull();
+    it('Cenário B: resolveUserCongregationId rejeita strings vazias e apenas espaços', () => {
+        expect(resolveUserCongregationId('')).toBeNull();
+        expect(resolveUserCongregationId('   ')).toBeNull();
+        expect(resolveUserCongregationId(undefined)).toBeNull();
+        expect(resolveUserCongregationId(null)).toBeNull();
     });
 
-    it('Cenário C: Fonte única da verdade no Firestore é aplicada rigorosamente a todos os perfis', () => {
+    it('Cenário C: resolveUserCongregationId retorna a congregação legítima do Firestore (Fonte Única da Verdade)', () => {
         const firestoreMasterData = {
             role: 'ADMIN',
             congregationId: 'ls-catanduva',
             email: 'campobrancojw@gmail.com'
         };
 
-        const userCongId = firestoreMasterData.congregationId || null;
-        const finalCongId = userCongId;
+        const result = resolveUserCongregationId(firestoreMasterData.congregationId);
 
-        expect(finalCongId).toBe('ls-catanduva');
+        expect(result).toBe('ls-catanduva');
+    });
+
+    it('Cenário D: Logout de qualquer usuário deve limpar a chave selectedCongregationId do localStorage', () => {
+        localStorageMock.setItem('selectedCongregationId', 'congregao-bom-pastor');
+        expect(localStorageMock.getItem('selectedCongregationId')).toBe('congregao-bom-pastor');
+
+        localStorageMock.removeItem('selectedCongregationId');
+
+        expect(localStorageMock.getItem('selectedCongregationId')).toBeNull();
     });
 });

@@ -35,6 +35,9 @@ const AUTO_RETURN_BATCH_SIZE = 5;
 function getTimestampMs(val: any): number {
     if (!val) return 0;
     if (typeof val === 'number') return val;
+    if (val instanceof Date || typeof val.getTime === 'function') {
+        return val.getTime();
+    }
     if (typeof val === 'string') {
         const parsed = new Date(val).getTime();
         return isNaN(parsed) ? 0 : parsed;

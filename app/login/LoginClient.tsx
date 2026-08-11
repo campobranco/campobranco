@@ -1,17 +1,19 @@
 "use client";
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { auth } from '@/lib/firebase';
 import { GoogleAuthProvider, signInWithPopup, signInWithEmailAndPassword } from 'firebase/auth';
 import { useRouter, useSearchParams } from 'next/navigation';
-import { AlertCircle, Mail, Lock } from 'lucide-react';
+import { AlertCircle, Mail, Lock, Loader2 } from 'lucide-react';
 
 import { Capacitor } from '@capacitor/core';
 import { FirebaseAuthentication } from '@capacitor-firebase/authentication';
 import { useAppIcon } from '@/app/context/AppIconContext';
+import { useAuth } from '@/app/context/AuthContext';
 import { logActivityMutation as logActivity } from '@/lib/contracts/mutations/auditMutations';
 
 export default function LoginClient() {
+    const { user, loading: authLoading } = useAuth();
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState('');
     const [showEmailLogin, setShowEmailLogin] = useState(false);
@@ -45,6 +47,23 @@ export default function LoginClient() {
 
         return '/dashboard';
     };
+
+    useEffect(() => {
+        if (!authLoading && user) {
+            router.replace(getRedirectUrl());
+        }
+    }, [user, authLoading, router]);
+
+    if (authLoading || user) {
+        return (
+            <div className="min-h-screen bg-primary dark:bg-background flex flex-col items-center justify-center p-6 font-sans">
+                <div className="w-full max-w-sm bg-white dark:bg-surface rounded-2xl p-8 shadow-2xl flex flex-col items-center gap-4">
+                    <Loader2 className="w-12 h-12 text-primary animate-spin" />
+                    <p className="text-gray-500 dark:text-muted font-bold uppercase tracking-widest text-[10px]">Redirecionando...</p>
+                </div>
+            </div>
+        );
+    }
 
     const handleGoogleLogin = async () => {
         setLoading(true);

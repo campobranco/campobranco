@@ -50,6 +50,12 @@ interface AuthContextType {
     canManageReferencePoints: boolean;
 }
 
+// Função pura de resolução da congregação do usuário (Fonte Única da Verdade no Firestore)
+export function resolveUserCongregationId(firestoreCongregationId?: string | null): string | null {
+    if (!firestoreCongregationId || !firestoreCongregationId.trim()) return null;
+    return firestoreCongregationId.trim();
+}
+
 // Normaliza permissões do Firestore (flat ou agrupado) para o formato agrupado
 function normalizePermissions(raw: any): UserPermissions {
     if (!raw) return {};
@@ -230,8 +236,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
                     setRole(assignedRole);
                     setPermissions(normalizePermissions(data.permissions ?? null));
                     
-                    const userCongId = data.congregationId || null;
-                    const finalCongId = userCongId;
+                    const finalCongId = resolveUserCongregationId(data.congregationId);
 
                     setCongregationId(finalCongId);
                     if (finalCongId && typeof window !== 'undefined') {
