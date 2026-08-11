@@ -91,8 +91,8 @@ describe('Unit: getSharedListWithData — Cycle Visit Filtering', () => {
 
         expect(result.success).toBe(true);
         expect(result.visits).toHaveLength(1);
-        expect(result.visits[0].id).toBe('visit-current');
-        expect(result.visits[0].notes).toBe('Visita da nova designação');
+        expect(result.visits![0].id).toBe('visit-current');
+        expect(result.visits![0].notes).toBe('Visita da nova designação');
     });
 
     it('deve retornar todas as visitas se assignedAt for nulo/ausente (compatibilidade legado)', async () => {

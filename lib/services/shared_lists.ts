@@ -469,7 +469,7 @@ export async function getSharedListWithData(id: string) {
                 where('sharedListId', '==', id)
             );
             const visitsSnap = await getDocs(visitsQuery);
-            const rawVisits = visitsSnap.docs.map(d => ({ id: d.id, ...d.data() }));
+            const rawVisits: any[] = visitsSnap.docs.map(d => ({ id: d.id, ...d.data() }));
 
             // Filtrar visitas para considerar apenas as realizadas no ciclo da designação ATUAL (a partir de assignedAt / createdAt)
             const rawAssignedAt = list.assignedAt || list.createdAt;
