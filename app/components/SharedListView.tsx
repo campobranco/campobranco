@@ -488,7 +488,7 @@ export default function SharedListView({ id: propId }: SharedListViewProps) {
                 addressId: savedItem.id,
                 territoryId: savedItem.territoryId || listData?.territoryId,
                 userId: user?.uid || 'anonymous',
-                userName: profileName || 'Visitante',
+                userName: data.publisherName || profileName || 'Visitante',
                 status: data.status,
                 notes: data.observations || '',
                 visitDate: visitDate,
@@ -838,6 +838,15 @@ export default function SharedListView({ id: propId }: SharedListViewProps) {
                         );
                     })}
                 </div>
+                
+                {listData?.assignedName && (
+                    <div className="mt-6 flex justify-center">
+                        <span className="inline-flex items-center gap-2 px-4 py-2 bg-indigo-50 dark:bg-indigo-900/30 text-indigo-700 dark:text-indigo-400 text-sm font-black rounded-full border border-indigo-100 dark:border-indigo-800/50 shadow-sm">
+                            <span className="w-2 h-2 rounded-full bg-indigo-500 animate-pulse"></span>
+                            Designado para: {listData.assignedName}
+                        </span>
+                    </div>
+                )}
             </main>
 
             {visitingItem && (

@@ -145,7 +145,10 @@ service cloud.firestore {
     match /territories/{id} {
       allow read, list: if isAuthenticated();
       allow create: if (isAdmin() || isServant() || hasPermission('maps', 'create')) && isSameCongregation(request.resource.data);
-      allow update: if (isAdmin() || isServant() || hasPermission('maps', 'edit')) && isSameCongregation(resource.data);
+      allow update: if isAuthenticated() && isSameCongregation(resource.data) && (
+        (isAdmin() || isServant() || hasPermission('maps', 'edit')) ||
+        request.resource.data.diff(resource.data).affectedKeys().hasOnly(['status', 'activeLinkIds', 'assignedToUsers', 'activeLinkId', 'assignedTo', 'updatedAt'])
+      );
       allow delete: if (isAdmin() || isServant() || hasPermission('maps', 'delete')) && isSameCongregation(resource.data);
     }
 
@@ -181,7 +184,8 @@ service cloud.firestore {
     // Leitura pública mantida (links compartilhados sem login).
     // Isolamento: Escritas restritas à mesma congregação.
     match /shared_lists/{id} {
-      allow read: if true; // Leitura pública via link
+      allow get: if true; // Leitura pública via link
+      allow list: if isAdmin() || isServant();
       allow create: if isAuthenticated() && (
         request.resource.data.get('title', '') == 'Registro Manual' ? (
           (isAdmin() || isServant() || hasPermission('s13', 'create')) && isSameCongregation(request.resource.data)
@@ -193,7 +197,8 @@ service cloud.firestore {
         resource.data.get('title', '') == 'Registro Manual' ? (
           isAdmin() || isServant() || hasPermission('s13', 'edit')
         ) : (
-          isAdmin() || isServant() || resource.data.get('createdBy', null) == request.auth.uid
+          isAdmin() || isServant() || resource.data.get('createdBy', null) == request.auth.uid ||
+          request.resource.data.diff(resource.data).affectedKeys().hasOnly(['status', 'assignedTo', 'assignedName', 'updatedAt', 'returnedAt', 'expiresAt'])
         )
       );
       allow delete: if isAuthenticated() && isSameCongregation(resource.data) && (
@@ -223,7 +228,8 @@ service cloud.firestore {
     // 8. Snapshots de Listas (Públicos)
     // Isolamento: Escritas restritas à mesma congregação.
     match /shared_list_snapshots/{snapId} {
-      allow read: if true;
+      allow get: if true;
+      allow list: if true;
       allow create, update: if isAuthenticated() && (isAdmin() || isServant() || getAuthRole() == 'PUBLICADOR') && isSameCongregation(request.resource.data);
       allow delete: if (isAdmin() || isServant()) && isSameCongregation(resource.data);
       
@@ -245,7 +251,8 @@ service cloud.firestore {
     // 9.1. Pontos de Referência
     // Isolamento: Escritas restritas à mesma congregação.
     match /reference_points/{pointId} {
-      allow read: if true; // Permitir leitura pública para que apareça em links compartilhados públicos
+      allow get: if true; // Permitir leitura pública para que apareça em links compartilhados públicos
+      allow list: if isAdmin() || isServant();
       allow create: if (isAdmin() || isServant() || hasPermission('referencePoints', 'manage')) && isSameCongregation(request.resource.data);
       allow update: if (isAdmin() || isServant() || hasPermission('referencePoints', 'manage')) && isSameCongregation(resource.data);
       allow delete: if (isAdmin() || isServant() || hasPermission('referencePoints', 'manage')) && isSameCongregation(resource.data);
@@ -258,7 +265,8 @@ service cloud.firestore {
     }
 
     match /reports/{id} {
-      allow read: if true;
+      allow get: if true;
+      allow list: if isAdmin() || isServant();
       allow write: if isAdmin();
     }
 
@@ -273,7 +281,8 @@ service cloud.firestore {
     }
 
     match /settings/{id} {
-      allow read: if true;
+      allow get: if true;
+      allow list: if isAdmin() || isServant();
       allow write: if isAdmin();
     }
 

@@ -48,7 +48,7 @@ export default function VisitReportModal({
     congregationType: propType,
     forcedCongregationType
 }: VisitReportModalProps) {
-    const { congregationType: authType } = useAuth();
+    const { congregationType: authType, profileName, user } = useAuth();
     const [fetchedCategory, setFetchedCategory] = useState<string | null>(null);
 
     // 1. Busca direta da congregação do endereço no Firestore usando address.congregationId
@@ -85,6 +85,7 @@ export default function VisitReportModal({
     const [isNeurodivergent, setIsNeurodivergent] = useState(address.isNeurodivergent || false);
     const [gender, setGender] = useState<'HOMEM' | 'MULHER' | 'CASAL' | ''>(address.gender || '');
     const [observations, setObservations] = useState(address.visitNotes || '');
+    const [publisherName, setPublisherName] = useState(address.publisherName || profileName || user?.displayName || '');
     const [isListening, setIsListening] = useState(false);
     const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
     const [isMounted, setIsMounted] = useState(false);
@@ -92,6 +93,12 @@ export default function VisitReportModal({
     useEffect(() => {
         setIsMounted(true);
     }, []);
+
+    useEffect(() => {
+        if (!publisherName && (profileName || user?.displayName)) {
+            setPublisherName(profileName || user?.displayName || '');
+        }
+    }, [profileName, user?.displayName, publisherName]);
 
     const toggleListening = () => {
         if (isListening) {
@@ -169,7 +176,8 @@ export default function VisitReportModal({
                 isStudent,
                 isNeurodivergent,
                 gender,
-                observations
+                observations,
+                publisherName: publisherName.trim()
             });
             onClose();
         } catch (error) {
@@ -386,6 +394,21 @@ export default function VisitReportModal({
                                 onChange={(e) => setObservations(e.target.value)}
                                 className={`w-full bg-white dark:bg-slate-900 border border-gray-200 dark:border-slate-700 text-gray-900 dark:text-white rounded-lg p-3 text-sm focus:ring-2 focus:ring-blue-500/20 focus:outline-none min-h-[80px] ${(status === 'contested' || status === 'partial') && !observations.trim() ? 'ring-2 ring-orange-200 bg-orange-50 dark:bg-orange-900/20' : ''}`}
                                 placeholder={status === 'contested' ? "Por que este endereço deve ser considerado ativo?" : status === 'partial' ? "Opcional: O que faltou concluir? (Ex: lado das chácaras)" : isListening ? "Ouvindo..." : "Alguma observação importante?"}
+                            />
+                        </div>
+
+                        {/* Publisher Name Input */}
+                        <div className="space-y-2">
+                            <label className="text-[10px] font-bold text-gray-400 uppercase tracking-wider flex items-center gap-1.5">
+                                <User className="w-3 h-3" />
+                                Publicador(a)
+                            </label>
+                            <input
+                                type="text"
+                                value={publisherName}
+                                onChange={(e) => setPublisherName(e.target.value)}
+                                className="w-full bg-white dark:bg-slate-900 border border-gray-200 dark:border-slate-700 text-gray-900 dark:text-white rounded-lg p-3 text-sm focus:ring-2 focus:ring-blue-500/20 focus:outline-none"
+                                placeholder="Nome de quem fez a visita"
                             />
                         </div>
 

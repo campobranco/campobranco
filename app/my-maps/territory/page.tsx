@@ -216,9 +216,9 @@ function TerritoryListContent() {
             sorted.forEach((t: any) => {
                 counts[t.id] = t.addressCount || 0;
                 gStats[t.id] = {
-                    men: t.menCount || 0,
-                    women: t.womenCount || 0,
-                    couples: t.couplesCount || 0
+                    men: t.menCount ?? 0,
+                    women: t.womenCount ?? 0,
+                    couples: t.couplesCount ?? 0
                 };
             });
 
@@ -765,9 +765,9 @@ function TerritoryListContent() {
                                                                                                     )}
                                                                                                     <span className="text-[10px] bg-gray-100 text-gray-800 dark:bg-gray-800 dark:text-gray-400 px-1.5 py-0.5 rounded-full font-bold">
                                                                                                         {congregationType === 'TRADITIONAL' ? (
-                                                                                                            <span>{addr.residentsCount || 1} endereço{addr.residentsCount !== 1 ? 's' : ''}</span>
+                                                                                                            <span>{addr.residentsCount ?? 1} endereço{addr.residentsCount !== 1 ? 's' : ''}</span>
                                                                                                         ) : (
-                                                                                                            <span>{addr.residentsCount || 1} residente{addr.residentsCount !== 1 ? 's' : ''}</span>
+                                                                                                            <span>{addr.residentsCount ?? 1} residente{addr.residentsCount !== 1 ? 's' : ''}</span>
                                                                                                         )}
                                                                                                     </span>
                                                                                                 </div>

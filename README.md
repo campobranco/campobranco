@@ -1,5 +1,7 @@
 # Campo Branco
 
+[![Secured by GitGuard](https://img.shields.io/badge/Secured%20by-GitGuard-success?style=flat-square)](https://www.gitguard.com.br/paulojacomelli)
+
 O **Campo Branco** é uma aplicação web moderna e progressiva (PWA) desenvolvida para digitalizar e otimizar a gestão de territórios, visitas e testemunho público para congregações locais. Focada em usabilidade, privacidade (LGPD), performance e resiliência lógica, a aplicação serve desde a administração central da congregação até o uso diário pelos publicadores no campo.
 
 > 🚀 Construído com **Vibe Coding Google Antigravity**

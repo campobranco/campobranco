@@ -117,3 +117,6 @@ firebase_deploy_debug.txt
 /android/.gradle
 /android/build
 
+# Audit runs
+strix_runs/
+

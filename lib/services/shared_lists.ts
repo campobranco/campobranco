@@ -32,6 +32,26 @@ const POST_RETURN_READONLY_HOURS = 24;
 const AUTO_RETURN_FETCH_LIMIT = 50;
 const AUTO_RETURN_BATCH_SIZE = 5;
 
+function getTimestampMs(val: any): number {
+    if (!val) return 0;
+    if (typeof val === 'number') return val;
+    if (typeof val === 'string') {
+        const parsed = new Date(val).getTime();
+        return isNaN(parsed) ? 0 : parsed;
+    }
+    if (typeof val.toDate === 'function') {
+        try {
+            return val.toDate().getTime();
+        } catch {
+            return 0;
+        }
+    }
+    if (typeof val.seconds === 'number') {
+        return val.seconds * 1000;
+    }
+    return 0;
+}
+
 function coerceToArrays(territory: any): {
     activeLinkIds: string[];
     assignedToUsers: string[];
@@ -245,7 +265,7 @@ export async function createSharedList(data: {
                 version: newVersion,
                 assignedAt: serverTimestamp(),
                 expiresAt: expiresAt ? Timestamp.fromDate(expiresAt) : null,
-                createdAt: serverTimestamp(),
+                createdAt: listSnap.exists() && listSnap.data()?.createdAt ? listSnap.data().createdAt : serverTimestamp(),
                 updatedAt: serverTimestamp(),
             };
 
@@ -446,7 +466,22 @@ export async function getSharedListWithData(id: string) {
                 where('sharedListId', '==', id)
             );
             const visitsSnap = await getDocs(visitsQuery);
-            visits = visitsSnap.docs.map(d => ({ id: d.id, ...d.data() }));
+            const rawVisits = visitsSnap.docs.map(d => ({ id: d.id, ...d.data() }));
+
+            // Filtrar visitas para considerar apenas as realizadas no ciclo da designação ATUAL (a partir de assignedAt / createdAt)
+            const rawAssignedAt = list.assignedAt || list.createdAt;
+            const assignedTime = getTimestampMs(rawAssignedAt);
+
+            if (assignedTime > 0) {
+                // Tolerância de 5 segundos para eventuais diferenças no relógio de atribuição do servidor
+                const threshold = assignedTime - 5000;
+                visits = rawVisits.filter(v => {
+                    const vTime = getTimestampMs(v.createdAt);
+                    return vTime === 0 || vTime >= threshold;
+                });
+            } else {
+                visits = rawVisits;
+            }
         } catch (err: any) {
             if (err.code === 'permission-denied') {
                 console.warn('[getSharedListWithData] Visitas ocultas por falta de permissão.');
@@ -649,6 +684,21 @@ export async function processSharedListAction(id: string, action: string, payloa
 
             let reloadRequired = false;
 
+            // 0. Atualiza a congregação do usuário ANTES da transação para que as regras de segurança (isSameCongregation) não bloqueiem as próximas escritas
+            if (userCongregationId) {
+                const userRef = doc(db, 'users', userId);
+                const userDoc = await getDoc(userRef);
+                if (userDoc.exists()) {
+                    const userData = userDoc.data() as any;
+                    if (userData && !userData.congregationId) {
+                        await updateDoc(userRef, { congregationId: userCongregationId });
+                        reloadRequired = true;
+                        // O Firestore client lida com caching, mas um pequeno log ajuda a rastrear a ordem
+                        console.log('[processSharedListAction] User congregation updated PRE-transaction.');
+                    }
+                }
+            }
+
             await runTransaction(db, async (transaction) => {
                 const listSnap = await transaction.get(listRef);
                 if (!listSnap.exists()) throw new Error('Lista não encontrada');
@@ -662,19 +712,6 @@ export async function processSharedListAction(id: string, action: string, payloa
                         const terrDoc = await transaction.get(terrRef);
                         if (terrDoc.exists()) {
                             territoryDocsToUpdate.push({ terrRef, terrDoc });
-                        }
-                    }
-                }
-
-                let userDocToUpdate = null;
-                let userRef = null;
-                if (userCongregationId) {
-                    userRef = doc(db, 'users', userId);
-                    const userDoc = await transaction.get(userRef);
-                    if (userDoc.exists()) {
-                        const userData = userDoc.data() as any;
-                        if (userData && !userData.congregationId) {
-                            userDocToUpdate = { userRef, userData };
                         }
                     }
                 }
@@ -695,14 +732,6 @@ export async function processSharedListAction(id: string, action: string, payloa
                         assignedTo: null,
                         updatedAt: serverTimestamp()
                     });
-                }
-
-                if (userDocToUpdate && userRef) {
-                    transaction.update(userRef, {
-                        congregationId: userCongregationId,
-                        role: 'PUBLICADOR'
-                    });
-                    reloadRequired = true;
                 }
             });
 

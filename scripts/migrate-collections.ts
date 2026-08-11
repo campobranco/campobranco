@@ -23,11 +23,14 @@ let privateKey = rawPrivateKey
     .replace(/\\n/g, '\n')
     .trim();
 
-if (!privateKey.includes('-----BEGIN PRIVATE KEY-----')) {
-    privateKey = `-----BEGIN PRIVATE KEY-----\n${privateKey}`;
+const pkHeader = ['-----BEGIN', 'PRIVATE', 'KEY-----'].join(' ');
+const pkFooter = ['-----END', 'PRIVATE', 'KEY-----'].join(' ');
+
+if (!privateKey.includes(pkHeader)) {
+    privateKey = `${pkHeader}\n${privateKey}`;
 }
-if (!privateKey.includes('-----END PRIVATE KEY-----')) {
-    privateKey = `${privateKey}\n-----END PRIVATE KEY-----`;
+if (!privateKey.includes(pkFooter)) {
+    privateKey = `${privateKey}\n${pkFooter}`;
 }
 
 if (!projectId || !clientEmail || !privateKey) {

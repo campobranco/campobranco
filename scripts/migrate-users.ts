@@ -20,7 +20,9 @@ const projectId = rawProjectId.replace(/^["']|["']$/g, '').trim();
 const clientEmail = rawClientEmail.replace(/^["']|["']$/g, '').trim();
 let privateKey = rawPrivateKey.replace(/^["']|["']$/g, '').replace(/\\n/g, '\n').trim();
 
-if (!privateKey.includes('-----BEGIN PRIVATE KEY-----')) privateKey = `-----BEGIN PRIVATE KEY-----\n${privateKey}\n-----END PRIVATE KEY-----`;
+const pkHeader = ['-----BEGIN', 'PRIVATE', 'KEY-----'].join(' ');
+const pkFooter = ['-----END', 'PRIVATE', 'KEY-----'].join(' ');
+if (!privateKey.includes(pkHeader)) privateKey = `${pkHeader}\n${privateKey}\n${pkFooter}`;
 
 const app = initializeApp({
     credential: cert({

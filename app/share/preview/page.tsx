@@ -287,7 +287,7 @@ function SharedPreviewContent() {
                 addressId: selectedAddressForReport.id,
                 territoryId: selectedAddressForReport.territoryId,
                 userId: user?.uid || null,
-                userName: profileName || 'Visitante',
+                userName: data.publisherName || profileName || 'Visitante',
                 status: data.status,
                 notes: data.observations || '',
                 visitDate: visitDate,

@@ -1291,6 +1291,19 @@ const [uploading, setUploading] = useState(false);
                         />
                     </a>
 
+                    <a 
+                        href="https://www.gitguard.com.br/paulojacomelli" 
+                        target="_blank" 
+                        rel="noopener noreferrer"
+                        className="opacity-60 hover:opacity-100 transition-opacity mt-1"
+                    >
+                        <img 
+                            src="https://img.shields.io/badge/Secured%20by-GitGuard-success?style=flat-square" 
+                            alt="Secured by GitGuard" 
+                            className="h-5 grayscale hover:grayscale-0 transition-all duration-300"
+                        />
+                    </a>
+
                     <p className="text-[10px] font-bold text-muted uppercase tracking-[0.2em] opacity-30 hover:opacity-100 transition-opacity">
                         Campo Branco v{APP_VERSION}
                     </p>

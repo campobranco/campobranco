@@ -146,7 +146,7 @@ export default function VisitsHistory({ scope = 'all', showViewAll = true }: { s
                 return {
                     ...v,
                     addressStreet: addressMap[addressId] || 'Localização não identificada',
-                    displayName: userMap[userId] || 'Publicador',
+                    displayName: v.publisherName || v.userName || userMap[userId] || '',
                     sortDate: visitDate?.toDate ? visitDate.toDate() : (visitDate ? new Date(visitDate) : new Date(0)),
                     observations: v.notes || ''
                 };
