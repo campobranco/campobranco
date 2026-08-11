@@ -97,7 +97,7 @@ export default function ReportsPage() {
             setLoading(true);
             try {
                 // Fetch all data via Client Service (consistent with registry page)
-                const resData = await getRegistryData(targetCongId);
+                const resData = await getRegistryData(targetCongId, true);
 
                 if (!resData.success) throw new Error(resData.error || "Erro ao buscar dados do servidor");
 
