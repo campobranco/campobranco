@@ -18,7 +18,7 @@ description: Diretrizes Unificadas — Agente de IA
 
 1. Corretude técnica  
 2. Sustentabilidade (evitar dívida técnica)  
-3. Eficiência (evitar retrabalho)
+3. Eficiência (evitar retrabalho)  
 
 ---
 
@@ -41,12 +41,42 @@ Uma solução só é válida quando:
 
 ---
 
+## Testes (Regra Crítica)
+
+### Princípio Fundamental:
+
+**Escrever testes que validem o código correto, não ajustar testes para passar no código errado.**
+
+### Regras:
+
+- Testes definem o comportamento esperado **antes** ou **paralelo** à implementação  
+- Testes **não se adequam** ao código; o código se adequa aos testes  
+- Testes não devem passar em código logicamente incorreto  
+- Validação deve ser rigorosa: cenários de erro, limites, integrações  
+- Se código passa mas teste falha, há erro no código (não no teste)  
+
+### Proibido:
+
+- Flexibilizar asserções para "fazer passar"  
+- Mock data que esconda falhas lógicas  
+- Validações vagas que passem em comportamento errado  
+- Comentar testes que revelam problemas  
+- Implementar código incompleto e ajustar teste para simular funcionamento  
+
+### Permitido:
+
+- Refinar testes se estiverem validando critério errado (não apenas para "passar")  
+- Revisar lógica de teste se tiver falha técnica real (não conveniência)  
+- Usar fixtures e mocks **para isolar**, não **para ocultar**  
+
+---
+
 ## Proibições Absolutas
 
 O agente NÃO deve:
 
 - Criar soluções temporárias sem justificativa explícita  
-- Implementar algo incompleto apenas para “entregar”  
+- Implementar algo incompleto apenas para "entregar"  
 - Criar mock data sem autorização  
 - Criar fallback oculto para mascarar erro  
 - Simular funcionamento inexistente  
@@ -147,38 +177,6 @@ Evitar:
 
 ---
 
-## CSS e Estilização (Regra Crítica)
-
-Priorizar:
-
-- CSS modularizado  
-- Tailwind, classes reutilizáveis ou arquivos dedicados  
-- Componentização visual  
-- Consistência de design  
-- Reutilização de estilos  
-
-Evitar ao máximo:
-
-- CSS inline (`style=""`, `style={{}}`)  
-
-Usar CSS inline apenas quando houver justificativa técnica real, como:
-
-- valores dinâmicos inevitáveis  
-- cálculos runtime específicos  
-- limitações claras da arquitetura visual  
-
-### Regra:
-
-→ CSS inline é exceção, não padrão  
-
-### Proibido:
-
-- Usar inline por conveniência  
-- Misturar estrutura e apresentação sem necessidade  
-- Duplicar estilos inline repetitivos  
-
----
-
 ## Alterações e Impacto
 
 Sempre informar:
@@ -191,29 +189,19 @@ Sempre informar:
 
 ---
 
-## Versionamento (Obrigatório)
+## Versionamento
 
-Antes de iniciar qualquer alteração:
+Padrão:
 
-1. Localizar a versão atual do projeto
-2. Registrar a versão encontrada
+`0.1.X-beta`
 
-Após concluir alterações:
+### Regras:
 
-Se houver qualquer alteração funcional:
-- Incrementar patch
-
-Exemplo:
-0.1.12-beta → 0.1.13-beta
-
-Se não houver alteração funcional:
-- Manter versão atual
-
-Ao finalizar informar obrigatoriamente:
-
-- Versão anterior
-- Nova versão (ou informar que permaneceu igual)
-- Motivo do incremento
+- Incrementar patch apenas em mudanças funcionais relevantes  
+- Não versionar:
+  - debug  
+  - comentários  
+  - ajustes sem impacto funcional  
 
 ### Mudanças estruturais:
 
@@ -228,7 +216,7 @@ Ao finalizar informar obrigatoriamente:
 - Não inventar  
 - Não inferir comportamento crítico sem confirmação  
 
-### Regra:
+Regra:
 
 → Em caso de ambiguidade relevante, perguntar antes de implementar  
 
@@ -312,25 +300,4 @@ Não realizar alterações sem impacto funcional, estrutural ou de usabilidade r
 
 ### Regra:
 
-→ Se não foi pedido e não melhora funcionamento real, não alterar  
-
----
-
-# Arquitetura Orientada a Contexto (Obsidian)
-
-## Regra de Alta Prioridade
-
-Antes de qualquer execução técnica:
-
-### Consulta obrigatória:
-
-1. Ler o Vault (Segundo Cérebro / Obsidian) via MCP local  
-2. Iniciar obrigatoriamente por `Index.md`  
-3. Validar mapa estrutural antes de propor mudanças  
-4. Ignorar completamente `.obsidian`  
-5. Usar Vault como mapa contextual, não como fonte de edição principal  
-6. Editar sempre arquivos fonte reais (`.ts`, `.js`, etc.)  
-7. Após mudanças estruturais ou funcionais:
-
-```bash
-npm run wiki:sync
+→ Se não foi pedido e não melhora funcionamento real, não alterar
