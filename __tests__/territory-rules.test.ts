@@ -63,13 +63,16 @@ describe('Territory Business Rules (Core Domain)', () => {
             expect(result.code).toBe('UNAUTHORIZED_RETURN');
         });
 
-        it('Cenário 6: Admin/Ancião devolvendo território de terceiros = Permitido', () => {
+        it('Cenário 6: Admin/Ancião/Servo devolvendo território de terceiros = Permitido', () => {
             const territory: TerritoryState = { id: 't1', status: 'Emprestado', assignedTo: 'user-999' };
             const resultAdmin = canReturnTerritory(territory, 'ADMIN', 'admin-1');
             expect(resultAdmin.valid).toBe(true);
 
             const resultElder = canReturnTerritory(territory, 'ANCIAO', 'elder-1');
             expect(resultElder.valid).toBe(true);
+
+            const resultServant = canReturnTerritory(territory, 'SERVO', 'servant-1');
+            expect(resultServant.valid).toBe(true);
         });
 
         it('Cenário 8/9 (Integridade): Tentar devolver território Disponível = Erro (TERRITORY_NOT_ASSIGNED)', () => {

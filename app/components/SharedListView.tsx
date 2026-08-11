@@ -78,6 +78,7 @@ export default function SharedListView({ id: propId }: SharedListViewProps) {
     const [items, setItems] = useState<any[]>([]);
     const [isResponsibilityModalOpen, setIsResponsibilityModalOpen] = useState(false);
     const [accepting, setAccepting] = useState(false);
+    const canReturn = !!user && (!listData?.assignedTo || user.uid === listData?.assignedTo || role === 'ANCIAO' || role === 'SERVO' || role === 'ADMIN');
 
     // Modals State
     const [visitingItem, setVisitingItem] = useState<any | null>(null);
@@ -293,6 +294,11 @@ export default function SharedListView({ id: propId }: SharedListViewProps) {
     const handleReturnMap = async () => {
         if (!id || !user) return;
 
+        if (!canReturn) {
+            toast.error("Apenas o responsável pelo mapa, anciãos ou servos podem devolver.");
+            return;
+        }
+
         // Verifica se há responsável designado para o mapa. Se não, bloqueia a devolução e avisa
         const hasResponsible = listData?.assignedTo || listData?.assignedName;
         if (!hasResponsible) {
@@ -361,6 +367,10 @@ export default function SharedListView({ id: propId }: SharedListViewProps) {
     const [pendingTerritoryInfo, setPendingTerritoryInfo] = useState<{ id: string, name: string } | null>(null);
 
     const handleReturnTerritory = async (territoryId: string, territoryName: string) => {
+        if (!canReturn) {
+            toast.error("Apenas o responsável pelo mapa, anciãos ou servos podem devolver.");
+            return;
+        }
         // Se for congregação TRADITIONAL
         if (congregationType === 'TRADITIONAL') {
             // Em uma lista do tipo 'city' (onde temos múltiplos territórios), o array 'items' contém os territórios.
@@ -394,6 +404,10 @@ export default function SharedListView({ id: propId }: SharedListViewProps) {
     };
 
     const handleUndoReturnTerritory = async (territoryId: string, territoryName: string) => {
+        if (!canReturn) {
+            toast.error("Apenas o responsável pelo mapa, anciãos ou servos podem desfazer a devolução.");
+            return;
+        }
         setConfirmModal({
             isOpen: true,
             title: "Desfazer Devolução",
@@ -642,8 +656,8 @@ export default function SharedListView({ id: propId }: SharedListViewProps) {
                         <div className="flex flex-col sm:flex-row gap-3 pt-2">
                             <button
                                 onClick={handleReturnMap}
-                                disabled={returning || listData?.status === 'completed'}
-                                className={`flex-1 px-6 py-3.5 rounded-lg text-sm font-bold uppercase tracking-wider flex items-center justify-center gap-2 transition-all active:scale-95 shadow-lg ${listData?.status === 'completed' ? 'bg-gray-100 dark:bg-gray-800 text-gray-400 dark:text-gray-500 border border-gray-200 dark:border-gray-700 shadow-none cursor-not-allowed' : 'bg-green-600 hover:bg-green-700 text-white shadow-green-500/20'}`}
+                                disabled={returning || listData?.status === 'completed' || !canReturn}
+                                className={`flex-1 px-6 py-3.5 rounded-lg text-sm font-bold uppercase tracking-wider flex items-center justify-center gap-2 transition-all active:scale-95 shadow-lg ${listData?.status === 'completed' ? 'bg-gray-100 dark:bg-gray-800 text-gray-400 dark:text-gray-500 border border-gray-200 dark:border-gray-700 shadow-none cursor-not-allowed' : !canReturn ? 'bg-gray-100 dark:bg-gray-800 text-gray-400 dark:text-gray-500 border border-gray-200 dark:border-gray-700 shadow-none cursor-not-allowed opacity-50' : 'bg-green-600 hover:bg-green-700 text-white shadow-green-500/20'}`}
                             >
                                 {returning ? <Loader2 className="w-4 h-4 animate-spin" /> : (listData?.status === 'completed' ? <CheckCircle className="w-5 h-5" /> : <CheckCircle2 className="w-5 h-5" />)}
                                 {listData?.status === 'completed' ? 'Mapa Devolvido' : 'Devolver Mapa'}
@@ -806,7 +820,7 @@ export default function SharedListView({ id: propId }: SharedListViewProps) {
                                             </div>
                                         ) : (
                                             <div className="flex items-center gap-3">
-                                                {listData?.type === 'territory' && (
+                                                {listData?.type === 'territory' && canReturn && (
                                                     <div onClick={e => e.stopPropagation()}>
                                                         {item.visitStatus === 'completed' ? (
                                                             <button onClick={(e) => { e.stopPropagation(); handleUndoReturnTerritory(item.id, item.name); }} className="p-2 rounded-full bg-green-100 text-green-600 hover:bg-green-200 transition-colors" title="Desfazer devolução"><CheckCircle className="w-5 h-5" /></button>

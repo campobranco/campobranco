@@ -67,8 +67,14 @@ export function canReturnTerritory(
         return { valid: false, code: "TERRITORY_NOT_ASSIGNED", message: "O território não está emprestado no momento." };
     }
 
-    // Cenário: Admin/Ancião devolvendo território de terceiros
-    if (currentUserRole === 'ADMIN' || currentUserRole === 'ANCIAO') {
+    // Validação estrita de enums de roles conhecidas no sistema
+    const VALID_SYSTEM_ROLES = ['ADMIN', 'ANCIAO', 'SERVO', 'PUBLICADOR'] as const;
+    if (currentUserRole && !VALID_SYSTEM_ROLES.includes(currentUserRole as any)) {
+        throw new Error(`Role inválida para devolução: "${currentUserRole}". Use: ${VALID_SYSTEM_ROLES.join(', ')}`);
+    }
+
+    // Cenário: Admin/Ancião/Servo devolvendo território de terceiros
+    if (currentUserRole === 'ADMIN' || currentUserRole === 'ANCIAO' || currentUserRole === 'SERVO') {
         return { valid: true };
     }
 
