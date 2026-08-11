@@ -143,7 +143,7 @@ describe('Integration: Shared Links — Firestore Emulator', () => {
         });
 
         test('Deve rejeitar a transação se referenciar território inexistente', async () => {
-            await expect(createSharedList({
+            const res = await createSharedList({
                 title: 'Território Inexistente',
                 type: 'territory',
                 items: ['TERR-999'],
@@ -151,7 +151,9 @@ describe('Integration: Shared Links — Firestore Emulator', () => {
                 assignedTo: '',
                 assignedName: '',
                 territories: [{ id: 'TERR-999', name: 'Inexistente', status: 'Disponível' }]
-            })).rejects.toThrow('Território TERR-999 inexistente.');
+            });
+            expect(res.success).toBe(false);
+            expect(res.error).toBe('Território TERR-999 inexistente.');
         });
 
     });
