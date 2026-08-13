@@ -21,7 +21,7 @@ export default function LoginClient() {
     const [password, setPassword] = useState('');
     const router = useRouter();
     const searchParams = useSearchParams();
-
+    const { appIconSrc } = useAppIcon();
     const getRedirectUrl = () => {
         const redirectParam = searchParams.get('redirect') || searchParams.get('callbackUrl');
         if (!redirectParam) return '/dashboard';
@@ -160,7 +160,6 @@ export default function LoginClient() {
         }
     };
 
-    const { appIconSrc } = useAppIcon();
 
     return (
         <div className="min-h-[100dvh] bg-primary dark:bg-background flex flex-col items-center justify-center p-6 font-sans transition-colors duration-300 relative z-10">
