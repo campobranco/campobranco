@@ -120,3 +120,6 @@ firebase_deploy_debug.txt
 # Audit runs
 strix_runs/
 
+
+# Sentry Config File
+.env.sentry-build-plugin

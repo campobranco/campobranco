@@ -1,6 +1,6 @@
 {
   "name": "campobranco",
-  "version": "0.11.71-beta",
+  "version": "0.11.73-beta",
   "license": "MIT",
   "private": true,
   "type": "module",
@@ -30,6 +30,7 @@
     "@capacitor/core": "^8.5.0",
     "@ducanh2912/next-pwa": "^10.2.9",
     "@google-cloud/recaptcha-enterprise": "^6.3.1",
+    "@sentry/nextjs": "^10.70.0",
     "cookie": "^1.1.1",
     "date-fns": "^4.1.0",
     "firebase": "^12.9.0",
