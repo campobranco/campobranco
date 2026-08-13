@@ -75,7 +75,7 @@ export default withSentryConfig(withPWA(nextConfig), {
   // For all available options, see:
   // https://www.npmjs.com/package/@sentry/webpack-plugin#options
 
-  org: "growth-boost",
+  org: "campobranco",
 
   project: "javascript-nextjs",
 
