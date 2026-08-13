@@ -65,6 +65,9 @@ jobs:
           cd android
           chmod +x gradlew
           ./gradlew assembleDebug
+        env:
+          CAPACITOR_APP_ID: ${{ vars.CAPACITOR_APP_ID_PROD }}
+          CAPACITOR_APP_NAME: ${{ vars.CAPACITOR_APP_NAME_PROD }}
 
       - name: Upload APK Artifact
         uses: actions/upload-artifact@v4
