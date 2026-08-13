@@ -31,7 +31,9 @@ jobs:
         run: npm ci || npm install
 
       - name: Build Next.js (Export)
-        run: npm run build
+        run: |
+          rm -f .env.production
+          npm run build
         env:
           NEXT_PUBLIC_APP_NAME: ${{ vars.NEXT_PUBLIC_APP_NAME }}
           NEXT_PUBLIC_APP_URL: ${{ vars.NEXT_PUBLIC_APP_URL_PROD }}

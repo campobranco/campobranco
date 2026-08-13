@@ -31,7 +31,9 @@ jobs:
         run: npm ci || npm install
 
       - name: Build Next.js (Export)
-        run: npm run build
+        run: |
+          rm -f .env.production
+          npm run build
         env:
           NEXT_PUBLIC_APP_NAME: ${{ vars.NEXT_PUBLIC_APP_NAME }}
           NEXT_PUBLIC_APP_URL: ${{ vars.NEXT_PUBLIC_APP_URL_DEV }}
@@ -59,6 +61,15 @@ jobs:
           VERSION_CODE=${{ github.run_number }}
           sed -i "s/versionName .*/versionName \"$VERSION_NAME\"/" android/app/build.gradle
           sed -i "s/versionCode .*/versionCode $VERSION_CODE/" android/app/build.gradle
+
+      - name: Inject Canary Icons
+        run: |
+          cp public/app-icon-c.png assets/icon.png || true
+          cp public/app-icon-c.png public/app-icon.png || true
+          cp public/icon-512x512-c.png public/icon-512x512.png || true
+          cp public/icon-192x192-c.png public/icon-192x192.png || true
+          cp public/apple-touch-icon-c.png public/apple-touch-icon.png || true
+          npx @capacitor/assets generate --android
 
       - name: Build APK (Debug)
         run: |
