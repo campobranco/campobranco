@@ -1,8 +1,8 @@
 import type { CapacitorConfig } from '@capacitor/cli';
 
 const config: CapacitorConfig = {
-  appId: 'com.campobranco.app',
-  appName: 'CampoBranco',
+  appId: process.env.CAPACITOR_APP_ID || 'com.campobranco.app.canary',
+  appName: process.env.CAPACITOR_APP_NAME || 'Campo Branco',
   webDir: 'out'
 };
 

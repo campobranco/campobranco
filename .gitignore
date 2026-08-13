@@ -123,3 +123,4 @@ strix_runs/
 
 # Sentry Config File
 .env.sentry-build-plugin
+android/app/google-services*.json

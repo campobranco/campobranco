@@ -135,6 +135,25 @@ export default function RootLayout({
           } catch (e) {
             console.error('Erro no Cache Buster:', e);
           }
+
+          // PWA: Registra o Service Worker apenas se NÃO estiver rodando no Capacitor
+          if ('serviceWorker' in navigator) {
+            window.addEventListener('load', function() {
+              const isNative = typeof window !== 'undefined' && window.Capacitor && window.Capacitor.isNativePlatform && window.Capacitor.isNativePlatform();
+              if (!isNative) {
+                navigator.serviceWorker.register('/sw.js').then(
+                  function (registration) {
+                    console.log('ServiceWorker registrado via Web: ', registration.scope);
+                  },
+                  function (err) {
+                    console.log('Falha ao registrar ServiceWorker: ', err);
+                  }
+                );
+              } else {
+                console.log('Rodando via Capacitor: Service Worker não será registrado para evitar conflitos.');
+              }
+            });
+          }
         ` }} />
       </head>
       <body className={`${inter.className} min-h-screen flex flex-col`} suppressHydrationWarning={true}>

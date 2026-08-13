@@ -45,29 +45,16 @@ const nextConfig = {
 import withPWAPkg from "@ducanh2912/next-pwa";
 const withPWA = withPWAPkg({
     dest: "public",
-    cacheOnFrontEndNav: false,
-    aggressiveFrontEndNavCaching: false,
+    cacheOnFrontEndNav: true,
+    aggressiveFrontEndNavCaching: true,
     reloadOnOnline: true,
     disable: process.env.NODE_ENV === "development",
     skipWaiting: true,
-    register: true,
+    register: false,
     scope: "/",
     workboxOptions: {
         disableDevLogs: true,
         cleanupOutdatedCaches: true,
-        runtimeCaching: [
-            {
-                urlPattern: /^https:\/\/.*\.web\.app.*$/,
-                handler: 'NetworkFirst',
-                options: {
-                    cacheName: 'documents-cache',
-                    expiration: {
-                        maxEntries: 5,
-                        maxAgeSeconds: 60,
-                    },
-                },
-            },
-        ],
     },
 });
 
