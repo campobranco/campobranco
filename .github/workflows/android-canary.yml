@@ -67,9 +67,9 @@ jobs:
 
       - name: Setup F-Droid Repo (Dev)
         run: |
+          sudo add-apt-repository -y ppa:fdroid/fdroidserver
           sudo apt-get update
-          sudo apt-get install -y fdroidserver python3-pip
-          sudo pip3 install --upgrade androguard --break-system-packages --ignore-installed
+          sudo apt-get install -y fdroidserver
           mkdir -p fdroid/repo
           cp android/app/build/outputs/apk/debug/app-debug.apk fdroid/repo/CampoBrancoCanary.apk
           cd fdroid
