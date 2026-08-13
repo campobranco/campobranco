@@ -165,16 +165,18 @@ export default function MapView({ items, center = defaultCenter, zoom = 15, onGe
         const init = async () => {
             if (typeof window === 'undefined') return;
 
-            // Dynamic import of Leaflet if not present globally
-            if (!(window as any).L) {
-                // In a real usage with 'leaflet' npm package we would import it.
-            }
+            try {
+                const L = (await import('leaflet')).default;
 
-            const checkForLeaflet = setInterval(() => {
-                if ((window as any).L && mapContainerRef.current && !mapInstanceRef.current) {
-                    clearInterval(checkForLeaflet);
-                    const L = (window as any).L;
+                // Fix Leaflet's default icon paths if needed (though we use divIcons mainly)
+                delete (L.Icon.Default.prototype as any)._getIconUrl;
+                L.Icon.Default.mergeOptions({
+                    iconRetinaUrl: '/marker-icon-2x.png',
+                    iconUrl: '/marker-icon.png',
+                    shadowUrl: '/marker-shadow.png',
+                });
 
+                if (mapContainerRef.current && !mapInstanceRef.current) {
                     // Determine start center
                     const startLat = center.lat;
                     const startLng = center.lng;
@@ -238,9 +240,9 @@ export default function MapView({ items, center = defaultCenter, zoom = 15, onGe
                     mapInstanceRef.current = map;
                     setIsMapReady(true);
                 }
-            }, 200);
-
-            return () => clearInterval(checkForLeaflet);
+            } catch (error) {
+                console.error("Failed to load Leaflet:", error);
+            }
         };
 
         init();

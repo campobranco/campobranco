@@ -28,18 +28,14 @@ export default function PointMap({ points }: PointMapProps) {
     }, [points]);
 
     useEffect(() => {
-        let checkForLeaflet: NodeJS.Timeout | null = null;
-
-        // Inicialização do Leaflet
-        const initMap = () => {
+        const initMap = async () => {
             if (typeof window === 'undefined' || !mapContainerRef.current) return;
 
-            // Esperar o Leaflet estar disponível globalmente
-            checkForLeaflet = setInterval(() => {
-                if ((window as any).L && mapContainerRef.current && !mapInstanceRef.current) {
-                    if (checkForLeaflet) clearInterval(checkForLeaflet);
-                    const L = (window as any).L;
+            try {
+                const L = (await import('leaflet')).default;
+                (window as any).L = L; // Keep it globally for the markers effect
 
+                if (mapContainerRef.current && !mapInstanceRef.current) {
                     const currentPoints = pointsRef.current;
                     const center = currentPoints.length > 0
                         ? [currentPoints[0].latitude, currentPoints[0].longitude]
@@ -48,7 +44,7 @@ export default function PointMap({ points }: PointMapProps) {
                     const map = L.map(mapContainerRef.current, {
                         zoomControl: false,
                         attributionControl: false
-                    }).setView(center, 14);
+                    }).setView(center as any, 14);
 
                     L.tileLayer('https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png', {
                         subdomains: 'abcd',
@@ -58,15 +54,14 @@ export default function PointMap({ points }: PointMapProps) {
                     mapInstanceRef.current = map;
                     setIsMapReady(true);
                 }
-            }, 200);
+            } catch (error) {
+                console.error("Failed to load Leaflet in PointMap:", error);
+            }
         };
 
         initMap();
 
         return () => {
-            if (checkForLeaflet) {
-                clearInterval(checkForLeaflet);
-            }
             if (mapInstanceRef.current) {
                 try {
                     mapInstanceRef.current.remove();

@@ -108,15 +108,16 @@ function AddressPinsMap({ pins }: { pins: AddressPinItem[] }) {
 
     useEffect(() => {
         if (!mapContainerRef.current || pins.length === 0) return;
-        const L = (window as any).L;
-        if (!L) return;
 
-        if (mapInstanceRef.current) {
-            mapInstanceRef.current.remove();
-            mapInstanceRef.current = null;
-        }
+        const initMap = async () => {
+            if (!mapContainerRef.current) return;
+            try {
+                const L = (await import('leaflet')).default;
 
-        try {
+                if (mapInstanceRef.current) {
+                    mapInstanceRef.current.remove();
+                    mapInstanceRef.current = null;
+                }
             const map = L.map(mapContainerRef.current, {
                 zoomControl: false,
                 attributionControl: false,
@@ -176,6 +177,9 @@ function AddressPinsMap({ pins }: { pins: AddressPinItem[] }) {
         } catch (err) {
             console.error("Erro ao inicializar mapa Leaflet:", err);
         }
+        };
+
+        initMap();
 
         return () => {
             if (mapInstanceRef.current) {
