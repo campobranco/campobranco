@@ -72,7 +72,7 @@ jobs:
           mkdir -p fdroid/repo
           cp android/app/build/outputs/apk/debug/app-debug.apk fdroid/repo/CampoBranco.apk
           cd fdroid
-          echo "${{ secrets.FDROID_KEYSTORE_B64 }}" | base64 --decode > keystore.p12
+          echo "${{ secrets.FDROID_KEYSTORE_PROD_B64 }}" | base64 --decode > keystore.p12
           echo "repo_url: https://${{ github.repository_owner }}.github.io/${{ github.event.repository.name }}/repo" > config.yml
           echo "repo_name: Campo Branco" >> config.yml
           echo "repo_description: Campo Branco Official Repository" >> config.yml
@@ -80,7 +80,7 @@ jobs:
           echo "repo_keyalias: fdroid" >> config.yml
           echo "keystorepass: campobranco123" >> config.yml
           echo "keypass: campobranco123" >> config.yml
-          fdroid update -c
+          fdroid update -c --repo repo
 
       - name: Deploy F-Droid Repo to GitHub Pages
         uses: peaceiris/actions-gh-pages@v4
@@ -88,3 +88,4 @@ jobs:
           github_token: ${{ secrets.GITHUB_TOKEN }}
           publish_dir: ./fdroid/repo
           destination_dir: repo
+          keep_files: true
