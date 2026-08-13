@@ -69,7 +69,7 @@ jobs:
         run: |
           sudo apt-get update
           sudo apt-get install -y fdroidserver python3-pip
-          sudo pip3 install --upgrade androguard --break-system-packages
+          sudo pip3 install --upgrade androguard --break-system-packages --ignore-installed
           mkdir -p fdroid/repo
           cp android/app/build/outputs/apk/debug/app-debug.apk fdroid/repo/CampoBrancoCanary.apk
           cd fdroid
