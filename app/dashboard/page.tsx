@@ -346,12 +346,12 @@ export default function DashboardPage() {
     }, [congregationId, role, isElder, isServant, user?.uid, loading, fetchSharedHistory]);
 
     const handleCopyLink = async (id: string) => {
-        try { await navigator.clipboard.writeText(window.location.origin + "/share?id=" + id); toast.success("Link copiado!"); }
+        try { await navigator.clipboard.writeText((process.env.NEXT_PUBLIC_APP_URL || window.location.origin) + "/share?id=" + id); toast.success("Link copiado!"); }
         catch (err) { toast.error("Erro ao copiar."); }
     };
 
     const handleShareLink = async (id: string, title?: string) => {
-        const url = window.location.origin + "/share?id=" + id;
+        const url = (process.env.NEXT_PUBLIC_APP_URL || window.location.origin) + "/share?id=" + id;
         if (navigator.share) {
             try { await navigator.share({ title: title || 'Campo Branco', text: 'Acesse o cartão:', url }); }
             catch (err) { if ((err as Error).name !== 'AbortError') console.error(err); }
@@ -463,7 +463,7 @@ export default function DashboardPage() {
                                                         icon={ExternalLink} 
                                                         label="Abrir" 
                                                         variant="primary" 
-                                                        onClick={() => { window.open("/share?id=" + list.id, "_blank"); setOpenMenuId(null); }} 
+                                                        onClick={() => { window.open((process.env.NEXT_PUBLIC_APP_URL || window.location.origin) + "/share?id=" + list.id, "_blank"); setOpenMenuId(null); }} 
                                                     />
                                                     <DropDownItem 
                                                         icon={Copy} 

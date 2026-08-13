@@ -157,7 +157,7 @@ function CardsContent() {
 
     // Handlers
     const handleCopyLink = async (id: string) => {
-        const shareUrl = window.location.origin + "/share?id=" + id;
+        const shareUrl = (process.env.NEXT_PUBLIC_APP_URL || window.location.origin) + "/share?id=" + id;
         try {
             await navigator.clipboard.writeText(shareUrl);
             toast.success("Link copiado com sucesso!");
@@ -168,7 +168,7 @@ function CardsContent() {
     };
 
     const handleShareLink = async (id: string, title?: string) => {
-        const shareUrl = window.location.origin + "/share?id=" + id;
+        const shareUrl = (process.env.NEXT_PUBLIC_APP_URL || window.location.origin) + "/share?id=" + id;
         if (navigator.share) {
             try {
                 await navigator.share({
@@ -185,7 +185,7 @@ function CardsContent() {
     };
 
     const handleOpenLink = (id: string) => {
-        window.open(window.location.origin + "/share?id=" + id, "_blank");
+        window.open((process.env.NEXT_PUBLIC_APP_URL || window.location.origin) + "/share?id=" + id, "_blank");
     };
 
     const handleDeleteShare = async (id: string) => {

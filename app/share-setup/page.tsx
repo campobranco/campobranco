@@ -222,7 +222,7 @@ function ShareSetupContent() {
                 return null;
             }
 
-            const link = `${window.location.origin}/share?id=${resData.data?.id}`;
+            const link = `${process.env.NEXT_PUBLIC_APP_URL || window.location.origin}/share?id=${resData.data?.id}`;
             setGeneratedLink(link);
             setLoadError('');
             return link;
