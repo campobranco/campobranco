@@ -68,7 +68,8 @@ jobs:
       - name: Setup F-Droid Repo
         run: |
           sudo apt-get update
-          sudo apt-get install -y fdroidserver
+          sudo apt-get install -y fdroidserver python3-pip
+          sudo pip3 install --upgrade androguard --break-system-packages
           mkdir -p fdroid/repo
           cp android/app/build/outputs/apk/debug/app-debug.apk fdroid/repo/CampoBranco.apk
           cd fdroid
@@ -80,6 +81,7 @@ jobs:
           echo "repo_keyalias: fdroid" >> config.yml
           echo "keystorepass: ${{ secrets.FDROID_KEYSTORE_PASSWORD }}" >> config.yml
           echo "keypass: ${{ secrets.FDROID_KEYSTORE_PASSWORD }}" >> config.yml
+          chmod 600 config.yml
           fdroid update -c
 
       - name: Deploy F-Droid Repo to GitHub Pages
