@@ -44,8 +44,8 @@ jobs:
       - name: Sync Capacitor for Production
         run: npx cap sync android
         env:
-          CAPACITOR_APP_ID: 'com.campobranco.app'
-          CAPACITOR_APP_NAME: 'Campo Branco'
+          CAPACITOR_APP_ID: ${{ vars.CAPACITOR_APP_ID_PROD }}
+          CAPACITOR_APP_NAME: ${{ vars.CAPACITOR_APP_NAME_PROD }}
 
       - name: Inject Google Services JSON
         run: |

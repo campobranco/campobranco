@@ -44,8 +44,8 @@ jobs:
       - name: Sync Capacitor for Canary (Dev)
         run: npx cap sync android
         env:
-          CAPACITOR_APP_ID: 'com.campobranco.app.canary'
-          CAPACITOR_APP_NAME: 'Campo Branco Canary'
+          CAPACITOR_APP_ID: ${{ vars.CAPACITOR_APP_ID_DEV }}
+          CAPACITOR_APP_NAME: ${{ vars.CAPACITOR_APP_NAME_DEV }}
 
       - name: Inject Google Services JSON
         run: |
