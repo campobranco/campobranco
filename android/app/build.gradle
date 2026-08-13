@@ -4,7 +4,7 @@ android {
     namespace = "com.campobranco.app"
     compileSdk = rootProject.ext.compileSdkVersion
     defaultConfig {
-        applicationId "com.campobranco.app"
+        applicationId System.getenv("CAPACITOR_APP_ID") ?: "com.campobranco.app.canary"
         minSdkVersion rootProject.ext.minSdkVersion
         targetSdkVersion rootProject.ext.targetSdkVersion
         versionCode 1
