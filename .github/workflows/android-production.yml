@@ -78,8 +78,8 @@ jobs:
           echo "repo_description: Campo Branco Official Repository" >> config.yml
           echo "keystore: keystore.p12" >> config.yml
           echo "repo_keyalias: fdroid" >> config.yml
-          echo "keystorepass: campobranco123" >> config.yml
-          echo "keypass: campobranco123" >> config.yml
+          echo "keystorepass: ${{ secrets.FDROID_KEYSTORE_PASSWORD }}" >> config.yml
+          echo "keypass: ${{ secrets.FDROID_KEYSTORE_PASSWORD }}" >> config.yml
           fdroid update -c
 
       - name: Deploy F-Droid Repo to GitHub Pages
