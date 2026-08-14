@@ -43,6 +43,8 @@
 *.pem
 *.key
 *.crt
+*.b64
+*.p12
 *.zip
 *.rar
 *.7z
