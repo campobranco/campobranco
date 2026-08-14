@@ -88,7 +88,7 @@ jobs:
           sudo apt-get install -y fdroidserver
           sudo sed -i 's/raise ResParserError("res1 must be zero!")/pass/g' /usr/lib/python3/dist-packages/androguard/core/bytecodes/axml/__init__.py
           mkdir -p fdroid/repo
-          cp android/app/build/outputs/apk/debug/app-debug.apk fdroid/repo/CampoBranco.apk
+          cp android/app/build/outputs/apk/debug/app-debug.apk fdroid/repo/CampoBranco-v${{ env.VERSION_NAME }}.apk
           cp public/icon-512x512.png fdroid/icon.png
           cd fdroid
           echo "${{ secrets.FDROID_KEYSTORE_PROD_B64 }}" | base64 --decode > keystore.p12
