@@ -93,7 +93,7 @@ jobs:
           echo "${{ secrets.FDROID_KEYSTORE_PROD_B64 }}" | base64 --decode > keystore.p12
           echo "repo_url: https://${{ github.repository_owner }}.github.io/${{ github.event.repository.name }}/repo" > config.yml
           echo "repo_name: Campo Branco" >> config.yml
-          echo "repo_description: Campo Branco Official Repository" >> config.yml
+          echo "repo_description: Campo Branco" >> config.yml
           echo "repo_icon: icon.png" >> config.yml
           echo "keystore: keystore.p12" >> config.yml
           echo "repo_keyalias: fdroid" >> config.yml
