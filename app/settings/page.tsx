@@ -77,7 +77,21 @@ import ConfirmationModal from '@/app/components/ConfirmationModal';
 
 
 export default function SettingsPage() {
-    const { user, isAdmin, isAdminRoleGlobal, isElder, isServant, congregationId, loading, profileName, role, notificationsEnabled, logout: authLogout, canManageMembers, canInviteMembers } = useAuth();
+    const { 
+        user, 
+        isAdmin, 
+        isAdminRoleGlobal, 
+        isElder, 
+        isServant, 
+        congregationId, 
+        loading, 
+        profileName, 
+        role, 
+        notificationsEnabled, 
+        logout: authLogout, 
+        canManageMembers, 
+        canInviteMembers
+    } = useAuth();
     const router = useRouter();
     const { textSize, displayScale, themeMode, updatePreferences } = useTheme();
 
@@ -168,15 +182,11 @@ const [uploading, setUploading] = useState(false);
             flat.reportsView = !!raw.reportsView;
         }
 
-        // Management (Gestão)
-        if (raw.management && typeof raw.management === 'object') {
-            flat.managementPromote = !!raw.management.promote;
-            flat.managementDemote = !!raw.management.demote;
-            flat.managementRemove = !!raw.management.remove;
+        // Reference Points (Pontos de Referência)
+        if (raw.referencePoints && typeof raw.referencePoints === 'object') {
+            flat.referencePointsManage = !!raw.referencePoints.manage;
         } else {
-            flat.managementPromote = !!raw.managementPromote;
-            flat.managementDemote = !!raw.managementDemote;
-            flat.managementRemove = !!raw.managementRemove;
+            flat.referencePointsManage = !!raw.referencePointsManage;
         }
 
         return flat;
@@ -206,10 +216,8 @@ const [uploading, setUploading] = useState(false);
             reports: {
                 view: !!flat.reportsView
             },
-            management: {
-                promote: !!flat.managementPromote,
-                demote: !!flat.managementDemote,
-                remove: !!flat.managementRemove
+            referencePoints: {
+                manage: !!flat.referencePointsManage
             }
         };
     };
@@ -221,7 +229,7 @@ const [uploading, setUploading] = useState(false);
             witnessingView: false, witnessingCreate: false, witnessingEdit: false, witnessingDelete: false,
             s13View: false, s13Create: false, s13Edit: false, s13Delete: false,
             reportsView: false,
-            managementPromote: false, managementDemote: false, managementRemove: false
+            referencePointsManage: false
         };
 
         switch (presetType) {
@@ -255,7 +263,7 @@ const [uploading, setUploading] = useState(false);
                     witnessingView: true, witnessingCreate: true, witnessingEdit: true, witnessingDelete: true,
                     s13View: true, s13Create: true, s13Edit: true, s13Delete: true,
                     reportsView: true,
-                    managementPromote: true, managementDemote: true, managementRemove: true
+                    referencePointsManage: true
                 });
                 break;
             case 'clear':
@@ -279,7 +287,7 @@ const [uploading, setUploading] = useState(false);
                     witnessingView: true, witnessingCreate: true, witnessingEdit: true, witnessingDelete: true,
                     s13View: true, s13Create: true, s13Edit: true, s13Delete: true,
                     reportsView: true,
-                    managementPromote: true, managementDemote: true, managementRemove: true
+                    referencePointsManage: true
                 };
             } else if (member.role === 'SERVO') {
                 initialPermissions = {
@@ -287,7 +295,7 @@ const [uploading, setUploading] = useState(false);
                     witnessingView: true, witnessingCreate: true, witnessingEdit: true, witnessingDelete: true,
                     s13View: true, s13Create: true, s13Edit: true, s13Delete: true,
                     reportsView: true,
-                    managementPromote: false, managementDemote: false, managementRemove: false
+                    referencePointsManage: true
                 };
             }
         }
@@ -604,6 +612,7 @@ const [uploading, setUploading] = useState(false);
                     await updateDoc(userRef, {
                         congregationId: null,
                         role: 'PUBLICADOR',
+                        permissions: {},
                         updatedAt: serverTimestamp()
                     });
                     setMembers(prev => prev.filter(m => m.id !== uid));
@@ -957,7 +966,6 @@ const [uploading, setUploading] = useState(false);
                                     </div>
                                 )}
                             </div>
-
                         </section>
                     </>
                 )}
@@ -1009,82 +1017,96 @@ const [uploading, setUploading] = useState(false);
                                 </div>
 
                                 <div className="space-y-3">
-                                    {members.map(member => (
-                                        <div key={member.id} className="flex items-center justify-between p-3 bg-background rounded-lg border border-surface-border">
-                                            <div className="flex items-center gap-3">
-                                                <div className="w-10 h-10 bg-surface rounded-full flex items-center justify-center text-muted font-bold border border-surface-border shadow-sm">
-                                                    {member.photoURL ? <img src={member.photoURL} alt={member.name || 'Avatar'} width={40} height={40} className="rounded-full object-cover w-10 h-10" referrerPolicy="no-referrer" /> : <User className="w-5 h-5" />}
-                                                </div>
-                                                <div>
-                                                    <h4 className="font-bold text-sm text-main">{member.name || member.email?.split('@')[0]}</h4>
-                                                    <div className="flex items-center gap-2">
-                                                        <span className={`text-[10px] font-bold uppercase px-1.5 py-0.5 rounded-md ${member.role === 'ANCIAO' ? 'bg-primary-light/80 text-primary-dark dark:bg-primary-dark/80 dark:text-primary-light' :
-                                                            member.role === 'SERVO' ? 'bg-primary-light/50 text-primary-dark dark:bg-primary-dark/50 dark:text-primary-light' :
-                                                                'bg-surface-border text-muted dark:bg-surface-border'
-                                                            }`}>
-                                                            {member.role || 'PUBLICADOR'}
-                                                        </span>
-                                                        <span className="text-[10px] text-muted truncate max-w-[150px] sm:max-w-none">{member.email}</span>
+                                    {members.map(member => {
+                                        const canOpenMenu = member.id !== user?.uid && (
+                                            isAdminRoleGlobal ||
+                                            (isElder && member.role !== 'ADMIN' && member.role !== 'ANCIAO')
+                                        );
+
+                                        return (
+                                            <div key={member.id} className="flex items-center justify-between p-3 bg-background rounded-lg border border-surface-border">
+                                                <div className="flex items-center gap-3">
+                                                    <div className="w-10 h-10 bg-surface rounded-full flex items-center justify-center text-muted font-bold border border-surface-border shadow-sm">
+                                                        {member.photoURL ? <img src={member.photoURL} alt={member.name || 'Avatar'} width={40} height={40} className="rounded-full object-cover w-10 h-10" referrerPolicy="no-referrer" /> : <User className="w-5 h-5" />}
+                                                    </div>
+                                                    <div>
+                                                        <h4 className="font-bold text-sm text-main">{member.name || member.email?.split('@')[0]}</h4>
+                                                        <div className="flex items-center gap-2">
+                                                            <span className={`text-[10px] font-bold uppercase px-1.5 py-0.5 rounded-md ${member.role === 'ANCIAO' ? 'bg-primary-light/80 text-primary-dark dark:bg-primary-dark/80 dark:text-primary-light' :
+                                                                member.role === 'SERVO' ? 'bg-primary-light/50 text-primary-dark dark:bg-primary-dark/50 dark:text-primary-light' :
+                                                                    'bg-surface-border text-muted dark:bg-surface-border'
+                                                                }`}>
+                                                                {member.role || 'PUBLICADOR'}
+                                                            </span>
+                                                            <span className="text-[10px] text-muted truncate max-w-[150px] sm:max-w-none">{member.email}</span>
+                                                        </div>
                                                     </div>
                                                 </div>
-                                            </div>
 
-                                            {/* Actions - Only Elders can manage, Admin manages everyone */}
-                                            {(isAdminRoleGlobal || (isElder && member.role !== 'ADMIN' && member.role !== 'ANCIAO')) && member.id !== user?.uid && (
-                                                <div className="relative">
-                                                    <button
-                                                        onClick={(e) => {
-                                                            e.stopPropagation();
-                                                            setOpenMenuId(openMenuId === member.id ? null : member.id);
-                                                        }}
-                                                        className="p-2 text-muted hover:text-main hover:bg-surface rounded-full transition-colors"
-                                                    >
-                                                        <MoreVertical className="w-5 h-5" />
-                                                    </button>
+                                                {/* Actions - Only Elders can manage, Admin manages everyone */}
+                                                {(isAdminRoleGlobal || (isElder && member.role !== 'ADMIN' && member.role !== 'ANCIAO')) && member.id !== user?.uid && (
+                                                    <div className="relative">
+                                                        <button
+                                                            onClick={(e) => {
+                                                                e.stopPropagation();
+                                                                setOpenMenuId(openMenuId === member.id ? null : member.id);
+                                                            }}
+                                                            className="p-2 text-muted hover:text-main hover:bg-surface rounded-full transition-colors"
+                                                        >
+                                                            <MoreVertical className="w-5 h-5" />
+                                                        </button>
 
-                                                    {openMenuId === member.id && (
-                                                        <div className="absolute right-0 top-10 bg-surface rounded-lg shadow-xl border border-surface-border p-1 z-50 min-w-[180px] animate-in fade-in zoom-in-95 duration-200">
-                                                            <button
-                                                                onClick={() => handleOpenPermissions(member)}
-                                                                className="flex items-center gap-2 px-3 py-2.5 text-sm font-bold text-main hover:bg-background rounded-lg transition-colors w-full text-left"
-                                                            >
-                                                                <Key className="w-4 h-4 text-primary" />
-                                                                Permissões
-                                                            </button>
-                                                            <button
-                                                                onClick={() => handlePromote(member.id, member.role)}
-                                                                className={`flex items-center gap-2 px-3 py-2.5 text-sm font-bold rounded-lg transition-colors w-full text-left border-t border-surface-border ${member.role === 'SERVO' ? 'text-orange-600 hover:bg-orange-50 dark:hover:bg-orange-900/20' : 'text-primary hover:bg-primary-light/50 dark:hover:bg-primary-dark/30'}`}
-                                                            >
-                                                                <Shield className="w-4 h-4" />
-                                                                {member.role === 'ANCIAO' ? "Rebaixar a Servo" :
-                                                                    member.role === 'SERVO' ? "Rebaixar a Publicador" :
-                                                                        "Promover a Servo"}
-                                                            </button>
-                                                            {isAdminRoleGlobal && member.role === 'SERVO' && (
+                                                        {openMenuId === member.id && (
+                                                            <div className="absolute right-0 top-10 bg-surface rounded-lg shadow-xl border border-surface-border p-1 z-50 min-w-[180px] animate-in fade-in zoom-in-95 duration-200">
+                                                                {/* Permissões: restrito a Ancião/Admin */}
                                                                 <button
-                                                                    onClick={() => {
-                                                                        handleSetAnciao(member.id);
-                                                                        setOpenMenuId(null);
-                                                                    }}
-                                                                    className="flex items-center gap-2 px-3 py-2.5 text-sm font-bold text-amber-600 hover:bg-amber-50 dark:hover:bg-amber-900/20 rounded-lg transition-colors w-full text-left border-t border-surface-border"
+                                                                    onClick={() => handleOpenPermissions(member)}
+                                                                    className="flex items-center gap-2 px-3 py-2.5 text-sm font-bold text-main hover:bg-background rounded-lg transition-colors w-full text-left"
+                                                                >
+                                                                    <Key className="w-4 h-4 text-primary" />
+                                                                    Permissões
+                                                                </button>
+
+                                                                {/* Promover/Rebaixar (Ancião/Admin) */}
+                                                                <button
+                                                                    onClick={() => handlePromote(member.id, member.role)}
+                                                                    className={`flex items-center gap-2 px-3 py-2.5 text-sm font-bold rounded-lg transition-colors w-full text-left border-t border-surface-border ${member.role === 'SERVO' ? 'text-orange-600 hover:bg-orange-50 dark:hover:bg-orange-900/20' : 'text-primary hover:bg-primary-light/50 dark:hover:bg-primary-dark/30'}`}
                                                                 >
                                                                     <Shield className="w-4 h-4" />
-                                                                    Promover a Ancião
+                                                                    {member.role === 'ANCIAO' ? "Rebaixar a Servo" :
+                                                                        member.role === 'SERVO' ? "Rebaixar a Publicador" :
+                                                                            "Promover a Servo"}
                                                                 </button>
-                                                            )}
-                                                            <button
-                                                                onClick={() => handleRemove(member.id)}
-                                                                className="flex items-center gap-2 px-3 py-2.5 text-sm font-bold text-red-600 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-lg transition-colors w-full text-left"
-                                                            >
-                                                                <UserMinus className="w-4 h-4" />
-                                                                Remover da Congregação
-                                                            </button>
-                                                        </div>
-                                                    )}
-                                                </div>
-                                            )}
-                                        </div>
-                                    ))}
+
+                                                                {/* Promover a Ancião (estritamente Admin global) */}
+                                                                {isAdminRoleGlobal && member.role === 'SERVO' && (
+                                                                    <button
+                                                                        onClick={() => {
+                                                                            handleSetAnciao(member.id);
+                                                                            setOpenMenuId(null);
+                                                                        }}
+                                                                        className="flex items-center gap-2 px-3 py-2.5 text-sm font-bold text-amber-600 hover:bg-amber-50 dark:hover:bg-amber-900/20 rounded-lg transition-colors w-full text-left border-t border-surface-border"
+                                                                    >
+                                                                        <Shield className="w-4 h-4" />
+                                                                        Promover a Ancião
+                                                                    </button>
+                                                                )}
+
+                                                                {/* Remover da Congregação */}
+                                                                <button
+                                                                    onClick={() => handleRemove(member.id)}
+                                                                    className="flex items-center gap-2 px-3 py-2.5 text-sm font-bold text-red-600 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-lg transition-colors w-full text-left border-t border-surface-border"
+                                                                >
+                                                                    <UserMinus className="w-4 h-4" />
+                                                                    Remover da Congregação
+                                                                </button>
+                                                            </div>
+                                                        )}
+                                                    </div>
+                                                )}
+                                            </div>
+                                        );
+                                    })}
                                     {members.length === 0 && !membersLoading && (
                                         <div className="text-center py-4 text-muted text-sm">Nenhum membro encontrado.</div>
                                     )}
@@ -1614,6 +1636,40 @@ const [uploading, setUploading] = useState(false);
                                     </div>
                                 </div>
 
+                                {/* Seção Pontos de Referência */}
+                                <div className="space-y-3 bg-background/50 dark:bg-background/25 p-4 rounded-xl border border-surface-border">
+                                    <div className="flex items-center gap-2 font-bold text-main text-xs uppercase tracking-wider">
+                                        <MapIcon className="w-4 h-4 text-teal-600 dark:text-teal-400" />
+                                        <span>Pontos de Referência</span>
+                                    </div>
+                                    <div className="flex flex-col gap-2">
+                                        {[
+                                            { key: 'referencePointsManage', label: 'Gerenciar Pontos de Referência' }
+                                        ].map((p) => {
+                                            const isChecked = !!editingPermissions[p.key];
+                                            const isDisabled = selectedMemberForPermissions.id === user?.uid;
+                                            return (
+                                                <label
+                                                    key={p.key}
+                                                    className={`flex items-center p-2.5 rounded-lg border text-xs font-semibold cursor-pointer transition-all hover:bg-surface/50
+                                                        ${isChecked ? 'bg-teal-50/50 border-teal-200 text-teal-700 font-bold dark:bg-teal-950/20 dark:border-teal-900/40 dark:text-teal-400' : 'bg-surface border-surface-border text-muted'}
+                                                        ${isDisabled ? 'opacity-65 cursor-not-allowed' : ''}
+                                                    `}
+                                                >
+                                                    <input
+                                                        type="checkbox"
+                                                        checked={isChecked}
+                                                        disabled={isDisabled}
+                                                        onChange={() => togglePermissionField(p.key)}
+                                                        className="w-4 h-4 rounded text-teal-600 focus:ring-teal-200 border-surface-border mr-2.5 animate-none disabled:opacity-50 disabled:cursor-not-allowed"
+                                                    />
+                                                    {p.label}
+                                                </label>
+                                            );
+                                        })}
+                                    </div>
+                                </div>
+
                                 {/* Seção S-13 (Registro de Designações) */}
                                 <div className="space-y-3 bg-background/50 dark:bg-background/25 p-4 rounded-xl border border-surface-border">
                                     <div className="flex items-center gap-2 font-bold text-main text-xs uppercase tracking-wider">
@@ -1643,42 +1699,6 @@ const [uploading, setUploading] = useState(false);
                                                         disabled={isDisabled}
                                                         onChange={() => togglePermissionField(p.key)}
                                                         className="w-4 h-4 rounded text-orange-600 focus:ring-orange-200 border-surface-border mr-2.5 animate-none disabled:opacity-50 disabled:cursor-not-allowed"
-                                                    />
-                                                    {p.label}
-                                                </label>
-                                            );
-                                        })}
-                                    </div>
-                                </div>
-
-                                {/* Seção Gestão (Usuários) */}
-                                <div className="space-y-3 bg-background/50 dark:bg-background/25 p-4 rounded-xl border border-surface-border">
-                                    <div className="flex items-center gap-2 font-bold text-main text-xs uppercase tracking-wider">
-                                        <Shield className="w-4 h-4 text-blue-600 dark:text-blue-400" />
-                                        <span>Gestão (Usuários)</span>
-                                    </div>
-                                    <div className="flex flex-col gap-2">
-                                        {[
-                                            { key: 'managementPromote', label: 'Promover Usuário' },
-                                            { key: 'managementDemote', label: 'Rebaixar Usuário' },
-                                            { key: 'managementRemove', label: 'Remover Usuário' }
-                                        ].map((p) => {
-                                            const isChecked = !!editingPermissions[p.key];
-                                            const isDisabled = selectedMemberForPermissions.id === user?.uid;
-                                            return (
-                                                <label
-                                                    key={p.key}
-                                                    className={`flex items-center p-2.5 rounded-lg border text-xs font-semibold cursor-pointer transition-all hover:bg-surface/50
-                                                        ${isChecked ? 'bg-blue-50/50 border-blue-200 text-blue-700 font-bold dark:bg-blue-950/20 dark:border-blue-900/40 dark:text-blue-400' : 'bg-surface border-surface-border text-muted'}
-                                                        ${isDisabled ? 'opacity-65 cursor-not-allowed' : ''}
-                                                    `}
-                                                >
-                                                    <input
-                                                        type="checkbox"
-                                                        checked={isChecked}
-                                                        disabled={isDisabled}
-                                                        onChange={() => togglePermissionField(p.key)}
-                                                        className="w-4 h-4 rounded text-blue-600 focus:ring-blue-200 border-surface-border mr-2.5 animate-none disabled:opacity-50 disabled:cursor-not-allowed"
                                                     />
                                                     {p.label}
                                                 </label>

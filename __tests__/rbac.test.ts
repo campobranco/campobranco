@@ -132,5 +132,34 @@ describe('RBAC - Role Based Access Control', () => {
             expect(checkPermission(context, '')).toBe(false);
             expect(checkPermission(context, 'maps.delete')).toBe(false);
         });
+
+        it('deve conceder permissão de referencePoints.manage para PUBLICADOR quando configurada', () => {
+            // Arrange
+            const pubComRefPoints: RBACContext = {
+                role: 'PUBLICADOR',
+                permissions: {
+                    referencePoints: { manage: true }
+                }
+            };
+            const pubSemRefPoints: RBACContext = {
+                role: 'PUBLICADOR',
+                permissions: null
+            };
+
+            // Act & Assert
+            expect(checkPermission(pubComRefPoints, 'referencePoints.manage')).toBe(true);
+            expect(checkPermission(pubSemRefPoints, 'referencePoints.manage')).toBe(false);
+        });
+
+        it('deve negar qualquer permissão arbitrária fora dos domínios operacionais declarados', () => {
+            // Arrange
+            const pub: RBACContext = { role: 'PUBLICADOR', permissions: null };
+
+            // Act & Assert
+            expect(checkPermission(pub, 'management.promote')).toBe(false);
+            expect(checkPermission(pub, 'management.demote')).toBe(false);
+            expect(checkPermission(pub, 'management.remove')).toBe(false);
+        });
     });
 });
+

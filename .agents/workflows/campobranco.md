@@ -1,20 +1,21 @@
 ---
-description: Projeto Campo Branco
+description: Projeto Campo Branco — Diretrizes de Engenharia e Fluxo de Trabalho
 ---
 
 ### Objetivo
 
-Definir um fluxo de trabalho claro, previsível, colaborativo e acessível para qualquer desenvolvedor, priorizando simplicidade, baixo custo e facilidade de setup.
+Definir um fluxo de trabalho claro, previsível, colaborativo, seguro e acessível para qualquer desenvolvedor, priorizando simplicidade, conformidade legal, testes confiáveis, custo financeiro zero e facilidade de setup.
 
 ---
 
 ### Princípios do Projeto
 
-* Open source e colaborativo por padrão
-* Setup simples e rápido (mínimo de barreiras)
-* Zero dependência de dados pessoais hardcoded
-* Priorizar soluções gratuitas e sem necessidade de cartão
-* Utilizar obrigatoriamente o plano Spark do Firebase
+* **Open Source e Colaborativo:** Sem barreiras, sem passos ocultos e com documentação transparente.
+* **Setup Simples e Rápido:** Qualquer pessoa deve conseguir rodar o projeto localmente em minutos.
+* **Custo Zero Inegociável:** Priorizar soluções gratuitas, sem necessidade de cartão de crédito e restritas ao plano Spark do Firebase.
+* **Zero Dados Pessoais / Chaves Privadas Hardcoded:** Proibido versionar credenciais, segredos ou dados pessoais.
+* **Tolerância Zero a Fallbacks Silenciosos:** Proibido mascarar erros ou dados ausentes com dados inventados ou arbitrários.
+* **Zero Trust & Menor Privilégio:** Proteção profunda de dados e controle estrito de posse (Anti-IDOR) em `firestore.rules`.
 
 ---
 
@@ -23,13 +24,11 @@ Definir um fluxo de trabalho claro, previsível, colaborativo e acessível para 
 #### 1. Origem da Demanda
 
 Toda tarefa deve partir de:
-
 * necessidade funcional
-* correção de erro
-* melhoria técnica
+* correção de erro (bug)
+* melhoria técnica / estrutural
 
 Cada tarefa deve conter:
-
 * objetivo claro
 * critério de conclusão definido
 
@@ -38,264 +37,195 @@ Cada tarefa deve conter:
 #### 2. Classificação da Tarefa
 
 Antes de iniciar:
-
-* Bug → erro ou comportamento incorreto
-* Feature → nova funcionalidade
-* Refactor → melhoria interna sem alterar comportamento
-* Tech Debt → melhoria estrutural
+* **Bug** → erro ou comportamento incorreto
+* **Feature** → nova funcionalidade
+* **Refactor** → melhoria interna sem alterar comportamento
+* **Tech Debt** → melhoria estrutural e segurança
 
 ---
 
 #### 3. Escopo
 
-* Definir exatamente o que será feito
-* Evitar expansão durante execução
-* Novas necessidades devem virar novas tarefas
+* Definir exatamente o que será feito antes de editar arquivos.
+* Evitar expansão de escopo durante a execução.
+* Novas necessidades identificadas devem virar novas tarefas ou issues registradas.
 
 ---
 
-### Colaboração (Regra Central do Projeto)
+### Colaboração & Setup (Regra Central)
 
 #### 4. Setup do Ambiente
 
 O projeto deve ser executável por qualquer pessoa seguindo apenas:
-
 1. Clonar o repositório
-2. Instalar dependências
+2. Instalar dependências (`npm install`)
 3. Configurar `.env` a partir de `.env.example`
-4. Rodar o projeto
+4. Rodar o projeto (`npm run dev`)
 
 Proibido:
-
-* Etapas ocultas
-* Configurações manuais não documentadas
-* Dependência de conhecimento implícito
+* Etapas ocultas ou comandos manuais não documentados
+* Dependência de conhecimento implícito ou contas pessoais
 
 ---
 
 #### 5. Configuração e Ambiente
 
 * Nunca versionar:
-
-  * `.env`
-  * chaves privadas
-  * credenciais
-
+  * `.env` / `.env.local`
+  * chaves privadas e segredos
+  * credenciais ou tokens
 * Sempre fornecer:
-
-  * `.env.example` completo
+  * `.env.example` completo e atualizado
   * instruções claras de preenchimento
-
-* Dados devem ser:
-
-  * genéricos
-  * reutilizáveis
-  * nunca pessoais
+* Dados em mocks/testes devem ser:
+  * genéricos e impessoais
+  * nunca dados de usuários reais (PII)
 
 ---
 
-#### 6. Firebase (Obrigatório)
+#### 6. Firebase (Obrigatório & Isolamento)
 
-* Utilizar apenas o plano Spark (gratuito)
-* Evitar qualquer recurso que exija billing
-* Estrutura deve funcionar dentro dos limites gratuitos
-
-Boas práticas:
-
-* Minimizar leituras/escritas
-* Evitar queries desnecessárias
-* Estruturar dados de forma eficiente
+* **Projeto único autorizado:** `campobrancodev`.
+* Antes de qualquer comando de infraestrutura, executar `npm run firebase:check`.
+* Todos os comandos CLI e deploys utilizam a flag `--project campobrancodev`.
+* **Plano Spark:** Estruturar Firestore e Storage para operar nos limites gratuitos:
+  * Minimizar leituras/escritas e evitar listeners sem `unsubscribe`.
+  * Prevenir re-execuções descontroladas em hooks (`useEffect`/`useCallback`).
 
 ---
 
-#### 7. Dependências
+#### 7. Dependências & Pragmatismo (KISS / YAGNI)
 
 Priorizar:
-
-* ferramentas gratuitas
-* open source
-* sem necessidade de cartão
+* ferramentas gratuitas e open source
+* código nativo e funções diretas para tarefas de poucas linhas
 
 Evitar:
-
-* serviços pagos
-* trials com cartão obrigatório
-* lock-in desnecessário
+* serviços pagos ou que exijam cartão
+* bibliotecas redundantes ou excesso de camadas abstratas (over-engineering)
 
 ---
 
-### Execução
+### Qualidade, Segurança & Conformidade Legal
 
-#### 8. Implementação
+#### 8. Automação de Testes (TDD & QA)
 
-* Seguir diretrizes técnicas do projeto
-* Código simples e legível
-* Evitar:
-
-  * over-engineering
-  * abstrações prematuras
-  * duplicação
+* Todo teste unitário ou de integração segue o padrão **AAA (Arrange, Act, Assert)**.
+* **Ciclo Red-Green:** Confirmar que o teste falha contra a condição sem a feature ou com o bug antes de validar a correção.
+* Proibido "Fake Passing" (testes com asserções triviais apenas para cobertura).
+* Testes de frontend utilizam busca semântica por papéis e atributos ARIA (`getByRole`), promovendo acessibilidade.
+* Limpeza e isolamento rigoroso entre testes para eliminar intermitência (*flaky tests*).
 
 ---
 
-#### 9. Validação Técnica
+#### 9. Segurança de Aplicação & Anti-IDOR
 
-Antes de concluir:
-
-* Funciona em ambiente limpo (novo clone)
-* Não depende de dados locais
-* Não quebra outras partes do sistema
-* Trata erros básicos
+* Toda proteção reside nas **Firestore Security Rules** (`firestore.rules`).
+* Validar que toda leitura e mutação comprove que `request.auth.uid == resource.data.ownerId` (e `request.resource.data.ownerId` na criação).
+* Higienizar inputs e saídas dinâmicas para prevenir XSS.
+* Nunca logar senhas, tokens ou dados pessoais no `console.log`.
 
 ---
 
-#### 10. UX
+#### 10. Conformidade Jurídica & LGPD/CDC
 
-* Proibido uso de `alert()`
+* **Minimização de Dados (LGPD Art. 6º):** Coletar estritamente o necessário para a finalidade declarada.
+* **Consentimento Livre (LGPD Art. 8º):** Caixas de seleção desmarcadas por padrão; proibido *opt-out* pré-marcado e *dark patterns*.
+* **Direitos do Titular (LGPD Art. 18 / GDPR):** Suporte para exportação (JSON/CSV), retificação e exclusão de dados pelo próprio usuário.
+* **Transparência e Consumidor (CDC):** Clareza total de preços e respeito ao direito de arrependimento (Art. 49).
+
+---
+
+#### 11. Protocolo Anti-Fallback
+
+* Proibido redirecionar buscas para o último elemento de array (`items.at(-1)` / `items[length - 1]`).
+* Proibido preencher métricas ou dados de negócio com valores numéricos literais inventados (`|| 49.90`, `?? 10`, `||=`, `??=`).
+* Proibido gerar dados ou IDs aleatórios (`Math.random()`) ou forçar a data atual em registros históricos ausentes.
+* Proibido silenciar falhas com `catch` vazio ou que retorne dados simulados em produção.
+* Dados ausentes devem retornar `null`/`undefined` e serem exibidos com clareza na UI (`N/A`, mensagem de indisponibilidade).
+
+---
+
+### Execução e UX
+
+#### 12. Implementação & Código Limpo
+
+* Nomenclatura descritiva, alta coesão e baixo acoplamento (SRP).
+* Manter código e comentários em português (Brasil).
+* Seguir limites de complexidade cognitiva: preferir funções diretas a abstrações prematuras.
+
+---
+
+#### 13. UX & Interface
+
+* Proibido uso de `alert()`.
 * Utilizar:
-
-  * toast para feedback simples
-  * modal para decisões/erros críticos
-
-Estados obrigatórios:
-
-* loading
-* sucesso
-* erro
+  * modais estruturados para decisões e erros críticos
+  * toasts para feedbacks simples e informativos
+* Estados assíncronos obrigatórios:
+  * **loading**
+  * **sucesso**
+  * **erro**
 
 ---
 
-#### 11. Revisão
+### Entrega e Versionamento
 
-Checklist:
+#### 14. Versionamento Semântico
 
-* Código legível?
-* Comentários claros?
-* Sem hardcode indevido?
-* Setup continua simples?
-* Funciona fora do ambiente original?
+Antes de iniciar: registrar a versão atual do `package.json`.
 
-Se não, corrigir antes de avançar.
-
----
-
-### Entrega
-
-#### 12. Versionamento
-
-Após conclusão:
-
-* Bug → patch (`0.0.X-beta`)
-* Feature → minor (`0.X.0-beta`)
-* Sem múltiplas versões na mesma tarefa
+Ao concluir a tarefa:
+* **Bug / Ajuste Funcional** → incrementar patch (`0.0.X-beta`)
+* **Feature** → incrementar minor (`0.X.0-beta`)
+* **Sem alteração funcional** → manter a versão
 
 ---
 
-#### 13. Registro da Entrega
+#### 15. Controle do Git & Entrega
 
-Deve incluir:
-
-* O que foi feito
-* Tipo da mudança
-* Impacto no sistema
-* Alterações necessárias no setup (se houver)
-
----
-
-### Controle de Qualidade
-
-#### 14. Proibições
-
-* Hardcode de:
-
-  * URLs específicas
-  * IDs de projeto fixos
-  * credenciais
-
-* Código que funcione apenas localmente
-
-* Dependência de conta pessoal do desenvolvedor
+* Manter alterações estritamente **locais**.
+* **NÃO** realizar `git push` automático. Subir somente sob autorização expressa.
+* Registro da entrega deve incluir:
+  * O que foi feito e tipo da mudança
+  * Impacto no sistema e nos testes
+  * Versão anterior e nova versão do `package.json`
 
 ---
-
-#### 15. Exceções
-
-Permitidas somente se:
-
-* justificadas
-* documentadas
-* facilmente removíveis
-
----
-
-### Evolução do Projeto
-
-#### 16. Refatoração
-
-* Melhorar código ao modificar
-* Não acumular dívida técnica silenciosa
-
----
-
-#### 17. Decisões Técnicas
-
-Sempre considerar:
-
-* facilidade de contribuição
-* custo (preferência zero)
-* simplicidade
-* independência de fornecedor
-
----
-
-### Regra de Ouro
-
-Se um novo colaborador não consegue rodar o projeto em poucos minutos, o projeto está errado.
 
 ## Restrições Arquiteturais Absolutas
 
 Estas regras possuem prioridade máxima dentro do projeto e não devem ser reinterpretadas durante a implementação.
 
 ### Ambiente Oficial
-
 O único ambiente suportado pelo projeto é:
-
-- Firebase Spark
-- Next.js com `output: 'export'`
-- Aplicação estática hospedada no Firebase Hosting
-- Execução baseada em cliente (client-side)
+- **Firebase Spark**
+- **Next.js com `output: 'export'`**
+- **Aplicação estática hospedada no Firebase Hosting**
+- **Execução baseada em cliente (client-side)**
 
 ### Proibições Arquiteturais
-
 Não considerar, sugerir, planejar ou implementar soluções baseadas em:
-
-- ambientes com servidor executando código em runtime;
-- endpoints HTTP dinâmicos;
-- rotinas agendadas externas;
+- ambientes com servidor executando código em runtime (Node.js server, SSR, API Routes dinâmicas);
+- endpoints HTTP dinâmicos ou Server Actions em produção;
+- rotinas agendadas externas ou cron jobs de terceiros;
 - processamento backend separado;
-- serviços que exigem alteração de plano;
-- recursos que dependam de cobrança;
+- serviços que exigem alteração de plano (Blaze);
+- recursos que dependam de cobrança ou cartão de crédito;
 - arquiteturas fora do modelo estático definido.
 
-Essas alternativas não fazem parte do escopo arquitetural do projeto.
-
 ### Regra de Decisão
-
-Ao identificar uma necessidade que normalmente seria resolvida com recursos não disponíveis no ambiente oficial:
-
+Ao identificar uma necessidade que demandaria recursos de backend indisponíveis no ambiente oficial:
 1. Não propor migração de infraestrutura.
-2. Não sugerir serviços alternativos.
-3. Não criar abstrações para simular esses recursos.
-4. Redesenhar a solução considerando exclusivamente as capacidades existentes no Firebase Spark e execução client-side.
+2. Não sugerir serviços alternativos pagos.
+3. Não criar abstrações para mascarar esses recursos.
+4. Redesenhar a solução considerando exclusivamente as capacidades existentes no Firebase Spark e execução *client-side* (ex: processamento via Web Workers ou sob demanda no navegador do usuário).
 
 ### Critério Obrigatório
-
 Toda solução proposta deve responder:
-
-> "Esta implementação funciona dentro do modelo Firebase Spark + Next.js Static Export?"
+> *"Esta implementação funciona dentro do modelo Firebase Spark + Next.js Static Export?"*
 
 Se a resposta for não:
-
 - a solução deve ser descartada;
 - o requisito deve ser reavaliado dentro das limitações existentes;
 - nenhuma alternativa fora da arquitetura oficial deve ser apresentada como opção.

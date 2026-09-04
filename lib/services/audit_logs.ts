@@ -96,7 +96,7 @@ export async function logActivity(params: {
 
         const nowMs = Date.now();
         const ua = params.userAgent || (typeof navigator !== 'undefined' ? navigator.userAgent : 'Desconhecido');
-        const cid = params.correlationId || `req_${nowMs}_${Math.random().toString(36).substring(2, 7)}`;
+        const cid = params.correlationId || `req_${nowMs}_${globalThis.crypto.randomUUID()}`;
 
         const payload: Record<string, unknown> = {
             level: params.level || 'INFO',

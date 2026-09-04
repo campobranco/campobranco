@@ -63,7 +63,7 @@ const uuidFields = [
 function toUUID(str) {
     if (!str || typeof str !== 'string' || str.trim() === '') return '';
     if (/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(str)) return str;
-    const hash = crypto.createHash('md5').update(str.trim()).digest('hex');
+    const hash = crypto.createHash('sha256').update(str.trim()).digest('hex');
     return [
         hash.substring(0, 8), hash.substring(8, 12), '4' + hash.substring(13, 16),
         ((parseInt(hash.substring(16, 18), 16) & 0x3f) | 0x80).toString(16) + hash.substring(18, 20),

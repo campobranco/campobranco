@@ -758,8 +758,12 @@ function SharedPreviewContent() {
                         .map(({ item: a, displayIndex }) => {
                             let streetClean = a.street?.split('-')[0].trim() || '';
                             if (a.number && a.number !== 'S/N') {
-                                const numberRegex = new RegExp(`[\\s,]+${a.number}$`);
-                                streetClean = streetClean.replace(numberRegex, '').trim();
+                                const numberText = String(a.number).trim();
+                                const numberStart = streetClean.lastIndexOf(numberText);
+                                const prefix = streetClean.slice(0, numberStart);
+                                if (numberStart > 0 && /[\\s,]$/.test(prefix) && numberStart + numberText.length === streetClean.length) {
+                                    streetClean = prefix.trim();
+                                }
                             }
                             streetClean = streetClean.replace(/,+$/, '').trim();
 

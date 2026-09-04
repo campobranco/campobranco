@@ -1,5 +1,6 @@
 import http from 'node:http';
 import { spawn } from 'node:child_process';
+import { randomUUID } from 'node:crypto';
 import { readFile, writeFile } from 'node:fs/promises';
 import { join, dirname } from 'node:path';
 import { fileURLToPath } from 'node:url';
@@ -114,10 +115,10 @@ const server = http.createServer(async (req, res) => {
         const executeProcess = (cmd, args, callback) => {
             try {
                 const isWin = process.platform === 'win32';
-                // Com shell:true no Windows, passamos o comando puro
-                const proc = spawn(cmd, args, { 
-                    cwd: ROOT_DIR, 
-                    shell: isWin 
+                const executable = isWin && (cmd === 'npm' || cmd === 'npx') ? `${cmd}.cmd` : cmd;
+                const proc = spawn(executable, args, {
+                    cwd: ROOT_DIR,
+                    shell: false
                 });
                 
                 if (command === 'dev') {

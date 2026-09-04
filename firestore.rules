@@ -89,8 +89,8 @@ service cloud.firestore {
     }
 
     // 2. Coleção de Usuários
-    // Segurança: Field-level restrictions impedem auto-promoção de papel.
-    // Isolamento: Servos/Anciãos só leem/editam usuários da mesma congregação.
+    // Segurança: Field-level restrictions impedem auto-promoção de papel e alteração de permissões não autorizada.
+    // Isolamento: Anciãos/Servos só leem/editam usuários da mesma congregação.
     match /users/{userId} {
       allow read, list: if isAuthenticated() && (
         request.auth.uid == userId || 
@@ -104,9 +104,10 @@ service cloud.firestore {
         ((isElder() || isServant()) && isSameCongregation(request.resource.data))
       );
       allow update: if isAuthenticated() && (
-        // Admin pode alterar qualquer campo de qualquer usuário
+        // Admin global pode alterar qualquer campo de qualquer usuário
         isAdmin() ||
-        // Próprio usuário pode atualizar seu perfil, MAS não pode alterar cargo/permissões
+
+        // 1. Autoedição de Perfil: próprio usuário pode alterar nome/foto, MAS nunca role, permissions ou congregationId
         (
           request.auth.uid == userId &&
           !('role' in request.resource.data.diff(resource.data).affectedKeys()) &&
@@ -119,10 +120,62 @@ service cloud.firestore {
             )
           )
         ) ||
-        // Servo/Ancião da mesma congregação pode editar, MAS não pode alterar campos privilegiados
+
+        // 2. Ancião da mesma congregação alterando PERMISSÕES DETALHADAS:
+        // - Proibida a autoedição de permissões (request.auth.uid != userId)
+        // - Alvo deve pertencer à mesma congregação
+        // - Operação não pode alterar role, congregationId, email ou outros campos simultaneamente
+        (
+          isElder() &&
+          isSameCongregation(resource.data) &&
+          request.auth.uid != userId &&
+          request.resource.data.diff(resource.data).affectedKeys().hasOnly(['permissions', 'updatedAt'])
+        ) ||
+
+        // 3. Ancião da mesma congregação PROMOVENDO OU REBAIXANDO CARGO:
+        // - Proibida a autoedição (request.auth.uid != userId)
+        // - Alvo deve pertencer à mesma congregação
+        // - Alvo não pode ser ADMIN
+        // - Transições permitidas: PUBLICADOR <-> SERVO, ou ANCIAO -> SERVO (apenas para quem já era da mesma congregação)
+        // - Proibido definir cargo como ADMIN
+        // - Operação não pode alterar permissions nem congregationId simultaneamente
+        (
+          isElder() &&
+          isSameCongregation(resource.data) &&
+          request.auth.uid != userId &&
+          resource.data.get('role', 'PUBLICADOR') != 'ADMIN' &&
+          (
+            // Promover PUBLICADOR -> SERVO
+            (resource.data.get('role', 'PUBLICADOR') == 'PUBLICADOR' && request.resource.data.get('role', 'PUBLICADOR') == 'SERVO') ||
+            // Rebaixar SERVO -> PUBLICADOR
+            (resource.data.get('role', 'PUBLICADOR') == 'SERVO' && request.resource.data.get('role', 'PUBLICADOR') == 'PUBLICADOR') ||
+            // Rebaixar ANCIAO -> SERVO
+            (resource.data.get('role', 'PUBLICADOR') == 'ANCIAO' && request.resource.data.get('role', 'PUBLICADOR') == 'SERVO')
+          ) &&
+          request.resource.data.diff(resource.data).affectedKeys().hasOnly(['role', 'updatedAt'])
+        ) ||
+
+        // 4. Ancião da mesma congregação REMOVENDO MEMBRO (DESVINCULANDO):
+        // - Proibida a autoedição (request.auth.uid != userId)
+        // - Alvo pertencia comprovadamente à mesma congregação antes da remoção
+        // - Alvo não pode ser ADMIN ou ANCIAO (apenas PUBLICADOR ou SERVO podem ser desvinculados por Ancião local)
+        // - Transição estrita: congregationId -> null, role -> PUBLICADOR, permissions -> {} (ou ausente)
+        // - Operação não pode conter campos arbitrários adicionais
+        (
+          isElder() &&
+          isSameCongregation(resource.data) &&
+          request.auth.uid != userId &&
+          (resource.data.get('role', 'PUBLICADOR') == 'PUBLICADOR' || resource.data.get('role', 'PUBLICADOR') == 'SERVO') &&
+          request.resource.data.get('congregationId', null) == null &&
+          request.resource.data.get('role', 'PUBLICADOR') == 'PUBLICADOR' &&
+          request.resource.data.diff(resource.data).affectedKeys().hasOnly(['congregationId', 'role', 'permissions', 'updatedAt'])
+        ) ||
+
+        // 5. Servo da mesma congregação editando campos cadastrais básicos (sem permissão de tocar em role, permissions ou congregação)
         (
           isServant() &&
           isSameCongregation(resource.data) &&
+          request.auth.uid != userId &&
           !('role' in request.resource.data.diff(resource.data).affectedKeys()) &&
           !('permissions' in request.resource.data.diff(resource.data).affectedKeys()) &&
           !('congregationId' in request.resource.data.diff(resource.data).affectedKeys())
@@ -266,7 +319,7 @@ service cloud.firestore {
 
     match /reports/{id} {
       allow get: if true;
-      allow list: if isAdmin() || isServant();
+      allow list: if isAdmin() || isServant() || hasPermission('reports', 'view');
       allow write: if isAdmin();
     }
 

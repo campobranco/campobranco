@@ -53,3 +53,4 @@ export const checkPermission = (context: RBACContext, perm: string): boolean => 
     
     return !!(domainPerms as Record<string, boolean | undefined>)[action];
 };
+
