@@ -8,7 +8,8 @@ import {
     Map as MapIcon,
     ArrowRight,
     PenLine,
-    AlertTriangle
+    AlertTriangle,
+    Hand
 } from 'lucide-react';
 import Link from 'next/link';
 
@@ -23,14 +24,30 @@ export interface IdleTerritory {
     variant?: 'danger' | 'warning';
 }
 
+export interface DoNotVisitAddress {
+    id: string;
+    street: string;
+    number?: string;
+    neighborhood?: string;
+    territoryId?: string;
+    territoryName?: string;
+    cityId?: string;
+    city?: string;
+    congregationId?: string;
+    observations?: string;
+    markedAt?: any;
+}
+
 interface ActionCenterProps {
     userName: string;
     pendingMapsCount: number;
     hasPendingAnnotation?: boolean; // Mock for now
     idleTerritories?: IdleTerritory[];
+    doNotVisitAddresses?: DoNotVisitAddress[];
     cityCompletion?: { cityName: string; percentage: number }; // Mock
     expiringMaps?: { id: string, title: string, daysLeft: number }[];
     onAssignTerritory?: (territory: IdleTerritory) => void;
+    onReviewDoNotVisit?: (address: DoNotVisitAddress) => void;
     limit?: number;
 }
 
@@ -39,13 +56,66 @@ export default function ActionCenter({
     pendingMapsCount,
     hasPendingAnnotation = false,
     idleTerritories = [],
+    doNotVisitAddresses = [],
     cityCompletion,
     expiringMaps = [],
     onAssignTerritory,
+    onReviewDoNotVisit,
     limit
 }: ActionCenterProps) {
     // Collect all notification items
     const items: React.ReactNode[] = [];
+
+    // 0. Do Not Visit Addresses (Notificação prioritária para Anciãos/Servos/Admin)
+    if (doNotVisitAddresses && doNotVisitAddresses.length > 0) {
+        doNotVisitAddresses.forEach((address: DoNotVisitAddress) => {
+            items.push(
+                <div
+                    key={`dnv-${address.id}`}
+                    className="bg-red-50 dark:bg-red-950/20 rounded-lg p-2.5 md:p-5 border border-red-200 dark:border-red-900/30 flex flex-col md:flex-row md:items-center gap-2 md:gap-4 hover:shadow-sm transition-shadow"
+                >
+                    <div className="flex items-start md:items-center gap-2.5 w-full md:w-auto">
+                        <div className="bg-white dark:bg-red-900/40 p-1.5 md:p-3 rounded-full shrink-0 shadow-sm border border-red-200 dark:border-red-800">
+                            <Hand className="w-5 h-5 md:w-6 md:h-6 text-red-600 dark:text-red-400" />
+                        </div>
+                        <div className="flex-1 md:hidden pt-0.5">
+                            <h3 className="font-bold text-red-900 dark:text-red-100 flex items-center gap-2 text-sm">
+                                <Hand className="w-3.5 h-3.5 text-red-600" />
+                                Não Visitar: {address.street}{address.number && address.number !== 'S/N' ? `, ${address.number}` : ''}
+                            </h3>
+                        </div>
+                    </div>
+
+                    <div className="flex-1 -mt-1 md:mt-0 pl-9 md:pl-0">
+                        <h3 className="hidden md:flex font-bold text-red-900 dark:text-red-100 items-center gap-2 mb-1">
+                            <Hand className="w-4 h-4 text-red-600" />
+                            Não Visitar: {address.street}{address.number && address.number !== 'S/N' ? `, ${address.number}` : ''}
+                        </h3>
+                        <p className="md:hidden text-[9px] font-bold uppercase tracking-wider text-red-600 dark:text-red-400 mb-0.5">
+                            SOLICITAÇÃO PENDENTE DE REVISÃO
+                        </p>
+                        <p className="text-red-800/90 dark:text-red-200/90 text-xs md:text-sm leading-tight md:leading-relaxed">
+                            Morador solicitou não ser visitado{address.territoryName ? ` no Território ${address.territoryName}` : ''}{address.city ? ` (${address.city})` : ''}. Revise para inativar o endereço ou remover a marcação.
+                        </p>
+                        {address.observations && (
+                            <p className="text-red-700/80 dark:text-red-300/80 text-[11px] md:text-xs italic mt-1 bg-red-100/50 dark:bg-red-900/30 p-1.5 rounded">
+                                Nota: &quot;{address.observations}&quot;
+                            </p>
+                        )}
+                    </div>
+
+                    <div className="pl-9 md:pl-0 w-full md:w-auto mt-1 md:mt-0">
+                        <button
+                            onClick={() => onReviewDoNotVisit && onReviewDoNotVisit(address)}
+                            className="w-full md:w-auto bg-white dark:bg-surface text-red-700 dark:text-red-300 border border-red-300 dark:border-red-800 font-bold text-[10px] md:text-xs py-1.5 md:py-3 px-4 md:px-6 rounded-md flex items-center justify-center gap-2 hover:bg-red-100/50 dark:hover:bg-red-900/40 transition-colors shadow-sm whitespace-nowrap"
+                        >
+                            REVISAR <ArrowRight className="w-3 h-3 md:w-3.5 md:h-3.5" />
+                        </button>
+                    </div>
+                </div>
+            );
+        });
+    }
 
     // 1. Pending Annotation (Mock)
     if (hasPendingAnnotation) {

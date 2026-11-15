@@ -49,7 +49,7 @@ import { getServiceYear, getServiceYearRange } from "@/lib/serviceYearUtils";
 import { useRouter } from 'next/navigation';
 import Link from "next/link";
 import BottomNav from "@/app/components/BottomNav";
-import ActionCenter from "@/app/components/Dashboard/ActionCenter";
+import ActionCenter, { DoNotVisitAddress } from "@/app/components/Dashboard/ActionCenter";
 import VisitsHistory from "@/app/components/Dashboard/VisitsHistory";
 import ConfirmationModal from "@/app/components/ConfirmationModal";
 import DropDownItem from "@/app/components/DropDownItem";
@@ -84,6 +84,7 @@ export default function DashboardPage() {
 
     const [pendingMapsCount, setPendingMapsCount] = useState(0);
     const [idleTerritories, setIdleTerritories] = useState<any[]>([]);
+    const [doNotVisitAddresses, setDoNotVisitAddresses] = useState<DoNotVisitAddress[]>([]);
     const [cityCompletion, setCityCompletion] = useState<{ cityName: string; percentage: number } | undefined>();
     const [expiringMaps, setExpiringMaps] = useState<{ id: string, title: string, daysLeft: number }[]>([]);
     const [openMenuId, setOpenMenuId] = useState<string | null>(null);
@@ -94,7 +95,7 @@ export default function DashboardPage() {
         variant: 'danger' | 'warning';
     } | null>(null);
 
-    const totalNotifications = pendingMapsCount + expiringMaps.length + (isElder ? idleTerritories.length : 0) + (cityCompletion && cityCompletion.percentage === 100 ? 1 : 0);
+    const totalNotifications = pendingMapsCount + expiringMaps.length + ((isElder || isServant || role === 'ADMIN') ? (idleTerritories.length + doNotVisitAddresses.length) : 0) + (cityCompletion && cityCompletion.percentage === 100 ? 1 : 0);
 
     useEffect(() => {
         if (!loading && !user) {
@@ -270,10 +271,13 @@ export default function DashboardPage() {
                 const qPoints = targetCong ? query(pointsRef, where('congregationId', '==', targetCong)) : query(pointsRef, limit(100));
                 const qVisits = targetCong ? query(visitsRef, where('congregationId', '==', targetCong)) : query(visitsRef, limit(300));
                 const qHistory = targetCong ? query(historyRef, where('congregationId', '==', targetCong)) : query(historyRef, limit(100));
+                const qDnvAddresses = targetCong
+                    ? query(addressesRef, where('congregationId', '==', targetCong), where('visitStatus', '==', 'doNotVisit'))
+                    : query(addressesRef, where('visitStatus', '==', 'doNotVisit'), limit(100));
 
-                const [citiesSnap, territoriesSnap, addressesSnap, pointsSnap, visitsSnap, historySnap] = await Promise.all([
+                const [citiesSnap, territoriesSnap, addressesSnap, pointsSnap, visitsSnap, historySnap, dnvSnap] = await Promise.all([
                     getDocs(qCities), getDocs(qTerritories), getDocs(qAddresses),
-                    getDocs(qPoints), getDocs(qVisits), getDocs(qHistory)
+                    getDocs(qPoints), getDocs(qVisits), getDocs(qHistory), getDocs(qDnvAddresses)
                 ]);
 
                 const citiesData = citiesSnap.docs.map(s => ({ id: s.id, ...s.data() })) as any[];
@@ -331,6 +335,34 @@ export default function DashboardPage() {
                 });
 
                 setIdleTerritories(idleList.filter(i => i.variant !== 'info').sort((a, b) => (a.lastVisit?.getTime() || 0) - (b.lastVisit?.getTime() || 0)));
+
+                const territoryMap: Record<string, { name: string; description: string; cityId: string }> = {};
+                territoriesData.forEach(t => {
+                    territoryMap[t.id] = { name: t.name || '', description: t.description || '', cityId: t.cityId || '' };
+                });
+
+                const dnvList: DoNotVisitAddress[] = dnvSnap.docs
+                    .map(doc => ({ id: doc.id, ...doc.data() as any }))
+                    .filter(addr => addr.isActive !== false)
+                    .map(addr => {
+                        const terr = territoryMap[addr.territoryId];
+                        return {
+                            id: addr.id,
+                            street: addr.street || 'Endereço',
+                            number: addr.number || 'S/N',
+                            neighborhood: addr.neighborhood || '',
+                            territoryId: addr.territoryId || '',
+                            territoryName: terr ? (terr.description ? `${terr.name} • ${terr.description}` : terr.name) : '',
+                            cityId: terr?.cityId || '',
+                            city: terr?.cityId ? (cityMap[terr.cityId] || '') : '',
+                            congregationId: addr.congregationId || targetCong || '',
+                            observations: addr.observations || addr.notes || '',
+                            markedAt: addr.lastVisitedAt || null
+                        };
+                    });
+
+                setDoNotVisitAddresses(dnvList);
+
                 setStats({
                     congregations: congregationId ? 1 : 0, cities: citiesData.length, maps: validTerritories.length,
                     visits: visitsSnap.size, addresses: addressesSnap.size, publicWitnessing: pointsSnap.size,
@@ -574,11 +606,24 @@ export default function DashboardPage() {
                             userName={profileName || user?.displayName || user?.email || 'Publicador'}
                             pendingMapsCount={pendingMapsCount}
                             hasPendingAnnotation={false}
+                            doNotVisitAddresses={doNotVisitAddresses}
                             idleTerritories={idleTerritories}
                             cityCompletion={cityCompletion}
                             expiringMaps={expiringMaps}
                             onAssignTerritory={(t) => router.push(`/share-setup?ids=${t.id}&returnUrl=/dashboard`)}
-                            limit={3}
+                            onReviewDoNotVisit={(addr) => {
+                                if (addr.territoryId) {
+                                    const params = new URLSearchParams();
+                                    if (addr.congregationId) params.set('congregationId', addr.congregationId);
+                                    if (addr.cityId) params.set('cityId', addr.cityId);
+                                    params.set('territoryId', addr.territoryId);
+                                    params.set('highlight', addr.id);
+                                    router.push(`/my-maps/address?${params.toString()}`);
+                                } else {
+                                    router.push('/my-maps');
+                                }
+                            }}
+                            limit={4}
                         />
                     )}
                     <SharedHistoryListComponent title="Meus Cartões" items={myAssignments} icon={User} />

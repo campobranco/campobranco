@@ -32,7 +32,7 @@ export function sanitizeString(val: string): string {
  * Sanitiza URLs para garantir que apenas protocolos seguros (http, https) são permitidos.
  * Caso a URL seja inválida ou use outro protocolo, retorna string vazia.
  */
-export function sanitizeUrl(url: string): string {
+export function sanitizeUrl(url?: string | null): string {
     if (!url) return '';
     const lowercased = url.toLowerCase();
     // Rejeitar protocolos perigosos

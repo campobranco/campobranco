@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState, Suspense, useCallback } from 'react';
+import { sanitizeUrl } from '@/lib/validation';
 import {
     Map as MapIcon,
     Loader2,
@@ -13,16 +14,10 @@ import {
     Home,
     Hand,
     ArrowLeft,
-    User,
-    Users,
-    Ear,
-    Baby,
-    GraduationCap,
     FileText,
     History as HistoryIcon,
     Navigation,
     Lock,
-    Brain,
     ChevronUp,
     ChevronDown,
     MoreVertical,
@@ -290,14 +285,7 @@ function SharedPreviewContent() {
                 userName: data.publisherName || profileName || 'Visitante',
                 status: data.status,
                 notes: data.observations || '',
-                visitDate: visitDate,
-                tagsSnapshot: {
-                    isDeaf: data.isDeaf,
-                    isMinor: data.isMinor,
-                    isStudent: data.isStudent,
-                    isNeurodivergent: data.isNeurodivergent,
-                    gender: data.gender
-                }
+                visitDate: visitDate
             };
 
             // Send to Client-Side Service
@@ -365,8 +353,11 @@ function SharedPreviewContent() {
         const exactLink = item.googleMapsLink || item.wazeLink;
 
         if (exactLink) {
-            window.open(exactLink, '_blank');
-            return;
+            const safeUrl = sanitizeUrl(exactLink);
+            if (safeUrl) {
+                window.open(safeUrl, '_blank');
+                return;
+            }
         }
 
         // Se não houver links salvos, tenta abrir via coordenadas ou endereço (query)
@@ -425,8 +416,9 @@ function SharedPreviewContent() {
             href = `/share/preview?type=territory&id=${item.id}&shareId=${shareId || ''}`;
         } else if (type === 'territory') {
             if (item.googleMapsLink) {
-                href = item.googleMapsLink;
-                isExternal = true;
+                const safeUrl = sanitizeUrl(item.googleMapsLink);
+                href = safeUrl || '#';
+                isExternal = !!safeUrl;
             } else if (item.lat && item.lng) {
                 href = `https://www.google.com/maps/search/?api=1&query=${item.lat},${item.lng}`;
                 isExternal = true;
@@ -498,7 +490,7 @@ function SharedPreviewContent() {
                                 // 1. Priority: Visit Status Badge (if already visited)
                                 if (item.visitStatus && item.visitStatus !== 'none') {
                                     let badgeStyles = "bg-gray-100 text-gray-600 border-gray-200 dark:bg-gray-800 dark:text-gray-400 dark:border-gray-700";
-                                    let StatusIcon = User;
+                                    let StatusIcon = MapPin;
 
                                     if (item.visitStatus === 'contacted' || item.visitStatus === 'contested') {
                                         badgeStyles = "bg-green-100 text-green-700 border-green-200 dark:bg-green-900/40 dark:text-green-400 dark:border-green-800";
@@ -520,31 +512,6 @@ function SharedPreviewContent() {
                                     return (
                                         <div className={`w-10 h-10 rounded-xl flex items-center justify-center shrink-0 shadow-sm border transition-colors ${badgeStyles}`}>
                                             <StatusIcon className={`w-5 h-5 ${item.visitStatus === 'contacted' || item.visitStatus === 'contested' ? 'fill-current' : ''}`} />
-                                        </div>
-                                    );
-                                }
-
-                                // 2. Fallback: Gender Mode (Sign Language / Foreign)
-                                if (!isTraditional && item.gender) {
-                                    let badgeStyles = "bg-gray-100 text-gray-600 border-gray-200 dark:bg-gray-800 dark:text-gray-400 dark:border-gray-700";
-                                    if (item.gender === 'HOMEM') {
-                                        badgeStyles = "bg-blue-100 text-blue-600 border-blue-200 dark:bg-blue-900/30 dark:text-blue-400 dark:border-blue-800";
-                                    } else if (item.gender === 'MULHER') {
-                                        badgeStyles = "bg-pink-100 text-pink-600 border-pink-200 dark:bg-pink-900/30 dark:text-pink-400 dark:border-pink-800";
-                                    } else if (item.gender === 'CASAL') {
-                                        badgeStyles = "bg-purple-100 text-purple-600 border-purple-200 dark:bg-purple-900/30 dark:text-purple-400 dark:border-purple-800";
-                                    }
-
-                                    return (
-                                        <div className={`w-10 h-10 rounded-xl flex items-center justify-center shrink-0 shadow-sm border transition-colors ${badgeStyles}`}>
-                                            {item.gender === 'CASAL' ? (
-                                                <div className="flex -space-x-1.5">
-                                                    <User className="w-4 h-4 fill-current" />
-                                                    <User className="w-4 h-4 fill-current" />
-                                                </div>
-                                            ) : (
-                                                <User className="w-5 h-5 fill-current" />
-                                            )}
                                         </div>
                                     );
                                 }
@@ -577,45 +544,11 @@ function SharedPreviewContent() {
                                     </div>
 
                                     <div className={`flex flex-wrap items-center gap-2 mt-1 text-xs text-muted ${item.visitStatus && item.visitStatus !== 'none' ? (item.visitStatus === 'doNotVisit' ? 'opacity-70' : 'grayscale opacity-70') : ''}`}>
-                                        {item.peopleCount ? (
-                                            <div className="flex items-center gap-1 bg-gray-100 dark:bg-gray-800 px-1.5 py-0.5 rounded-md" title="Número de Pessoas">
-                                                <Users className="w-3 h-3" />
-                                                <span className="font-bold">{item.peopleCount}</span>
-                                            </div>
-                                        ) : null}
-
-                                        {!isTraditional && item.residentName && <span className="font-semibold text-gray-700 dark:text-gray-300">{item.residentName}</span>}
-
-                                        {!isTraditional && (
-                                            <>
-                                                {item.isDeaf && (
-                                                    <span className="flex items-center gap-1 bg-yellow-100 dark:bg-yellow-900/30 text-yellow-800 dark:text-yellow-400 px-1.5 py-0.5 rounded-md font-bold text-[10px] uppercase">
-                                                        <Ear className="w-3 h-3" /> Surdo
-                                                    </span>
-                                                )}
-                                                {item.isMinor && (
-                                                    <span className="flex items-center gap-1 bg-primary-light/50 dark:bg-primary-dark/30 text-primary-dark dark:text-primary-light px-1.5 py-0.5 rounded-md font-bold text-[10px] uppercase">
-                                                        <Baby className="w-3 h-3" /> Menor
-                                                    </span>
-                                                )}
-                                                {item.isStudent && (
-                                                    <span className="flex items-center gap-1 bg-purple-100 dark:bg-purple-900/30 text-purple-800 dark:text-purple-400 px-1.5 py-0.5 rounded-md font-bold text-[10px] uppercase">
-                                                        <GraduationCap className="w-3 h-3" /> Estudante
-                                                    </span>
-                                                )}
-                                                {item.isNeurodivergent && (
-                                                    <span className="flex items-center gap-1 bg-teal-100 dark:bg-teal-900/30 text-teal-800 dark:text-teal-400 px-1.5 py-0.5 rounded-md font-bold text-[10px] uppercase">
-                                                        <Brain className="w-3 h-3" /> Neurodivergente
-                                                    </span>
-                                                )}
-
-                                                {/* Deactivation Date */}
-                                                {item.isActive === false && item.inactivatedAt && (
-                                                    <span className="flex items-center gap-1 bg-red-50 dark:bg-red-900/20 text-red-600 dark:text-red-400 px-1.5 py-0.5 rounded-md font-bold text-[10px] uppercase border border-red-100 dark:border-red-900/30">
-                                                        <Calendar className="w-3 h-3" /> Desativado em: {new Date(item.inactivatedAt).toLocaleDateString('pt-BR')}
-                                                    </span>
-                                                )}
-                                            </>
+                                        {/* Deactivation Date */}
+                                        {item.isActive === false && item.inactivatedAt && (
+                                            <span className="flex items-center gap-1 bg-red-50 dark:bg-red-900/20 text-red-600 dark:text-red-400 px-1.5 py-0.5 rounded-md font-bold text-[10px] uppercase border border-red-100 dark:border-red-900/30">
+                                                <Calendar className="w-3 h-3" /> Desativado em: {new Date(item.inactivatedAt).toLocaleDateString('pt-BR')}
+                                            </span>
                                         )}
 
                                         {item.observations && (

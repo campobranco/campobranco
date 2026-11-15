@@ -17,11 +17,7 @@ import {
     Hand,
     Loader2,
     Calendar,
-    User,
-    Ear,
-    Baby,
-    GraduationCap,
-    Brain
+    User
 } from 'lucide-react';
 
 interface VisitHistoryModalProps {
@@ -244,16 +240,9 @@ export default function VisitHistoryModal({
                                         </div>
                                         <div>
                                             <p className="font-bold text-gray-900 dark:text-white text-sm">{getStatusLabel(visit.status)}</p>
-                                            <div className="flex flex-wrap gap-1 mt-0.5">
-                                                <p className="text-xs text-gray-500 dark:text-gray-400 mr-2">
-                                                    {visit.visitDate ? new Date(visit.visitDate).toLocaleDateString() : 'Data desconhecida'}
-                                                </p>
-                                                {/* Tags Snapshot Display */}
-                                                {visit.tagsSnapshot?.isDeaf && <span title="Surdo"><Ear className="w-3 h-3 text-yellow-600 dark:text-yellow-400" /></span>}
-                                                {visit.tagsSnapshot?.isMinor && <span title="Menor"><Baby className="w-3 h-3 text-primary dark:text-blue-400" /></span>}
-                                                {visit.tagsSnapshot?.isStudent && <span title="Estudante"><GraduationCap className="w-3 h-3 text-purple-600 dark:text-purple-400" /></span>}
-                                                {visit.tagsSnapshot?.isNeurodivergent && <span title="Neurodivergente"><Brain className="w-3 h-3 text-teal-600 dark:text-teal-400" /></span>}
-                                            </div>
+                                            <p className="text-xs text-gray-500 dark:text-gray-400 mt-0.5">
+                                                {visit.visitDate ? new Date(visit.visitDate).toLocaleDateString() : 'Data desconhecida'}
+                                            </p>
                                         </div>
                                     </div>
                                     <div className="flex items-center gap-1 text-[10px] bg-white dark:bg-slate-800 px-2 py-1 rounded-full text-gray-500 dark:text-gray-400 font-bold border border-gray-200 dark:border-slate-700">

@@ -17,18 +17,13 @@ import {
     List,
     History,
     MoreVertical,
-    User,
     Pencil,
     AlertCircle,
-    Users,
-    Navigation,
-    Ear,
-    Baby,
-    GraduationCap,
-    Brain
+    Navigation
 } from 'lucide-react';
 import { toast } from 'sonner';
 import dynamic from 'next/dynamic';
+import { sanitizeUrl } from '@/lib/validation';
 
 import RoleBasedSwitcher from '@/app/components/RoleBasedSwitcher';
 import CSVActionButtons from '@/app/components/CSVActionButtons';
@@ -124,7 +119,6 @@ function TerritoryListContent() {
 
     // Data State
     const [addressCounts, setAddressCounts] = useState<Record<string, number>>({});
-    const [genderStats, setGenderStats] = useState<Record<string, { men: number, women: number, couples: number }>>({});
     const [territorySearchIndex, setTerritorySearchIndex] = useState<Record<string, string>>({});
     const [allAddresses, setAllAddresses] = useState<any[]>([]);
 
@@ -209,21 +203,14 @@ function TerritoryListContent() {
             const sorted = (data.territories || []).sort((a: any, b: any) => a.name.localeCompare(b.name, undefined, { numeric: true }));
             setTerritories(sorted as Territory[]);
 
-            // Populate counts and stats immediately from service data (which already includes counts)
+            // Populate counts immediately from service data (which already includes counts)
             const counts: Record<string, number> = {};
-            const gStats: Record<string, { men: number, women: number, couples: number }> = {};
 
             sorted.forEach((t: any) => {
                 counts[t.id] = t.addressCount || 0;
-                gStats[t.id] = {
-                    men: t.menCount ?? 0,
-                    women: t.womenCount ?? 0,
-                    couples: t.couplesCount ?? 0
-                };
             });
 
             setAddressCounts(prev => ({ ...prev, ...counts }));
-            setGenderStats(prev => ({ ...prev, ...gStats }));
         } catch (error: any) {
             console.error("Error fetching territories:", error);
             setError(error?.message || "Erro desconhecido ao carregar territórios.");
@@ -276,29 +263,18 @@ function TerritoryListContent() {
             const addressesToProcess = dataFromService || [];
 
             const counts: Record<string, number> = {};
-            const gStats: Record<string, { men: number, women: number, couples: number }> = {};
             const searchIndex: Record<string, string> = {};
 
             addressesToProcess.forEach((addr: any) => {
                 if (addr.territoryId && addr.isActive !== false) {
                     counts[addr.territoryId] = (counts[addr.territoryId] || 0) + 1;
 
-                    const searchString = `${addr.street || ''} ${addr.residentName || ''} ${addr.observations || ''}`.toLowerCase();
+                    const searchString = `${addr.street || ''} ${addr.observations || ''}`.toLowerCase();
                     searchIndex[addr.territoryId] = (searchIndex[addr.territoryId] || '') + ' ' + searchString;
-
-                    if (addr.residentGender || addr.gender) {
-                        const genderId = addr.territoryId;
-                        if (!gStats[genderId]) gStats[genderId] = { men: 0, women: 0, couples: 0 };
-                        const g = (addr.residentGender || addr.gender).toUpperCase();
-                        if (g === 'HOMEM' || g === 'MALE' || g === 'M') gStats[genderId].men++;
-                        else if (g === 'MULHER' || g === 'FEMALE' || g === 'F') gStats[genderId].women++;
-                        else if (g === 'CASAL' || g === 'COUPLE' || g === 'C') gStats[genderId].couples++;
-                    }
                 }
             });
 
             setAddressCounts(counts);
-            setGenderStats(gStats);
             setTerritorySearchIndex(searchIndex);
             setAllAddresses(addressesToProcess);
         } catch (error) {
@@ -704,73 +680,15 @@ function TerritoryListContent() {
                                                                                 <td className="px-6 py-3 relative">
                                                                                     <div className="flex items-center justify-between gap-4">
                                                                                         <div className="flex items-center gap-2 min-w-0">
-                                                                                            {/* Gender Mode */}
-                                                                                            {addr.gender && (addr.gender === 'male' || addr.gender === 'HOMEM' || addr.gender === 'female' || addr.gender === 'MULHER' || addr.gender === 'CASAL') ? (
-                                                                                                <div className={`w-6 h-6 rounded-lg flex items-center justify-center shrink-0 shadow-sm border transition-colors ${
-                                                                                                    addr.gender === 'HOMEM' || addr.gender === 'male' 
-                                                                                                        ? 'bg-blue-100 text-blue-600 border-blue-200 dark:bg-blue-950/40 dark:border-blue-900 dark:text-blue-400' 
-                                                                                                        : addr.gender === 'MULHER' || addr.gender === 'female' 
-                                                                                                            ? 'bg-pink-100 text-pink-600 border-pink-200 dark:bg-pink-950/40 dark:border-pink-900 dark:text-pink-400' 
-                                                                                                            : addr.gender === 'CASAL' 
-                                                                                                                ? 'bg-purple-100 text-purple-600 border-purple-200 dark:bg-purple-950/40 dark:border-purple-900 dark:text-purple-400' 
-                                                                                                                : 'bg-gray-100 text-gray-600 border-gray-200 dark:bg-gray-800 dark:border-gray-700 dark:text-gray-400'
-                                                                                                }`}>
-                                                                                                    {addr.gender === 'CASAL' ? (
-                                                                                                        <div className="flex -space-x-1.5">
-                                                                                                            <User className="w-3 h-3 fill-current" />
-                                                                                                            <User className="w-3 h-3 fill-current" />
-                                                                                                        </div>
-                                                                                                    ) : (
-                                                                                                        <User className="w-4 h-4 fill-current" />
-                                                                                                    )}
-                                                                                                </div>
-                                                                                            ) : (
-                                                                                                <div className="w-6 h-6 bg-surface-highlight rounded flex items-center justify-center shrink-0">
-                                                                                                    <MapPin className="w-3 h-3 text-muted" />
-                                                                                                </div>
-                                                                                            )}
+                                                                                            <div className="w-6 h-6 bg-surface-highlight rounded flex items-center justify-center shrink-0">
+                                                                                                <MapPin className="w-3 h-3 text-muted" />
+                                                                                            </div>
                                                                                             <div className="min-w-0">
                                                                                                 <div className="font-medium text-main truncate" title={addr.street}>
                                                                                                     {addr.street}
                                                                                                 </div>
-                                                                                                {addr.number && <div className="text-muted text-xs">Nº {addr.number}</div>}
                                                                                                 {addr.complement && <div className="text-muted text-xs">{addr.complement}</div>}
                                                                                                 {addr.neighborhood && <div className="text-muted text-xs">{addr.neighborhood}</div>}
-
-                                                                                                {/* Tags/Labels alinhadas com o endereço - igual à tela de endereços */}
-                                                                                                <div className="flex gap-1 flex-wrap pt-1">
-                                                                                                    {addr.isDeaf && (
-                                                                                                        <span className="text-[8px] bg-yellow-100 text-yellow-800 dark:bg-yellow-950/40 dark:text-yellow-400 px-2 py-1 rounded-full font-medium flex items-center gap-1" title="Surdo">
-                                                                                                            <Ear className="w-3 h-3" />
-                                                                                                            Surdo
-                                                                                                        </span>
-                                                                                                    )}
-                                                                                                    {addr.isMinor && (
-                                                                                                        <span className="text-[8px] bg-primary-light/50 text-primary-dark dark:bg-primary-950/40 dark:text-primary-400 px-2 py-1 rounded-full font-medium flex items-center gap-1" title="Menor de idade">
-                                                                                                            <Baby className="w-3 h-3" />
-                                                                                                            Menor
-                                                                                                        </span>
-                                                                                                    )}
-                                                                                                    {addr.isStudent && (
-                                                                                                        <span className="text-[8px] bg-purple-100 text-purple-800 dark:bg-purple-950/40 dark:text-purple-400 px-2 py-1 rounded-full font-medium flex items-center gap-1" title="Estudante">
-                                                                                                            <GraduationCap className="w-3 h-3" />
-                                                                                                            Estudante
-                                                                                                        </span>
-                                                                                                    )}
-                                                                                                    {addr.isNeurodivergent && (
-                                                                                                        <span className="text-[8px] bg-teal-100 text-teal-800 dark:bg-teal-950/40 dark:text-teal-400 px-2 py-1 rounded-full font-medium flex items-center gap-1" title="Neurodivergente">
-                                                                                                            <Brain className="w-3 h-3" />
-                                                                                                            Neurodivergente
-                                                                                                        </span>
-                                                                                                    )}
-                                                                                                    <span className="text-[10px] bg-gray-100 text-gray-800 dark:bg-gray-800 dark:text-gray-400 px-1.5 py-0.5 rounded-full font-bold">
-                                                                                                        {congregationType === 'TRADITIONAL' ? (
-                                                                                                            <span>{addr.residentsCount ?? 1} endereço{addr.residentsCount !== 1 ? 's' : ''}</span>
-                                                                                                        ) : (
-                                                                                                            <span>{addr.residentsCount ?? 1} residente{addr.residentsCount !== 1 ? 's' : ''}</span>
-                                                                                                        )}
-                                                                                                    </span>
-                                                                                                </div>
                                                                                             </div>
                                                                                         </div>
                                                                                         <div className="flex items-center gap-2 shrink-0">
@@ -797,7 +715,8 @@ function TerritoryListContent() {
                                                                                             label="Google Maps"
                                                                                             variant="primary"
                                                                                             onClick={() => {
-                                                                                                window.open(addr.googleMapsLink, '_blank');
+                                                                                                const safeUrl = sanitizeUrl(addr.googleMapsLink);
+                                                                                                if (safeUrl) window.open(safeUrl, '_blank');
                                                                                                 setActiveMenu(null);
                                                                                             }}
                                                                                         />
@@ -808,7 +727,8 @@ function TerritoryListContent() {
                                                                                             label="Waze"
                                                                                             variant="warning"
                                                                                             onClick={() => {
-                                                                                                window.open(addr.wazeLink, '_blank');
+                                                                                                const safeUrl = sanitizeUrl(addr.wazeLink);
+                                                                                                if (safeUrl) window.open(safeUrl, '_blank');
                                                                                                 setActiveMenu(null);
                                                                                             }}
                                                                                         />
@@ -853,7 +773,7 @@ function TerritoryListContent() {
                                                                                                     <>
                                                                                                         {addr.googleMapsLink && (
                                                                                                             <a
-                                                                                                                href={addr.googleMapsLink}
+                                                                                                                href={sanitizeUrl(addr.googleMapsLink) || '#'}
                                                                                                                 target="_blank"
                                                                                                                 rel="noopener noreferrer"
                                                                                                                 className="p-1.5 bg-surface rounded hover:bg-surface-highlight transition-colors"
@@ -864,7 +784,7 @@ function TerritoryListContent() {
                                                                                                         )}
                                                                                                         {addr.wazeLink && (
                                                                                                             <a
-                                                                                                                href={addr.wazeLink}
+                                                                                                                href={sanitizeUrl(addr.wazeLink) || '#'}
                                                                                                                 target="_blank"
                                                                                                                 rel="noopener noreferrer"
                                                                                                                 className="p-1.5 bg-surface rounded hover:bg-surface-highlight transition-colors"
@@ -938,30 +858,6 @@ function TerritoryListContent() {
                                                 <span className={`text-[10px] font-bold px-1.5 py-0.5 rounded-md whitespace-nowrap ${!addressCounts[t.id] ? 'text-red-600 bg-red-50 dark:bg-red-900/30 dark:text-red-400' : 'text-primary bg-primary-light/50 dark:bg-primary-dark/30 dark:text-primary-light'}`}>
                                                     {addressCounts[t.id] || 0} Ativos
                                                 </span>
-
-                                                {genderStats[t.id] && (genderStats[t.id].men > 0 || genderStats[t.id].women > 0 || genderStats[t.id].couples > 0) && (
-                                                    <div className="flex items-center gap-2 px-1.5 border-l border-gray-200 dark:border-gray-700">
-                                                        {genderStats[t.id].men > 0 && (
-                                                            <div className="flex items-center gap-0.5 text-blue-500" title="Homens">
-                                                                <User className="w-3.5 h-3.5 fill-current" />
-                                                                <span className="text-[10px] font-black">{genderStats[t.id].men}</span>
-                                                            </div>
-                                                        )}
-                                                        {genderStats[t.id].women > 0 && (
-                                                            <div className="flex items-center gap-0.5 text-pink-500" title="Mulheres">
-                                                                <User className="w-3.5 h-3.5 fill-current" />
-                                                                <span className="text-[10px] font-black">{genderStats[t.id].women}</span>
-                                                            </div>
-                                                        )}
-                                                        {genderStats[t.id].couples > 0 && (
-                                                            <div className="flex items-center gap-0.5 text-purple-600" title="Casais">
-                                                                <Users className="w-3.5 h-3.5 fill-current" />
-                                                                <span className="text-[10px] font-black">{genderStats[t.id].couples}</span>
-                                                            </div>
-                                                        )}
-                                                    </div>
-                                                )}
-
                                             </div>
                                         </Link>
 

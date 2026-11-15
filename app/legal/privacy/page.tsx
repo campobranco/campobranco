@@ -9,7 +9,7 @@ export default function PrivacyPage() {
                 </div>
                 <div>
                     <h1 className="text-2xl font-black text-gray-900 dark:text-white m-0 leading-tight">Política de Privacidade</h1>
-                    <p className="text-sm text-gray-500 dark:text-gray-400 m-0">Última atualização: 05/01/2026</p>
+                    <p className="text-sm text-gray-500 dark:text-gray-400 m-0">Última atualização: 13/10/2026</p>
                 </div>
             </div>
 
@@ -31,56 +31,42 @@ export default function PrivacyPage() {
                 <p><strong>Operador dos Dados:</strong> O {process.env.NEXT_PUBLIC_APP_NAME || 'Campo Branco'}, que fornece a plataforma tecnológica e executa o tratamento de dados pessoais exclusivamente conforme as instruções do controlador.</p>
                 <p>O {process.env.NEXT_PUBLIC_APP_NAME || 'Campo Branco'} não decide a finalidade do uso dos dados, limitando-se a disponibilizar os meios técnicos para sua organização e uso interno.</p>
 
-                <h3>2. CATEGORIAS DE DADOS COLETADOS</h3>
-                <p>Para o funcionamento da ferramenta de gestão pastoral e organizacional, podem ser coletados e armazenados os seguintes dados:</p>
+                <h3>2. CATEGORIAS DE DADOS TRATADOS</h3>
+                <p>Em estrita observância ao Princípio da Necessidade e Minimização de Dados (Art. 6º, III da LGPD), o sistema não realiza cadastro nominal de moradores, não realiza perfilamento de gênero e não coleta dados pessoais sensíveis de saúde ou de menores de idade.</p>
 
-                <h4>2.1. Dados Pessoais Comuns</h4>
+                <h4>2.1. Dados Territoriais e Logísticos (Não Pessoais de Moradores)</h4>
                 <ul className="list-disc pl-5 space-y-2 marker:text-emerald-500">
-                    <li>Nome do morador (quando informado)</li>
-                    <li>Endereço (logradouro, número e referência territorial)</li>
-                    <li>Gênero (utilizado exclusivamente para orientar a abordagem)</li>
+                    <li>Endereço público (logradouro, número e referência territorial)</li>
+                    <li>Status operacional de visitação (ex.: "Visitado", "Livre", "Não Visitar")</li>
+                    <li>Notas de acesso predial (ex.: campainha, portão, cão no quintal)</li>
                 </ul>
 
-                <h4>2.2. Dados Pessoais Sensíveis (Opcionais)</h4>
+                <h4>2.2. Dados dos Usuários do Sistema (Voluntários/Administradores)</h4>
                 <ul className="list-disc pl-5 space-y-2 marker:text-emerald-500">
-                    <li>Tags de acessibilidade (ex.: “Surdo”, “Neurodivergente”)</li>
-                    <li>Identificação de “Menor”</li>
-                </ul>
-                <p>Essas informações são opcionais e registradas apenas quando estritamente necessárias, com a finalidade exclusiva de orientar uma abordagem responsável, respeitosa e adequada.</p>
-
-                <h4>2.3. Dados do Usuário do Sistema</h4>
-                <ul className="list-disc pl-5 space-y-2 marker:text-emerald-500">
-                    <li>Nome</li>
-                    <li>E-mail</li>
-                    <li>Informações básicas de autenticação e controle de acesso</li>
+                    <li>Nome do usuário</li>
+                    <li>E-mail cadastrado</li>
+                    <li>Credenciais e registros de acesso/permissões internas</li>
                 </ul>
 
                 <h3>3. FINALIDADE E BASE LEGAL DO TRATAMENTO</h3>
-                <p>O tratamento de dados pessoais ocorre com base nas seguintes hipóteses legais previstas na LGPD:</p>
+                <p>O tratamento de dados restringe-se às seguintes hipóteses legais previstas na LGPD:</p>
                 <ul className="list-disc pl-5 space-y-2 marker:text-emerald-500">
-                    <li>Interesse legítimo</li>
-                    <li>Exercício regular de atividade religiosa</li>
-                    <li>Finalidade pastoral, organizacional e assistencial</li>
+                    <li>Legítimo interesse (Art. 7º, IX) para planejamento territorial e logístico</li>
+                    <li>Exercício regular de atividade pastoral e religiosa interna</li>
+                    <li>Cumprimento de direitos do titular (Art. 18), incluindo a marcação de "Não Visitar" para moradores que expressarem oposição a visitas</li>
                 </ul>
                 <p>Os dados são utilizados exclusivamente para:</p>
                 <ul className="list-disc pl-5 space-y-2 marker:text-emerald-500">
-                    <li>Organização da visitação pública e pastoral</li>
-                    <li>Evitar visitas repetitivas, inoportunas ou inadequadas</li>
-                    <li>Planejar acessibilidade (língua de sinais, idioma estrangeiro, cuidados especiais)</li>
-                    <li>Apoiar a organização interna da congregação</li>
+                    <li>Organização de rotas de visitação pública e pastoral</li>
+                    <li>Evitar visitas repetitivas ou inoportunas em residências que solicitaram não ser contatadas</li>
+                    <li>Apoio logístico interno da congregação</li>
                 </ul>
-                <p>Os dados não são utilizados para fins comerciais, marketing, publicidade, perfilamento, venda ou qualquer forma de exploração econômica.</p>
+                <p>Os dados jamais são comercializados, compartilhados com terceiros para fins de marketing ou explorados economicamente.</p>
 
-                <h3>4. DADOS DE CRIANÇAS E ADOLESCENTES</h3>
+                <h3>4. PROTEÇÃO CONTRA A COLETA DE DADOS EXCESSIVOS</h3>
                 <p>
-                    Quando houver identificação de crianças ou adolescentes, o tratamento ocorre exclusivamente no melhor interesse do menor, conforme o Art. 14 da LGPD, com a finalidade de:
+                    O aplicativo opera sob diretrizes de <em>Privacy by Design</em> (privacidade desde a concepção). O sistema veda expressamente o armazenamento de nomes de pessoas físicas residentes, condição de saúde, deficiência ou dados de crianças e adolescentes. Toda anotação livre é restrita a características físicas de acesso ao lote.
                 </p>
-                <ul className="list-disc pl-5 space-y-2 marker:text-emerald-500">
-                    <li>alertar sobre a necessidade de abordagem responsável</li>
-                    <li>incentivar boas práticas, como buscar autorização dos responsáveis</li>
-                    <li>evitar contatos inadequados</li>
-                </ul>
-                <p>O {process.env.NEXT_PUBLIC_APP_NAME || 'Campo Branco'} não realiza perfilamento de menores nem coleta dados excessivos ou desnecessários.</p>
 
                 <h3>5. ARMAZENAMENTO, INFRAESTRUTURA E OPEN SOURCE</h3>
                 <h4>5.1. Banco de Dados</h4>

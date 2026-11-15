@@ -7,6 +7,7 @@ import { useEffect, useState, Suspense } from 'react';
 import { getSharedListWithData } from '@/lib/services/shared_lists';
 import { returnMapMutation, returnTerritoryMutation, acceptResponsibilityMutation } from '@/lib/contracts/mutations/territoryMutations';
 import { reportVisitMutation, deleteVisitMutation, markAllAsWorkedMutation } from '@/lib/contracts/mutations/visitMutations';
+import { sanitizeUrl } from '@/lib/validation';
 import {
     Map as MapIcon,
     Loader2,
@@ -18,18 +19,12 @@ import {
     ThumbsUp,
     ThumbsDown,
     Minus,
-    User,
-    Users,
-    Ear,
-    Baby,
-    GraduationCap,
     FileText,
     ClipboardList,
     CheckCircle,
     Navigation,
     MoreVertical,
     History as HistoryIcon,
-    Brain,
     Calendar,
     ChevronUp,
     ChevronDown,
@@ -491,13 +486,7 @@ export default function SharedListView({ id: propId }: SharedListViewProps) {
                 userName: data.publisherName || profileName || 'Visitante',
                 status: data.status,
                 notes: data.observations || '',
-                visitDate: visitDate,
-                tagsSnapshot: {
-                    isDeaf: data.isDeaf || false,
-                    isMinor: data.isMinor || false,
-                    isStudent: data.isStudent || false,
-                    isNeurodivergent: data.isNeurodivergent || false
-                }
+                visitDate: visitDate
             };
             const resData = await reportVisitMutation({
                 sharedListId: id as string,
@@ -507,7 +496,6 @@ export default function SharedListView({ id: propId }: SharedListViewProps) {
                 status: visitData.status,
                 notes: visitData.notes,
                 visitDate: visitData.visitDate,
-                tagsSnapshot: visitData.tagsSnapshot,
                 userName: visitData.userName
             });
             if (!resData.success) throw new Error(resData.error || 'Erro ao salvar visita');
@@ -550,8 +538,8 @@ export default function SharedListView({ id: propId }: SharedListViewProps) {
         let url = '';
         if (isIOS) url = `maps://?q=${encodeURIComponent(query)}`;
         else if (isAndroid) url = `geo:0,0?q=${encodeURIComponent(query)}`;
-        else url = item.googleMapsLink || `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(query)}`;
-        window.open(url, '_blank');
+        else url = (item.googleMapsLink ? sanitizeUrl(item.googleMapsLink) : '') || `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(query)}`;
+        if (url) window.open(url, '_blank');
     };
 
     if (loading) {
@@ -710,7 +698,7 @@ export default function SharedListView({ id: propId }: SharedListViewProps) {
                         if (listData?.type === 'city') href = `/share/preview?type=city&id=${item.id}&shareId=${id}`;
                         else if (listData?.type === 'territory') href = `/share/preview?type=territory&id=${item.id}&shareId=${id}`;
                         else if (listData?.type === 'address') {
-                            if (item.googleMapsLink) href = item.googleMapsLink;
+                            if (item.googleMapsLink) href = sanitizeUrl(item.googleMapsLink) || '#';
                             else if (item.lat && item.lng) href = `https://www.google.com/maps/search/?api=1&query=${item.lat},${item.lng}`;
                         }
                         return (
@@ -732,17 +720,7 @@ export default function SharedListView({ id: propId }: SharedListViewProps) {
                                         {listData?.type === 'city' && <Building2 className="w-6 h-6" />}
                                         {listData?.type === 'territory' && <MapIcon className="w-6 h-6" />}
                                         {listData?.type === 'address' && (
-                                            <>
-                                                {item.gender === 'HOMEM' && <User className={`w-5 h-5 ${item.visitStatus && item.visitStatus !== 'none' ? 'text-white' : 'text-primary fill-primary'}`} />}
-                                                {item.gender === 'MULHER' && <User className={`w-5 h-5 ${item.visitStatus && item.visitStatus !== 'none' ? 'text-white' : 'text-pink-500 fill-pink-500'}`} />}
-                                                {item.gender === 'CASAL' && (
-                                                    <div className="flex items-center -space-x-1">
-                                                        <User className={`w-4 h-4 ${item.visitStatus && item.visitStatus !== 'none' ? 'text-white' : 'text-purple-500 fill-purple-500'}`} />
-                                                        <User className={`w-4 h-4 ${item.visitStatus && item.visitStatus !== 'none' ? 'text-white' : 'text-purple-500 fill-purple-500'}`} />
-                                                    </div>
-                                                )}
-                                                {!item.gender && <MapPin className={`w-6 h-6 ${item.visitStatus && item.visitStatus !== 'none' ? 'text-white' : 'text-primary'}`} />}
-                                            </>
+                                            <MapPin className={`w-6 h-6 ${item.visitStatus && item.visitStatus !== 'none' ? 'text-white' : 'text-primary'}`} />
                                         )}
                                     </div>
                                     <div className="flex-1 min-w-0">
@@ -752,11 +730,6 @@ export default function SharedListView({ id: propId }: SharedListViewProps) {
                                                     {item.street}{!item.street?.includes(item.number || '') && item.number !== 'S/N' ? `, ${item.number}` : ''}{item.complement ? ` - ${item.complement}` : ''}
                                                 </h3>
                                                 <div className="flex flex-wrap items-center gap-2 mt-1 text-xs text-muted">
-                                                    {item.peopleCount && <div className="flex items-center gap-1 bg-gray-100 dark:bg-gray-800 px-1.5 py-0.5 rounded-md"><Users className="w-3 h-3" /><span className="font-bold">{item.peopleCount}</span></div>}
-                                                    {item.residentName && <span className="font-semibold text-main">{item.residentName}</span>}
-                                                    {item.isDeaf && <span className="flex items-center gap-1 bg-yellow-100 text-yellow-800 px-1.5 py-0.5 rounded-md font-bold text-[10px] uppercase"><Ear className="w-3 h-3" /> Surdo</span>}
-                                                    {item.isMinor && <span className="flex items-center gap-1 bg-primary-light/30 text-primary-dark px-1.5 py-0.5 rounded-md font-bold text-[10px] uppercase"><Baby className="w-3 h-3" /> Menor</span>}
-                                                    {item.isStudent && <span className="flex items-center gap-1 bg-purple-100 text-purple-800 px-1.5 py-0.5 rounded-md font-bold text-[10px] uppercase"><GraduationCap className="w-3 h-3" /> Estudante</span>}
                                                     {item.isActive === false && (item.inactivatedAt) && <span className="flex items-center gap-1 bg-red-50 text-red-600 px-1.5 py-0.5 rounded-md font-bold text-[10px] uppercase border border-red-100 dark:bg-red-900/20 dark:text-red-400 dark:border-red-900/30"><Calendar className="w-3 h-3" /> Desativado em: {new Date(item.inactivatedAt).toLocaleDateString('pt-BR')}</span>}
                                                 </div>
                                             </>
@@ -991,8 +964,8 @@ export default function SharedListView({ id: propId }: SharedListViewProps) {
                                 <button
                                     onClick={() => {
                                         const query = `${mapSelectionItem.street}, ${mapSelectionItem.number}`;
-                                        const url = mapSelectionItem.googleMapsLink || `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(query)}`;
-                                        window.open(url, '_blank');
+                                        const url = (mapSelectionItem.googleMapsLink ? sanitizeUrl(mapSelectionItem.googleMapsLink) : '') || `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(query)}`;
+                                        if (url) window.open(url, '_blank');
                                         setMapSelectionItem(null);
                                     }}
                                     className="w-full flex items-center justify-between px-6 py-4 bg-blue-50 dark:bg-blue-900/20 hover:bg-blue-100 dark:hover:bg-blue-900/30 text-blue-700 dark:text-blue-400 rounded-2xl font-bold transition-all active:scale-[0.98] border border-blue-100/50 dark:border-blue-900/30"
@@ -1004,7 +977,11 @@ export default function SharedListView({ id: propId }: SharedListViewProps) {
                                     <ChevronRight className="w-4 h-4 opacity-50" />
                                 </button>
                                 <button
-                                    onClick={() => { window.open(mapSelectionItem.wazeLink, '_blank'); setMapSelectionItem(null); }}
+                                    onClick={() => {
+                                        const safeWaze = mapSelectionItem.wazeLink ? sanitizeUrl(mapSelectionItem.wazeLink) : '';
+                                        if (safeWaze) window.open(safeWaze, '_blank');
+                                        setMapSelectionItem(null);
+                                    }}
                                     className="w-full flex items-center justify-between px-6 py-4 bg-sky-50 dark:bg-sky-900/20 hover:bg-sky-100 dark:hover:bg-sky-900/30 text-sky-700 dark:text-sky-400 rounded-2xl font-bold transition-all active:scale-[0.98] border border-sky-100/50 dark:border-sky-900/30"
                                 >
                                     <div className="flex items-center gap-3">

@@ -118,6 +118,8 @@ firebase_deploy_debug.txt
 /android/app/build
 /android/.gradle
 /android/build
+*.apk
+*.aab
 
 # Audit runs
 strix_runs/

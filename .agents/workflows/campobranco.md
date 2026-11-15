@@ -193,6 +193,38 @@ Ao concluir a tarefa:
 
 ---
 
+#### 16. Investigação de Intenção em Apontamentos de Vulnerabilidade
+
+Todo apontamento de vulnerabilidade deve passar por esta pergunta antes de ser classificado ou corrigido:
+
+> *"Por que esta decisão foi tomada? Foi apenas uma falha, ou alguém a tomou de forma intencional por um motivo?"*
+
+**O que investigar:**
+* Histórico do trecho (`git log` / `git blame`) e mensagens de commit
+* Issues, tarefas e documentação relacionadas
+* Comentários no código e testes que dependem do comportamento
+* Restrições do ambiente oficial (Firebase Spark + Next.js Static Export), que podem ter forçado a decisão
+
+**Classificação do resultado (obrigatória):**
+* **Falha real** → ninguém decidiu isso; corrigir.
+* **Decisão intencional válida** → existe motivo legítimo e documentado; registrar o motivo no código ou na documentação e manter o comportamento.
+* **Decisão intencional com risco** → houve motivo, mas o risco continua; redesenhar a solução dentro do modelo Spark + client-side, atendendo ao motivo original sem manter a vulnerabilidade.
+* **Inconclusivo** → não há evidência do motivo; perguntar ao responsável, sem assumir.
+
+**Regras:**
+* Intenção não equivale a segurança: uma decisão intencional ainda pode ser uma vulnerabilidade.
+* Proibido inventar justificativa. Se não houver evidência, o resultado é "Inconclusivo".
+* Decisão intencional sem registro vira tarefa de documentação.
+* A correção deve preservar o objetivo original da decisão, quando ele for legítimo.
+
+**Formato do retorno:**
+1. Vulnerabilidade apontada
+2. Evidências encontradas (commit, issue, comentário, teste)
+3. Classificação (uma das quatro acima)
+4. Ação: corrigir, documentar, redesenhar ou perguntar
+
+---
+
 ## Restrições Arquiteturais Absolutas
 
 Estas regras possuem prioridade máxima dentro do projeto e não devem ser reinterpretadas durante a implementação.

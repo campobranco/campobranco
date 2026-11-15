@@ -13,6 +13,7 @@ import { updateWitnessingPointDetails } from '@/lib/services/witnessing';
 // TODO(mutations): migrate to mutation layer - legacy module (admin/report/dashboard)
 // eslint-disable-next-line no-restricted-imports
 import { geocodeAddress } from '@/lib/services/geocoding';
+import { sanitizeUrl } from '@/lib/validation';
 import dynamic from 'next/dynamic';
 
 const MapView = dynamic(() => import('@/app/components/MapView'), {
@@ -115,8 +116,8 @@ export default function EditPointModal({ isOpen, onClose, point, cityName, onSuc
                 latitude: lat || 0,
                 longitude: lng || 0,
                 schedule: schedule.trim() || '',
-                googleMapsLink: googleMapsLink.trim(),
-                wazeLink: wazeLink.trim()
+                googleMapsLink: sanitizeUrl(googleMapsLink.trim()),
+                wazeLink: sanitizeUrl(wazeLink.trim())
             });
 
             if (!result.success) throw new Error(result.error);

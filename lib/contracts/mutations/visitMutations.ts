@@ -9,7 +9,6 @@ export interface ReportVisitInput {
     status: string;
     notes?: string;
     visitDate?: any;
-    tagsSnapshot?: Record<string, boolean>;
     userName?: string;
 }
 

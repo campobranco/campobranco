@@ -23,6 +23,11 @@ jest.mock('../lib/services/shared_lists', () => ({
     processSharedListAction: jest.fn(),
 }));
 
+jest.mock('../lib/services/audit_logs', () => ({
+    logActivity: jest.fn().mockResolvedValue(undefined),
+    logPermissionDenied: jest.fn().mockResolvedValue(undefined),
+}));
+
 // ─── Fixtures ────────────────────────────────────────────────────────────────
 
 const BASE_INPUT = {

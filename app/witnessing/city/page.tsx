@@ -24,6 +24,7 @@ import {
 import dynamic from 'next/dynamic';
 
 import { MapSkeleton } from '@/app/components/Skeleton';
+import { sanitizeUrl } from '@/lib/validation';
 
 const MapView = dynamic(() => import('@/app/components/MapView'), {
     loading: () => <MapSkeleton />,
@@ -316,8 +317,11 @@ function WitnessingPointListContent() {
     const handleOpenPointMap = (point: WitnessingPoint) => {
         // Se houver link direto do Maps, usa ele prioritariamente
         if (point.googleMapsLink) {
-            window.open(point.googleMapsLink, '_blank');
-            return;
+            const safeUrl = sanitizeUrl(point.googleMapsLink);
+            if (safeUrl) {
+                window.open(safeUrl, '_blank');
+                return;
+            }
         }
 
         const query = point.address;
@@ -580,7 +584,8 @@ function WitnessingPointListContent() {
                                                                     label="Google Maps"
                                                                     variant="neutral"
                                                                     onClick={() => {
-                                                                        window.open(point.googleMapsLink, '_blank');
+                                                                        const safeUrl = sanitizeUrl(point.googleMapsLink);
+                                                                        if (safeUrl) window.open(safeUrl, '_blank');
                                                                         setOpenMenuId(null);
                                                                     }}
                                                                 />
@@ -591,7 +596,8 @@ function WitnessingPointListContent() {
                                                                     label="Waze"
                                                                     variant="neutral"
                                                                     onClick={() => {
-                                                                        window.open(point.wazeLink, '_blank');
+                                                                        const safeUrl = sanitizeUrl(point.wazeLink);
+                                                                        if (safeUrl) window.open(safeUrl, '_blank');
                                                                         setOpenMenuId(null);
                                                                     }}
                                                                 />

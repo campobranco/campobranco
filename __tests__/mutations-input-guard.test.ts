@@ -6,6 +6,11 @@ jest.mock('../lib/services/shared_lists', () => ({
     processSharedListAction: jest.fn()
 }));
 
+jest.mock('../lib/services/audit_logs', () => ({
+    logActivity: jest.fn().mockResolvedValue(undefined),
+    logPermissionDenied: jest.fn().mockResolvedValue(undefined),
+}));
+
 describe('Unit: Mutation Edge Input Guards', () => {
 
     it('should block execution and fail fast if congregationId is missing', async () => {

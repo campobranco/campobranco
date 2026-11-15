@@ -32,7 +32,6 @@ interface AddressPinItem {
     number?: string;
     lat: number;
     lng: number;
-    residentName?: string;
 }
 
 // Wrapper para auto-escalar a folha A4/A6 proporcionalmente em qualquer tela mobile sem cortar
@@ -145,26 +144,7 @@ function AddressPinsMap({ pins }: { pins: AddressPinItem[] }) {
                     iconAnchor: [11, 11]
                 });
 
-                const resident = pin.residentName?.trim();
-                const marker = L.marker([pin.lat, pin.lng], { icon: customIcon }).addTo(map);
-
-                // Sem fallbacks: exibe o rótulo APENAS se o nome do morador estiver cadastrado
-                if (resident && resident !== '') {
-                    const dir = directions[idx % directions.length];
-                    const offsetMap: Record<string, [number, number]> = {
-                        top: [0, -12],
-                        right: [12, 0],
-                        bottom: [0, 12],
-                        left: [-12, 0]
-                    };
-
-                    marker.bindTooltip(resident, {
-                        permanent: true,
-                        direction: dir,
-                        offset: offsetMap[dir],
-                        className: 'fixed-address-label'
-                    });
-                }
+                L.marker([pin.lat, pin.lng], { icon: customIcon }).addTo(map);
             });
 
             if (pins.length === 1) {
@@ -372,8 +352,7 @@ export default function MapCardPage() {
                             street: addr.street || '',
                             number: addr.number,
                             lat: coords.lat,
-                            lng: coords.lng,
-                            residentName: addr.residentName ? String(addr.residentName).trim() : ''
+                            lng: coords.lng
                         });
                         pinsMap.set(addr.territoryId, existing);
                     }

@@ -1,8 +1,9 @@
 "use client";
 
 import { useEffect, useRef, useState } from 'react';
-import { Loader2, MapPin, ThumbsUp, Home, Navigation, Ban, Truck, User, Maximize2, Minimize2, Map as MapIcon, Lock, Unlock, Store, Hand } from 'lucide-react';
+import { Loader2, MapPin, ThumbsUp, Home, Navigation, Ban, Truck, Maximize2, Minimize2, Map as MapIcon, Lock, Unlock, Store, Hand } from 'lucide-react';
 import { renderToStaticMarkup } from 'react-dom/server';
+import { sanitizeUrl } from '@/lib/validation';
 // TODO(mutations): migrate to mutation layer - legacy module (admin/report/dashboard)
 // eslint-disable-next-line no-restricted-imports
 import { geocodeAddress } from '@/lib/services/geocoding';
@@ -189,10 +190,9 @@ export default function MapView({ items, center = defaultCenter, zoom = 15, onGe
                         touchZoom: false
                     }).setView([startLat, startLng], zoom);
 
-                    L.tileLayer('https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png', {
-                        attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors &copy; <a href="https://carto.com/attributions">CARTO</a>',
-                        subdomains: 'abcd',
-                        maxZoom: 20
+                    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+                        attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors',
+                        maxZoom: 19
                     }).addTo(map);
 
                     L.control.zoom({ position: 'bottomright' }).addTo(map);
@@ -317,7 +317,6 @@ export default function MapView({ items, center = defaultCenter, zoom = 15, onGe
             // City: MapIcon. Address: item.number/index
             const isCity = item.variant === 'city';
             const isStore = item.variant === 'store';
-            const genderNormalized = item.gender ? item.gender.toUpperCase() : undefined;
             const isDoNotVisit = statusKey === 'NAO_VISITAR';
 
             const innerContent = isDoNotVisit ? (
@@ -326,19 +325,10 @@ export default function MapView({ items, center = defaultCenter, zoom = 15, onGe
                 <MapIcon size={18} strokeWidth={2.5} />
             ) : isStore ? (
                 <Store size={18} strokeWidth={2.5} />
-            ) : isTraditional ? (
+            ) : (
                 <span className="text-xs font-bold leading-none tracking-tighter">
                     {item.index ?? item.number ?? ''}
                 </span>
-            ) : (
-                genderNormalized === 'CASAL' ? (
-                    <div className="flex -space-x-1.5 justify-center items-center">
-                        <User size={14} className="stroke-white shrink-0" strokeWidth={2.5} />
-                        <User size={14} className="stroke-white shrink-0" strokeWidth={2.5} />
-                    </div>
-                ) : (
-                    <User size={16} className="stroke-white shrink-0" strokeWidth={2.5} />
-                )
             );
 
             // Determina a cor de fundo e borda baseada no status
@@ -351,8 +341,6 @@ export default function MapView({ items, center = defaultCenter, zoom = 15, onGe
             let labelText = '';
             if (isCity) {
                 labelText = item.title;
-            } else if (item.residentName) {
-                labelText = item.residentName;
             }
 
             // Custom HTML Marker Construction
@@ -436,76 +424,6 @@ export default function MapView({ items, center = defaultCenter, zoom = 15, onGe
                     header.appendChild(title);
                     container.appendChild(header);
 
-                    // --- Content: Resident Box ---
-                    // Always show if there is info, otherwise skip
-                    // Normalize gender to uppercase for comparison
-                    const genderNormalized = item.gender ? item.gender.toUpperCase() : undefined;
-
-                    if (item.residentName || genderNormalized || item.isDeaf || item.isMinor || item.isStudent || item.isNeurodivergent) {
-                        const residentContainer = document.createElement('div');
-                        residentContainer.className = 'flex items-start gap-3 mb-4 bg-gray-50 p-3 rounded-xl border border-gray-100';
-
-                        // Icon Check
-                        const iconDiv = document.createElement('div');
-                        let genderClass = 'bg-gray-200 text-gray-500';
-                        if (genderNormalized === 'HOMEM') genderClass = 'bg-blue-100 text-blue-600';
-                        else if (genderNormalized === 'MULHER') genderClass = 'bg-pink-100 text-pink-600';
-                        else if (genderNormalized === 'CASAL') genderClass = 'bg-purple-100 text-purple-600';
-
-                        iconDiv.className = `w-9 h-9 rounded-full flex items-center justify-center shrink-0 mt-0.5 ${genderClass}`;
-
-                        if (genderNormalized === 'CASAL') {
-                            iconDiv.innerHTML = `<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>`;
-                        } else {
-                            iconDiv.innerHTML = `<svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M19 21v-2a4 4 0 0 0-4-4H9a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>`;
-                        }
-                        residentContainer.appendChild(iconDiv);
-
-                        // Info Column
-                        const infoCol = document.createElement('div');
-                        infoCol.className = 'flex flex-col min-w-0 flex-1';
-
-                        const label = document.createElement('span');
-                        label.className = 'text-[10px] font-bold uppercase text-gray-400 leading-none mb-1';
-                        label.textContent = genderNormalized === 'CASAL' ? 'Casal' : 'Morador';
-                        infoCol.appendChild(label);
-
-                        if (item.residentName) {
-                            const nameVal = document.createElement('span');
-                            nameVal.className = 'font-bold text-sm text-gray-800 leading-tight truncate';
-                            nameVal.textContent = item.residentName;
-                            infoCol.appendChild(nameVal);
-                        }
-
-                        // Tags Row
-                        const tagsDiv = document.createElement('div');
-                        tagsDiv.className = 'flex flex-wrap gap-1 mt-1.5';
-
-                        const createTag = (text: string, colorClass: string) => {
-                            const t = document.createElement('span');
-                            t.className = `px-1.5 py-0.5 rounded text-[9px] font-bold uppercase tracking-wider ${colorClass}`;
-                            t.textContent = text;
-                            return t;
-                        };
-
-                        // Gender Tags
-                        if (genderNormalized === 'HOMEM') tagsDiv.appendChild(createTag('Homem', 'bg-blue-100 text-blue-700'));
-                        if (genderNormalized === 'MULHER') tagsDiv.appendChild(createTag('Mulher', 'bg-pink-100 text-pink-700'));
-                        if (genderNormalized === 'CASAL') tagsDiv.appendChild(createTag('Casal', 'bg-purple-100 text-purple-700'));
-
-                        if (item.isDeaf) tagsDiv.appendChild(createTag('Surdo', 'bg-yellow-100 text-yellow-700'));
-                        if (item.isMinor) tagsDiv.appendChild(createTag('Menor', 'bg-orange-100 text-orange-700'));
-                        if (item.isStudent) tagsDiv.appendChild(createTag('Estudante', 'bg-purple-100 text-purple-700'));
-                        if (item.isNeurodivergent) tagsDiv.appendChild(createTag('Neuro', 'bg-teal-100 text-teal-700'));
-
-                        if (tagsDiv.hasChildNodes()) {
-                            infoCol.appendChild(tagsDiv);
-                        }
-
-                        residentContainer.appendChild(infoCol);
-                        container.appendChild(residentContainer);
-                    }
-
                     // --- Footer: Status & Actions ---
                     const footer = document.createElement('div');
                     footer.className = 'flex items-end justify-between mt-2 pt-0 gap-4';
@@ -534,7 +452,8 @@ export default function MapView({ items, center = defaultCenter, zoom = 15, onGe
                         if (item.lastVisit) {
                             const lvContainer = document.createElement('div');
                             lvContainer.className = 'flex items-center gap-1 text-xs text-gray-500 font-medium';
-                            lvContainer.innerHTML = `<svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect width="18" height="18" x="3" y="4" rx="2" ry="2"/><line x1="16" x2="16" y1="2" y2="6"/><line x1="8" x2="8" y1="2" y2="6"/><line x1="3" x2="21" y1="10" y2="10"/></svg> ${item.lastVisit}`;
+                            lvContainer.innerHTML = `<svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect width="18" height="18" x="3" y="4" rx="2" ry="2"/><line x1="16" x2="16" y1="2" y2="6"/><line x1="8" x2="8" y1="2" y2="6"/><line x1="3" x2="21" y1="10" y2="10"/></svg> `;
+                            lvContainer.appendChild(document.createTextNode(String(item.lastVisit)));
                             infoStack.appendChild(lvContainer);
                         }
                     }
@@ -542,11 +461,12 @@ export default function MapView({ items, center = defaultCenter, zoom = 15, onGe
                     footer.appendChild(infoStack);
 
                     // Right Side: Action Button (Bottom Right)
-                    const hasValidLink = (item.googleMapsLink && item.googleMapsLink.trim() !== '' && item.googleMapsLink !== 'undefined');
+                    const sanitizedCustomLink = item.googleMapsLink ? sanitizeUrl(item.googleMapsLink) : '';
+                    const hasValidLink = Boolean(sanitizedCustomLink && sanitizedCustomLink.trim() !== '' && sanitizedCustomLink !== 'undefined');
                     
-                    if (hasValidLink) {
+                    if (hasValidLink || (item.lat != null && item.lng != null)) {
                         const navBtn = document.createElement('a');
-                        navBtn.href = hasValidLink ? item.googleMapsLink! : `https://www.google.com/maps/search/?api=1&query=${item.lat},${item.lng}`;
+                        navBtn.href = hasValidLink ? sanitizedCustomLink : `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(String(item.lat))},${encodeURIComponent(String(item.lng))}`;
                         navBtn.target = '_blank';
                         navBtn.rel = 'noopener noreferrer';
                         // Use standard Green-600 (#16a34a) which matches var(--primary)

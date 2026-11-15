@@ -73,9 +73,8 @@ export default function CSVActionButtons({
             // 2. Cabeçalho do CSV
             const headers = [
                 'Cidade', 'Cidade do Bairro', 'UF', 'Número do Mapa', 'Descrição', 'Endereço',
-                'Quantidade de residentes', 'Nome', 'Link do Maps', 'Link do Waze',
-                'Status', 'Surdo', 'Menor de idade', 'Estudante', 'Neurodivergente',
-                'Gênero', 'Observações', 'Resultado da ultima visita', 'Ordem na listagem'
+                'Link do Maps', 'Link do Waze', 'Status', 'Observações',
+                'Resultado da ultima visita', 'Ordem na listagem'
             ];
 
             // 3. Formatar linhas
@@ -90,16 +89,9 @@ export default function CSVActionButtons({
                     territory.name || '',
                     territory.notes || territory.description || '',
                     addr.street || '',
-                    addr.residentsCount || 1,
-                    addr.residentName || '',
                     addr.googleMapsLink || '',
                     addr.wazeLink || '',
                     (addr.isActive ?? true) ? 'true' : 'false',
-                    addr.isDeaf ? 'true' : 'false',
-                    addr.isMinor ? 'true' : 'false',
-                    addr.isStudent ? 'true' : 'false',
-                    addr.isNeurodivergent ? 'true' : 'false',
-                    addr.gender || '',
                     addr.observations || '',
                     addr.visitStatus || 'notContacted',
                     addr.sortOrder ?? 0

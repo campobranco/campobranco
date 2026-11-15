@@ -2,19 +2,16 @@
 
 import { useState, useEffect } from 'react';
 import { createPortal } from 'react-dom';
+import { sanitizeUrl } from '@/lib/validation';
 import {
     X,
     ThumbsUp,
     ThumbsDown,
     Home,
     Hand,
-    Ear,
-    Baby,
-    GraduationCap,
     Navigation,
     Loader2,
     History,
-    Brain,
     AlertTriangle,
     Mic,
     MicOff,
@@ -79,11 +76,6 @@ export default function VisitReportModal({
     const [status, setStatus] = useState<'contacted' | 'partial' | 'notContacted' | 'moved' | 'doNotVisit' | 'contested' | ''>(
         (address.visitStatus && address.visitStatus !== 'none') ? address.visitStatus : ''
     );
-    const [isDeaf, setIsDeaf] = useState(address.isDeaf || false);
-    const [isMinor, setIsMinor] = useState(address.isMinor || false);
-    const [isStudent, setIsStudent] = useState(address.isStudent || false);
-    const [isNeurodivergent, setIsNeurodivergent] = useState(address.isNeurodivergent || false);
-    const [gender, setGender] = useState<'HOMEM' | 'MULHER' | 'CASAL' | ''>(address.gender || '');
     const [observations, setObservations] = useState(address.visitNotes || '');
     const [publisherName, setPublisherName] = useState(address.publisherName || profileName || user?.displayName || '');
     const [isListening, setIsListening] = useState(false);
@@ -171,11 +163,6 @@ export default function VisitReportModal({
         try {
             await onSave({
                 status: finalStatus,
-                isDeaf,
-                isMinor,
-                isStudent,
-                isNeurodivergent,
-                gender,
                 observations,
                 publisherName: publisherName.trim()
             });
@@ -209,7 +196,6 @@ export default function VisitReportModal({
                                     {address.street}
                                     {!address.street?.includes(address.number || '') && address.number !== 'S/N' ? `, ${address.number}` : ''}
                                 </h3>
-                                {address.residentName && <p className="text-sm font-medium text-gray-500 dark:text-gray-400 mt-0.5">{address.residentName}</p>}
                             </div>
 
                             {address.observations && (
@@ -307,75 +293,9 @@ export default function VisitReportModal({
                             </div>
                         )}
 
-                        {/* Gender Selection */}
-                        {(congregationType === 'SIGN_LANGUAGE' || congregationType === 'FOREIGN_LANGUAGE') && address.isActive !== false && (
-                            <div className="flex gap-2">
-                                {[
-                                    { id: 'HOMEM', label: 'Homem', color: 'blue' },
-                                    { id: 'MULHER', label: 'Mulher', color: 'pink' },
-                                    { id: 'CASAL', label: 'Casal', color: 'purple' }
-                                ].map(opt => {
-                                    const isActive = gender === opt.id;
-                                    const colorStyles = {
-                                        blue: isActive ? 'border-blue-500 bg-blue-50 dark:bg-blue-900/30 text-blue-700 dark:text-blue-400' : '',
-                                        pink: isActive ? 'border-pink-500 bg-pink-50 dark:bg-pink-900/30 text-pink-700 dark:text-pink-400' : '',
-                                        purple: isActive ? 'border-purple-500 bg-purple-50 dark:bg-purple-900/30 text-purple-700 dark:text-purple-400' : '',
-                                    } as Record<string, string>;
 
-                                    return (
-                                        <button
-                                            key={opt.id}
-                                            onClick={() => setGender(opt.id as any)}
-                                            className={`flex-1 py-3.5 rounded-lg text-xs font-bold uppercase transition-all border-2 flex flex-col items-center gap-1 ${isActive ? colorStyles[opt.color] : 'border-gray-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-gray-400 dark:text-gray-500 hover:border-gray-300 dark:hover:border-slate-600'}`}
-                                        >
-                                            {opt.id === 'HOMEM' && <User className={`w-5 h-5 ${isActive ? 'fill-current' : ''}`} />}
-                                            {opt.id === 'MULHER' && <User className={`w-5 h-5 ${isActive ? 'fill-current' : ''}`} />}
-                                            {opt.id === 'CASAL' && (
-                                                <div className="flex -space-x-1">
-                                                    <User className={`w-4 h-4 ${isActive ? 'fill-current' : ''}`} />
-                                                    <User className={`w-4 h-4 ${isActive ? 'fill-current' : ''}`} />
-                                                </div>
-                                            )}
-                                            {opt.label}
-                                        </button>
-                                    );
-                                })}
-                            </div>
-                        )}
 
-                        {/* Tags */}
-                        {(congregationType === 'SIGN_LANGUAGE' || congregationType === 'FOREIGN_LANGUAGE') && address.isActive !== false && (
-                            <div className="grid grid-cols-2 gap-2">
-                                <button
-                                    onClick={() => setIsDeaf(!isDeaf)}
-                                    className={`px-3 py-2 rounded-lg text-xs font-bold uppercase flex items-center gap-2 transition-colors border
-                                ${isDeaf ? 'bg-yellow-100 dark:bg-yellow-900/30 text-yellow-800 dark:text-yellow-400 border-yellow-200 dark:border-yellow-900/40' : 'bg-white dark:bg-slate-800 text-gray-500 dark:text-gray-400 border-gray-200 dark:border-slate-700'}`}
-                                >
-                                    <Ear className="w-4 h-4" /> Surdo
-                                </button>
-                                <button
-                                    onClick={() => setIsMinor(!isMinor)}
-                                    className={`px-3 py-2 rounded-lg text-xs font-bold uppercase flex items-center gap-2 transition-colors border
-                                ${isMinor ? 'bg-blue-100 dark:bg-blue-900/30 text-blue-800 dark:text-blue-400 border-blue-200 dark:border-blue-900/40' : 'bg-white dark:bg-slate-800 text-gray-500 dark:text-gray-400 border-gray-200 dark:border-slate-700'}`}
-                                >
-                                    <Baby className="w-4 h-4" /> Menor
-                                </button>
-                                <button
-                                    onClick={() => setIsStudent(!isStudent)}
-                                    className={`px-3 py-2 rounded-lg text-xs font-bold uppercase flex items-center gap-2 transition-colors border
-                                ${isStudent ? 'bg-purple-100 dark:bg-purple-900/30 text-purple-800 dark:text-purple-400 border-purple-200 dark:border-purple-900/40' : 'bg-white dark:bg-slate-800 text-gray-500 dark:text-gray-400 border-gray-200 dark:border-slate-700'}`}
-                                >
-                                    <GraduationCap className="w-4 h-4" /> Estudante
-                                </button>
-                                <button
-                                    onClick={() => setIsNeurodivergent(!isNeurodivergent)}
-                                    className={`px-3 py-2 rounded-lg text-xs font-bold uppercase flex items-center gap-2 transition-colors border
-                                ${isNeurodivergent ? 'bg-teal-100 dark:bg-teal-900/30 text-teal-800 dark:text-teal-400 border-teal-200 dark:border-teal-900/40' : 'bg-white dark:bg-slate-800 text-gray-500 dark:text-gray-400 border-gray-200 dark:border-slate-700'}`}
-                                >
-                                    <Brain className="w-4 h-4" /> Neurodivergente
-                                </button>
-                            </div>
-                        )}
+
 
                         {/* Notes */}
                         <div>
@@ -424,7 +344,7 @@ export default function VisitReportModal({
 
                             {((address.googleMapsLink && address.googleMapsLink.trim() !== '' && address.googleMapsLink !== 'undefined') || (address.wazeLink && address.wazeLink.trim() !== '' && address.wazeLink !== 'undefined')) && (
                                 <a
-                                    href={address.googleMapsLink || address.wazeLink}
+                                    href={sanitizeUrl(address.googleMapsLink || address.wazeLink) || '#'}
                                     target="_blank"
                                     rel="noopener noreferrer"
                                     className="flex-1 bg-white hover:bg-gray-100 dark:bg-slate-800 dark:hover:bg-slate-700 text-gray-900 dark:text-white py-3.5 rounded-lg font-bold text-sm flex items-center justify-center gap-2 transition-colors border border-gray-200 dark:border-slate-700"

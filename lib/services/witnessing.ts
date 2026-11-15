@@ -16,6 +16,7 @@ import {
 } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
 import { logActivity } from '@/lib/services/audit_logs';
+import { sanitizeUrl } from '@/lib/validation';
 
 const TABLE = 'witnessing_points';
 
@@ -71,8 +72,8 @@ export async function createWitnessingPoint(data: {
             schedule: data.schedule,
             status: 'AVAILABLE',
             congregationId: data.congregationId,
-            googleMapsLink: data.googleMapsLink || '',
-            wazeLink: data.wazeLink || '',
+            googleMapsLink: data.googleMapsLink ? sanitizeUrl(data.googleMapsLink) : '',
+            wazeLink: data.wazeLink ? sanitizeUrl(data.wazeLink) : '',
             createdAt: serverTimestamp(),
             updatedAt: serverTimestamp(),
         };
@@ -149,8 +150,8 @@ export async function updateWitnessingPointDetails(id: string, data: {
             updatedAt: serverTimestamp(),
         };
         
-        if (data.googleMapsLink !== undefined) updateData.googleMapsLink = data.googleMapsLink;
-        if (data.wazeLink !== undefined) updateData.wazeLink = data.wazeLink;
+        if (data.googleMapsLink !== undefined) updateData.googleMapsLink = sanitizeUrl(data.googleMapsLink);
+        if (data.wazeLink !== undefined) updateData.wazeLink = sanitizeUrl(data.wazeLink);
 
         await updateDoc(pointRef, updateData);
 

@@ -111,9 +111,8 @@ export async function exportDataToCSV(congregationId: string, cityId?: string | 
 
         const headers = [
             'Cidade', 'UF', 'Número do Mapa', 'Descrição', 'Endereço',
-            'Quantidade de residentes', 'Nome', 'Link do Maps', 'Link do Waze',
-            'Status', 'Surdo', 'Menor de idade', 'Estudante', 'Neurodivergente',
-            'Gênero', 'Observações', 'Resultado da ultima visita', 'Ordem na listagem'
+            'Link do Maps', 'Link do Waze', 'Status', 'Observações',
+            'Resultado da ultima visita', 'Ordem na listagem'
         ];
 
         const rows = rowsData.map((row) => {
@@ -127,16 +126,9 @@ export async function exportDataToCSV(congregationId: string, cityId?: string | 
                 territory.name || '',
                 territory.notes || '',
                 addr.street || '',
-                row.address ? (addr.residentsCount || 1) : '',
-                addr.residentName || '',
                 addr.googleMapsLink || '',
                 addr.wazeLink || '',
                 row.address ? ((addr.isActive ?? true) ? 'true' : 'false') : '',
-                row.address ? (addr.isDeaf ? 'true' : 'false') : '',
-                row.address ? (addr.isMinor ? 'true' : 'false') : '',
-                row.address ? (addr.isStudent ? 'true' : 'false') : '',
-                row.address ? (addr.isNeurodivergent ? 'true' : 'false') : '',
-                addr.gender || '',
                 addr.observations || '',
                 addr.lastVisitResult || '',
                 row.address ? (addr.sortOrder || 0) : ''

@@ -6,8 +6,8 @@ import {
     Search, MapPin, Navigation, Pencil, Trash2,
     Loader2, ArrowLeft, Home, GripVertical, MoreVertical,
     X, CheckCircle, MousePointer2, History as HistoryIcon,
-    FileText, User, Ear, Baby, GraduationCap, Brain,
-    Truck, Calendar, Hand, Info, ChevronDown, ChevronUp, Map as MapIcon, Plus, Users
+    FileText,
+    Truck, Calendar, Hand, Info, ChevronDown, ChevronUp, Map as MapIcon, Plus
 } from 'lucide-react';
 import dynamic from 'next/dynamic';
 
@@ -20,6 +20,7 @@ const ReferencePointsModal = dynamic(() => import('@/app/components/ReferencePoi
 const BottomNav = dynamic(() => import('@/app/components/BottomNav'), { ssr: false });
 import ConfirmationModal from '@/app/components/ConfirmationModal';
 import { MapSkeleton } from '@/app/components/Skeleton';
+import { sanitizeUrl } from '@/lib/validation';
 
 const MapView = dynamic(() => import('@/app/components/MapView'), {
     loading: () => <MapSkeleton />,
@@ -106,8 +107,9 @@ function AddressListContent() {
     const cityId = searchParams.get('cityId') || '';
     const territoryId = searchParams.get('territoryId') || '';
     const editAddressId = searchParams.get('edit');
+    const highlightId = searchParams.get('highlight');
 
-    const { user, isAdmin, isAdminRoleGlobal, isElder, isServant, loading: authLoading, congregationType: authCongregationType, termType, canManageReferencePoints } = useAuth();
+    const { user, isAdmin, isAdminRoleGlobal, isElder, isServant, loading: authLoading, congregationType: authCongregationType, termType, canManageReferencePoints, congregationId: authCongregationId } = useAuth();
     const [localCongregationType, setLocalCongregationType] = useState<'TRADITIONAL' | 'SIGN_LANGUAGE' | 'FOREIGN_LANGUAGE' | null>(null);
     const isTraditional = (localCongregationType || authCongregationType) === 'TRADITIONAL';
     const [addresses, setAddresses] = useState<Address[]>([]);
@@ -122,7 +124,65 @@ function AddressListContent() {
     const [parentCity, setParentCity] = useState<string | null>(null);
     const [mapAppSelect, setMapAppSelect] = useState<{ isOpen: boolean, address: any } | null>(null);
 
+    // Estados efetivos com suporte a autodescoberta quando vier apenas territoryId
+    const [effectiveCongregationId, setEffectiveCongregationId] = useState(congregationId || '');
+    const [effectiveCityId, setEffectiveCityId] = useState(cityId || '');
+
+    useEffect(() => {
+        if (congregationId) {
+            setEffectiveCongregationId(congregationId);
+        } else if (authCongregationId && !effectiveCongregationId) {
+            setEffectiveCongregationId(authCongregationId);
+        }
+    }, [congregationId, authCongregationId, effectiveCongregationId]);
+
+    useEffect(() => {
+        if (cityId) {
+            setEffectiveCityId(cityId);
+        }
+    }, [cityId]);
+
+    useEffect(() => {
+        if (!territoryId) {
+            setLoading(false);
+            return;
+        }
+
+        const resolveTerritory = async () => {
+            try {
+                if (!effectiveCityId || !effectiveCongregationId) {
+                    const terrSnap = await getDoc(doc(db, 'territories', territoryId));
+                    if (terrSnap.exists()) {
+                        const tData = terrSnap.data();
+                        if (tData.cityId && !effectiveCityId) {
+                            setEffectiveCityId(tData.cityId);
+                        }
+                        if (tData.congregationId && !effectiveCongregationId) {
+                            setEffectiveCongregationId(tData.congregationId);
+                        }
+                    } else {
+                        setLoading(false);
+                    }
+                }
+            } catch (e) {
+                console.error("Erro ao resolver território:", e);
+                setLoading(false);
+            }
+        };
+
+        resolveTerritory();
+    }, [territoryId, effectiveCityId, effectiveCongregationId]);
+
     const serviceYearRange = useState(() => getServiceYearRange(getServiceYear()))[0];
+
+    useEffect(() => {
+        if (highlightId && addresses.length > 0 && !loading) {
+            const el = document.getElementById(`address-card-${highlightId}`);
+            if (el) {
+                el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+            }
+        }
+    }, [highlightId, addresses, loading]);
 
     // Redirect Publishers from general Maps entry or unassigned territories
     useEffect(() => {
@@ -164,15 +224,6 @@ function AddressListContent() {
     const [isActive, setIsActive] = useState(true);
     const [googleMapsLink, setGoogleMapsLink] = useState('');
     const [wazeLink, setWazeLink] = useState('');
-    const [residentsCount, setResidentsCount] = useState('1'); // Quantidade de residentes no endereço
-    // Gender Stats State: territoryId -> { men: number, women: number, couples: number }
-    const [genderStats, setGenderStats] = useState<Record<string, { men: number, women: number, couples: number }>>({});
-    const [residentName, setResidentName] = useState('');
-    const [gender, setGender] = useState<'HOMEM' | 'MULHER' | 'CASAL' | ''>('');
-    const [isDeaf, setIsDeaf] = useState(false);
-    const [isMinor, setIsMinor] = useState(false);
-    const [isStudent, setIsStudent] = useState(false);
-    const [isNeurodivergent, setIsNeurodivergent] = useState(false);
     const [isDoNotVisit, setIsDoNotVisit] = useState(false);
     const [observations, setObservations] = useState('');
 
@@ -264,12 +315,16 @@ function AddressListContent() {
 
     // Fetch Context Names & Options
     useEffect(() => {
-        if (!congregationId || !cityId || !territoryId) return;
+        if (!territoryId) {
+            setLoading(false);
+            return;
+        }
+        if (!effectiveCongregationId) return;
 
         const fetchData = async () => {
             setLoading(true);
             try {
-                const resData = await getMapsContext(congregationId, cityId, territoryId);
+                const resData = await getMapsContext(effectiveCongregationId, effectiveCityId || null, territoryId);
 
                 if (!resData.success) {
                     throw new Error(resData.error || 'Erro ao buscar contexto superior');
@@ -313,13 +368,16 @@ function AddressListContent() {
         };
 
         fetchData();
-    }, [congregationId, cityId, territoryId]);
+    }, [effectiveCongregationId, effectiveCityId, territoryId]);
     
     // Fetch Addresses
     const fetchAddresses = useCallback(async () => {
-        if (!congregationId || !territoryId) return;
+        if (!effectiveCongregationId || !territoryId) {
+            if (!territoryId) setLoading(false);
+            return;
+        }
         try {
-            const resData = await getAddresses(congregationId, cityId, territoryId);
+            const resData = await getAddresses(effectiveCongregationId, effectiveCityId || null, territoryId);
             console.log("[Debug] Endereços recebidos:", resData);
 
             if (!resData.success) {
@@ -327,8 +385,7 @@ function AddressListContent() {
             }
 
             const data = (resData.addresses || []).map((addr: any) => ({
-                ...addr,
-                residentsCount: addr.residentsCount || 1
+                ...addr
             }));
 
             const sorted = data.sort((a: any, b: any) => {
@@ -345,20 +402,20 @@ function AddressListContent() {
         } finally {
             setLoading(false);
         }
-    }, [congregationId, cityId, territoryId]);
+    }, [effectiveCongregationId, effectiveCityId, territoryId]);
 
     const fetchReferencePoints = useCallback(async () => {
-        if (!congregationId || !cityId) return;
+        if (!effectiveCongregationId || !effectiveCityId) return;
         try {
             const { getReferencePoints } = await import('@/lib/services/reference_points');
-            const res = await getReferencePoints(congregationId, cityId);
+            const res = await getReferencePoints(effectiveCongregationId, effectiveCityId);
             if (res.success) {
                 setReferencePoints(res.data || []);
             }
         } catch (error) {
             console.warn("Erro ao buscar pontos de referência:", error);
         }
-    }, [congregationId, cityId]);
+    }, [effectiveCongregationId, effectiveCityId]);
 
     useEffect(() => {
         fetchAddresses();
@@ -367,11 +424,11 @@ function AddressListContent() {
         let unsubscribeAddresses = () => {};
         let unsubscribeRefPoints = () => {};
 
-        if (territoryId && congregationId && db) {
+        if (territoryId && effectiveCongregationId && db) {
             const addressesRef = collection(db, 'addresses');
             const q = query(
                 addressesRef,
-                where('congregationId', '==', congregationId),
+                where('congregationId', '==', effectiveCongregationId),
                 where('territoryId', '==', territoryId)
             );
 
@@ -385,12 +442,12 @@ function AddressListContent() {
             });
         }
 
-        if (cityId && congregationId && db) {
+        if (effectiveCityId && effectiveCongregationId && db) {
             const refCollection = collection(db, 'reference_points');
             const qRef = query(
                 refCollection,
-                where('congregationId', '==', congregationId),
-                where('cityId', '==', cityId)
+                where('congregationId', '==', effectiveCongregationId),
+                where('cityId', '==', effectiveCityId)
             );
 
             unsubscribeRefPoints = onSnapshot(qRef, {
@@ -407,7 +464,7 @@ function AddressListContent() {
             unsubscribeAddresses();
             unsubscribeRefPoints();
         };
-    }, [congregationId, cityId, territoryId, fetchAddresses, fetchReferencePoints]);
+    }, [effectiveCongregationId, effectiveCityId, territoryId, fetchAddresses, fetchReferencePoints]);
 
     // Fetch Available Options for Edit Modal
     useEffect(() => {
@@ -495,15 +552,8 @@ function AddressListContent() {
                 lat: lat ? parseFloat(lat) : null,
                 lng: lng ? parseFloat(lng) : null,
                 isActive: isActive,
-                googleMapsLink: googleMapsLink,
-                wazeLink: wazeLink,
-                residentName: residentName,
-                residentsCount: residentsCount ? parseInt(residentsCount) : 1,
-                gender: (gender as any) || null,
-                isDeaf: isDeaf,
-                isMinor: isMinor,
-                isStudent: isStudent,
-                isNeurodivergent: isNeurodivergent,
+                googleMapsLink: sanitizeUrl(googleMapsLink.trim()),
+                wazeLink: sanitizeUrl(wazeLink.trim()),
                 observations
             };
 
@@ -540,13 +590,6 @@ function AddressListContent() {
         setIsActive(true);
         setGoogleMapsLink('');
         setWazeLink('');
-        setResidentsCount('1');
-        setResidentName('');
-        setGender('');
-        setIsDeaf(false);
-        setIsMinor(false);
-        setIsStudent(false);
-        setIsNeurodivergent(false);
         setIsDoNotVisit(false);
         setObservations('');
         setEditingId(null);
@@ -561,13 +604,6 @@ function AddressListContent() {
         setIsActive(addr.isActive !== false);
         setGoogleMapsLink(addr.googleMapsLink || '');
         setWazeLink(addr.wazeLink || '');
-        setResidentsCount(addr.residentsCount ? addr.residentsCount.toString() : '1');
-        setResidentName(addr.residentName || '');
-        setGender(addr.gender || '');
-        setIsDeaf(!!addr.isDeaf);
-        setIsMinor(!!addr.isMinor);
-        setIsStudent(!!addr.isStudent);
-        setIsNeurodivergent(!!addr.isNeurodivergent);
         setIsDoNotVisit(addr.visitStatus === 'doNotVisit');
         setObservations(addr.observations || '');
         
@@ -682,8 +718,11 @@ function AddressListContent() {
         const exactLink = googleLink || wazeLink;
 
         if (exactLink) {
-            window.open(exactLink, '_blank');
-            return;
+            const safeUrl = sanitizeUrl(exactLink);
+            if (safeUrl) {
+                window.open(safeUrl, '_blank');
+                return;
+            }
         }
 
         // Usa o endereço completo para abrir no mapa (busca padrão)
@@ -781,15 +820,18 @@ function AddressListContent() {
     // --- RENDER HELPERS ---
     const renderAddressCard = (addr: Address, index: number) => {
         const active = addr.isActive ?? true;
+        const isHighlighted = highlightId === addr.id;
 
         return (
             <div
                 key={addr.id}
+                id={`address-card-${addr.id}`}
                 draggable={!isSelectionMode}
                 onDragStart={(e) => handleDragStart(e, addr.id)}
                 onDragOver={(e) => handleDragOver(e, addr.id)}
                 onDragEnd={handleDragEnd}
                 className={`group bg-surface rounded-md p-4 border shadow-md hover:shadow-md transition-all 
+                    ${isHighlighted ? 'ring-4 ring-red-500/80 ring-offset-2 animate-pulse shadow-xl' : ''}
                     ${(addr.visitStatus === 'moved') ? 'border-2 border-blue-500 bg-blue-50/50 dark:border-blue-500/30 dark:bg-blue-950/20' :
                         (addr.visitStatus === 'doNotVisit') ? 'border-2 border-red-500 bg-red-50/50 dark:border-red-500/30 dark:bg-red-950/20' :
                             (addr.visitStatus === 'partial') ? 'border-2 border-yellow-500 bg-yellow-50/50 dark:border-yellow-500/30 dark:bg-yellow-950/20' :
@@ -850,34 +892,6 @@ function AddressListContent() {
                                 );
                             }
 
-                            // Gender Mode (Sign Language / Foreign)
-                            if (!isTraditional && addr.gender) {
-                                let badgeStyles = "bg-gray-100 text-gray-600 border-gray-200 dark:bg-gray-800 dark:text-gray-400 dark:border-gray-700";
-                                if (addr.gender === 'HOMEM') {
-                                    badgeStyles = "bg-blue-100 text-blue-600 border-blue-200 dark:bg-blue-900/30 dark:text-blue-400 dark:border-blue-800";
-                                } else if (addr.gender === 'MULHER') {
-                                    badgeStyles = "bg-pink-100 text-pink-600 border-pink-200 dark:bg-pink-900/30 dark:text-pink-400 dark:border-pink-800";
-                                } else if (addr.gender === 'CASAL') {
-                                    badgeStyles = "bg-purple-100 text-purple-600 border-purple-200 dark:bg-purple-900/30 dark:text-purple-400 dark:border-purple-800";
-                                }
-
-                                return (
-                                    <div
-                                        title={lastVisitFormatted}
-                                        className={`w-10 h-10 rounded-lg flex items-center justify-center shrink-0 shadow-sm border transition-colors ${badgeStyles}`}
-                                    >
-                                        {addr.gender === 'CASAL' ? (
-                                            <div className="flex -space-x-1.5">
-                                                <User className="w-4 h-4 fill-current" />
-                                                <User className="w-4 h-4 fill-current" />
-                                            </div>
-                                        ) : (
-                                            <User className="w-5 h-5 fill-current" />
-                                        )}
-                                    </div>
-                                );
-                            }
-
                             let defaultStyles = "bg-primary-50 dark:bg-primary-900/10 text-primary-700 dark:text-primary-400 border-primary-100 dark:border-primary-900/20";
                             if (addr.visitStatus === 'partial') {
                                 defaultStyles = "bg-yellow-100 dark:bg-yellow-900/30 text-yellow-700 dark:text-yellow-400 border-yellow-200 dark:border-yellow-900/40";
@@ -901,55 +915,6 @@ function AddressListContent() {
                             </h3>
 
                             <div className="flex flex-wrap items-center gap-2 mt-1 text-xs text-muted">
-                                {!isTraditional && addr.residentName && <span className="font-semibold text-gray-700 dark:text-gray-300">{addr.residentName}</span>}
-
-                                {!isTraditional && (
-                                    <>
-                                        {/* Resident Count Badge */}
-                                        {addr.residentsCount && (
-                                            <span className="flex items-center gap-1 bg-indigo-50 dark:bg-indigo-900/20 text-indigo-600 dark:text-indigo-400 px-1.5 py-0.5 rounded-md font-bold text-[10px] uppercase border border-indigo-100 dark:border-indigo-900/30">
-                                                <Users className="w-3 h-3 text-indigo-500" /> {addr.residentsCount}
-                                            </span>
-                                        )}
-
-                                        {addr.gender && (
-                                            <span className={`flex items-center gap-1 px-1.5 py-0.5 rounded-md font-bold text-[10px] uppercase ${addr.gender === 'HOMEM' ? 'bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400' :
-                                                addr.gender === 'MULHER' ? 'bg-pink-100 text-pink-700 dark:bg-pink-900/30 dark:text-pink-400' :
-                                                    'bg-purple-100 text-purple-700 dark:bg-purple-900/30 dark:text-purple-400'
-                                                }`}>
-                                                {addr.gender === 'HOMEM' && <User className="w-3 h-3 fill-current" />}
-                                                {addr.gender === 'MULHER' && <User className="w-3 h-3 fill-current" />}
-                                                {addr.gender === 'CASAL' && (
-                                                    <div className="flex -space-x-1">
-                                                        <User className="w-2.5 h-2.5 fill-current" />
-                                                        <User className="w-2.5 h-2.5 fill-current" />
-                                                    </div>
-                                                )}
-                                                {addr.gender === 'HOMEM' ? 'Homem' : addr.gender === 'MULHER' ? 'Mulher' : 'Casal'}
-                                            </span>
-                                        )}
-                                        {addr.isDeaf && (
-                                            <span className="flex items-center gap-1 bg-yellow-100 dark:bg-yellow-900/30 text-yellow-800 dark:text-yellow-400 px-1.5 py-0.5 rounded-md font-bold text-[10px] uppercase">
-                                                <Ear className="w-3 h-3" /> Surdo
-                                            </span>
-                                        )}
-                                        {addr.isMinor ? (
-                                            <span className="flex items-center gap-1 bg-primary-light/50 dark:bg-primary-dark/30 text-primary-dark dark:text-primary-light px-1.5 py-0.5 rounded-md font-bold text-[10px] uppercase">
-                                                <Baby className="w-3 h-3" /> Menor
-                                            </span>
-                                        ) : null}
-                                        {addr.isStudent && (
-                                            <span className="flex items-center gap-1 bg-purple-100 dark:bg-purple-900/30 text-purple-800 dark:text-purple-400 px-1.5 py-0.5 rounded-md font-bold text-[10px] uppercase">
-                                                <GraduationCap className="w-3 h-3" /> Estudante
-                                            </span>
-                                        )}
-                                        {addr.isNeurodivergent && (
-                                            <span className="flex items-center gap-1 bg-teal-100 dark:bg-teal-900/30 text-teal-800 dark:text-teal-400 px-1.5 py-0.5 rounded-md font-bold text-[10px] uppercase">
-                                                <Brain className="w-3 h-3" /> Neurodivergente
-                                            </span>
-                                        )}
-                                    </>
-                                )}
                                 {addr.visitStatus === 'moved' && (
                                     <span className="flex items-center gap-1 bg-sky-100 dark:bg-sky-900/30 text-sky-800 dark:text-sky-400 px-1.5 py-0.5 rounded-md font-bold text-[10px] uppercase">
                                         <Truck className="w-3 h-3" /> Mudou-se
@@ -1109,7 +1074,7 @@ function AddressListContent() {
             <header className="bg-surface sticky top-0 z-30 px-6 py-4 border-b border-surface-border flex justify-between items-center shadow-sm">
                 <div className="flex items-center gap-3">
                     <Link
-                        href={`/my-maps/territory?congregationId=${congregationId}&cityId=${cityId}&territoryId=${territoryId}`}
+                        href={effectiveCongregationId && effectiveCityId ? `/my-maps/territory?congregationId=${effectiveCongregationId}&cityId=${effectiveCityId}&territoryId=${territoryId}` : `/my-maps`}
                         className="p-2 bg-gray-100 dark:bg-gray-800 rounded-lg text-gray-600 dark:text-gray-400 hover:bg-gray-200 dark:hover:bg-gray-700 transition-colors"
                         title="Voltar"
                     >
@@ -1132,8 +1097,8 @@ function AddressListContent() {
                 <div className="flex items-center gap-2">
                     {(isElder || isServant || isAdmin || isAdminRoleGlobal || canManageReferencePoints) && (
                         <AddressActionsMenu
-                            congregationId={congregationId}
-                            cityId={cityId}
+                            congregationId={effectiveCongregationId}
+                            cityId={effectiveCityId}
                             territoryId={territoryId}
                             onImportSuccess={fetchAddresses}
                             onCreateClick={() => setIsCreateModalOpen(true)}
@@ -1394,100 +1359,19 @@ function AddressListContent() {
                                     )}
                                 </div>
 
-                                {!isTraditional && (
-                                    <div className="flex gap-3">
-                                        <div className="flex-1">
-                                            <label className="block text-xs font-bold text-muted uppercase tracking-wider mb-2">Residentes</label>
-                                            <input
-                                                type="number"
-                                                min="1"
-                                                className="w-full bg-gray-50 dark:bg-gray-800 border border-gray-100 dark:border-gray-700 rounded-lg p-3 font-bold text-sm text-main"
-                                                value={residentsCount}
-                                                onChange={e => setResidentsCount(e.target.value)}
-                                                onBlur={() => {
-                                                    if (!residentsCount || parseInt(residentsCount) < 1) setResidentsCount('1');
-                                                }}
-                                                placeholder="Qtd."
-                                            />
-                                        </div>
-                                        <div className="flex-[2]">
-                                            <label className="block text-xs font-bold text-muted uppercase tracking-wider mb-2">Nome</label>
-                                            <input
-                                                className="w-full bg-gray-50 dark:bg-gray-800 border border-gray-100 dark:border-gray-700 rounded-lg p-3 font-bold text-sm text-main"
-                                                value={residentName}
-                                                onChange={e => setResidentName(e.target.value)}
-                                                placeholder="Nome do morador"
-                                            />
-                                        </div>
-                                    </div>
-                                )}
 
-                                {/* Gender Selection */}
-                                {!isTraditional && (
-                                    <div className="space-y-4">
-                                        <div>
-                                            <label className="block text-xs font-bold text-muted uppercase tracking-wider mb-2">Gênero</label>
-                                            <div className="flex gap-2">
-                                                {[
-                                                    { id: 'HOMEM', label: 'Homem' },
-                                                    { id: 'MULHER', label: 'Mulher' },
-                                                    { id: 'CASAL', label: 'Casal' }
-                                                ].map(opt => {
-                                                    const isSelected = gender === opt.id;
-                                                    let activeClass = '';
-
-                                                    if (opt.id === 'HOMEM') activeClass = 'border-blue-500 bg-blue-50 dark:bg-blue-900/30 text-blue-700 dark:text-blue-400';
-                                                    else if (opt.id === 'MULHER') activeClass = 'border-pink-500 bg-pink-50 dark:bg-pink-900/30 text-pink-700 dark:text-pink-400';
-                                                    else activeClass = 'border-purple-500 bg-purple-50 dark:bg-purple-900/30 text-purple-700 dark:text-purple-400';
-
-                                                    return (
-                                                        <button
-                                                            key={opt.id}
-                                                            type="button"
-                                                            onClick={() => setGender(opt.id as any)}
-                                                            className={`flex-1 py-2 rounded-lg text-xs font-bold uppercase transition-all border-2 ${isSelected ? activeClass : 'border-gray-100 dark:border-gray-700 bg-white dark:bg-gray-800 text-gray-400 dark:text-gray-500 hover:border-gray-200 dark:hover:border-gray-600'}`}
-                                                        >
-                                                            {opt.label}
-                                                        </button>
-                                                    )
-                                                })}
-                                            </div>
-                                        </div>
-
-                                        {/* Checkboxes */}
-                                        <div className="grid grid-cols-2 gap-2">
-                                            <label className={`flex items-center justify-center gap-2 p-3 rounded-lg border-2 transition-all cursor-pointer ${isDeaf ? 'border-yellow-500 bg-yellow-50 dark:bg-yellow-900/30 text-yellow-700 dark:text-yellow-400' : 'border-gray-100 dark:border-gray-700 bg-white dark:bg-gray-800 text-gray-500 dark:text-gray-400 hover:border-gray-200'}`}>
-                                                <input type="checkbox" className="hidden" checked={isDeaf} onChange={() => setIsDeaf(!isDeaf)} />
-                                                <Ear className="w-4 h-4" />
-                                                <span className="text-xs font-bold uppercase">Surdo</span>
-                                            </label>
-                                            <label className={`flex items-center justify-center gap-2 p-3 rounded-lg border-2 transition-all cursor-pointer ${isMinor ? 'border-orange-500 bg-orange-50 dark:bg-orange-900/30 text-orange-700 dark:text-orange-400' : 'border-gray-100 dark:border-gray-700 bg-white dark:bg-gray-800 text-gray-500 dark:text-gray-400 hover:border-gray-200'}`}>
-                                                <input type="checkbox" className="hidden" checked={isMinor} onChange={() => setIsMinor(!isMinor)} />
-                                                <Baby className="w-4 h-4" />
-                                                <span className="text-xs font-bold uppercase">Menor</span>
-                                            </label>
-                                            <label className={`flex items-center justify-center gap-2 p-3 rounded-lg border-2 transition-all cursor-pointer ${isStudent ? 'border-purple-500 bg-purple-50 dark:bg-purple-900/30 text-purple-700 dark:text-purple-400' : 'border-gray-100 dark:border-gray-700 bg-white dark:bg-gray-800 text-gray-500 dark:text-gray-400 hover:border-gray-200'}`}>
-                                                <input type="checkbox" className="hidden" checked={isStudent} onChange={() => setIsStudent(!isStudent)} />
-                                                <GraduationCap className="w-4 h-4" />
-                                                <span className="text-xs font-bold uppercase">Estudante</span>
-                                            </label>
-                                            <label className={`flex items-center justify-center gap-2 p-3 rounded-lg border-2 transition-all cursor-pointer ${isNeurodivergent ? 'border-teal-500 bg-teal-50 dark:bg-teal-900/30 text-teal-700 dark:text-teal-400' : 'border-gray-100 dark:border-gray-700 bg-white dark:bg-gray-800 text-gray-500 dark:text-gray-400 hover:border-gray-200'}`}>
-                                                <input type="checkbox" className="hidden" checked={isNeurodivergent} onChange={() => setIsNeurodivergent(!isNeurodivergent)} />
-                                                <Brain className="w-4 h-4" />
-                                                <span className="text-xs font-bold uppercase">Neurodivergente</span>
-                                            </label>
-                                        </div>
-                                    </div>
-                                )}
 
                                 <div>
-                                    <label className="block text-xs font-bold text-muted uppercase tracking-wider mb-2">Observações</label>
+                                    <label className="block text-xs font-bold text-muted uppercase tracking-wider mb-2">Notas de Acesso / Ponto de Referência</label>
                                     <textarea
                                         className="w-full bg-gray-50 dark:bg-gray-800 border-gray-100 dark:border-gray-700 rounded-lg p-3 font-medium text-sm min-h-[80px] text-main"
                                         value={observations}
                                         onChange={e => setObservations(e.target.value)}
-                                        placeholder="Detalhes adicionais..."
+                                        placeholder="Ex: portão azul, campainha quebrada, cão no quintal..."
                                     />
+                                    <p className="text-[11px] text-muted mt-1">
+                                        Apenas notas de acesso físico ao imóvel. Proibido inserir nomes ou dados pessoais de moradores.
+                                    </p>
                                 </div>
 
                                 <div className="mt-2">

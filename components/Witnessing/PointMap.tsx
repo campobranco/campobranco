@@ -46,9 +46,9 @@ export default function PointMap({ points }: PointMapProps) {
                         attributionControl: false
                     }).setView(center as any, 14);
 
-                    L.tileLayer('https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png', {
-                        subdomains: 'abcd',
-                        maxZoom: 20
+                    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+                        attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors',
+                        maxZoom: 19
                     }).addTo(map);
 
                     mapInstanceRef.current = map;

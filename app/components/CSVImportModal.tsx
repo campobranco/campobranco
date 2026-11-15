@@ -21,6 +21,7 @@ import {
 } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
 import { toast } from 'sonner';
+import { sanitizeUrl } from '@/lib/validation';
 
 interface CSVImportModalProps {
     isOpen: boolean;
@@ -157,8 +158,8 @@ function buildPreview(text: string): { cities: Record<string, PreviewCity>; tota
                 isActive: !g(COLS.active) || g(COLS.active).toLowerCase() === 'true',
                 isDeaf: g(COLS.deaf).toLowerCase() === 'true',
                 isMinor: g(COLS.minor).toLowerCase() === 'true',
-                googleMapsLink: g(COLS.googleMapsLink),
-                wazeLink: g(COLS.wazeLink),
+                googleMapsLink: sanitizeUrl(g(COLS.googleMapsLink)),
+                wazeLink: sanitizeUrl(g(COLS.wazeLink)),
             });
             totalAddresses++;
         }
@@ -375,13 +376,6 @@ export default function CSVImportModal({
 
     if (!isOpen || !isMounted) return null;
 
-    const genderBadge = (g: string) => {
-        if (g === 'HOMEM') return 'bg-blue-100 text-blue-700';
-        if (g === 'MULHER') return 'bg-pink-100 text-pink-700';
-        if (g === 'CASAL') return 'bg-purple-100 text-purple-700';
-        return 'bg-gray-100 text-gray-600';
-    };
-
     return createPortal(
         <div className="fixed inset-0 z-[9999] flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm animate-in fade-in duration-200">
             <div className="bg-surface rounded-xl w-full max-w-2xl shadow-2xl animate-in zoom-in-95 duration-200 flex flex-col max-h-[90vh] border border-surface-border">
@@ -475,14 +469,6 @@ export default function CSVImportModal({
                                                             <div key={ai} className="flex items-center gap-2 px-4 py-2 pl-16 border-t border-surface-border/50 bg-gray-50/30 dark:bg-gray-900/10">
                                                                 <Home className="w-3 h-3 text-muted shrink-0" />
                                                                 <span className={`text-xs flex-1 truncate ${!addr.isActive ? 'line-through text-muted' : 'text-main'}`}>{addr.street}</span>
-                                                                {addr.residentName && <span className="text-[10px] text-muted truncate max-w-[100px]">{addr.residentName}</span>}
-                                                                {addr.gender && (
-                                                                    <span className={`text-[9px] font-black uppercase px-1.5 py-0.5 rounded-full ${genderBadge(addr.gender)}`}>
-                                                                        {addr.gender.substring(0, 1)}
-                                                                    </span>
-                                                                )}
-                                                                {addr.isDeaf && <span className="text-[9px] bg-yellow-100 text-yellow-800 font-black px-1 rounded">S</span>}
-                                                                {addr.isMinor && <span className="text-[9px] bg-blue-100 text-blue-800 font-black px-1 rounded">M</span>}
                                                             </div>
                                                         ))}
                                                     </div>

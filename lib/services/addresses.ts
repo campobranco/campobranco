@@ -11,6 +11,7 @@ import {
 } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
 import { logActivity } from '@/lib/services/audit_logs';
+import { sanitizeUrl } from '@/lib/validation';
 
 const TABLE = 'addresses';
 
@@ -55,6 +56,10 @@ export async function saveAddress(id: string | null, data: any) {
         if (data.visitStatus && !VALID_VISIT_STATUSES.includes(data.visitStatus as any)) {
             throw new Error(`visitStatus inválido: "${data.visitStatus}". Use: ${VALID_VISIT_STATUSES.join(', ')}`);
         }
+
+        // Sanitização de URLs externas (defesa em profundidade)
+        if (data.googleMapsLink) data.googleMapsLink = sanitizeUrl(data.googleMapsLink);
+        if (data.wazeLink) data.wazeLink = sanitizeUrl(data.wazeLink);
 
         if (id) {
             // 1. Edição: busca o registro atual para detectar mudança em isActive

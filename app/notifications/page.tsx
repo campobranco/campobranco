@@ -15,7 +15,7 @@ import {
 import { db } from "@/lib/firebase";
 import { ArrowLeft } from "lucide-react";
 import { useRouter } from 'next/navigation';
-import ActionCenter, { IdleTerritory } from "@/app/components/Dashboard/ActionCenter";
+import ActionCenter, { IdleTerritory, DoNotVisitAddress } from "@/app/components/Dashboard/ActionCenter";
 
 export default function NotificationsPage() {
     const { user, role, isElder, isServant, congregationId, loading, profileName } = useAuth();
@@ -24,6 +24,7 @@ export default function NotificationsPage() {
     // State mirroring Dashboard
     const [pendingMapsCount, setPendingMapsCount] = useState(0);
     const [idleTerritories, setIdleTerritories] = useState<{ id: string; name: string; city: string; lastVisit?: any }[]>([]);
+    const [doNotVisitAddresses, setDoNotVisitAddresses] = useState<DoNotVisitAddress[]>([]);
     const [cityCompletion, setCityCompletion] = useState<{ cityName: string; percentage: number } | undefined>();
     const [expiringMaps, setExpiringMaps] = useState<{ id: string, title: string, daysLeft: number }[]>([]);
 
@@ -192,6 +193,38 @@ export default function NotificationsPage() {
                         setCityCompletion({ cityName: "Território Completo", percentage: 100 });
                     }
                 }
+
+                // 2. Fetch Do Not Visit addresses for congregation
+                const addrRef = collection(db, 'addresses');
+                const qDnv = query(addrRef, where('congregationId', '==', congregationId), where('visitStatus', '==', 'doNotVisit'));
+                const dnvSnap = await getDocs(qDnv);
+
+                const territoryMap: Record<string, { name: string; description: string; cityId: string }> = {};
+                territories.forEach((t: any) => {
+                    territoryMap[t.id] = { name: t.name || '', description: t.notes || t.description || '', cityId: t.cityId || '' };
+                });
+
+                const dnvList: DoNotVisitAddress[] = dnvSnap.docs
+                    .map(doc => ({ id: doc.id, ...doc.data() as any }))
+                    .filter(addr => addr.isActive !== false)
+                    .map(addr => {
+                        const terr = territoryMap[addr.territoryId];
+                        return {
+                            id: addr.id,
+                            street: addr.street || 'Endereço',
+                            number: addr.number || 'S/N',
+                            neighborhood: addr.neighborhood || '',
+                            territoryId: addr.territoryId || '',
+                            territoryName: terr ? (terr.description ? `${terr.name} • ${terr.description}` : terr.name) : '',
+                            cityId: terr?.cityId || '',
+                            city: terr?.cityId ? (cityMap[terr.cityId] || '') : '',
+                            congregationId: addr.congregationId || congregationId || '',
+                            observations: addr.observations || addr.notes || '',
+                            markedAt: addr.lastVisitedAt || null
+                        };
+                    });
+
+                setDoNotVisitAddresses(dnvList);
             } catch (e) {
                 console.error(e);
             }
@@ -225,10 +258,23 @@ export default function NotificationsPage() {
                     userName={profileName || 'Publicador'}
                     pendingMapsCount={pendingMapsCount}
                     hasPendingAnnotation={false}
+                    doNotVisitAddresses={isElder || isServant || role === 'ADMIN' ? doNotVisitAddresses : []}
                     idleTerritories={isElder || isServant || role === 'ADMIN' ? idleTerritories : []}
                     cityCompletion={cityCompletion}
                     expiringMaps={expiringMaps}
                     onAssignTerritory={handleQuickAssign}
+                    onReviewDoNotVisit={(addr) => {
+                        if (addr.territoryId) {
+                            const params = new URLSearchParams();
+                            if (addr.congregationId) params.set('congregationId', addr.congregationId);
+                            if (addr.cityId) params.set('cityId', addr.cityId);
+                            params.set('territoryId', addr.territoryId);
+                            params.set('highlight', addr.id);
+                            router.push(`/my-maps/address?${params.toString()}`);
+                        } else {
+                            router.push('/my-maps');
+                        }
+                    }}
                 // No limit here
                 />
             </main>

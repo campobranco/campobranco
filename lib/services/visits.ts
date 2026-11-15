@@ -41,13 +41,22 @@ export async function reportVisit(shareId: string, visitData: any) {
         }
 
         // 2. Insere a visita vinculada à congregação da lista
-        const finalVisitData = {
-            ...visitData,
-            publisherName: visitData.userName || visitData.publisherName || null,
+        // Extrai tagsSnapshot para não persistir dados sensíveis e sanitiza valores undefined
+        const { tagsSnapshot: _ignoredTags, ...cleanVisitData } = visitData || {};
+        const finalVisitData: Record<string, any> = {
+            ...cleanVisitData,
+            publisherName: cleanVisitData.userName || cleanVisitData.publisherName || null,
             sharedListId: shareId,
             congregationId: list.congregationId,
             createdAt: serverTimestamp(),
         };
+
+        // Remove explicitamente quaisquer chaves com valor undefined para evitar erro do Firestore
+        Object.keys(finalVisitData).forEach(key => {
+            if (finalVisitData[key] === undefined) {
+                delete finalVisitData[key];
+            }
+        });
 
         const docRef = await addDoc(collection(db, TABLE), finalVisitData);
 
@@ -229,13 +238,7 @@ export async function markAllAddressesAsWorked(params: {
                         visitDate,
                         sharedListId: shareId,
                         congregationId: listData.congregationId,
-                        createdAt: serverTimestamp(),
-                        tagsSnapshot: {
-                            isDeaf: false,
-                            isMinor: false,
-                            isStudent: false,
-                            isNeurodivergent: false
-                        }
+                        createdAt: serverTimestamp()
                     });
                 }
             }
