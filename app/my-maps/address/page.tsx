@@ -772,14 +772,10 @@ function AddressListContent() {
 
     const handleApproveDNV = async (addr: Address) => {
         try {
-            const addressData = {
-                id: addr.id,
+            await updateDoc(doc(db, 'addresses', addr.id), {
                 isActive: false,
                 inactivatedAt: new Date().toISOString()
-            };
-
-            const resData = await saveAddress(addr.id, addressData as any);
-            if (!resData.success) throw new Error(resData.error);
+            });
 
             toast.success("Endereço desativado com sucesso!");
             fetchAddresses();
@@ -791,30 +787,30 @@ function AddressListContent() {
 
     const handleRemoveDNVMark = async (addr: Address) => {
         try {
-            // Fetch the latest visit for this address to delete it
-            const visitsRef = collection(db, 'visits');
-            const q = query(
-                visitsRef,
-                where('addressId', '==', addr.id),
-                orderBy('createdAt', 'desc'),
-                limit(1)
-            );
-            const qSnap = await getDocs(q);
-            const latestVisit = qSnap.docs[0];
-
-            if (!latestVisit) throw new Error("Não foi possível encontrar a visita relacionada.");
-
-            const resData = await deleteVisit(latestVisit.id);
-            if (!resData.success) throw new Error(resData.error);
-
-            // Also reset the address document in Firestore
+            // Se houver visita correspondente registrada, remove a última
             try {
-                await updateDoc(doc(db, 'addresses', addr.id), {
-                    visitStatus: null,
-                    lastVisitedAt: null,
-                    lastVisitedBy: null
-                });
-            } catch (e) { console.warn(e); }
+                const visitsRef = collection(db, 'visits');
+                const q = query(
+                    visitsRef,
+                    where('addressId', '==', addr.id),
+                    orderBy('createdAt', 'desc'),
+                    limit(1)
+                );
+                const qSnap = await getDocs(q);
+                if (!qSnap.empty) {
+                    const latestVisit = qSnap.docs[0];
+                    await deleteVisit(latestVisit.id);
+                }
+            } catch (vErr) {
+                console.warn("[handleRemoveDNVMark] Nenhuma visita associada ou erro ao excluir visita:", vErr);
+            }
+
+            // Sempre reseta os campos no documento de endereço
+            await updateDoc(doc(db, 'addresses', addr.id), {
+                visitStatus: null,
+                lastVisitedAt: null,
+                lastVisitedBy: null
+            });
 
             toast.success("Marcação removida com sucesso!");
             fetchAddresses();
