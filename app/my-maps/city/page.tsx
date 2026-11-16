@@ -36,6 +36,7 @@ import { createCity, updateCity, deleteCity } from '@/lib/services/cities';
 import CongregationSelector from '@/app/components/CongregationSelector';
 import BottomNav from '@/app/components/BottomNav';
 import ConfirmationModal from '@/app/components/ConfirmationModal';
+import { resolveCityCenterCoordinates } from '@/lib/services/geocoding';
 import { db } from '@/lib/firebase';
 import {
     collection,
@@ -117,6 +118,7 @@ function CityListContent() {
 
     // Reference Points
     const [referencePoints, setReferencePoints] = useState<any[]>([]);
+    const [cityMapCenter, setCityMapCenter] = useState<{ lat: number; lng: number } | null>(null);
 
     const handleSearchAddress = async (e: React.FormEvent) => {
         e.preventDefault();
@@ -191,7 +193,7 @@ function CityListContent() {
         return () => unsubscribeRef();
     }, [congregationId]);
 
-    // Fetch Congregation Settings (TermType)
+    // Fetch Congregation Settings (TermType and City Center)
     useEffect(() => {
         if (!congregationId) return;
 
@@ -200,10 +202,21 @@ function CityListContent() {
                 const congRef = doc(db, 'congregations', congregationId);
                 const congSnap = await getDoc(congRef);
                 if (congSnap.exists()) {
-                    setLocalTermType(congSnap.data().termType || 'city');
+                    const congData = congSnap.data();
+                    setLocalTermType(congData.termType || 'city');
+
+                    const resolvedCenter = await resolveCityCenterCoordinates({
+                        lat: congData.lat,
+                        lng: congData.lng,
+                        name: congData.city || congData.name || '',
+                        uf: congData.uf || 'SP'
+                    });
+                    if (resolvedCenter) {
+                        setCityMapCenter(resolvedCenter);
+                    }
                 }
             } catch (err) {
-                console.error("Error fetching congregation termType:", err);
+                console.error("Error fetching congregation settings:", err);
             }
         };
 
@@ -737,6 +750,7 @@ function CityListContent() {
                 {/* Bottom: Map View */}
                 <div className="w-full h-96 border-t border-surface-border relative z-0">
                     <MapView
+                        center={cityMapCenter || undefined}
                         items={filteredCities.map((c, idx) => ({
                             id: c.id,
                             lat: c.lat,

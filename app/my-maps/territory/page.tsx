@@ -856,7 +856,7 @@ function TerritoryListContent() {
 
                                             <div className="flex flex-wrap items-center gap-2 pl-0.5">
                                                 <span className={`text-[10px] font-bold px-1.5 py-0.5 rounded-md whitespace-nowrap ${!addressCounts[t.id] ? 'text-red-600 bg-red-50 dark:bg-red-900/30 dark:text-red-400' : 'text-primary bg-primary-light/50 dark:bg-primary-dark/30 dark:text-primary-light'}`}>
-                                                    {addressCounts[t.id] || 0} Ativos
+                                                    {addressCounts[t.id] || 0} {(addressCounts[t.id] || 0) === 1 ? 'Endereço' : 'Endereços'}
                                                 </span>
                                             </div>
                                         </Link>
