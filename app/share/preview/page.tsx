@@ -45,6 +45,7 @@ import { reportVisit, deleteVisitByAddressAndShare } from '@/lib/services/visits
 // TODO(mutations): migrate to mutation layer - legacy module (admin/report/dashboard)
 // eslint-disable-next-line no-restricted-imports
 import { getReferencePoints } from '@/lib/services/reference_points';
+import { resolveCityCenterCoordinates } from '@/lib/services/geocoding';
 
 interface PreviewItem {
     id: string;
@@ -86,6 +87,7 @@ function SharedPreviewContent() {
     const [title, setTitle] = useState('');
     const [subtitle, setSubtitle] = useState('');
     const [cityName, setCityName] = useState('');
+    const [cityMapCenter, setCityMapCenter] = useState<{ lat: number; lng: number } | null>(null);
     const [items, setItems] = useState<PreviewItem[]>([]);
     const [pageCongregationId, setPageCongregationId] = useState<string | null>(null);
     const [referencePoints, setReferencePoints] = useState<any[]>([]);
@@ -249,6 +251,15 @@ function SharedPreviewContent() {
                 } catch (pointsErr) {
                     console.error("Erro ao carregar pontos de referência públicos:", pointsErr);
                 }
+            }
+
+            // Centralização pela cidade/congregação quando os endereços não possuem pinos
+            const targetCityName = (type === 'territory' ? (mainData.notes || res.congregationCity) : mainData.name) || res.congregationCity || '';
+            const resolvedCoords = await resolveCityCenterCoordinates({
+                name: targetCityName
+            });
+            if (resolvedCoords) {
+                setCityMapCenter(resolvedCoords);
             }
 
             setLoading(false);
@@ -674,6 +685,7 @@ function SharedPreviewContent() {
             {type === 'territory' && items.length > 0 && (
                 <div className="h-[40vh] w-full relative border-t border-surface-border mt-4">
                     <MapView
+                        center={cityMapCenter || undefined}
                         isTraditional={isTraditional}
                         referencePoints={referencePoints.map(p => ({
                             id: p.id,

@@ -6,6 +6,8 @@
 import { createContext, useContext, useEffect, useState } from "react";
 import { User, signOut } from "firebase/auth";
 import { doc, onSnapshot, getDoc } from "firebase/firestore";
+import { Capacitor } from "@capacitor/core";
+import { FirebaseAuthentication } from "@capacitor-firebase/authentication";
 import { auth, db } from "@/lib/firebase";
 import { UserPermissions, getRoleFlags, checkPermission } from "@/lib/rbac";
 import { ensureUserProfileMutation, updateUserNotificationsMutation } from "@/lib/contracts/mutations/authMutations";
@@ -367,6 +369,14 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
             });
         } catch (e) {
             console.error("Erro ao registrar log de logout:", e);
+        }
+
+        if (Capacitor.isNativePlatform()) {
+            try {
+                await FirebaseAuthentication.signOut();
+            } catch (nativeErr) {
+                console.error("[AUTH] Erro ao encerrar sessão nativa do Firebase:", nativeErr);
+            }
         }
 
         await signOut(auth);

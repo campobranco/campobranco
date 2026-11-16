@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { auth } from '@/lib/firebase';
-import { GoogleAuthProvider, signInWithPopup, signInWithEmailAndPassword } from 'firebase/auth';
+import { GoogleAuthProvider, signInWithCredential, signInWithPopup, signInWithEmailAndPassword } from 'firebase/auth';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { AlertCircle, Mail, Lock, Loader2 } from 'lucide-react';
 
@@ -11,6 +11,30 @@ import { FirebaseAuthentication } from '@capacitor-firebase/authentication';
 import { useAppIcon } from '@/app/context/AppIconContext';
 import { useAuth } from '@/app/context/AuthContext';
 import { logActivityMutation as logActivity } from '@/lib/contracts/mutations/auditMutations';
+
+export async function performGoogleSignIn(authInstance = auth) {
+    if (Capacitor.isNativePlatform()) {
+        // No APK nativo Android/iOS, autentica na camada nativa e sincroniza a credencial com o SDK Web
+        const nativeRes = await FirebaseAuthentication.signInWithGoogle();
+        const idToken = nativeRes?.credential?.idToken;
+        const accessToken = nativeRes?.credential?.accessToken;
+
+        if (!idToken && !accessToken) {
+            throw new Error('Credencial Google inválida: idToken/accessToken ausente no retorno nativo.');
+        }
+
+        const credential = GoogleAuthProvider.credential(idToken, accessToken);
+        return await signInWithCredential(authInstance, credential);
+    } else {
+        // No navegador Web/PWA, usa o signInWithPopup oficial do Firebase SDK
+        const provider = new GoogleAuthProvider();
+        provider.addScope('email');
+        provider.addScope('profile');
+        provider.setCustomParameters({ prompt: 'select_account' });
+
+        return await signInWithPopup(authInstance, provider);
+    }
+}
 
 export default function LoginClient() {
     const { user, loading: authLoading } = useAuth();
@@ -70,19 +94,7 @@ export default function LoginClient() {
         setError('');
 
         try {
-            let res;
-            if (Capacitor.isNativePlatform()) {
-                // No APK nativo Android/iOS, usa o login nativo do Firebase via Capacitor Plugin
-                res = await FirebaseAuthentication.signInWithGoogle();
-            } else {
-                // No navegador Web/PWA, usa o signInWithPopup oficial do Firebase SDK
-                const provider = new GoogleAuthProvider();
-                provider.addScope('email');
-                provider.addScope('profile');
-                provider.setCustomParameters({ prompt: 'select_account' });
-
-                res = await signInWithPopup(auth, provider);
-            }
+            const res = await performGoogleSignIn(auth);
 
             logActivity({
                 level: 'INFO',

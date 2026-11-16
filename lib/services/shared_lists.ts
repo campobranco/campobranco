@@ -494,6 +494,7 @@ export async function getSharedListWithData(id: string) {
         }
 
         let congregationType: 'TRADITIONAL' | 'SIGN_LANGUAGE' | 'FOREIGN_LANGUAGE' | null = null;
+        let congregationCity: string | null = null;
 
         const congregationId = list.congregationId;
         if (congregationId) {
@@ -502,6 +503,7 @@ export async function getSharedListWithData(id: string) {
                 if (congSnap.exists()) {
                     const congData = congSnap.data() as any;
                     congregationType = congData.category || null;
+                    congregationCity = congData.city || null;
                 }
             } catch (err: any) {
                 console.warn('Could not read congregation for shared list (might be public access):', err.message);
@@ -517,7 +519,8 @@ export async function getSharedListWithData(id: string) {
             list,
             items,
             visits,
-            congregationType // Retorna o tipo normalizado
+            congregationType, // Retorna o tipo normalizado
+            congregationCity
         };
 
     } catch (error: any) {

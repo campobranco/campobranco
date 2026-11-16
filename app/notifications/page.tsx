@@ -83,6 +83,7 @@ export default function NotificationsPage() {
                 const territories = terrSnap.docs.map(doc => ({ id: doc.id, ...doc.data() }));
 
                 const mapsCount = territories.length || 0;
+                const cityMap: Record<string, string> = {};
 
                 if (mapsCount > 0) {
                     // 1. Get ALL shared lists history - restricted to congregation
@@ -136,7 +137,6 @@ export default function NotificationsPage() {
                     const qCities = query(citiesRef, where('congregationId', '==', congregationId));
                     const citiesSnap = await getDocs(qCities);
 
-                    const cityMap: Record<string, string> = {};
                     citiesSnap.docs.forEach(docSnap => {
                         const c = docSnap.data();
                         if (c.name) cityMap[docSnap.id] = c.name;

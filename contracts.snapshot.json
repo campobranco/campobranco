@@ -127,7 +127,6 @@
       "status",
       "notes",
       "visitDate",
-      "tagsSnapshot",
       "userName"
     ],
     "output": [

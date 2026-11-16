@@ -269,7 +269,11 @@ export default function MapView({ items, center = defaultCenter, zoom = 15, onGe
         const zoomChanged = prevZoomRef.current !== zoom;
 
         if (centerChanged || zoomChanged) {
-            map.setView([center.lat, center.lng], zoom);
+            // Só sobrescreve a visão para center se não houver marcadores válidos com fitBounds ativo
+            const hasValidMarkers = displayItems.some(i => i.lat && i.lng);
+            if (!hasValidMarkers) {
+                map.setView([center.lat, center.lng], zoom);
+            }
             prevCenterRef.current = center;
             prevZoomRef.current = zoom;
         }

@@ -55,7 +55,7 @@ import {
 import { db } from '@/lib/firebase';
 // TODO(mutations): migrate to mutation layer - legacy module (admin/report/dashboard)
 // eslint-disable-next-line no-restricted-imports
-import { geocodeAddress } from '@/lib/services/geocoding';
+import { geocodeAddress, resolveCityCenterCoordinates } from '@/lib/services/geocoding';
 // TODO(mutations): migrate to mutation layer - legacy module (admin/report/dashboard)
 // eslint-disable-next-line no-restricted-imports
 import { getAddresses, saveAddress, deleteAddress } from '@/lib/services/addresses';
@@ -122,6 +122,7 @@ function AddressListContent() {
     const [historyAddressId, setHistoryAddressId] = useState<string | null>(null);
     const [localTermType, setLocalTermType] = useState<'city' | 'neighborhood'>('city');
     const [parentCity, setParentCity] = useState<string | null>(null);
+    const [cityMapCenter, setCityMapCenter] = useState<{ lat: number; lng: number } | null>(null);
     const [mapAppSelect, setMapAppSelect] = useState<{ isOpen: boolean, address: any } | null>(null);
 
     // Estados efetivos com suporte a autodescoberta quando vier apenas territoryId
@@ -358,6 +359,38 @@ function AddressListContent() {
                 }
                 if (cityResData) {
                     setParentCity((cityResData as any).parentCity || null);
+                }
+
+                // Resolução do centro da cidade/congregação quando os endereços não possuem pinos
+                // Prioriza: 1. parentCity da congregação/bairro, 2. cidade associada ao território, 3. cidade da congregação
+                const resolvedCity = (cityResData as any)?.parentCity || (congResData as any)?.city || (cityResData as any)?.name || '';
+                const cityUf = (cityResData as any)?.uf || (congResData as any)?.uf || 'SP';
+                const directLat = (cityResData as any)?.lat ?? (congResData as any)?.lat;
+                const directLng = (cityResData as any)?.lng ?? (congResData as any)?.lng;
+
+                let resolvedCenter = await resolveCityCenterCoordinates({
+                    lat: directLat,
+                    lng: directLng,
+                    name: resolvedCity,
+                    uf: cityUf
+                });
+
+                // Se não resolveu (ex: nome de bairro composto), tenta fallback pela cidade da congregação ou pelo nome do município
+                if (!resolvedCenter && (congResData as any)?.city) {
+                    resolvedCenter = await resolveCityCenterCoordinates({
+                        name: (congResData as any).city,
+                        uf: cityUf
+                    });
+                }
+                if (!resolvedCenter && (cityResData as any)?.name && (cityResData as any)?.name !== resolvedCity) {
+                    resolvedCenter = await resolveCityCenterCoordinates({
+                        name: (cityResData as any).name,
+                        uf: cityUf
+                    });
+                }
+
+                if (resolvedCenter) {
+                    setCityMapCenter(resolvedCenter);
                 }
 
             } catch (error) {
@@ -892,7 +925,7 @@ function AddressListContent() {
                                 );
                             }
 
-                            let defaultStyles = "bg-primary-50 dark:bg-primary-900/10 text-primary-700 dark:text-primary-400 border-primary-100 dark:border-primary-900/20";
+                            let defaultStyles = "bg-primary-50 dark:bg-primary-900/10 text-primary-700 dark:text-primary-400 border-surface-border";
                             if (addr.visitStatus === 'partial') {
                                 defaultStyles = "bg-yellow-100 dark:bg-yellow-900/30 text-yellow-700 dark:text-yellow-400 border-yellow-200 dark:border-yellow-900/40";
                             } else if (addr.visitStatus === 'contacted') {
@@ -1169,6 +1202,7 @@ function AddressListContent() {
                 {/* Bottom: Map View */}
                 <div className="w-full h-96 border-t border-gray-200 relative z-0">
                     <MapView
+                        center={cityMapCenter || undefined}
                         onGeocodeSuccess={handleGeocodeSuccess}
                         onMapClick={handleMapClick}
                         disableGeocoding={true}
@@ -1457,7 +1491,7 @@ function AddressListContent() {
 
                         <MapView
                             onMapClick={handleMapClick}
-                            center={pickerTempCoords || undefined}
+                            center={pickerTempCoords || cityMapCenter || undefined}
                             items={pickerTempCoords ? [{
                                 id: 'temp',
                                 lat: pickerTempCoords.lat,
