@@ -212,7 +212,7 @@ export default function ReportsPage() {
 
                 territories.forEach((t: any) => {
                     // 1. Get last completion date (manual or history)
-                    let lastTouch = parseDate(t.manualLastCompletedDate) || new Date(0);
+                    let lastTouch: Date | null = parseDate(t.manualLastCompletedDate);
 
                     // 2. Find relevant history for this territory
                     const tHistory = history.filter((h: any) => h.territoryId === t.id || (h.items && h.items.includes(t.id)));
@@ -220,7 +220,7 @@ export default function ReportsPage() {
                     let activeAssign: any = null;
                     tHistory.forEach((h: any) => {
                         const d = parseDate(h.returnedAt);
-                        if (d && d > lastTouch) lastTouch = d;
+                        if (d && (!lastTouch || d > lastTouch)) lastTouch = d;
 
                         if (h.status !== 'completed' && h.status !== 'expired') {
                             const hCreateDate = parseDate(h.createdAt);
@@ -232,18 +232,23 @@ export default function ReportsPage() {
                         }
                     });
 
-                    // The reference date is the assignment date if it's out, or the last completion if it's in
-                    const referenceDate = activeAssign ? (parseDate(activeAssign.createdAt) || lastTouch) : lastTouch;
-                    const diffTime = Math.abs(new Date().getTime() - referenceDate.getTime());
-                    const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+                    // The reference date is the assignment date if it's out, or the last completion (or creation date) if it's in
+                    const referenceDate = activeAssign
+                        ? (parseDate(activeAssign.createdAt) || lastTouch)
+                        : (lastTouch || parseDate(t.createdAt));
 
-                    if (diffDays > 180) {
-                        stuckMaps.push({
-                            name: t.name,
-                            description: t.notes || '',
-                            days: diffDays,
-                            assignee: activeAssign ? (activeAssign.assignedName || 'Publicador') : 'Disponível'
-                        });
+                    if (referenceDate) {
+                        const diffTime = Math.abs(new Date().getTime() - referenceDate.getTime());
+                        const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+
+                        if (diffDays > 180) {
+                            stuckMaps.push({
+                                name: t.name,
+                                description: t.notes || '',
+                                days: diffDays,
+                                assignee: activeAssign ? (activeAssign.assignedName || 'Publicador') : 'Disponível'
+                            });
+                        }
                     }
                 });
 
