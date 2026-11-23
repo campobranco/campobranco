@@ -17,6 +17,7 @@ import {
 } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import { toast } from 'sonner';
+import { Capacitor } from '@capacitor/core';
 import CSVImportModal from './CSVImportModal';
 import DropDownItem from './DropDownItem';
 // TODO(mutations): migrate to mutation layer - legacy module (admin/report/dashboard)
@@ -72,7 +73,8 @@ export default function AddressActionsMenu({
 
     const handleCopyLink = async () => {
         try {
-            const shareUrl = `${window.location.origin}/s/${territoryId}`;
+            const baseUrl = Capacitor.isNativePlatform() ? (process.env.NEXT_PUBLIC_APP_URL || window.location.origin) : window.location.origin;
+            const shareUrl = `${baseUrl}/s/${territoryId}`;
             await navigator.clipboard.writeText(shareUrl);
             toast.success("Link copiado para a área de transferência!");
             setIsShareMenuOpen(false);
@@ -82,7 +84,8 @@ export default function AddressActionsMenu({
     };
 
     const handleNativeShare = async () => {
-        const shareUrl = `${window.location.origin}/s/${territoryId}`;
+        const baseUrl = Capacitor.isNativePlatform() ? (process.env.NEXT_PUBLIC_APP_URL || window.location.origin) : window.location.origin;
+        const shareUrl = `${baseUrl}/s/${territoryId}`;
         const shareData = {
             title: 'Território Campo Branco',
             text: 'Confira os mapas deste território:',

@@ -1,6 +1,7 @@
 'use client';
 
 import React, { createContext, useContext, useEffect, useState } from 'react';
+import { Capacitor } from '@capacitor/core';
 
 interface AppIconContextType {
     isCanary: boolean;
@@ -23,7 +24,9 @@ export const AppIconProvider: React.FC<{ children: React.ReactNode }> = ({ child
         if (typeof window === 'undefined') return;
 
         const hostname = window.location.hostname;
-        const canaryDetected = hostname === 'localhost' || hostname === '127.0.0.1' || hostname.includes('campobrancodev.web.app');
+        const canaryDetected = Capacitor.isNativePlatform()
+            ? process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID === 'campobrancodev'
+            : (hostname === 'localhost' || hostname === '127.0.0.1' || hostname.includes('campobrancodev.web.app'));
         setIsCanary(canaryDetected);
 
         if (!canaryDetected) return;

@@ -69,6 +69,7 @@ import Link from 'next/link';
 // import NotificationToggle from '@/app/components/NotificationToggle'; // Removed
 import { useTheme, ThemeMode } from '@/app/context/ThemeContext';
 import { toast } from 'sonner';
+import { Capacitor } from '@capacitor/core';
 
 import BottomNav from '@/app/components/BottomNav';
 import { APP_VERSION } from '@/lib/version';
@@ -501,7 +502,8 @@ const [uploading, setUploading] = useState(false);
 
                             if (token) {
                                 setInviteToken(token);
-                                setInviteLink(`${window.location.origin}/invite?token=${token}`);
+                                const baseUrl = Capacitor.isNativePlatform() ? (process.env.NEXT_PUBLIC_APP_URL || window.location.origin) : window.location.origin;
+                                setInviteLink(`${baseUrl}/invite?token=${token}`);
                             } else if (canInviteMembers) {
                                  setInviteLink(`Erro ao carregar link. Contate o suporte: ${process.env.NEXT_PUBLIC_SUPPORT_EMAIL || process.env.NEXT_PUBLIC_MASTER_EMAIL}`);
                             }
@@ -535,7 +537,8 @@ const [uploading, setUploading] = useState(false);
                     });
 
                     setInviteToken(newToken);
-                    setInviteLink(`${window.location.origin}/invite?token=${newToken}`);
+                    const baseUrl = Capacitor.isNativePlatform() ? (process.env.NEXT_PUBLIC_APP_URL || window.location.origin) : window.location.origin;
+                    setInviteLink(`${baseUrl}/invite?token=${newToken}`);
                     toast.success("Novo link gerado com sucesso!");
                 } catch (e) {
                     console.error(e);
