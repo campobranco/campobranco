@@ -7,8 +7,8 @@ android {
         applicationId System.getenv("CAPACITOR_APP_ID") ?: "com.campobranco.app.canary"
         minSdkVersion rootProject.ext.minSdkVersion
         targetSdkVersion rootProject.ext.targetSdkVersion
-        versionCode 2
-        versionName "0.11.73-beta"
+        versionCode 3
+        versionName "0.11.87-beta"
         testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"
         aaptOptions {
              // Files and dirs to omit from the packaged assets dir, modified to accommodate modern web apps.
@@ -23,12 +23,25 @@ android {
             keyAlias 'androiddebugkey'
             keyPassword 'android'
         }
+        release {
+            def keystorePath = System.getenv("ANDROID_KEYSTORE_FILE") ?: "release-keystore.p12"
+            def keystoreFile = file(keystorePath)
+            if (keystoreFile.exists()) {
+                storeFile keystoreFile
+                storePassword System.getenv("ANDROID_KEYSTORE_PASSWORD")
+                keyAlias System.getenv("ANDROID_KEY_ALIAS") ?: "fdroid"
+                keyPassword System.getenv("ANDROID_KEY_PASSWORD") ?: System.getenv("ANDROID_KEYSTORE_PASSWORD")
+            }
+        }
     }
     buildTypes {
         debug {
             signingConfig signingConfigs.debug
         }
         release {
+            if (signingConfigs.release.storeFile != null && signingConfigs.release.storeFile.exists()) {
+                signingConfig signingConfigs.release
+            }
             minifyEnabled false
             proguardFiles getDefaultProguardFile('proguard-android.txt'), 'proguard-rules.pro'
         }

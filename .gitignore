@@ -45,6 +45,10 @@
 *.crt
 *.b64
 *.p12
+*.jks
+*.keystore
+!android/app/debug.keystore
+release-keystore-pass.txt
 *.zip
 *.rar
 *.7z

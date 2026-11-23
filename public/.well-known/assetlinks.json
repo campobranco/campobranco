@@ -1,0 +1,15 @@
+[
+  {
+    "relation": ["delegate_permission/common.handle_all_urls"],
+    "target": {
+      "namespace": "android_app",
+      "package_name": "com.campobranco.app",
+      "sha256_cert_fingerprints": [
+        "2C:3F:EE:19:1B:CD:60:E0:35:67:3A:DA:90:94:BB:A0:0C:76:1F:CF:28:65:0F:65:AB:CB:2A:80:EB:07:06:E0",
+        "50:E2:C5:A4:2C:BA:BC:8D:0B:6C:F2:3D:B1:E6:5B:B4:7D:A3:B0:09:1B:67:68:3F:B3:32:A2:9C:FF:7C:71:BE",
+        "20:0B:EE:A1:20:DD:F3:FD:AE:C3:B9:0B:A0:82:6B:EF:46:16:3E:DA:3F:41:1B:99:3F:B8:58:D4:AC:B1:A5:EE",
+        "DB:78:C0:5A:59:C0:AE:3A:19:AE:B3:8F:3B:8B:39:82:D4:03:BE:D1:90:59:50:96:99:AE:0F:25:BB:3B:79:07"
+      ]
+    }
+  }
+]

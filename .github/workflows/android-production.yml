@@ -81,6 +81,27 @@ jobs:
           name: CampoBranco-Production-v${{ env.VERSION_NAME }}-APK
           path: android/app/build/outputs/apk/debug/app-debug.apk
 
+      - name: Build AAB (Release - Google Play)
+        run: |
+          echo "${{ secrets.FDROID_KEYSTORE_PROD_B64 }}" | base64 --decode > android/app/release-keystore.p12
+          cd android
+          chmod +x gradlew
+          ./gradlew bundleRelease
+          rm -f app/release-keystore.p12
+        env:
+          CAPACITOR_APP_ID: ${{ vars.CAPACITOR_APP_ID_PROD }}
+          CAPACITOR_APP_NAME: ${{ vars.CAPACITOR_APP_NAME_PROD }}
+          ANDROID_KEYSTORE_FILE: release-keystore.p12
+          ANDROID_KEYSTORE_PASSWORD: ${{ secrets.FDROID_KEYSTORE_PASSWORD }}
+          ANDROID_KEY_ALIAS: fdroid
+          ANDROID_KEY_PASSWORD: ${{ secrets.FDROID_KEYSTORE_PASSWORD }}
+
+      - name: Upload AAB Artifact (Google Play)
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        with:
+          name: CampoBranco-Production-v${{ env.VERSION_NAME }}-AAB
+          path: android/app/build/outputs/bundle/release/app-release.aab
+
       - name: Setup F-Droid Repo
         run: |
           sudo add-apt-repository -y ppa:fdroid/fdroidserver

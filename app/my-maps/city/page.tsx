@@ -375,7 +375,7 @@ function CityListContent() {
             const resData = await updateCity(editingCity.id, {
                 name: editingCity.name,
                 uf: editingCity.uf,
-                parentCity: editingCity.parentCity,
+                parentCity: editingCity.parentCity ?? null,
                 lat: editingCity.lat ? parseFloat(editingCity.lat.toString()) : null,
                 lng: editingCity.lng ? parseFloat(editingCity.lng.toString()) : null
             });
