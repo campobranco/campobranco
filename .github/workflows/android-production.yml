@@ -102,6 +102,15 @@ jobs:
           name: CampoBranco-Production-v${{ env.VERSION_NAME }}-AAB
           path: android/app/build/outputs/bundle/release/app-release.aab
 
+      - name: Deploy AAB to Google Play (Internal Testing)
+        uses: r0adkll/upload-google-play@v1
+        with:
+          serviceAccountJsonPlainText: ${{ secrets.GOOGLE_PLAY_SERVICE_ACCOUNT_JSON }}
+          packageName: ${{ vars.CAPACITOR_APP_ID_PROD }}
+          releaseFiles: android/app/build/outputs/bundle/release/app-release.aab
+          track: internal
+          status: completed
+
       - name: Setup F-Droid Repo
         run: |
           sudo add-apt-repository -y ppa:fdroid/fdroidserver
