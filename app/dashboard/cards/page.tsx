@@ -185,7 +185,7 @@ function CardsContent() {
     };
 
     const handleOpenLink = (id: string) => {
-        window.open((process.env.NEXT_PUBLIC_APP_URL || window.location.origin) + "/share?id=" + id, "_blank");
+        router.push(`/share?id=${id}`);
     };
 
     const handleDeleteShare = async (id: string) => {

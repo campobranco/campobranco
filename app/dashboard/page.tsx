@@ -495,7 +495,7 @@ export default function DashboardPage() {
                                                         icon={ExternalLink} 
                                                         label="Abrir" 
                                                         variant="primary" 
-                                                        onClick={() => { window.open((process.env.NEXT_PUBLIC_APP_URL || window.location.origin) + "/share?id=" + list.id, "_blank"); setOpenMenuId(null); }} 
+                                                        onClick={() => { router.push(`/share?id=${list.id}`); setOpenMenuId(null); }} 
                                                     />
                                                     <DropDownItem 
                                                         icon={Copy} 

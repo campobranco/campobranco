@@ -237,7 +237,10 @@ function ShareSetupContent() {
 
     const handleOpen = async () => {
         const link = await getOrCreateLink();
-        if (link) window.open(link, '_blank');
+        if (link) {
+            const url = new URL(link, window.location.origin);
+            router.push(`${url.pathname}${url.search}`);
+        }
     };
 
     const handleCopy = async () => {
