@@ -12,7 +12,8 @@ export interface UserPermissions {
     reports?: { view?: boolean };
     witnessing?: PermissionDomain;
     s13?: PermissionDomain;
-    referencePoints?: { manage?: boolean };
+    s12?: { manage?: boolean };
+    members?: { manage?: boolean; invite?: boolean };
 }
 
 export interface RBACContext {
@@ -44,8 +45,15 @@ export const checkPermission = (context: RBACContext, perm: string): boolean => 
     // Papéis com acesso total
     if (isAdminRoleGlobal || isElder) return true;
     
-    // SERVO herda acesso completo a mapas, testemunho e pontos de referência, mas NÃO a relatórios ou S-13
-    if (isServant && (domain === 'maps' || domain === 'witnessing' || domain === 'referencePoints')) return true;
+    // SERVO herda acesso completo aos módulos operacionais e convite de publicadores, mas NÃO à gestão de membros
+    if (isServant && (
+        domain === 'maps' ||
+        domain === 'witnessing' ||
+        domain === 's13' ||
+        domain === 's12' ||
+        domain === 'reports' ||
+        perm === 'members.invite'
+    )) return true;
     
     // Consultar permissão customizada no objeto estruturado
     const domainPerms = permissions?.[domain as keyof UserPermissions];

@@ -94,18 +94,38 @@ describe('RBAC - Role Based Access Control', () => {
             expect(checkPermission(elderContext, 'random.action')).toBe(true); // Superadmin behavior
         });
 
-        it('deve conceder permissões limitadas inerentes para SERVO', () => {
+        it('deve conceder acesso padrão completo aos 5 módulos operacionais para SERVO', () => {
             // Arrange
             const servantContext: RBACContext = { role: 'SERVO', permissions: null };
 
             // Act & Assert
             expect(checkPermission(servantContext, 'maps.edit')).toBe(true);
             expect(checkPermission(servantContext, 'witnessing.create')).toBe(true);
-            expect(checkPermission(servantContext, 'referencePoints.manage')).toBe(true);
-            
-            // Não deve acessar relatórios nem S13
-            expect(checkPermission(servantContext, 'reports.view')).toBe(false);
-            expect(checkPermission(servantContext, 's13.create')).toBe(false);
+            expect(checkPermission(servantContext, 'reports.view')).toBe(true);
+            expect(checkPermission(servantContext, 's13.create')).toBe(true);
+            expect(checkPermission(servantContext, 's12.manage')).toBe(true);
+            expect(checkPermission(servantContext, 'members.invite')).toBe(true);
+            expect(checkPermission(servantContext, 'members.manage')).toBe(false);
+            expect(checkPermission(servantContext, 'management.promote')).toBe(false);
+        });
+
+        it('deve conceder s12.manage, members.invite e members.manage para PUBLICADOR apenas se explicitamente definido', () => {
+            const pubSem: RBACContext = { role: 'PUBLICADOR', permissions: null };
+            const pubCom: RBACContext = {
+                role: 'PUBLICADOR',
+                permissions: {
+                    s12: { manage: true },
+                    members: { invite: true, manage: true }
+                }
+            };
+
+            expect(checkPermission(pubSem, 's12.manage')).toBe(false);
+            expect(checkPermission(pubSem, 'members.invite')).toBe(false);
+            expect(checkPermission(pubSem, 'members.manage')).toBe(false);
+
+            expect(checkPermission(pubCom, 's12.manage')).toBe(true);
+            expect(checkPermission(pubCom, 'members.invite')).toBe(true);
+            expect(checkPermission(pubCom, 'members.manage')).toBe(true);
         });
 
         it('deve conceder permissão para PUBLICADOR apenas se explicitamente definido', () => {
@@ -131,24 +151,6 @@ describe('RBAC - Role Based Access Control', () => {
             expect(checkPermission(context, 'notexist')).toBe(false);
             expect(checkPermission(context, '')).toBe(false);
             expect(checkPermission(context, 'maps.delete')).toBe(false);
-        });
-
-        it('deve conceder permissão de referencePoints.manage para PUBLICADOR quando configurada', () => {
-            // Arrange
-            const pubComRefPoints: RBACContext = {
-                role: 'PUBLICADOR',
-                permissions: {
-                    referencePoints: { manage: true }
-                }
-            };
-            const pubSemRefPoints: RBACContext = {
-                role: 'PUBLICADOR',
-                permissions: null
-            };
-
-            // Act & Assert
-            expect(checkPermission(pubComRefPoints, 'referencePoints.manage')).toBe(true);
-            expect(checkPermission(pubSemRefPoints, 'referencePoints.manage')).toBe(false);
         });
 
         it('deve negar qualquer permissão arbitrária fora dos domínios operacionais declarados', () => {

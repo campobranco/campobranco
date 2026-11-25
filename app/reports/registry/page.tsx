@@ -130,7 +130,7 @@ export default function RegistryPage() {
             const { start, end } = getServiceYearRange(currentServiceYear);
 
             // Busca todos os dados via serviço de cliente
-            const resData = await getRegistryData(targetCongId);
+            const resData = await getRegistryData(targetCongId, true);
 
             if (!resData.success) throw new Error(resData.error || "Erro ao buscar dados do servidor");
 

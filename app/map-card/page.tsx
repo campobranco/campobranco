@@ -272,8 +272,14 @@ function AutoFitText({ text, maxFontSize = 12, minFontSize = 7.5 }: { text: stri
 }
 
 export default function MapCardPage() {
-    const { congregationId, loading: authLoading } = useAuth();
+    const { congregationId, loading: authLoading, canManageS12 } = useAuth();
     const router = useRouter();
+
+    useEffect(() => {
+        if (!authLoading && !canManageS12) {
+            router.push('/dashboard');
+        }
+    }, [authLoading, canManageS12, router]);
 
     const [territories, setTerritories] = useState<TerritoryItem[]>([]);
     const [cities, setCities] = useState<{ id: string; name: string }[]>([]);

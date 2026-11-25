@@ -19,7 +19,6 @@ interface UserPermissions {
     witnessingCreate?: boolean;
     witnessingEdit?: boolean;
     witnessingDelete?: boolean;
-    referencePointsManage?: boolean;
 }
 
 interface UserProfile {
@@ -322,8 +321,7 @@ export default function UserManagementList({ congregationId }: { congregationId?
                                                                     { key: 'mapsView', label: 'Visualizar' },
                                                                     { key: 'mapsCreate', label: 'Criar' },
                                                                     { key: 'mapsEdit', label: 'Editar' },
-                                                                    { key: 'mapsDelete', label: 'Excluir' },
-                                                                    { key: 'referencePointsManage', label: 'Gerenciar Referências' }
+                                                                    { key: 'mapsDelete', label: 'Excluir' }
                                                                 ].map((p) => {
                                                                     const isChecked = !!editingPermissions[p.key as keyof UserPermissions];
                                                                     return (

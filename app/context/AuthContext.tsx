@@ -49,6 +49,7 @@ interface AuthContextType {
     canCreateS13: boolean;
     canEditS13: boolean;
     canDeleteS13: boolean;
+    canManageS12: boolean;
     canManageReferencePoints: boolean;
 }
 
@@ -83,8 +84,12 @@ function normalizePermissions(raw: any): UserPermissions {
         reports: {
             view: raw.reports?.view ?? raw.reportsView ?? undefined,
         },
-        referencePoints: {
-            manage: raw.referencePoints?.manage ?? raw.referencePointsManage ?? undefined,
+        s12: {
+            manage: raw.s12?.manage ?? raw.s12Manage ?? undefined,
+        },
+        members: {
+            manage: raw.members?.manage ?? raw.membersManage ?? undefined,
+            invite: raw.members?.invite ?? raw.membersInvite ?? undefined,
         },
     };
 }
@@ -123,6 +128,7 @@ const AuthContext = createContext<AuthContextType>({
     canCreateS13: false,
     canEditS13: false,
     canDeleteS13: false,
+    canManageS12: false,
     canManageReferencePoints: false,
 });
 
@@ -326,7 +332,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     }, [congregationId]);
 
     // --- FLAGS DE CARGO ---
-    const { isAdminRoleGlobal, isElder, isServant, isAdmin, canManageMembers, canInviteMembers } = getRoleFlags(role);
+    const roleFlags = getRoleFlags(role);
+    const { isAdminRoleGlobal, isElder, isServant, isAdmin } = roleFlags;
 
     // --- HELPER CENTRALIZADO DE PERMISSÃO ---
     const can = (perm: string): boolean => {
@@ -334,6 +341,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     };
 
     // --- FLAGS COMPUTADAS (retrocompatibilidade com o restante do código) ---
+    const canManageMembers     = roleFlags.canManageMembers || can('members.manage');
+    const canInviteMembers     = roleFlags.canInviteMembers || can('members.invite') || can('members.manage');
     const canViewReports       = can('reports.view');
     const canManageMaps        = can('maps.view') || can('maps.create') || can('maps.edit') || can('maps.delete');
     const canCreateMaps        = can('maps.create');
@@ -347,7 +356,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     const canCreateS13         = can('s13.create');
     const canEditS13           = can('s13.edit');
     const canDeleteS13         = can('s13.delete');
-    const canManageReferencePoints = can('referencePoints.manage');
+    const canManageS12         = can('s12.manage');
+    const canManageReferencePoints = canCreateMaps || canEditMaps || canDeleteMaps || canCreateWitnessing || canEditWitnessing || canDeleteWitnessing;
 
     // Realiza logout do Firebase
     const logout = async () => {
@@ -441,6 +451,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
             canCreateS13,
             canEditS13,
             canDeleteS13,
+            canManageS12,
             canManageReferencePoints,
         }}>
             {children}

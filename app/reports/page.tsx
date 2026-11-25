@@ -30,6 +30,7 @@ import { getServiceYear, getServiceYearLabel, getServiceYearRange } from "@/lib/
 import { db } from "@/lib/firebase";
 import { collection, query, where, getDocs } from "firebase/firestore";
 import { useRouter } from "next/navigation";
+import Link from "next/link";
 // TODO(mutations): migrate to mutation layer - legacy module (admin/report/dashboard)
 // eslint-disable-next-line no-restricted-imports
 import { getRegistryData } from "@/lib/services/reports";
@@ -232,22 +233,31 @@ export default function ReportsPage() {
                         }
                     });
 
-                    // The reference date is the assignment date if it's out, or the last completion (or creation date) if it's in
-                    const referenceDate = activeAssign
-                        ? (parseDate(activeAssign.createdAt) || lastTouch)
-                        : (lastTouch || parseDate(t.createdAt));
+                    // Territórios nunca visitados e sem designação ativa também precisam aparecer em Mapas Parados
+                    if (!activeAssign && !lastTouch) {
+                        stuckMaps.push({
+                            name: t.name,
+                            description: t.notes || '',
+                            days: null,
+                            assignee: 'Disponível'
+                        });
+                    } else {
+                        const referenceDate = activeAssign
+                            ? (parseDate(activeAssign.createdAt) || lastTouch)
+                            : lastTouch;
 
-                    if (referenceDate) {
-                        const diffTime = Math.abs(new Date().getTime() - referenceDate.getTime());
-                        const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+                        if (referenceDate) {
+                            const diffTime = Math.abs(new Date().getTime() - referenceDate.getTime());
+                            const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
 
-                        if (diffDays > 180) {
-                            stuckMaps.push({
-                                name: t.name,
-                                description: t.notes || '',
-                                days: diffDays,
-                                assignee: activeAssign ? (activeAssign.assignedName || 'Publicador') : 'Disponível'
-                            });
+                            if (diffDays > 180) {
+                                stuckMaps.push({
+                                    name: t.name,
+                                    description: t.notes || '',
+                                    days: diffDays,
+                                    assignee: activeAssign ? (activeAssign.assignedName || 'Publicador') : 'Disponível'
+                                });
+                            }
                         }
                     }
                 });
@@ -578,8 +588,17 @@ export default function ReportsPage() {
                                                         <p className="text-xs text-muted mt-0.5">Com: {map.assignee}</p>
                                                     </div>
                                                     <div className="text-right">
-                                                        <p className="font-bold text-red-600 dark:text-red-400 text-sm">{map.days} dias</p>
-                                                        <p className="text-[10px] text-muted font-bold uppercase">Parado</p>
+                                                        {map.days === null ? (
+                                                            <>
+                                                                <p className="font-bold text-red-600 dark:text-red-400 text-sm">Nunca visitado</p>
+                                                                <p className="text-[10px] text-muted font-bold uppercase">Sem registro</p>
+                                                            </>
+                                                        ) : (
+                                                            <>
+                                                                <p className="font-bold text-red-600 dark:text-red-400 text-sm">{map.days} dias</p>
+                                                                <p className="text-[10px] text-muted font-bold uppercase">Parado</p>
+                                                            </>
+                                                        )}
                                                     </div>
                                                 </div>
                                             ))}
@@ -604,7 +623,7 @@ export default function ReportsPage() {
                             <div>
                                 <h2 className="font-bold text-main text-lg mb-4 px-1">Registros</h2>
                                 <div className="flex flex-col gap-4">
-                                    <a href="/reports/registry" className="block bg-surface p-6 rounded-lg shadow-sm border border-surface-border hover:border-primary-light dark:hover:border-primary-dark transition-all group">
+                                    <Link prefetch={false} href="/reports/registry" className="block bg-surface p-6 rounded-lg shadow-sm border border-surface-border hover:border-primary-light dark:hover:border-primary-dark transition-all group">
                                         <div className="flex items-center justify-between">
                                             <div className="flex items-center gap-3">
                                                 <div className="p-2 bg-primary-light/50 rounded-lg text-primary dark:bg-primary-dark/30 dark:text-primary-light group-hover:scale-110 transition-transform">
@@ -619,9 +638,9 @@ export default function ReportsPage() {
                                                 <ArrowRight className="w-5 h-5 text-gray-400" />
                                             </div>
                                         </div>
-                                    </a>
+                                    </Link>
 
-                                    <a href="/map-card" className="block bg-surface p-6 rounded-lg shadow-sm border border-surface-border hover:border-primary-light dark:hover:border-primary-dark transition-all group">
+                                    <Link prefetch={false} href="/map-card" className="block bg-surface p-6 rounded-lg shadow-sm border border-surface-border hover:border-primary-light dark:hover:border-primary-dark transition-all group">
                                         <div className="flex items-center justify-between">
                                             <div className="flex items-center gap-3">
                                                 <div className="p-2 bg-amber-500/10 rounded-lg text-amber-500 dark:bg-amber-500/20 dark:text-amber-400 group-hover:scale-110 transition-transform">
@@ -636,7 +655,7 @@ export default function ReportsPage() {
                                                 <ArrowRight className="w-5 h-5 text-gray-400" />
                                             </div>
                                         </div>
-                                    </a>
+                                    </Link>
                                 </div>
                             </div>
                         )}
@@ -672,8 +691,17 @@ export default function ReportsPage() {
                                             <p className="text-xs text-muted mt-0.5">Com: {map.assignee}</p>
                                         </div>
                                         <div className="text-right">
-                                            <p className="font-bold text-red-600 dark:text-red-400 text-sm">{map.days} dias</p>
-                                            <p className="text-[10px] text-muted font-bold uppercase">Sem trabalho</p>
+                                            {map.days === null ? (
+                                                <>
+                                                    <p className="font-bold text-red-600 dark:text-red-400 text-sm">Nunca visitado</p>
+                                                    <p className="text-[10px] text-muted font-bold uppercase">Sem registro</p>
+                                                </>
+                                            ) : (
+                                                <>
+                                                    <p className="font-bold text-red-600 dark:text-red-400 text-sm">{map.days} dias</p>
+                                                    <p className="text-[10px] text-muted font-bold uppercase">Sem trabalho</p>
+                                                </>
+                                            )}
                                         </div>
                                     </div>
                                 ))}

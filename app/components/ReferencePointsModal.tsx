@@ -42,6 +42,7 @@ interface ReferencePointsModalProps {
     congregationId: string;
     cityId: string;
     cityName?: string;
+    context?: 'maps' | 'witnessing';
     onSuccess?: () => void;
 }
 
@@ -51,10 +52,25 @@ export default function ReferencePointsModal({
     congregationId,
     cityId,
     cityName = '',
+    context = 'maps',
     onSuccess
 }: ReferencePointsModalProps) {
-    const { canManageReferencePoints, isServant, isElder, isAdminRoleGlobal } = useAuth();
-    const canManage = canManageReferencePoints || isServant || isElder || isAdminRoleGlobal;
+    const {
+        canCreateMaps,
+        canEditMaps,
+        canDeleteMaps,
+        canCreateWitnessing,
+        canEditWitnessing,
+        canDeleteWitnessing,
+        isServant,
+        isElder,
+        isAdminRoleGlobal
+    } = useAuth();
+    const hasFullRole = isServant || isElder || isAdminRoleGlobal;
+    const canCreate = hasFullRole || (context === 'witnessing' ? canCreateWitnessing : canCreateMaps);
+    const canEdit = hasFullRole || (context === 'witnessing' ? canEditWitnessing : canEditMaps);
+    const canDelete = hasFullRole || (context === 'witnessing' ? canDeleteWitnessing : canDeleteMaps);
+    const canManage = canCreate || canEdit || canDelete;
 
     const [points, setPoints] = useState<ReferencePoint[]>([]);
     const [loading, setLoading] = useState(true);
@@ -215,6 +231,10 @@ export default function ReferencePointsModal({
 
     const handleSave = async (e: React.FormEvent) => {
         e.preventDefault();
+        if (editingPoint ? !canEdit : !canCreate) {
+            toast.error("Você não tem permissão para realizar esta ação.");
+            return;
+        }
         if (!name.trim()) {
             toast.error("O nome é obrigatório.");
             return;
@@ -440,7 +460,7 @@ export default function ReferencePointsModal({
                         /* LISTAGEM DOS PONTOS EXISTENTES */
                         <div className="space-y-4">
                             <div className="flex justify-end">
-                            {canManage && (
+                            {canCreate && (
                                 <div className="flex justify-end">
                                     <button
                                         type="button"
@@ -483,24 +503,28 @@ export default function ReferencePointsModal({
                                                 </div>
                                             </div>
 
-                                            {canManage && (
+                                            {(canEdit || canDelete) && (
                                                 <div className="flex items-center gap-1 shrink-0">
-                                                    <button
-                                                        type="button"
-                                                        onClick={() => handleEditClick(point)}
-                                                        className="p-1.5 rounded-lg text-gray-400 hover:text-blue-600 hover:bg-blue-50 dark:hover:bg-blue-950/20 transition-colors"
-                                                        title="Editar"
-                                                    >
-                                                        <Pencil className="w-4 h-4" />
-                                                    </button>
-                                                    <button
-                                                        type="button"
-                                                        onClick={() => handleDeleteClick(point.id, point.name)}
-                                                        className="p-1.5 rounded-lg text-gray-400 hover:text-red-600 hover:bg-red-50 dark:hover:bg-red-950/20 transition-colors"
-                                                        title="Excluir"
-                                                    >
-                                                        <Trash2 className="w-4 h-4" />
-                                                    </button>
+                                                    {canEdit && (
+                                                        <button
+                                                            type="button"
+                                                            onClick={() => handleEditClick(point)}
+                                                            className="p-1.5 rounded-lg text-gray-400 hover:text-blue-600 hover:bg-blue-50 dark:hover:bg-blue-950/20 transition-colors"
+                                                            title="Editar"
+                                                        >
+                                                            <Pencil className="w-4 h-4" />
+                                                        </button>
+                                                    )}
+                                                    {canDelete && (
+                                                        <button
+                                                            type="button"
+                                                            onClick={() => handleDeleteClick(point.id, point.name)}
+                                                            className="p-1.5 rounded-lg text-gray-400 hover:text-red-600 hover:bg-red-50 dark:hover:bg-red-950/20 transition-colors"
+                                                            title="Excluir"
+                                                        >
+                                                            <Trash2 className="w-4 h-4" />
+                                                        </button>
+                                                    )}
                                                 </div>
                                             )}
                                         </div>

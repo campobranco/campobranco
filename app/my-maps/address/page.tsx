@@ -107,9 +107,9 @@ function AddressListContent() {
     const cityId = searchParams.get('cityId') || '';
     const territoryId = searchParams.get('territoryId') || '';
     const editAddressId = searchParams.get('edit');
-    const highlightId = searchParams.get('highlight');
+    const [highlightId, setHighlightId] = useState<string | null>(searchParams.get('highlight'));
 
-    const { user, isAdmin, isAdminRoleGlobal, isElder, isServant, loading: authLoading, congregationType: authCongregationType, termType, canManageReferencePoints, congregationId: authCongregationId } = useAuth();
+    const { user, isAdmin, isAdminRoleGlobal, isElder, isServant, loading: authLoading, congregationType: authCongregationType, termType, canCreateMaps, canEditMaps, canDeleteMaps, congregationId: authCongregationId } = useAuth();
     const [localCongregationType, setLocalCongregationType] = useState<'TRADITIONAL' | 'SIGN_LANGUAGE' | 'FOREIGN_LANGUAGE' | null>(null);
     const isTraditional = (localCongregationType || authCongregationType) === 'TRADITIONAL';
     const [addresses, setAddresses] = useState<Address[]>([]);
@@ -182,6 +182,11 @@ function AddressListContent() {
             if (el) {
                 el.scrollIntoView({ behavior: 'smooth', block: 'center' });
             }
+            // Remove o destaque pulsante após 4 segundos para não ficar piscando indefinidamente
+            const timer = setTimeout(() => {
+                setHighlightId(null);
+            }, 4000);
+            return () => clearTimeout(timer);
         }
     }, [highlightId, addresses, loading]);
 
@@ -1124,7 +1129,7 @@ function AddressListContent() {
                 </div>
 
                 <div className="flex items-center gap-2">
-                    {(isElder || isServant || isAdmin || isAdminRoleGlobal || canManageReferencePoints) && (
+                    {(isElder || isServant || isAdmin || isAdminRoleGlobal || canCreateMaps || canEditMaps || canDeleteMaps) && (
                         <AddressActionsMenu
                             congregationId={effectiveCongregationId}
                             cityId={effectiveCityId}
@@ -1560,6 +1565,7 @@ function AddressListContent() {
                 congregationId={congregationId}
                 cityId={cityId}
                 cityName={contextNames.city}
+                context="maps"
                 onSuccess={fetchReferencePoints}
             />
 

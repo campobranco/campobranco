@@ -651,13 +651,13 @@ export default function AdminUsersPage() {
                                                     onClick={() => setEditRoles([role.value])}
                                                     className={`p-4 rounded-lg border text-sm font-bold transition-all flex items-center justify-between
                                                         ${isActive
-                                                            ? 'bg-primary border-primary text-white shadow-md'
+                                                            ? 'bg-primary/10 dark:bg-primary/20 border-primary text-primary dark:text-primary-light ring-1 ring-primary/30'
                                                             : 'bg-background border-surface-border text-muted hover:text-main hover:bg-surface-border/40'
                                                         }
                                                     `}
                                                 >
                                                     <span>{role.label}</span>
-                                                    {isActive && <CheckCircle2 className="w-4 h-4 text-white" />}
+                                                    {isActive && <CheckCircle2 className="w-4 h-4 text-primary dark:text-primary-light" />}
                                                     {!isActive && <div className="w-4 h-4 rounded-full border-2 border-surface-border" />}
                                                 </button>
                                             );

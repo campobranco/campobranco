@@ -183,11 +183,20 @@ const [uploading, setUploading] = useState(false);
             flat.reportsView = !!raw.reportsView;
         }
 
-        // Reference Points (Pontos de Referência)
-        if (raw.referencePoints && typeof raw.referencePoints === 'object') {
-            flat.referencePointsManage = !!raw.referencePoints.manage;
+        // S-12
+        if (raw.s12 && typeof raw.s12 === 'object') {
+            flat.s12Manage = !!raw.s12.manage;
         } else {
-            flat.referencePointsManage = !!raw.referencePointsManage;
+            flat.s12Manage = !!raw.s12Manage;
+        }
+
+        // Members
+        if (raw.members && typeof raw.members === 'object') {
+            flat.membersInvite = !!raw.members.invite;
+            flat.membersManage = !!raw.members.manage;
+        } else {
+            flat.membersInvite = !!raw.membersInvite;
+            flat.membersManage = !!raw.membersManage;
         }
 
         return flat;
@@ -214,11 +223,15 @@ const [uploading, setUploading] = useState(false);
                 edit: !!flat.s13Edit,
                 delete: !!flat.s13Delete
             },
+            s12: {
+                manage: !!flat.s12Manage
+            },
             reports: {
                 view: !!flat.reportsView
             },
-            referencePoints: {
-                manage: !!flat.referencePointsManage
+            members: {
+                invite: !!flat.membersInvite,
+                manage: !!flat.membersManage
             }
         };
     };
@@ -229,8 +242,9 @@ const [uploading, setUploading] = useState(false);
             mapsView: false, mapsCreate: false, mapsEdit: false, mapsDelete: false,
             witnessingView: false, witnessingCreate: false, witnessingEdit: false, witnessingDelete: false,
             s13View: false, s13Create: false, s13Edit: false, s13Delete: false,
+            s12Manage: false,
             reportsView: false,
-            referencePointsManage: false
+            membersInvite: false, membersManage: false
         };
 
         switch (presetType) {
@@ -263,8 +277,9 @@ const [uploading, setUploading] = useState(false);
                     mapsView: true, mapsCreate: true, mapsEdit: true, mapsDelete: true,
                     witnessingView: true, witnessingCreate: true, witnessingEdit: true, witnessingDelete: true,
                     s13View: true, s13Create: true, s13Edit: true, s13Delete: true,
+                    s12Manage: true,
                     reportsView: true,
-                    referencePointsManage: true
+                    membersInvite: true, membersManage: true
                 });
                 break;
             case 'clear':
@@ -287,16 +302,18 @@ const [uploading, setUploading] = useState(false);
                     mapsView: true, mapsCreate: true, mapsEdit: true, mapsDelete: true,
                     witnessingView: true, witnessingCreate: true, witnessingEdit: true, witnessingDelete: true,
                     s13View: true, s13Create: true, s13Edit: true, s13Delete: true,
+                    s12Manage: true,
                     reportsView: true,
-                    referencePointsManage: true
+                    membersInvite: true, membersManage: true
                 };
             } else if (member.role === 'SERVO') {
                 initialPermissions = {
                     mapsView: true, mapsCreate: true, mapsEdit: true, mapsDelete: true,
                     witnessingView: true, witnessingCreate: true, witnessingEdit: true, witnessingDelete: true,
                     s13View: true, s13Create: true, s13Edit: true, s13Delete: true,
+                    s12Manage: true,
                     reportsView: true,
-                    referencePointsManage: true
+                    membersInvite: true, membersManage: false
                 };
             }
         }
@@ -421,6 +438,12 @@ const [uploading, setUploading] = useState(false);
     const [confirmEmail, setConfirmEmail] = useState('');
     const [confirmCongName, setConfirmCongName] = useState('');
     const [actualCongName, setActualCongName] = useState<string | null>(null);
+    const [congNameInput, setCongNameInput] = useState('');
+    const [congCategoryInput, setCongCategoryInput] = useState<'TRADITIONAL' | 'SIGN_LANGUAGE' | 'FOREIGN_LANGUAGE'>('TRADITIONAL');
+    const [actualCongCategory, setActualCongCategory] = useState<'TRADITIONAL' | 'SIGN_LANGUAGE' | 'FOREIGN_LANGUAGE'>('TRADITIONAL');
+    const [congTermTypeInput, setCongTermTypeInput] = useState<'city' | 'neighborhood'>('city');
+    const [actualCongTermType, setActualCongTermType] = useState<'city' | 'neighborhood'>('city');
+    const [savingCongSettings, setSavingCongSettings] = useState(false);
     const [isDeleting, setIsDeleting] = useState(false);
 
     // Close menu on click outside
@@ -447,9 +470,25 @@ const [uploading, setUploading] = useState(false);
                     const congRef = doc(db, "congregations", congregationId);
                     const congSnap = await getDoc(congRef);
                     if (congSnap.exists()) {
-                        setActualCongName(congSnap.data().name || null);
+                        const congData = congSnap.data();
+                        const nameVal = congData.name || '';
+                        const catVal = (congData.category === 'SIGN_LANGUAGE' || congData.category === 'FOREIGN_LANGUAGE' || congData.category === 'TRADITIONAL')
+                            ? congData.category
+                            : 'TRADITIONAL';
+                        const termTypeVal = congData.termType === 'neighborhood' ? 'neighborhood' : 'city';
+                        setActualCongName(nameVal || null);
+                        setCongNameInput(nameVal);
+                        setActualCongCategory(catVal);
+                        setCongCategoryInput(catVal);
+                        setActualCongTermType(termTypeVal);
+                        setCongTermTypeInput(termTypeVal);
                     } else {
                         setActualCongName(null);
+                        setCongNameInput('');
+                        setActualCongCategory('TRADITIONAL');
+                        setCongCategoryInput('TRADITIONAL');
+                        setActualCongTermType('city');
+                        setCongTermTypeInput('city');
                     }
                 } catch (error) {
                     console.error("Error fetching cong name:", error);
@@ -457,6 +496,11 @@ const [uploading, setUploading] = useState(false);
                 }
             } else {
                 setActualCongName(null);
+                setCongNameInput('');
+                setActualCongCategory('TRADITIONAL');
+                setCongCategoryInput('TRADITIONAL');
+                setActualCongTermType('city');
+                setCongTermTypeInput('city');
             }
         };
         fetchCongName();
@@ -518,6 +562,39 @@ const [uploading, setUploading] = useState(false);
             fetchCongregationAndMembers();
         }
     }, [canInviteMembers, canManageMembers, congregationId, isAdminRoleGlobal]);
+
+    const handleSaveCongregationSettings = async (e: React.FormEvent) => {
+        e.preventDefault();
+        if ((!isAdmin && !isAdminRoleGlobal && !isElder) || !congregationId) return;
+
+        const trimmedName = congNameInput.trim();
+        if (!trimmedName) {
+            toast.error("Informe o nome da congregação.");
+            return;
+        }
+
+        setSavingCongSettings(true);
+        try {
+            const congRef = doc(db, "congregations", congregationId);
+            await updateDoc(congRef, {
+                name: trimmedName,
+                category: congCategoryInput,
+                termType: congTermTypeInput,
+                updatedAt: serverTimestamp()
+            });
+
+            setActualCongName(trimmedName);
+            setCongNameInput(trimmedName);
+            setActualCongCategory(congCategoryInput);
+            setActualCongTermType(congTermTypeInput);
+            toast.success("Configurações da congregação atualizadas!");
+        } catch (error) {
+            console.error("Error saving congregation settings:", error);
+            toast.error("Erro ao salvar configurações da congregação.");
+        } finally {
+            setSavingCongSettings(false);
+        }
+    };
 
     const handleGenerateNewToken = async () => {
         setConfirmModal({
@@ -973,6 +1050,97 @@ const [uploading, setUploading] = useState(false);
                     </>
                 )}
 
+                {/* Congregation Settings Section (Admins and Elders only) */}
+                {(isAdmin || isAdminRoleGlobal || isElder) && congregationId && (
+                    <>
+                        <hr className="border-surface-border" />
+
+                        <section className="space-y-4 animate-in slide-in-from-bottom-5 fade-in duration-500">
+                            <div className="flex items-center gap-2 text-primary dark:text-primary-light mb-2">
+                                <Building2 className="w-5 h-5 shrink-0" />
+                                <h2 className="text-sm font-bold uppercase tracking-widest">
+                                    Configurações da Congregação
+                                </h2>
+                            </div>
+
+                            <form onSubmit={handleSaveCongregationSettings} className="bg-surface p-6 rounded-lg shadow-sm border border-surface-border space-y-4">
+                                <div>
+                                    <label htmlFor="cong-name-input" className="block text-xs font-bold text-muted uppercase tracking-wider mb-1.5">
+                                        Nome da Congregação
+                                    </label>
+                                    <input
+                                        id="cong-name-input"
+                                        type="text"
+                                        value={congNameInput}
+                                        onChange={(e) => setCongNameInput(e.target.value)}
+                                        placeholder="Nome da congregação"
+                                        className="w-full bg-background border border-surface-border rounded-lg px-3.5 py-2.5 text-sm text-main focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary"
+                                    />
+                                </div>
+
+                                <div>
+                                    <label htmlFor="cong-slug-input" className="block text-xs font-bold text-muted uppercase tracking-wider mb-1.5">
+                                        Slug / Identificador
+                                    </label>
+                                    <input
+                                        id="cong-slug-input"
+                                        type="text"
+                                        value={congregationId}
+                                        disabled
+                                        readOnly
+                                        className="w-full bg-background/60 border border-surface-border rounded-lg px-3.5 py-2.5 text-sm font-mono text-muted cursor-not-allowed opacity-75"
+                                    />
+                                    <p className="text-[11px] text-muted mt-1">
+                                        O slug da congregação não pode ser alterado.
+                                    </p>
+                                </div>
+
+                                <div>
+                                    <label htmlFor="cong-category-select" className="block text-xs font-bold text-muted uppercase tracking-wider mb-1.5">
+                                        Tipo de Congregação
+                                    </label>
+                                    <select
+                                        id="cong-category-select"
+                                        value={congCategoryInput}
+                                        onChange={(e) => setCongCategoryInput(e.target.value as 'TRADITIONAL' | 'SIGN_LANGUAGE' | 'FOREIGN_LANGUAGE')}
+                                        className="w-full bg-background border border-surface-border rounded-lg px-3.5 py-2.5 text-sm text-main focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary"
+                                    >
+                                        <option value="TRADITIONAL">Tradicional</option>
+                                        <option value="SIGN_LANGUAGE">Língua de sinais</option>
+                                        <option value="FOREIGN_LANGUAGE">Estrangeiro</option>
+                                    </select>
+                                </div>
+
+                                <div>
+                                    <label htmlFor="cong-term-type-select" className="block text-xs font-bold text-muted uppercase tracking-wider mb-1.5">
+                                        Agrupamento de Territórios (Cidade ou Bairro)
+                                    </label>
+                                    <select
+                                        id="cong-term-type-select"
+                                        value={congTermTypeInput}
+                                        onChange={(e) => setCongTermTypeInput(e.target.value as 'city' | 'neighborhood')}
+                                        className="w-full bg-background border border-surface-border rounded-lg px-3.5 py-2.5 text-sm text-main focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary"
+                                    >
+                                        <option value="city">Cidades</option>
+                                        <option value="neighborhood">Bairros</option>
+                                    </select>
+                                </div>
+
+                                <div className="pt-2 flex justify-end">
+                                    <button
+                                        type="submit"
+                                        disabled={savingCongSettings || (congNameInput.trim() === (actualCongName || '') && congCategoryInput === actualCongCategory && congTermTypeInput === actualCongTermType)}
+                                        className="bg-primary hover:bg-primary-dark disabled:opacity-50 disabled:cursor-not-allowed text-white font-bold px-5 py-2.5 rounded-lg text-xs uppercase tracking-wider transition-colors flex items-center gap-2 shadow-lg shadow-primary-light/20"
+                                    >
+                                        {savingCongSettings ? <Loader2 className="w-4 h-4 animate-spin" /> : <Save className="w-4 h-4" />}
+                                        Salvar
+                                    </button>
+                                </div>
+                            </form>
+                        </section>
+                    </>
+                )}
+
                 {/* Admin Section (Elders only) */}
                 {canManageMembers && (
                     <>
@@ -1061,19 +1229,21 @@ const [uploading, setUploading] = useState(false);
 
                                                         {openMenuId === member.id && (
                                                             <div className="absolute right-0 top-10 bg-surface rounded-lg shadow-xl border border-surface-border p-1 z-50 min-w-[180px] animate-in fade-in zoom-in-95 duration-200">
-                                                                {/* Permissões: restrito a Ancião/Admin */}
-                                                                <button
-                                                                    onClick={() => handleOpenPermissions(member)}
-                                                                    className="flex items-center gap-2 px-3 py-2.5 text-sm font-bold text-main hover:bg-background rounded-lg transition-colors w-full text-left"
-                                                                >
-                                                                    <Key className="w-4 h-4 text-primary" />
-                                                                    Permissões
-                                                                </button>
+                                                                {/* Permissões: apenas para Publicador (Admin, Ancião e Servo herdam acesso total) */}
+                                                                {(!member.role || member.role === 'PUBLICADOR') && (
+                                                                    <button
+                                                                        onClick={() => handleOpenPermissions(member)}
+                                                                        className="flex items-center gap-2 px-3 py-2.5 text-sm font-bold text-main hover:bg-background rounded-lg transition-colors w-full text-left"
+                                                                    >
+                                                                        <Key className="w-4 h-4 text-primary" />
+                                                                        Permissões
+                                                                    </button>
+                                                                )}
 
                                                                 {/* Promover/Rebaixar (Ancião/Admin) */}
                                                                 <button
                                                                     onClick={() => handlePromote(member.id, member.role)}
-                                                                    className={`flex items-center gap-2 px-3 py-2.5 text-sm font-bold rounded-lg transition-colors w-full text-left border-t border-surface-border ${member.role === 'SERVO' ? 'text-orange-600 hover:bg-orange-50 dark:hover:bg-orange-900/20' : 'text-primary hover:bg-primary-light/50 dark:hover:bg-primary-dark/30'}`}
+                                                                    className={`flex items-center gap-2 px-3 py-2.5 text-sm font-bold rounded-lg transition-colors w-full text-left ${(!member.role || member.role === 'PUBLICADOR') ? 'border-t border-surface-border ' : ''}${member.role === 'SERVO' ? 'text-orange-600 hover:bg-orange-50 dark:hover:bg-orange-900/20' : 'text-primary hover:bg-primary-light/50 dark:hover:bg-primary-dark/30'}`}
                                                                 >
                                                                     <Shield className="w-4 h-4" />
                                                                     {member.role === 'ANCIAO' ? "Rebaixar a Servo" :
@@ -1409,23 +1579,75 @@ const [uploading, setUploading] = useState(false);
                             </button>
                             <button
                                 onClick={async () => {
+                                    const currentAuthUser = auth.currentUser;
+                                    if (!user?.uid || !currentAuthUser) {
+                                        toast.error("Sessão expirada. Faça login novamente.");
+                                        return;
+                                    }
+
+                                    // 1. Verifica sessão recente antes de alterar qualquer dado no Firestore
+                                    const lastSignInStr = currentAuthUser.metadata?.lastSignInTime;
+                                    const lastSignInMs = lastSignInStr ? new Date(lastSignInStr).getTime() : 0;
+                                    if (!lastSignInMs || isNaN(lastSignInMs) || Date.now() - lastSignInMs > 5 * 60 * 1000) {
+                                        toast.error("Por segurança, saia e faça login novamente antes de excluir sua conta.");
+                                        return;
+                                    }
+
                                     setIsDeleting(true);
                                     try {
-                                        if (user?.uid) {
-                                            const userRef = doc(db, "users", user.uid);
-                                            await deleteDoc(userRef);
-                                            
-                                            if (auth.currentUser) {
-                                                // Exclui completamente do Auth limitando a sessão de recriar documento
-                                                await deleteUser(auth.currentUser);
+                                        // 2. Preserva o nome na S-13 e libera territórios ativos atribuídos ao usuário
+                                        const listsQuery = query(
+                                            collection(db, "shared_lists"),
+                                            where("assignedTo", "==", user.uid)
+                                        );
+                                        const listsSnap = await getDocs(listsQuery);
+                                        const territoryIdsToRelease = new Set<string>();
+                                        const fallbackName = profileName || user.displayName || user.email?.split('@')[0] || 'Publicador';
+
+                                        for (const listDoc of listsSnap.docs) {
+                                            const data = listDoc.data();
+                                            const isActiveCard = data.status !== 'completed' && data.status !== 'expired' && data.status !== 'archived';
+                                            const updatePayload: Record<string, any> = {
+                                                assignedName: data.assignedName || fallbackName,
+                                                assignedTo: null,
+                                                updatedAt: new Date().toISOString()
+                                            };
+
+                                            if (isActiveCard) {
+                                                updatePayload.status = 'expired';
+                                                if (data.territoryId) territoryIdsToRelease.add(data.territoryId);
+                                                if (Array.isArray(data.items)) {
+                                                    data.items.forEach((tId: string) => {
+                                                        if (tId) territoryIdsToRelease.add(tId);
+                                                    });
+                                                }
                                             }
+
+                                            await updateDoc(listDoc.ref, updatePayload);
                                         }
+
+                                        for (const tId of Array.from(territoryIdsToRelease)) {
+                                            await updateDoc(doc(db, "territories", tId), {
+                                                status: 'LIVRE',
+                                                assignedTo: null,
+                                                updatedAt: serverTimestamp()
+                                            });
+                                        }
+
+                                        // 3. Remove o perfil no Firestore e depois exclui no Auth
+                                        await deleteDoc(doc(db, "users", user.uid));
+                                        await deleteUser(currentAuthUser);
+
                                         await authLogout();
                                         toast.success("Conta excluída com sucesso.");
                                         window.location.href = '/login';
                                     } catch (error: any) {
                                         console.error("Delete error:", error);
-                                        toast.error("Erro ao excluir conta: " + error.message);
+                                        if (error?.code === 'auth/requires-recent-login') {
+                                            toast.error("Por segurança, saia e faça login novamente antes de excluir sua conta.");
+                                        } else {
+                                            toast.error("Erro ao excluir conta: " + (error?.message || "Erro desconhecido"));
+                                        }
                                         setIsDeleting(false);
                                     }
                                 }}
@@ -1605,15 +1827,20 @@ const [uploading, setUploading] = useState(false);
                                     </div>
                                 </div>
 
-                                {/* Seção Relatórios */}
+                                {/* Seção Relatórios e Registros (S-12 / S-13) */}
                                 <div className="space-y-3 bg-background/50 dark:bg-background/25 p-4 rounded-xl border border-surface-border">
                                     <div className="flex items-center gap-2 font-bold text-main text-xs uppercase tracking-wider">
                                         <FileText className="w-4 h-4 text-purple-600 dark:text-purple-400" />
-                                        <span>Relatórios</span>
+                                        <span>Relatórios e Registros (S-12 / S-13)</span>
                                     </div>
                                     <div className="flex flex-col gap-2">
                                         {[
-                                            { key: 'reportsView', label: 'Visualizar Relatórios' }
+                                            { key: 'reportsView', label: 'Visualizar Relatórios' },
+                                            { key: 's12Manage', label: 'Gerenciar Cartões S-12' },
+                                            { key: 's13View', label: 'S-13: Visualizar' },
+                                            { key: 's13Create', label: 'S-13: Criar' },
+                                            { key: 's13Edit', label: 'S-13: Editar' },
+                                            { key: 's13Delete', label: 'S-13: Excluir' }
                                         ].map((p) => {
                                             const isChecked = !!editingPermissions[p.key];
                                             const isDisabled = selectedMemberForPermissions.id === user?.uid;
@@ -1639,15 +1866,16 @@ const [uploading, setUploading] = useState(false);
                                     </div>
                                 </div>
 
-                                {/* Seção Pontos de Referência */}
+                                {/* Seção Gestão de Usuários (Congregação) */}
                                 <div className="space-y-3 bg-background/50 dark:bg-background/25 p-4 rounded-xl border border-surface-border">
                                     <div className="flex items-center gap-2 font-bold text-main text-xs uppercase tracking-wider">
-                                        <MapIcon className="w-4 h-4 text-teal-600 dark:text-teal-400" />
-                                        <span>Pontos de Referência</span>
+                                        <Users className="w-4 h-4 text-blue-600 dark:text-blue-400" />
+                                        <span>Gestão de Usuários (Congregação)</span>
                                     </div>
                                     <div className="flex flex-col gap-2">
                                         {[
-                                            { key: 'referencePointsManage', label: 'Gerenciar Pontos de Referência' }
+                                            { key: 'membersInvite', label: 'Convidar Publicadores' },
+                                            { key: 'membersManage', label: 'Gerenciar Membros' }
                                         ].map((p) => {
                                             const isChecked = !!editingPermissions[p.key];
                                             const isDisabled = selectedMemberForPermissions.id === user?.uid;
@@ -1655,7 +1883,7 @@ const [uploading, setUploading] = useState(false);
                                                 <label
                                                     key={p.key}
                                                     className={`flex items-center p-2.5 rounded-lg border text-xs font-semibold cursor-pointer transition-all hover:bg-surface/50
-                                                        ${isChecked ? 'bg-teal-50/50 border-teal-200 text-teal-700 font-bold dark:bg-teal-950/20 dark:border-teal-900/40 dark:text-teal-400' : 'bg-surface border-surface-border text-muted'}
+                                                        ${isChecked ? 'bg-blue-50/50 border-blue-200 text-blue-700 font-bold dark:bg-blue-950/20 dark:border-blue-900/40 dark:text-blue-400' : 'bg-surface border-surface-border text-muted'}
                                                         ${isDisabled ? 'opacity-65 cursor-not-allowed' : ''}
                                                     `}
                                                 >
@@ -1664,44 +1892,7 @@ const [uploading, setUploading] = useState(false);
                                                         checked={isChecked}
                                                         disabled={isDisabled}
                                                         onChange={() => togglePermissionField(p.key)}
-                                                        className="w-4 h-4 rounded text-teal-600 focus:ring-teal-200 border-surface-border mr-2.5 animate-none disabled:opacity-50 disabled:cursor-not-allowed"
-                                                    />
-                                                    {p.label}
-                                                </label>
-                                            );
-                                        })}
-                                    </div>
-                                </div>
-
-                                {/* Seção S-13 (Registro de Designações) */}
-                                <div className="space-y-3 bg-background/50 dark:bg-background/25 p-4 rounded-xl border border-surface-border">
-                                    <div className="flex items-center gap-2 font-bold text-main text-xs uppercase tracking-wider">
-                                        <Clock className="w-4 h-4 text-orange-600 dark:text-orange-400" />
-                                        <span>S-13 (Designações)</span>
-                                    </div>
-                                    <div className="flex flex-col gap-2">
-                                        {[
-                                            { key: 's13View', label: 'Visualizar' },
-                                            { key: 's13Create', label: 'Criar' },
-                                            { key: 's13Edit', label: 'Editar' },
-                                            { key: 's13Delete', label: 'Excluir' }
-                                        ].map((p) => {
-                                            const isChecked = !!editingPermissions[p.key];
-                                            const isDisabled = selectedMemberForPermissions.id === user?.uid;
-                                            return (
-                                                <label
-                                                    key={p.key}
-                                                    className={`flex items-center p-2.5 rounded-lg border text-xs font-semibold cursor-pointer transition-all hover:bg-surface/50
-                                                        ${isChecked ? 'bg-orange-50/50 border-orange-200 text-orange-700 font-bold dark:bg-orange-950/20 dark:border-orange-900/40 dark:text-orange-400' : 'bg-surface border-surface-border text-muted'}
-                                                        ${isDisabled ? 'opacity-65 cursor-not-allowed' : ''}
-                                                    `}
-                                                >
-                                                    <input
-                                                        type="checkbox"
-                                                        checked={isChecked}
-                                                        disabled={isDisabled}
-                                                        onChange={() => togglePermissionField(p.key)}
-                                                        className="w-4 h-4 rounded text-orange-600 focus:ring-orange-200 border-surface-border mr-2.5 animate-none disabled:opacity-50 disabled:cursor-not-allowed"
+                                                        className="w-4 h-4 rounded text-blue-600 focus:ring-blue-200 border-surface-border mr-2.5 animate-none disabled:opacity-50 disabled:cursor-not-allowed"
                                                     />
                                                     {p.label}
                                                 </label>

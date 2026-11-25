@@ -80,7 +80,7 @@ export default function FloatingReportButton() {
                 allowTaint: false,
                 logging: false,      // silencia console.error interno do html2canvas
                 imageTimeout: 2000,  // desiste de imagens bloqueadas após 2s
-                scale: 2,
+                scale: 1,
                 scrollX: 0,
                 scrollY: 0,
                 x: window.scrollX,
@@ -97,7 +97,7 @@ export default function FloatingReportButton() {
                     return false;
                 }
             });
-            setScreenshot(canvas.toDataURL('image/png'));
+            setScreenshot(canvas.toDataURL('image/jpeg', 0.7));
             setIsOpen(true);
         } catch (error) {
             console.error("Screenshot failed:", error);

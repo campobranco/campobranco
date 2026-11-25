@@ -404,7 +404,7 @@ export default function VisitsHistory({ scope = 'all', showViewAll = true }: { s
                                                     {formatDate(visit.sortDate)}
                                                 </span>
                                             </div>
-                                            <h4 className="font-bold text-main text-sm">{visit.addressStreet}, {visit.addressNumber}</h4>
+                                            <h4 className="font-bold text-main text-sm">{visit.addressNumber ? `${visit.addressStreet}, ${visit.addressNumber}` : visit.addressStreet}</h4>
                                         </div>
 
                                         <div>

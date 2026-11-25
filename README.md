@@ -8,6 +8,15 @@ O **Campo Branco** é uma aplicação web moderna e progressiva (PWA) desenvolvi
 
 ---
 
+> [!TIP]
+> ### 🎉 Novidade: Acesso Antecipado no Android
+>
+> O aplicativo **Campo Branco** já está disponível em versão de **acesso antecipado** na Google Play Store. Interessados podem acessar e baixar diretamente pelo link abaixo:
+>
+> 👉 **[Participar no Android](https://play.google.com/store/apps/details?id=com.campobranco.app)**
+
+---
+
 ### ⚠️ Aviso Importante
 
 Este aplicativo é uma iniciativa **independente e open source**. Ele **não** é uma ferramenta oficial da organização religiosa das Testemunhas de Jeová, embora seja projetado especificamente para ser útil e compatível com as atividades locais das congregações.
