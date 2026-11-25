@@ -3,6 +3,7 @@
 import { useState, useEffect, useCallback, useRef, useLayoutEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { useAuth } from '@/app/context/AuthContext';
+import { getMapTileConfig } from '@/lib/map-tiles';
 import { ChevronLeft, Printer, MapPin, Building2, Filter, Loader2, LayoutGrid, FileText, Trash2, ImagePlus, Map as MapIcon, Sliders, Hexagon, Download, FolderDown, X, Image as ImageIcon, CheckCircle2 } from 'lucide-react';
 import html2canvas from 'html2canvas';
 import { jsPDF } from 'jspdf';
@@ -126,8 +127,9 @@ function AddressPinsMap({ pins }: { pins: AddressPinItem[] }) {
                 touchZoom: false
             });
 
-            L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-                maxZoom: 19
+            const tile = getMapTileConfig();
+            L.tileLayer(tile.url, {
+                maxZoom: tile.maxZoom
             }).addTo(map);
 
             const bounds = L.latLngBounds([]);

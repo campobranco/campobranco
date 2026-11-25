@@ -2,6 +2,7 @@
 
 import { useEffect, useRef, useState } from 'react';
 import { Loader2 } from 'lucide-react';
+import { getMapTileConfig } from '@/lib/map-tiles';
 
 interface WitnessingPoint {
     id: string;
@@ -46,9 +47,10 @@ export default function PointMap({ points }: PointMapProps) {
                         attributionControl: false
                     }).setView(center as any, 14);
 
-                    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-                        attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors',
-                        maxZoom: 19
+                    const tile = getMapTileConfig();
+                    L.tileLayer(tile.url, {
+                        attribution: tile.attribution,
+                        maxZoom: tile.maxZoom
                     }).addTo(map);
 
                     mapInstanceRef.current = map;

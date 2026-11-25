@@ -4,6 +4,7 @@ import { useEffect, useRef, useState } from 'react';
 import { Loader2, MapPin, ThumbsUp, Home, Navigation, Ban, Truck, Maximize2, Minimize2, Map as MapIcon, Lock, Unlock, Store, Hand } from 'lucide-react';
 import { renderToStaticMarkup } from 'react-dom/server';
 import { sanitizeUrl } from '@/lib/validation';
+import { getMapTileConfig } from '@/lib/map-tiles';
 // TODO(mutations): migrate to mutation layer - legacy module (admin/report/dashboard)
 // eslint-disable-next-line no-restricted-imports
 import { geocodeAddress } from '@/lib/services/geocoding';
@@ -190,9 +191,10 @@ export default function MapView({ items, center = defaultCenter, zoom = 15, onGe
                         touchZoom: false
                     }).setView([startLat, startLng], zoom);
 
-                    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-                        attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors',
-                        maxZoom: 19
+                    const tile = getMapTileConfig();
+                    L.tileLayer(tile.url, {
+                        attribution: tile.attribution,
+                        maxZoom: tile.maxZoom
                     }).addTo(map);
 
                     L.control.zoom({ position: 'bottomright' }).addTo(map);
