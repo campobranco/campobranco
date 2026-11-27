@@ -263,6 +263,11 @@ export async function markAllAddressesAsWorked(params: {
                         createdAt: serverTimestamp()
                     });
                 }
+
+                const matchingSnaps = snapshotsSnap.docs.filter((d) => (d.data() as any)?.itemId === addr.id);
+                matchingSnaps.forEach((snapDoc) => {
+                    batchOp.update(snapDoc.ref, { 'data.visitStatus': 'contacted' });
+                });
             }
 
             await batchOp.commit();

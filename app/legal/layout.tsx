@@ -1,7 +1,7 @@
 'use client';
 
 import Link from 'next/link';
-import { ArrowLeft, Shield, FileText, Lock, UserCheck } from 'lucide-react';
+import { ArrowLeft, Shield, FileText, Lock, UserCheck, Scale } from 'lucide-react';
 import { useAppIcon } from '@/app/context/AppIconContext';
 
 export default function LegalLayout({
@@ -55,9 +55,13 @@ export default function LegalLayout({
                             <UserCheck className="w-4 h-4" />
                             Compromisso
                         </Link>
+                        <Link prefetch={false} href="/legal/open-source" className="text-sm font-medium text-gray-500 dark:text-gray-400 hover:text-[#16a34a] dark:hover:text-green-400 transition-colors flex items-center gap-1.5">
+                            <Scale className="w-4 h-4" />
+                            Código Aberto
+                        </Link>
                     </div>
                     <p className="text-center text-xs text-gray-400 dark:text-gray-600 mt-6">
-                        © {new Date().getFullYear()} Campo Branco. Todos os direitos reservados.
+                        © 2025–{new Date().getFullYear()} Paulo Jacomelli · Campo Branco — Código-fonte sob Licença MIT.
                     </p>
                 </div>
             </footer>

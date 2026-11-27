@@ -1046,3 +1046,128 @@ export async function returnExpiredTerritoryAssignments(congregationId?: string)
     };
 }
 
+
+export function getVisitTimestampMs(visit: any): number {
+    if (!visit) return 0;
+    const raw = visit.createdAt || visit.visitDate;
+    if (!raw) return 0;
+    if (typeof raw?.toMillis === 'function') return raw.toMillis();
+    if (typeof raw?.seconds === 'number') return raw.seconds * 1000;
+    const ms = getTimestampMs(raw);
+    if (ms > 0) return ms;
+    if (typeof raw === 'string') {
+        const parsed = Date.parse(raw);
+        return Number.isNaN(parsed) ? 0 : parsed;
+    }
+    return 0;
+}
+
+export function pickLatestVisitByAddress(visits: any[]): Map<string, any> {
+    const latestMap = new Map<string, any>();
+    if (!Array.isArray(visits)) return latestMap;
+
+    for (const v of visits) {
+        if (!v?.addressId) continue;
+        const prev = latestMap.get(v.addressId);
+        if (!prev || getVisitTimestampMs(v) >= getVisitTimestampMs(prev)) {
+            latestMap.set(v.addressId, v);
+        }
+    }
+    return latestMap;
+}
+
+export function resolveAddressStatusForLatestCycle(
+    address: { id: string; visitStatus?: string | null; lastVisitedAt?: any },
+    latestVisitsByAddress: Map<string, any>
+): { visitStatus: string; lastVisitedAt: any } {
+    if (address.visitStatus === 'doNotVisit') {
+        return {
+            visitStatus: 'doNotVisit',
+            lastVisitedAt: address.lastVisitedAt ?? null,
+        };
+    }
+
+    const latestVisit = latestVisitsByAddress.get(address.id);
+    if (latestVisit && latestVisit.status) {
+        return {
+            visitStatus: latestVisit.status,
+            lastVisitedAt: latestVisit.visitDate || latestVisit.createdAt || address.lastVisitedAt || null,
+        };
+    }
+
+    return {
+        visitStatus: 'none',
+        lastVisitedAt: address.lastVisitedAt ?? null,
+    };
+}
+
+export async function getLatestTerritoryCycleVisits(territoryId: string): Promise<{
+    latestShareId: string | null;
+    latestVisitsByAddress: Map<string, any>;
+}> {
+    const empty = { latestShareId: null, latestVisitsByAddress: new Map<string, any>() };
+    if (!territoryId) return empty;
+
+    try {
+        const [snapDocsRes, terrDocRes] = await Promise.all([
+            getDocs(query(collection(db, SNAPSHOTS_TABLE), where('itemId', '==', territoryId))),
+            getDoc(doc(db, 'territories', territoryId)),
+        ]);
+
+        const candidateShareIds = new Set<string>();
+        snapDocsRes.docs.forEach((d) => {
+            const shareId = (d.data() as any)?.sharedListId;
+            if (shareId) candidateShareIds.add(shareId);
+        });
+
+        if (terrDocRes.exists()) {
+            const { activeLinkIds } = coerceToArrays(terrDocRes.data());
+            activeLinkIds.forEach((id) => {
+                if (id) candidateShareIds.add(id);
+            });
+        }
+
+        if (candidateShareIds.size === 0) return empty;
+
+        const listSnaps = await Promise.all(
+            Array.from(candidateShareIds).map((shareId) => getDoc(doc(db, LISTS_TABLE, shareId)))
+        );
+
+        const lists = listSnaps
+            .filter((s) => s.exists())
+            .map((s) => ({ id: s.id, ...(s.data() as any) }));
+
+        if (lists.length === 0) return empty;
+
+        lists.sort((a, b) => {
+            const timeA = getTimestampMs(a.assignedAt || a.createdAt);
+            const timeB = getTimestampMs(b.assignedAt || b.createdAt);
+            if (timeB !== timeA) return timeB - timeA;
+            if (a.status === 'active' && b.status !== 'active') return -1;
+            if (b.status === 'active' && a.status !== 'active') return 1;
+            return 0;
+        });
+
+        const latestList = lists[0];
+        const visitsSnap = await getDocs(
+            query(collection(db, VISITS_TABLE), where('sharedListId', '==', latestList.id))
+        );
+        const rawVisits = visitsSnap.docs.map((d) => ({ id: d.id, ...d.data() }));
+
+        const assignedTime = getTimestampMs(latestList.assignedAt || latestList.createdAt);
+        const cycleVisits = assignedTime > 0
+            ? rawVisits.filter((v) => {
+                const vTime = getTimestampMs((v as any).createdAt);
+                return vTime === 0 || vTime >= assignedTime - 5000;
+            })
+            : rawVisits;
+
+        return {
+            latestShareId: latestList.id,
+            latestVisitsByAddress: pickLatestVisitByAddress(cycleVisits),
+        };
+    } catch (error) {
+        console.error('[getLatestTerritoryCycleVisits] Erro ao buscar ciclo mais recente do território:', error);
+        return empty;
+    }
+}

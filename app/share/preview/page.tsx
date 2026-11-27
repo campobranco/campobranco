@@ -40,7 +40,7 @@ import { toast } from 'sonner';
 
 // TODO(mutations): migrate to mutation layer - legacy module (admin/report/dashboard)
 // eslint-disable-next-line no-restricted-imports
-import { getSharedListWithData } from '@/lib/services/shared_lists';
+import { getSharedListWithData, pickLatestVisitByAddress } from '@/lib/services/shared_lists';
 // TODO(mutations): migrate to mutation layer - legacy module (admin/report/dashboard)
 // eslint-disable-next-line no-restricted-imports
 import { reportVisit, deleteVisitByAddressAndShare } from '@/lib/services/visits';
@@ -102,6 +102,7 @@ function SharedPreviewContent() {
     const [selectedAddressForReport, setSelectedAddressForReport] = useState<PreviewItem | null>(null);
     const [selectedAddressForHistory, setSelectedAddressForHistory] = useState<string | null>(null);
     const [showLoginRequest, setShowLoginRequest] = useState(false);
+    const [loginRequestMessage, setLoginRequestMessage] = useState<string | undefined>(undefined);
     const [showAccessDenied, setShowAccessDenied] = useState(false);
     const [deniedResource, setDeniedResource] = useState('');
     const [isInactiveExpanded, setIsInactiveExpanded] = useState(false);
@@ -187,13 +188,8 @@ function SharedPreviewContent() {
                 };
             });
 
-            // 4. Merge Results (Visits)
-            const linkResults: Record<string, any> = {};
-            if (visitsData) {
-                visitsData.forEach((v: any) => {
-                    linkResults[v.addressId] = v;
-                });
-            }
+            // 4. Merge Results (Visits) - sempre usa a visita mais recente por endereço
+            const latestVisitsByAddress = pickLatestVisitByAddress(visitsData || []);
 
             // Merge
             // Deduplicate by id first: fetchedItems may contain the same snapshot
@@ -205,7 +201,7 @@ function SharedPreviewContent() {
                 return true;
             });
             const mergedItems = uniqueAddresses.map(addr => {
-                const visitRecord = linkResults[addr.id];
+                const visitRecord = latestVisitsByAddress.get(addr.id);
                 const finalStatus = visitRecord?.status || addr.visitStatus || 'none';
                 return {
                     ...addr,
@@ -436,12 +432,19 @@ function SharedPreviewContent() {
             if (user) {
                 setSelectedAddressForReport(item);
             } else {
+                setLoginRequestMessage(undefined);
                 setShowLoginRequest(true);
             }
         };
 
         const handleHistoryClick = (e: React.MouseEvent, itemId: string) => {
             e.stopPropagation();
+            if (!user) {
+                setLoginRequestMessage("Para visualizar o histórico de visitas deste endereço, você precisa estar logado.");
+                setShowLoginRequest(true);
+                setActiveDropdownId(null);
+                return;
+            }
             setSelectedAddressForHistory(itemId);
             setActiveDropdownId(null);
         };
@@ -573,7 +576,7 @@ function SharedPreviewContent() {
                                                 <Calendar className="w-3 h-3" /> Desativado em: {new Date(item.inactivatedAt).toLocaleDateString('pt-BR')}
                                             </span>
                                         )}
-                                        {item.gender && (
+                                        {!isTraditional && item.gender && (
                                             <span className={`flex items-center gap-1 px-1.5 py-0.5 rounded-md font-bold text-[10px] uppercase ${
                                                 item.gender === 'HOMEM' ? 'bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400' :
                                                 item.gender === 'MULHER' ? 'bg-pink-100 text-pink-700 dark:bg-pink-900/30 dark:text-pink-400' :
@@ -813,12 +816,17 @@ function SharedPreviewContent() {
                     isSharedView={true}
                     shareId={shareId || undefined}
                     sharedVisits={visits}
+                    congregationType={congregationType}
                 />
             )}
 
             {showLoginRequest && (
                 <LoginRequestModal
-                    onClose={() => setShowLoginRequest(false)}
+                    message={loginRequestMessage}
+                    onClose={() => {
+                        setShowLoginRequest(false);
+                        setLoginRequestMessage(undefined);
+                    }}
                 />
             )}
 

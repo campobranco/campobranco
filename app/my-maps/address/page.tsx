@@ -19,6 +19,7 @@ const ReferencePointsModal = dynamic(() => import('@/app/components/ReferencePoi
 });
 const BottomNav = dynamic(() => import('@/app/components/BottomNav'), { ssr: false });
 import ConfirmationModal from '@/app/components/ConfirmationModal';
+import { getLatestTerritoryCycleVisits, resolveAddressStatusForLatestCycle } from '@/lib/services/shared_lists';
 import { AddressPageSkeleton, MapSkeleton, Skeleton } from '@/app/components/Skeleton';
 import { sanitizeUrl } from '@/lib/validation';
 
@@ -437,16 +438,24 @@ function AddressListContent() {
             return;
         }
         try {
-            const resData = await getAddresses(effectiveCongregationId, effectiveCityId || null, territoryId);
+            const [resData, latestCycle] = await Promise.all([
+                getAddresses(effectiveCongregationId, effectiveCityId || null, territoryId),
+                getLatestTerritoryCycleVisits(territoryId)
+            ]);
             console.log("[Debug] Endereços recebidos:", resData);
 
             if (!resData.success) {
                 throw new Error(resData.error || 'Erro ao buscar endereços');
             }
 
-            const data = (resData.addresses || []).map((addr: any) => ({
-                ...addr
-            }));
+            const data = (resData.addresses || []).map((addr: any) => {
+                const resolved = resolveAddressStatusForLatestCycle(addr, latestCycle.latestVisitsByAddress);
+                return {
+                    ...addr,
+                    visitStatus: resolved.visitStatus,
+                    lastVisitedAt: resolved.lastVisitedAt
+                };
+            });
 
             const sorted = data.sort((a: any, b: any) => {
                 const orderA = a.sortOrder ?? 999999;
@@ -623,7 +632,7 @@ function AddressListContent() {
                 isActive: isActive,
                 googleMapsLink: sanitizeUrl(resolvedLinks.googleMapsLink),
                 wazeLink: sanitizeUrl(resolvedLinks.wazeLink),
-                gender: gender || null,
+                gender: isTraditional ? null : (gender || null),
                 observations
             };
 
@@ -1006,12 +1015,13 @@ function AddressListContent() {
                         handleEditAddress(addr);
                     }
                 }}
-                className={`group bg-surface rounded-md p-4 border shadow-md hover:shadow-md transition-all ${(isSelectionMode || canEditMaps || isElder || isServant) ? 'cursor-pointer' : ''} 
+                className={`group bg-surface rounded-md p-4 border border-surface-border shadow-md hover:shadow-md transition-all ${(isSelectionMode || canEditMaps || isElder || isServant) ? 'cursor-pointer' : ''} 
                     ${isHighlighted ? 'ring-4 ring-red-500/80 ring-offset-2 animate-pulse shadow-xl' : ''}
-                    ${(addr.visitStatus === 'moved') ? 'border-2 border-blue-500 bg-blue-50/50 dark:border-blue-500/30 dark:bg-blue-950/20' :
-                        (addr.visitStatus === 'doNotVisit') ? 'border-2 border-red-500 bg-red-50/50 dark:border-red-500/30 dark:bg-red-950/20' :
-                            (addr.visitStatus === 'partial') ? 'border-2 border-yellow-500 bg-yellow-50/50 dark:border-yellow-500/30 dark:bg-yellow-950/20' :
-                                (addr.visitStatus === 'contacted') ? 'border-2 border-green-500 bg-green-50/50 dark:border-green-500/30 dark:bg-green-950/20' : 'border-surface-border'}
+                    ${(addr.visitStatus === 'moved') ? 'bg-blue-50/30 dark:bg-blue-950/20' :
+                        (addr.visitStatus === 'doNotVisit') ? 'bg-red-50/30 dark:bg-red-950/20' :
+                            (addr.visitStatus === 'partial') ? 'bg-yellow-50/30 dark:bg-yellow-950/20' :
+                                (addr.visitStatus === 'notContacted') ? 'bg-orange-50/30 dark:bg-orange-950/20' :
+                                    (addr.visitStatus === 'contacted') ? 'bg-green-50/30 dark:bg-green-950/20' : ''}
                     ${draggedId === addr.id ? 'opacity-20 transition-none scale-95' : ''} 
                     ${openMenuId === addr.id ? 'relative z-20 ring-1 ring-primary-100 dark:ring-primary-900' : ''}`}
             >
@@ -1102,6 +1112,8 @@ function AddressListContent() {
                             let defaultStyles = "bg-primary-50 dark:bg-primary-900/10 text-primary-700 dark:text-primary-400 border-surface-border";
                             if (addr.visitStatus === 'partial') {
                                 defaultStyles = "bg-yellow-100 dark:bg-yellow-900/30 text-yellow-700 dark:text-yellow-400 border-yellow-200 dark:border-yellow-900/40";
+                            } else if (addr.visitStatus === 'notContacted') {
+                                defaultStyles = "bg-orange-100 dark:bg-orange-900/30 text-orange-700 dark:text-orange-400 border-orange-200 dark:border-orange-900/40";
                             } else if (addr.visitStatus === 'contacted') {
                                 defaultStyles = "bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-400 border-green-200 dark:border-green-900/40";
                             }
@@ -1138,7 +1150,7 @@ function AddressListContent() {
                                         <Hand className="w-3 h-3" /> Pediu para não ser visitado
                                     </span>
                                 )}
-                                {addr.gender && (
+                                {!isTraditional && addr.gender && (
                                     <span className={`flex items-center gap-1 px-1.5 py-0.5 rounded-md font-bold text-[10px] uppercase ${
                                         addr.gender === 'HOMEM' ? 'bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400' :
                                         addr.gender === 'MULHER' ? 'bg-pink-100 text-pink-700 dark:bg-pink-900/30 dark:text-pink-400' :
@@ -1637,28 +1649,30 @@ function AddressListContent() {
 
 
 
-                                <div>
-                                    <label className="block text-xs font-bold text-muted uppercase tracking-wider mb-2">Gênero (Opcional)</label>
-                                    <div className="flex gap-2">
-                                        {[
-                                            { id: 'HOMEM' as const, label: 'Homem', activeClass: 'border-blue-500 bg-blue-50 dark:bg-blue-900/30 text-blue-700 dark:text-blue-400' },
-                                            { id: 'MULHER' as const, label: 'Mulher', activeClass: 'border-pink-500 bg-pink-50 dark:bg-pink-900/30 text-pink-700 dark:text-pink-400' },
-                                            { id: 'CASAL' as const, label: 'Casal', activeClass: 'border-purple-500 bg-purple-50 dark:bg-purple-900/30 text-purple-700 dark:text-purple-400' },
-                                        ].map(opt => {
-                                            const isSelected = gender === opt.id;
-                                            return (
-                                                <button
-                                                    key={opt.id}
-                                                    type="button"
-                                                    onClick={() => setGender(isSelected ? '' : opt.id)}
-                                                    className={`flex-1 py-2 rounded-lg text-xs font-bold uppercase transition-all border-2 ${isSelected ? opt.activeClass : 'border-gray-100 dark:border-gray-700 bg-white dark:bg-gray-800 text-gray-400 dark:text-gray-500 hover:border-gray-200 dark:hover:border-gray-600'}`}
-                                                >
-                                                    {opt.label}
-                                                </button>
-                                            );
-                                        })}
+                                {!isTraditional && (
+                                    <div>
+                                        <label className="block text-xs font-bold text-muted uppercase tracking-wider mb-2">Gênero (Opcional)</label>
+                                        <div className="flex gap-2">
+                                            {[
+                                                { id: 'HOMEM' as const, label: 'Homem', activeClass: 'border-blue-500 bg-blue-50 dark:bg-blue-900/30 text-blue-700 dark:text-blue-400' },
+                                                { id: 'MULHER' as const, label: 'Mulher', activeClass: 'border-pink-500 bg-pink-50 dark:bg-pink-900/30 text-pink-700 dark:text-pink-400' },
+                                                { id: 'CASAL' as const, label: 'Casal', activeClass: 'border-purple-500 bg-purple-50 dark:bg-purple-900/30 text-purple-700 dark:text-purple-400' },
+                                            ].map(opt => {
+                                                const isSelected = gender === opt.id;
+                                                return (
+                                                    <button
+                                                        key={opt.id}
+                                                        type="button"
+                                                        onClick={() => setGender(isSelected ? '' : opt.id)}
+                                                        className={`flex-1 py-2 rounded-lg text-xs font-bold uppercase transition-all border-2 ${isSelected ? opt.activeClass : 'border-gray-100 dark:border-gray-700 bg-white dark:bg-gray-800 text-gray-400 dark:text-gray-500 hover:border-gray-200 dark:hover:border-gray-600'}`}
+                                                    >
+                                                        {opt.label}
+                                                    </button>
+                                                );
+                                            })}
+                                        </div>
                                     </div>
-                                </div>
+                                )}
 
                                 <div>
                                     <label className="block text-xs font-bold text-muted uppercase tracking-wider mb-2">Notas de Acesso / Ponto de Referência</label>

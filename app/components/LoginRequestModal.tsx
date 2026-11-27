@@ -3,13 +3,13 @@
 import { useState, useEffect } from 'react';
 import { createPortal } from 'react-dom';
 import { X, LogIn } from 'lucide-react';
-import useRouter from 'next/navigation';
 
 interface LoginRequestModalProps {
     onClose: () => void;
+    message?: string;
 }
 
-export default function LoginRequestModal({ onClose }: LoginRequestModalProps) {
+export default function LoginRequestModal({ onClose, message }: LoginRequestModalProps) {
     const [isMounted, setIsMounted] = useState(false);
     useEffect(() => {
         setIsMounted(true);
@@ -40,7 +40,7 @@ export default function LoginRequestModal({ onClose }: LoginRequestModalProps) {
 
                 <h2 className="text-xl font-bold text-gray-900 mb-2">Autenticação Necessária</h2>
                 <p className="text-gray-500 mb-6">
-                    Para registrar uma visita e atualizar o status deste endereço, você precisa estar logado.
+                    {message || "Para registrar uma visita e atualizar o status deste endereço, você precisa estar logado."}
                 </p>
 
                 <button

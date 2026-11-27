@@ -1508,7 +1508,7 @@ const [uploading, setUploading] = useState(false);
 
                 <div className="pt-8 pb-12 flex flex-col items-center gap-4">
                     <a
-                        href="https://github.com/campobranco/codigo-fonte"
+                        href="https://github.com/campobranco/campobranco"
                         target="_blank"
                         rel="noopener noreferrer"
                         className="group flex flex-col items-center gap-2 opacity-60 hover:opacity-100 transition-all duration-300"
@@ -1519,7 +1519,7 @@ const [uploading, setUploading] = useState(false);
                         </div>
 
                         <img
-                            src="https://img.shields.io/github/stars/campobranco/codigo-fonte?style=social"
+                            src="https://img.shields.io/github/stars/campobranco/campobranco?style=social"
                             alt="GitHub Repo stars"
                             style={{ width: 'auto', height: '20px' }}
                             className="grayscale group-hover:grayscale-0 transition-all duration-300"

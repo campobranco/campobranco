@@ -17,7 +17,10 @@ import {
     Hand,
     Loader2,
     Calendar,
-    User
+    User,
+    Lock,
+    LogIn,
+    AlertTriangle
 } from 'lucide-react';
 
 interface VisitHistoryModalProps {
@@ -41,6 +44,7 @@ export default function VisitHistoryModal({
 }: VisitHistoryModalProps) {
     const [loading, setLoading] = useState(true);
     const [visits, setVisits] = useState<any[]>([]);
+    const [accessState, setAccessState] = useState<'ok' | 'unauthenticated' | 'permission-denied' | 'error'>('ok');
     const { user, congregationId } = useAuth();
     const [isMounted, setIsMounted] = useState(false);
 
@@ -52,7 +56,18 @@ export default function VisitHistoryModal({
         if (!addressId) return;
 
         const fetchHistory = async () => {
+            if (!user) {
+                setVisits([]);
+                setAccessState('unauthenticated');
+                setLoading(false);
+                return;
+            }
+
             setLoading(true);
+            setAccessState('ok');
+            let hadPermissionDenied = false;
+            let hadUnexpectedError = false;
+
             try {
                 let rawVisits: any[] = [];
 
@@ -64,9 +79,10 @@ export default function VisitHistoryModal({
 
                     snapDocs.docs.forEach(d => {
                         const data = d.data();
-                        const status = data.visitStatus;
+                        const payload = data.data || data;
+                        const status = payload.visitStatus;
                         if (status && status !== 'none') {
-                            const visitDate = data.lastVisitedAt 
+                            const visitDate = payload.lastVisitedAt 
                                 || (data.updatedAt?.toDate ? data.updatedAt.toDate().toISOString() : null)
                                 || (data.createdAt?.toDate ? data.createdAt.toDate().toISOString() : null);
 
@@ -76,15 +92,16 @@ export default function VisitHistoryModal({
                                     addressId: addressId,
                                     status: status,
                                     visitDate: visitDate,
-                                    notes: data.notes || data.observations || '',
-                                    userId: data.lastVisitedBy || data.userId || null,
-                                    publisherName: data.publisherName || ''
+                                    notes: payload.notes || payload.observations || '',
+                                    userId: payload.lastVisitedBy || payload.userId || null,
+                                    publisherName: payload.publisherName || ''
                                 });
                             }
                         }
                     });
-                } catch (e) {
+                } catch (e: any) {
                     console.warn("[VISIT_HISTORY] Error fetching from shared_list_snapshots:", e);
+                    if (e?.code === 'permission-denied') hadPermissionDenied = true;
                 }
 
                 // 2. Consulta registros de relatórios de visita na coleção 'visits'
@@ -101,8 +118,10 @@ export default function VisitHistoryModal({
                             ...d.data()
                         }));
                         rawVisits.push(...vList);
-                    } catch (e) {
+                    } catch (e: any) {
                         console.warn("[VISIT_HISTORY] Error fetching from visits collection:", e);
+                        if (e?.code === 'permission-denied') hadPermissionDenied = true;
+                        else hadUnexpectedError = true;
                     }
                 }
 
@@ -129,8 +148,10 @@ export default function VisitHistoryModal({
                             }
                         }
                     }
-                } catch (e) {
+                } catch (e: any) {
                     console.warn("[VISIT_HISTORY] Could not fetch address document status:", e);
+                    if (e?.code === 'permission-denied') hadPermissionDenied = true;
+                    else hadUnexpectedError = true;
                 }
 
                 // 3. Deduplicar visitas por ID único do documento
@@ -177,8 +198,16 @@ export default function VisitHistoryModal({
                 }));
 
                 setVisits(mergedVisits);
-            } catch (error) {
+                if (mergedVisits.length === 0) {
+                    if (hadPermissionDenied) setAccessState('permission-denied');
+                    else if (hadUnexpectedError) setAccessState('error');
+                    else setAccessState('ok');
+                } else {
+                    setAccessState('ok');
+                }
+            } catch (error: any) {
                 console.error("[VISIT_HISTORY] Error fetching from Firestore:", error);
+                setAccessState(error?.code === 'permission-denied' ? 'permission-denied' : 'error');
             } finally {
                 setLoading(false);
             }
@@ -190,7 +219,8 @@ export default function VisitHistoryModal({
     const getStatusIcon = (status: string) => {
         switch (status) {
             case 'contacted': return <ThumbsUp className="w-4 h-4 text-green-600" />;
-            case 'notContacted': return <ThumbsDown className="w-4 h-4 text-red-600" />;
+            case 'partial': return <AlertTriangle className="w-4 h-4 text-yellow-600" />;
+            case 'notContacted': return <ThumbsDown className="w-4 h-4 text-orange-600" />;
             case 'moved': return <Home className="w-4 h-4 text-blue-600" />;
             case 'doNotVisit': return <Hand className="w-4 h-4 text-red-600" />;
             default: return <div className="w-4 h-4 bg-gray-200 rounded-full" />;
@@ -200,6 +230,7 @@ export default function VisitHistoryModal({
     const getStatusLabel = (status: string) => {
         switch (status) {
             case 'contacted': return congregationType === 'TRADITIONAL' ? 'Concluído' : 'Contatado';
+            case 'partial': return 'Parcial';
             case 'notContacted': return 'Não Contatado';
             case 'moved': return 'Mudou-se';
             case 'doNotVisit': return 'Não Visitar';
@@ -225,6 +256,40 @@ export default function VisitHistoryModal({
                 <div className="flex-1 overflow-y-auto pr-2 space-y-3">
                     {loading ? (
                         <div className="flex justify-center py-8"><Loader2 className="w-8 h-8 animate-spin text-primary-light/500" /></div>
+                    ) : accessState === 'unauthenticated' ? (
+                        <div className="text-center py-6 space-y-4">
+                            <Lock className="w-12 h-12 mx-auto text-gray-400 dark:text-gray-500" />
+                            <div className="space-y-1">
+                                <p className="text-gray-900 dark:text-white font-bold">Acesso restrito</p>
+                                <p className="text-sm text-gray-500 dark:text-gray-400">
+                                    Faça login para visualizar o histórico de visitas deste endereço.
+                                </p>
+                            </div>
+                            <button
+                                onClick={() => {
+                                    const currentUrl = encodeURIComponent(window.location.href);
+                                    window.location.href = `/login?callbackUrl=${currentUrl}`;
+                                }}
+                                className="w-full bg-primary hover:bg-primary-dark active:scale-95 text-white py-3 rounded-lg font-bold text-sm flex items-center justify-center gap-2 transition-all"
+                            >
+                                <LogIn className="w-4 h-4" />
+                                Fazer Login
+                            </button>
+                        </div>
+                    ) : accessState === 'permission-denied' ? (
+                        <div className="text-center py-8 space-y-2">
+                            <Lock className="w-12 h-12 mx-auto text-gray-400 dark:text-gray-500" />
+                            <p className="text-gray-700 dark:text-gray-300 font-medium">
+                                Você não tem permissão para visualizar o histórico deste endereço.
+                            </p>
+                        </div>
+                    ) : accessState === 'error' ? (
+                        <div className="text-center py-8 space-y-2">
+                            <AlertTriangle className="w-12 h-12 mx-auto text-orange-400" />
+                            <p className="text-gray-700 dark:text-gray-300 font-medium">
+                                Não foi possível carregar o histórico de visitas. Tente novamente.
+                            </p>
+                        </div>
                     ) : visits.length === 0 ? (
                         <div className="text-center py-8 opacity-50">
                             <Calendar className="w-12 h-12 mx-auto mb-3 text-gray-400 dark:text-gray-600" />

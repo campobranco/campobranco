@@ -4,7 +4,7 @@ import { useEffect, useState, Suspense } from 'react';
 // Supabase removido — operações agora passam pelos serviços de cliente
 // TODO(mutations): migrate to mutation layer - legacy module (admin/report/dashboard)
 // eslint-disable-next-line no-restricted-imports
-import { getSharedListWithData } from '@/lib/services/shared_lists';
+import { getSharedListWithData, pickLatestVisitByAddress } from '@/lib/services/shared_lists';
 import { returnMapMutation, returnTerritoryMutation, acceptResponsibilityMutation } from '@/lib/contracts/mutations/territoryMutations';
 import { reportVisitMutation, deleteVisitMutation, markAllAsWorkedMutation } from '@/lib/contracts/mutations/visitMutations';
 import { sanitizeUrl } from '@/lib/validation';
@@ -142,13 +142,8 @@ export default function SharedListView({ id: propId }: SharedListViewProps) {
                     setIsResponsibilityModalOpen(true);
                 }
 
-                // 2. Process Results (Visits)
-                const linkResults: Record<string, any> = {};
-                if (visits) {
-                    visits.forEach((v: any) => {
-                        linkResults[v.addressId] = v;
-                    });
-                }
+                // 2. Process Results (Visits) - sempre usa a visita mais recente por endereço
+                const latestVisitsByAddress = pickLatestVisitByAddress(visits || []);
 
                 // 3. Merge Items with Results
                 const mainItemIds = list.items || [];
@@ -157,7 +152,7 @@ export default function SharedListView({ id: propId }: SharedListViewProps) {
                     .map((item: any) => {
                         const sourceData = item.data || item;
                         const actualId = item.itemId || item.id;
-                        const result = linkResults[actualId];
+                        const result = latestVisitsByAddress.get(actualId);
                         const resolvedStatus = result?.status || sourceData.visitStatus || item.visitStatus || 'none';
                         return {
                             ...item,
@@ -235,7 +230,7 @@ export default function SharedListView({ id: propId }: SharedListViewProps) {
                             if (tId && list.type === 'territory') counts[tId] = (counts[tId] || 0) + 1;
                             stats.total++;
 
-                            const result = linkResults[addr.id];
+                            const result = latestVisitsByAddress.get(addr.id);
                             const currentStatus = result?.status || addr.visitStatus || 'none';
 
                             if (currentStatus && currentStatus !== 'none') {
