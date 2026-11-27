@@ -21,6 +21,26 @@ import { db } from '@/lib/firebase';
 
 const TABLE = 'visits';
 
+async function syncSnapshotVisitStatus(shareId: string, addressId: string, status: string) {
+    try {
+        const snapQuery = query(
+            collection(db, 'shared_list_snapshots'),
+            where('sharedListId', '==', shareId),
+            where('itemId', '==', addressId)
+        );
+        const snapDocs = await getDocs(snapQuery);
+        if (snapDocs.empty) return;
+
+        const batch = writeBatch(db);
+        snapDocs.docs.forEach((d) => {
+            batch.update(d.ref, { 'data.visitStatus': status });
+        });
+        await batch.commit();
+    } catch (err) {
+        console.warn('[syncSnapshotVisitStatus] Falha ao sincronizar status no snapshot:', err);
+    }
+}
+
 export async function reportVisit(shareId: string, visitData: any) {
     try {
         // 1. Verifica se a lista compartilhada existe e não está expirada
@@ -72,6 +92,7 @@ export async function reportVisit(shareId: string, visitData: any) {
             } catch (err) {
                 console.warn('Silent skip address update (permissions caching or timeout)', err);
             }
+            await syncSnapshotVisitStatus(shareId, visitData.addressId, visitData.status);
         }
 
         return { success: true, id: docRef.id };
@@ -135,6 +156,7 @@ export async function deleteVisitByAddressAndShare(addressId: string, shareId: s
         }
 
         await batch.commit();
+        await syncSnapshotVisitStatus(shareId, addressId, 'none');
 
         return { success: true };
     } catch (error: any) {

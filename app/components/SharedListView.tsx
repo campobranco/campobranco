@@ -157,12 +157,13 @@ export default function SharedListView({ id: propId }: SharedListViewProps) {
                         const sourceData = item.data || item;
                         const actualId = item.itemId || item.id;
                         const result = linkResults[actualId];
+                        const resolvedStatus = result?.status || sourceData.visitStatus || item.visitStatus || 'none';
                         return {
                             ...item,
                             ...sourceData,
                             id: actualId,
-                            completed: result?.status === 'contacted',
-                            visitStatus: result?.status || item.visitStatus || 'none',
+                            completed: resolvedStatus === 'contacted',
+                            visitStatus: resolvedStatus,
                             visitNotes: result?.notes || '',
                             inactivatedAt: sourceData.inactivatedAt
                         };
@@ -234,7 +235,7 @@ export default function SharedListView({ id: propId }: SharedListViewProps) {
                             stats.total++;
 
                             const result = linkResults[addr.id];
-                            const currentStatus = result?.status || 'none';
+                            const currentStatus = result?.status || addr.visitStatus || 'none';
 
                             if (currentStatus && currentStatus !== 'none') {
                                 stats.processed++;

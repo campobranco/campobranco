@@ -292,7 +292,7 @@ export default function MapCardPage() {
     const [printLayoutMode, setPrintLayoutMode] = useState<'a6' | 'a4-grid'>('a6');
     
     // Modo Ativo Estrito (Modo 1: Imagem Manual | Modo 2: Pinos de Endereços | Modo 3: Polígonos)
-    const [cardMode, setCardMode] = useState<MapCardMode>('manual-image');
+    const [cardMode] = useState<MapCardMode>('address-pins');
     const [pageLoading, setPageLoading] = useState(true);
 
     // Direct Image Upload Ref & State (Ativo APENAS no Modo 1)
@@ -385,25 +385,6 @@ export default function MapCardPage() {
             }
         }
     }, [authLoading, fetchData, cardMode, congregationId, loadAddressPins]);
-
-    // Troca Estrita de Modo: Desabilita e descarrega os outros modelos quando um modo é selecionado
-    const handleSwitchCardMode = (newMode: MapCardMode) => {
-        setCardMode(newMode);
-
-        if (newMode === 'manual-image') {
-            toast.info("Modo 1 Ativo: Imagem Manual (Modos 2 e 3 desabilitados)");
-        } else if (newMode === 'address-pins') {
-            toast.info("Modo 2 Ativo: Pinos dos Endereços (Modos 1 e 3 desabilitados)");
-            const storedCongId = typeof window !== 'undefined' ? localStorage.getItem('selectedCongregationId') : null;
-            const targetCongId = congregationId || storedCongId || null;
-
-            if (targetCongId) {
-                loadAddressPins(targetCongId);
-            }
-        } else if (newMode === 'polygons') {
-            toast.info("Modo 3: Polígonos de Território (Em desenvolvimento)");
-        }
-    };
 
     const filteredTerritories = territories.filter(t => {
         if (selectedCityId !== 'ALL' && t.cityId !== selectedCityId) return false;
@@ -733,23 +714,6 @@ export default function MapCardPage() {
                             </h1>
                             <p className="text-[11px] sm:text-xs text-muted truncate">Formulário S-12-T 6/72</p>
                         </div>
-                    </div>
-
-                    {/* Seletor Estrito de Modo de Exibição do Cartão */}
-                    <div className="flex items-center justify-between sm:justify-start bg-background border border-surface-border rounded-xl px-3 py-2 gap-2 text-xs font-semibold shadow-sm w-full sm:w-auto">
-                        <div className="flex items-center gap-2 shrink-0">
-                            <Sliders className="w-4 h-4 text-amber-500" />
-                            <span className="text-muted">Modo:</span>
-                        </div>
-                        <select
-                            value={cardMode}
-                            onChange={(e) => handleSwitchCardMode(e.target.value as MapCardMode)}
-                            className="bg-transparent text-main font-bold outline-none cursor-pointer flex-1 sm:flex-none text-right sm:text-left"
-                        >
-                            <option value="manual-image" className="bg-surface text-main">Modo 1: Imagem Manual</option>
-                            <option value="address-pins" className="bg-surface text-main">Modo 2: Pinos dos Endereços</option>
-                            <option value="polygons" className="bg-surface text-main" disabled>Modo 3: Polígonos (Em Breve)</option>
-                        </select>
                     </div>
                 </div>
 

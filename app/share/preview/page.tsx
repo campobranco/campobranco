@@ -23,7 +23,8 @@ import {
     ChevronDown,
     MoreVertical,
     Calendar,
-    AlertTriangle
+    AlertTriangle,
+    User
 } from 'lucide-react';
 import Link from 'next/link';
 import { useSearchParams } from 'next/navigation';
@@ -543,6 +544,16 @@ function SharedPreviewContent() {
                                         {item.isActive === false && item.inactivatedAt && (
                                             <span className="flex items-center gap-1 bg-red-50 dark:bg-red-900/20 text-red-600 dark:text-red-400 px-1.5 py-0.5 rounded-md font-bold text-[10px] uppercase border border-red-100 dark:border-red-900/30">
                                                 <Calendar className="w-3 h-3" /> Desativado em: {new Date(item.inactivatedAt).toLocaleDateString('pt-BR')}
+                                            </span>
+                                        )}
+                                        {item.gender && (
+                                            <span className={`flex items-center gap-1 px-1.5 py-0.5 rounded-md font-bold text-[10px] uppercase ${
+                                                item.gender === 'HOMEM' ? 'bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400' :
+                                                item.gender === 'MULHER' ? 'bg-pink-100 text-pink-700 dark:bg-pink-900/30 dark:text-pink-400' :
+                                                'bg-purple-100 text-purple-700 dark:bg-purple-900/30 dark:text-purple-400'
+                                            }`}>
+                                                <User className="w-3 h-3 fill-current" />
+                                                {item.gender === 'HOMEM' ? 'Homem' : item.gender === 'MULHER' ? 'Mulher' : 'Casal'}
                                             </span>
                                         )}
 

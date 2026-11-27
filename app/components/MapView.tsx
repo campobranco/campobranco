@@ -5,6 +5,7 @@ import { Loader2, MapPin, ThumbsUp, Home, Navigation, Ban, Truck, Maximize2, Min
 import { renderToStaticMarkup } from 'react-dom/server';
 import { sanitizeUrl } from '@/lib/validation';
 import { getMapTileConfig } from '@/lib/map-tiles';
+import MapAppSelectModal from './MapAppSelectModal';
 // TODO(mutations): migrate to mutation layer - legacy module (admin/report/dashboard)
 // eslint-disable-next-line no-restricted-imports
 import { geocodeAddress } from '@/lib/services/geocoding';
@@ -21,6 +22,7 @@ export interface MapItem {
     residentName?: string;  // Nome do morador para exibição
     fullAddress?: string;   // Endereço completo para geocodificação
     googleMapsLink?: string; // Link opcional para extrair coordenadas
+    wazeLink?: string;       // Link opcional do Waze
     gender?: 'HOMEM' | 'MULHER' | 'CASAL';
     variant?: 'default' | 'city' | 'numbered' | 'store' | 'existing' | 'selected';
     index?: number;         // Índice usado na variante numerada
@@ -139,6 +141,7 @@ export default function MapView({ items, center = defaultCenter, zoom = 15, onGe
     }, [onMapClick, onGeocodeSuccess, onMarkerDragEnd, onMarkerClick]);
 
     const [isFullscreen, setIsFullscreen] = useState(false);
+    const [navModalItem, setNavModalItem] = useState<MapItem | null>(null);
 
     // We maintain a local state of items that have *resolved* coordinates
     const [displayItems, setDisplayItems] = useState<MapItem[]>([]);
@@ -475,21 +478,25 @@ export default function MapView({ items, center = defaultCenter, zoom = 15, onGe
                     footer.appendChild(infoStack);
 
                     // Right Side: Action Button (Bottom Right)
-                    const sanitizedCustomLink = item.googleMapsLink ? sanitizeUrl(item.googleMapsLink) : '';
-                    const hasValidLink = Boolean(sanitizedCustomLink && sanitizedCustomLink.trim() !== '' && sanitizedCustomLink !== 'undefined');
-                    
-                    if (hasValidLink || (item.lat != null && item.lng != null)) {
-                        const navBtn = document.createElement('a');
-                        navBtn.href = hasValidLink ? sanitizedCustomLink : `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(String(item.lat))},${encodeURIComponent(String(item.lng))}`;
-                        navBtn.target = '_blank';
-                        navBtn.rel = 'noopener noreferrer';
+                    const sanitizedGoogleLink = item.googleMapsLink ? sanitizeUrl(item.googleMapsLink) : '';
+                    const sanitizedWazeLink = item.wazeLink ? sanitizeUrl(item.wazeLink) : '';
+                    const hasValidGoogle = Boolean(sanitizedGoogleLink && sanitizedGoogleLink.trim() !== '' && sanitizedGoogleLink !== 'undefined');
+                    const hasValidWaze = Boolean(sanitizedWazeLink && sanitizedWazeLink.trim() !== '' && sanitizedWazeLink !== 'undefined');
+
+                    if (hasValidGoogle || hasValidWaze || (item.lat != null && item.lng != null) || item.title) {
+                        const navBtn = document.createElement('button');
+                        navBtn.type = 'button';
                         // Use standard Green-600 (#16a34a) which matches var(--primary)
-                        // Added !text-white to override Leaflet's default anchor styling
                         navBtn.className = 'flex items-center gap-2 bg-[#16a34a] !text-white px-5 py-2.5 rounded-xl text-sm font-black uppercase tracking-wide hover:bg-[#15803d] transition-transform active:scale-95 shadow-lg shadow-green-600/20';
                         navBtn.innerHTML = `
                              <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polygon points="3 11 22 2 13 21 11 13 3 11"/></svg>
                             Ir
                         `;
+                        navBtn.onclick = (e) => {
+                            e.preventDefault();
+                            e.stopPropagation();
+                            setNavModalItem(item);
+                        };
                         footer.appendChild(navBtn);
                     }
 
@@ -837,6 +844,22 @@ export default function MapView({ items, center = defaultCenter, zoom = 15, onGe
                   border-radius: 4px;
                 }
             `}</style>
+            <MapAppSelectModal
+                isOpen={!!navModalItem}
+                onClose={() => setNavModalItem(null)}
+                address={
+                    navModalItem
+                        ? {
+                              street: navModalItem.fullAddress || navModalItem.title,
+                              number: navModalItem.number,
+                              lat: navModalItem.lat,
+                              lng: navModalItem.lng,
+                              googleMapsLink: navModalItem.googleMapsLink,
+                              wazeLink: navModalItem.wazeLink,
+                          }
+                        : {}
+                }
+            />
         </div>
     );
 }

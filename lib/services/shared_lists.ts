@@ -485,6 +485,48 @@ export async function getSharedListWithData(id: string) {
             } else {
                 visits = rawVisits;
             }
+
+            // Auto-sincroniza snapshots legados quando o usuário autenticado lê as visitas
+            if (visits.length > 0 && snapshotsSnap.docs.length > 0) {
+                const latestStatusByAddress = new Map<string, { status: string; time: number }>();
+                for (const v of visits) {
+                    if (!v.addressId || !v.status) continue;
+                    const vTime = getTimestampMs(v.createdAt);
+                    const prev = latestStatusByAddress.get(v.addressId);
+                    if (!prev || vTime >= prev.time) {
+                        latestStatusByAddress.set(v.addressId, { status: v.status, time: vTime });
+                    }
+                }
+
+                const syncBatch = writeBatch(db);
+                let syncCount = 0;
+
+                snapshotsSnap.docs.forEach((snapDoc) => {
+                    const snapData = snapDoc.data() as any;
+                    const itemId = snapData.itemId || snapDoc.id;
+                    const isAddressSnap = snapData.type === 'address' || snapData.data?.street !== undefined;
+                    if (!isAddressSnap) return;
+
+                    const latest = latestStatusByAddress.get(itemId);
+                    if (!latest) return;
+
+                    const currentSnapStatus = snapData.data?.visitStatus || 'none';
+                    if (currentSnapStatus !== latest.status) {
+                        syncBatch.update(snapDoc.ref, { 'data.visitStatus': latest.status });
+                        syncCount++;
+                        const memItem = itemsMap.get(itemId);
+                        if (memItem?.data) {
+                            memItem.data.visitStatus = latest.status;
+                        }
+                    }
+                });
+
+                if (syncCount > 0) {
+                    syncBatch.commit().catch((syncErr) => {
+                        console.warn('[getSharedListWithData] Falha ao auto-sincronizar snapshots:', syncErr);
+                    });
+                }
+            }
         } catch (err: any) {
             if (err.code === 'permission-denied') {
                 console.warn('[getSharedListWithData] Visitas ocultas por falta de permissão.');
