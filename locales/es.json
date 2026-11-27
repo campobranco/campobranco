@@ -1555,5 +1555,16 @@
     "instructions": "Por favor, póngase en contacto con nosotros indicando los detalles de su congregación.",
     "contactEmailLabel": "Correo electrónico de contacto",
     "backBtn": "Volver"
+  },
+  "legalConsent": {
+    "title": "Términos de Servicio y Privacidad",
+    "description": "Para continuar usando Campo Branco, lea y acepte nuestros Términos de Uso y Política de Privacidad.",
+    "termsLink": "Términos de Uso",
+    "privacyLink": "Política de Privacidad",
+    "andText": "y la",
+    "acceptBtn": "Aceptar",
+    "acceptingBtn": "Guardando...",
+    "logoutBtn": "Cerrar sesión",
+    "saveError": "No se pudo registrar su aceptación. Intente nuevamente."
   }
 }

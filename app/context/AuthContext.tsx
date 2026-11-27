@@ -51,6 +51,7 @@ interface AuthContextType {
     canDeleteS13: boolean;
     canManageS12: boolean;
     canManageReferencePoints: boolean;
+    termsAccepted: boolean;
 }
 
 // Função pura de resolução da congregação do usuário (Fonte Única da Verdade no Firestore)
@@ -130,6 +131,7 @@ const AuthContext = createContext<AuthContextType>({
     canDeleteS13: false,
     canManageS12: false,
     canManageReferencePoints: false,
+    termsAccepted: true,
 });
 
 export function AuthProvider({ children }: { children: React.ReactNode }) {
@@ -143,6 +145,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     const [termType, setTermType] = useState<'city' | 'neighborhood'>('city');
     const [congregationType, setCongregationType] = useState<'TRADITIONAL' | 'SIGN_LANGUAGE' | 'FOREIGN_LANGUAGE' | null>(null);
     const [notificationsEnabled, setNotificationsEnabledInternal] = useState(true);
+    const [termsAccepted, setTermsAccepted] = useState(true);
 
     // Timeout de segurança para evitar loading infinito
     useEffect(() => {
@@ -239,6 +242,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
                 }
 
                 if (userSnap.exists() && data) {
+                    setTermsAccepted(Boolean(data.termsAcceptedAt));
                     const assignedRole = isMaster ? 'ADMIN' : (data.role || 'PUBLICADOR');
                     console.log(`[AUTH] Perfil carregado -> User: ${user.email} | Role: ${assignedRole} | CongregationId: ${data.congregationId || 'NULL'}`);
                     setRole(assignedRole);
@@ -453,6 +457,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
             canDeleteS13,
             canManageS12,
             canManageReferencePoints,
+            termsAccepted,
         }}>
             {children}
         </AuthContext.Provider>

@@ -1555,5 +1555,16 @@
     "instructions": "Please contact us with the details of your congregation.",
     "contactEmailLabel": "Contact email",
     "backBtn": "Back"
+  },
+  "legalConsent": {
+    "title": "Terms of Service & Privacy",
+    "description": "To continue using Campo Branco, please read and accept our Terms of Use and Privacy Policy.",
+    "termsLink": "Terms of Use",
+    "privacyLink": "Privacy Policy",
+    "andText": "and",
+    "acceptBtn": "Accept",
+    "acceptingBtn": "Saving...",
+    "logoutBtn": "Sign out",
+    "saveError": "Could not save your acceptance. Please try again."
   }
 }

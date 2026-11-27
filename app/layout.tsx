@@ -9,6 +9,7 @@ import { I18nProvider } from './context/I18nContext';
 // import FCMManager from './components/FCMManager'; // Removed
 import FloatingReportButton from './components/FloatingReportButton';
 import CookieBanner from './components/CookieBanner';
+import TermsConsentModal from './components/TermsConsentModal';
 import PreviewIndicator from './components/PreviewIndicator';
 import { appVersion } from '@/lib/version';
 import { Toaster } from 'sonner';
@@ -165,6 +166,7 @@ export default function RootLayout({
                 <PreviewIndicator />
                 {/* <FCMManager /> Removed */}
                 <FloatingReportButton />
+                <TermsConsentModal />
                 <CookieBanner />
                 <Toaster richColors position="top-center" />
                 <main className="app-shell flex-1 relative">

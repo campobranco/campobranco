@@ -1555,5 +1555,16 @@
     "instructions": "Por favor, entre em contato conosco informando os detalhes da sua congregação.",
     "contactEmailLabel": "E-mail para contato",
     "backBtn": "Voltar"
+  },
+  "legalConsent": {
+    "title": "Termos de Serviço e Privacidade",
+    "description": "Para continuar utilizando o Campo Branco, leia e aceite nossos Termos de Uso e Política de Privacidade.",
+    "termsLink": "Termos de Uso",
+    "privacyLink": "Política de Privacidade",
+    "andText": "e a",
+    "acceptBtn": "Aceitar",
+    "acceptingBtn": "Salvando...",
+    "logoutBtn": "Sair da conta",
+    "saveError": "Não foi possível registrar seu aceite. Tente novamente."
   }
 }
