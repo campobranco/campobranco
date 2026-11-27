@@ -1,10 +1,11 @@
 "use client";
 
 import { useEffect, useRef, useState } from 'react';
-import { Loader2, MapPin, ThumbsUp, Home, Navigation, Ban, Truck, Maximize2, Minimize2, Map as MapIcon, Lock, Unlock, Store, Hand } from 'lucide-react';
+import { Loader2, MapPin, ThumbsUp, ThumbsDown, Home, Navigation, Ban, Truck, Maximize2, Minimize2, Map as MapIcon, Lock, Unlock, Store, Hand, AlertTriangle, User } from 'lucide-react';
 import { renderToStaticMarkup } from 'react-dom/server';
 import { sanitizeUrl } from '@/lib/validation';
 import { getMapTileConfig } from '@/lib/map-tiles';
+import { extractCoordsFromMapUrl } from '@/lib/map-links';
 import MapAppSelectModal from './MapAppSelectModal';
 // TODO(mutations): migrate to mutation layer - legacy module (admin/report/dashboard)
 // eslint-disable-next-line no-restricted-imports
@@ -17,7 +18,7 @@ export interface MapItem {
     lng?: number;
     title: string;          // Nome principal do marcador (normalmente o endereço)
     subtitle?: string;      // Informação complementar exibida no marcador
-    status?: 'LIVRE' | 'OCUPADO' | 'PENDENTE' | 'NAO_VISITAR' | 'MUDOU' | 'NAO_CONTATADO' | 'AGUARDANDO';
+    status?: 'LIVRE' | 'OCUPADO' | 'PENDENTE' | 'NAO_VISITAR' | 'MUDOU' | 'NAO_CONTATADO' | 'AGUARDANDO' | 'PARCIAL' | 'partial';
     number?: string;        // Número exibido no marcador (quando aplicável)
     residentName?: string;  // Nome do morador para exibição
     fullAddress?: string;   // Endereço completo para geocodificação
@@ -65,6 +66,7 @@ interface MapViewProps {
     disableGeocoding?: boolean;
     disableInteractionLock?: boolean;
     isTraditional?: boolean;
+    showVisitStatusIcons?: boolean;
     referencePoints?: ReferencePointItem[];
     hideMapLinkIfEmpty?: boolean;
 }
@@ -96,7 +98,7 @@ const extractCoordsFromUrl = (url?: string): { lat: number, lng: number } | null
     return null;
 };
 
-export default function MapView({ items, center = defaultCenter, zoom = 15, onGeocodeSuccess, onMapClick, onMarkerDragEnd, onMarkerClick, showLegend = true, disableGeocoding = false, disableInteractionLock = false, isTraditional = true, referencePoints = [], hideMapLinkIfEmpty = false }: MapViewProps) {
+export default function MapView({ items, center = defaultCenter, zoom = 15, onGeocodeSuccess, onMapClick, onMarkerDragEnd, onMarkerClick, showLegend = true, disableGeocoding = false, disableInteractionLock = false, isTraditional = true, showVisitStatusIcons = false, referencePoints = [], hideMapLinkIfEmpty = false }: MapViewProps) {
     const mapContainerRef = useRef<HTMLDivElement>(null);
     const mapInstanceRef = useRef<any>(null);
     const markersRef = useRef<any[]>([]); // Keep track of Leaflet markers
@@ -150,8 +152,11 @@ export default function MapView({ items, center = defaultCenter, zoom = 15, onGe
         const validItems = items.filter(item => {
             if (item.lat && item.lng) return true;
 
-            // Still allow coordinate extraction from Google Maps links if provided
-            const urlCoords = extractCoordsFromUrl(item.googleMapsLink);
+            // Still allow coordinate extraction from Google Maps or Waze links if provided
+            const urlCoords =
+                extractCoordsFromMapUrl(item.googleMapsLink) ||
+                extractCoordsFromMapUrl(item.wazeLink) ||
+                extractCoordsFromUrl(item.googleMapsLink);
             if (urlCoords) {
                 item.lat = urlCoords.lat;
                 item.lng = urlCoords.lng;
@@ -331,6 +336,17 @@ export default function MapView({ items, center = defaultCenter, zoom = 15, onGe
             const isExisting = item.variant === 'existing';
             const isSelected = item.variant === 'selected';
             const isDoNotVisit = statusKey === 'NAO_VISITAR';
+            const genderNormalized = item.gender ? item.gender.toUpperCase() : undefined;
+            const isGenderWaitingPin =
+                showVisitStatusIcons &&
+                !isTraditional &&
+                !isSelected &&
+                !isExisting &&
+                !isCity &&
+                !isStore &&
+                !isDoNotVisit &&
+                (statusKey === 'AGUARDANDO' || statusKey === 'LIVRE') &&
+                (genderNormalized === 'HOMEM' || genderNormalized === 'MULHER' || genderNormalized === 'CASAL');
 
             const innerContent = isSelected ? (
                 <MapPin size={20} strokeWidth={2.5} />
@@ -344,6 +360,23 @@ export default function MapView({ items, center = defaultCenter, zoom = 15, onGe
                 <MapIcon size={18} strokeWidth={2.5} />
             ) : isStore ? (
                 <Store size={18} strokeWidth={2.5} />
+            ) : showVisitStatusIcons && statusKey === 'OCUPADO' ? (
+                <ThumbsUp size={17} strokeWidth={2.5} />
+            ) : showVisitStatusIcons && statusKey === 'NAO_CONTATADO' ? (
+                <ThumbsDown size={17} strokeWidth={2.5} />
+            ) : showVisitStatusIcons && statusKey === 'MUDOU' ? (
+                <Home size={17} strokeWidth={2.5} />
+            ) : showVisitStatusIcons && (statusKey === 'PARCIAL' || statusKey === 'partial') ? (
+                <AlertTriangle size={17} strokeWidth={2.5} />
+            ) : isGenderWaitingPin ? (
+                genderNormalized === 'CASAL' ? (
+                    <div className="flex -space-x-1.5 justify-center items-center">
+                        <User size={14} className="fill-current shrink-0" strokeWidth={2.2} />
+                        <User size={14} className="fill-current shrink-0" strokeWidth={2.2} />
+                    </div>
+                ) : (
+                    <User size={17} className="fill-current shrink-0" strokeWidth={2.2} />
+                )
             ) : (
                 <span className="text-xs font-bold leading-none tracking-tighter">
                     {item.index ?? item.number ?? ''}
@@ -351,7 +384,20 @@ export default function MapView({ items, center = defaultCenter, zoom = 15, onGe
             );
 
             // Determina a cor de fundo e borda baseada no status
-            const circleColor = isSelected ? '#2563eb' : isExisting ? '#64748b' : isCity ? '#3b82f6' : displayColor;
+            let circleColor = isSelected ? '#2563eb' : isExisting ? '#64748b' : isCity ? '#3b82f6' : displayColor;
+            let iconTextColor = '#ffffff';
+            if (isGenderWaitingPin) {
+                if (genderNormalized === 'HOMEM') {
+                    circleColor = '#dbeafe';
+                    iconTextColor = '#2563eb';
+                } else if (genderNormalized === 'MULHER') {
+                    circleColor = '#fce7f3';
+                    iconTextColor = '#db2777';
+                } else if (genderNormalized === 'CASAL') {
+                    circleColor = '#f3e8ff';
+                    iconTextColor = '#9333ea';
+                }
+            }
             const borderColor = '#ffffff';
 
             // Label Content
@@ -367,8 +413,8 @@ export default function MapView({ items, center = defaultCenter, zoom = 15, onGe
 
                     {/* Main Circle */}
                     <div
-                        className={`${isExisting ? 'min-w-7 h-7 px-1 border-2 shadow-sm' : isSelected ? 'w-10 h-10 border-[3px] shadow-lg' : 'w-9 h-9 border-[3px] shadow-md'} rounded-full flex items-center justify-center text-white mb-1 transition-colors`}
-                        style={{ backgroundColor: circleColor, borderColor: borderColor }}
+                        className={`${isExisting ? 'min-w-7 h-7 px-1 border-2 shadow-sm' : isSelected ? 'w-10 h-10 border-[3px] shadow-lg' : 'w-9 h-9 border-[3px] shadow-md'} rounded-full flex items-center justify-center mb-1 transition-colors`}
+                        style={{ backgroundColor: circleColor, borderColor: borderColor, color: iconTextColor }}
                     >
                         {innerContent}
                     </div>
@@ -619,7 +665,7 @@ export default function MapView({ items, center = defaultCenter, zoom = 15, onGe
             markersRef.current = [];
         };
 
-    }, [displayItems, isMapReady, onMarkerDragEnd, referencePoints, isTraditional]);
+    }, [displayItems, isMapReady, onMarkerDragEnd, referencePoints, isTraditional, showVisitStatusIcons]);
 
 
     // Fullscreen Toggle Logic
@@ -731,7 +777,7 @@ export default function MapView({ items, center = defaultCenter, zoom = 15, onGe
                         </>
                     ) : (
                         Object.entries(STATUS_CONFIG)
-                            .filter(([key]) => key !== 'LIVRE' && key !== 'PENDENTE')
+                            .filter(([key]) => key !== 'LIVRE' && key !== 'PENDENTE' && key !== 'partial' && key !== 'PARCIAL')
                             .map(([key, config]) => (
                                 <div key={key} className="flex flex-col items-center gap-1">
                                     <div

@@ -527,6 +527,57 @@ export async function getSharedListWithData(id: string) {
                     });
                 }
             }
+
+            // Auto-sincroniza coordenadas/links faltantes de snapshots legados para usuários autenticados
+            const missingCoordsSnaps = snapshotsSnap.docs.filter((snapDoc) => {
+                const snapData = snapDoc.data() as any;
+                const isAddressSnap = snapData.type === 'address' || snapData.data?.street !== undefined;
+                return isAddressSnap && (!snapData.data?.lat || !snapData.data?.lng);
+            });
+
+            if (missingCoordsSnaps.length > 0) {
+                try {
+                    const coordBatch = writeBatch(db);
+                    let coordUpdates = 0;
+                    await Promise.all(
+                        missingCoordsSnaps.map(async (snapDoc) => {
+                            const snapData = snapDoc.data() as any;
+                            const addrId = snapData.itemId || snapDoc.id;
+                            const addrSnap = await getDoc(doc(db, 'addresses', addrId));
+                            if (!addrSnap.exists()) return;
+                            const addrData = addrSnap.data() as any;
+                            const patch: Record<string, any> = {};
+                            if (addrData.lat && addrData.lng) {
+                                patch['data.lat'] = addrData.lat;
+                                patch['data.lng'] = addrData.lng;
+                            }
+                            if (addrData.googleMapsLink) patch['data.googleMapsLink'] = addrData.googleMapsLink;
+                            if (addrData.wazeLink) patch['data.wazeLink'] = addrData.wazeLink;
+
+                            if (Object.keys(patch).length > 0) {
+                                coordBatch.update(snapDoc.ref, patch);
+                                coordUpdates++;
+                                const memItem = itemsMap.get(addrId);
+                                if (memItem?.data) {
+                                    if (addrData.lat && addrData.lng) {
+                                        memItem.data.lat = addrData.lat;
+                                        memItem.data.lng = addrData.lng;
+                                    }
+                                    if (addrData.googleMapsLink) memItem.data.googleMapsLink = addrData.googleMapsLink;
+                                    if (addrData.wazeLink) memItem.data.wazeLink = addrData.wazeLink;
+                                }
+                            }
+                        })
+                    );
+                    if (coordUpdates > 0) {
+                        coordBatch.commit().catch((err) => {
+                            console.warn('[getSharedListWithData] Falha ao sincronizar coords no snapshot:', err);
+                        });
+                    }
+                } catch (coordErr) {
+                    console.warn('[getSharedListWithData] Erro ao buscar coords de endereços:', coordErr);
+                }
+            }
         } catch (err: any) {
             if (err.code === 'permission-denied') {
                 console.warn('[getSharedListWithData] Visitas ocultas por falta de permissão.');
@@ -544,7 +595,16 @@ export async function getSharedListWithData(id: string) {
                 const congSnap = await getDoc(doc(db, 'congregations', congregationId));
                 if (congSnap.exists()) {
                     const congData = congSnap.data() as any;
-                    congregationType = congData.category || null;
+                    const rawCat = congData.category || congData.type || null;
+                    if (rawCat === 'Tradicional' || rawCat === 'tradicional' || rawCat === 'TRADITIONAL') {
+                        congregationType = 'TRADITIONAL';
+                    } else if (rawCat === 'Língua de Sinais' || rawCat === 'sinais' || rawCat === 'LS' || rawCat === 'SIGN_LANGUAGE') {
+                        congregationType = 'SIGN_LANGUAGE';
+                    } else if (rawCat === 'Língua Estrangeira' || rawCat === 'FOREIGN_LANGUAGE') {
+                        congregationType = 'FOREIGN_LANGUAGE';
+                    } else {
+                        congregationType = null;
+                    }
                     congregationCity = congData.city || null;
                 }
             } catch (err: any) {

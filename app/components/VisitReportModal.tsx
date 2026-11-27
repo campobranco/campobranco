@@ -37,6 +37,16 @@ interface VisitReportModalProps {
     forcedCongregationType?: 'TRADITIONAL' | 'SIGN_LANGUAGE' | 'FOREIGN_LANGUAGE'; // Backward compat
 }
 
+const normalizeCongregationType = (
+    raw?: string | null
+): 'TRADITIONAL' | 'SIGN_LANGUAGE' | 'FOREIGN_LANGUAGE' | null => {
+    if (!raw) return null;
+    if (raw === 'Tradicional' || raw === 'tradicional' || raw === 'TRADITIONAL') return 'TRADITIONAL';
+    if (raw === 'Língua de Sinais' || raw === 'sinais' || raw === 'LS' || raw === 'SIGN_LANGUAGE') return 'SIGN_LANGUAGE';
+    if (raw === 'Língua Estrangeira' || raw === 'FOREIGN_LANGUAGE') return 'FOREIGN_LANGUAGE';
+    return null;
+};
+
 export default function VisitReportModal({
     address,
     onClose,
@@ -47,7 +57,7 @@ export default function VisitReportModal({
     forcedCongregationType
 }: VisitReportModalProps) {
     const { congregationType: authType, profileName, user } = useAuth();
-    const [fetchedCategory, setFetchedCategory] = useState<string | null>(null);
+    const [fetchedCategory, setFetchedCategory] = useState<'TRADITIONAL' | 'SIGN_LANGUAGE' | 'FOREIGN_LANGUAGE' | null>(null);
 
     // 1. Busca direta da congregação do endereço no Firestore usando address.congregationId
     useEffect(() => {
@@ -57,12 +67,7 @@ export default function VisitReportModal({
                 if (snap.exists()) {
                     const data = snap.data();
                     const rawCat = data.category || data.type || null;
-                    let resolvedType = rawCat;
-                    if (rawCat === 'Tradicional' || rawCat === 'tradicional') resolvedType = 'TRADITIONAL';
-                    else if (rawCat === 'Língua de Sinais' || rawCat === 'sinais' || rawCat === 'LS') resolvedType = 'SIGN_LANGUAGE';
-                    else if (rawCat === 'Língua Estrangeira') resolvedType = 'FOREIGN_LANGUAGE';
-
-                    setFetchedCategory(resolvedType);
+                    setFetchedCategory(normalizeCongregationType(rawCat));
                 }
             }).catch(err => {
                 console.error("[VISIT_MODAL] Erro ao buscar congregação do endereço:", err);
@@ -71,7 +76,12 @@ export default function VisitReportModal({
     }, [address.congregationId, address.data?.congregationId]);
 
     // 2. Categoria direta do documento da congregação (sem fallbacks ou inferências)
-    const congregationType = fetchedCategory || propType || forcedCongregationType || authType || null;
+    const congregationType =
+        fetchedCategory ||
+        normalizeCongregationType(propType) ||
+        normalizeCongregationType(forcedCongregationType) ||
+        normalizeCongregationType(authType) ||
+        null;
 
     const [loading, setLoading] = useState(false);
     const [status, setStatus] = useState<'contacted' | 'partial' | 'notContacted' | 'moved' | 'doNotVisit' | 'contested' | ''>(

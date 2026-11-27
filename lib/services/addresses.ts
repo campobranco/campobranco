@@ -132,6 +132,29 @@ export async function saveAddress(id: string | null, data: any) {
 
             await batch.commit();
 
+            // Propaga alterações públicas para snapshots de links compartilhados ativos
+            try {
+                const snapSyncPayload: Record<string, any> = {};
+                const syncFields = ['street', 'lat', 'lng', 'googleMapsLink', 'wazeLink', 'gender', 'observations', 'isActive'] as const;
+                syncFields.forEach((field) => {
+                    if (data[field] !== undefined) {
+                        snapSyncPayload[`data.${field}`] = data[field];
+                    }
+                });
+                if (Object.keys(snapSyncPayload).length > 0) {
+                    const snapDocs = await getDocs(
+                        query(collection(db, 'shared_list_snapshots'), where('itemId', '==', id))
+                    );
+                    if (!snapDocs.empty) {
+                        const snapBatch = writeBatch(db);
+                        snapDocs.docs.forEach((s) => snapBatch.update(s.ref, snapSyncPayload));
+                        await snapBatch.commit();
+                    }
+                }
+            } catch (syncErr) {
+                console.warn('[saveAddress] Falha ao sincronizar snapshot compartilhado:', syncErr);
+            }
+
             const diffText = changes.length > 0 ? changes.join(' | ') : 'Nenhuma alteração de valor detectada';
 
             const formattedAddress = [data.street || oldData.street, data.number || oldData.number].filter(Boolean).join(', ');
@@ -170,6 +193,29 @@ export async function saveAddress(id: string | null, data: any) {
             }
 
             await batch.commit();
+
+            // Propaga alterações públicas para snapshots de links compartilhados ativos
+            try {
+                const snapSyncPayload: Record<string, any> = {};
+                const syncFields = ['street', 'lat', 'lng', 'googleMapsLink', 'wazeLink', 'gender', 'observations', 'isActive'] as const;
+                syncFields.forEach((field) => {
+                    if (data[field] !== undefined) {
+                        snapSyncPayload[`data.${field}`] = data[field];
+                    }
+                });
+                if (Object.keys(snapSyncPayload).length > 0) {
+                    const snapDocs = await getDocs(
+                        query(collection(db, 'shared_list_snapshots'), where('itemId', '==', id))
+                    );
+                    if (!snapDocs.empty) {
+                        const snapBatch = writeBatch(db);
+                        snapDocs.docs.forEach((s) => snapBatch.update(s.ref, snapSyncPayload));
+                        await snapBatch.commit();
+                    }
+                }
+            } catch (syncErr) {
+                console.warn('[saveAddress] Falha ao sincronizar snapshot compartilhado:', syncErr);
+            }
 
             const formattedAddress = [data.street, data.number].filter(Boolean).join(', ');
 

@@ -70,6 +70,7 @@ interface PreviewItem {
     isStudent?: boolean;
     isNeurodivergent?: boolean;
     visitStatus?: string;
+    congregationId?: string;
     territoryId?: string;
     cityId?: string;
     isActive?: boolean;
@@ -134,7 +135,7 @@ function SharedPreviewContent() {
             const { list: listData, items: fetchedItems, visits: visitsData, congregationType: fetchedType } = res;
 
             setPageCongregationId(listData.congregationId || null);
-            setCongregationType((userCongregationType || fetchedType) as any);
+            setCongregationType((fetchedType || userCongregationType || null) as any);
             setVisits(visitsData || []);
 
             // 2. Identify "Main Data" (The Territory or City being previewed)
@@ -178,6 +179,7 @@ function SharedPreviewContent() {
                     isNeurodivergent: sourceData.isNeurodivergent,
                     observations: sourceData.observations,
                     visitStatus: sourceData.visitStatus,
+                    congregationId: sourceData.congregationId || listData.congregationId,
                     territoryId: sourceData.territoryId,
                     cityId: sourceData.cityId,
                     inactivatedAt: sourceData.inactivatedAt,
@@ -512,6 +514,31 @@ function SharedPreviewContent() {
                                     );
                                 }
 
+                                // 2. Gender Mode (Sign Language / Foreign)
+                                if (!isTraditional && item.gender) {
+                                    let badgeStyles = "bg-gray-100 text-gray-600 border-gray-200 dark:bg-gray-800 dark:text-gray-400 dark:border-gray-700";
+                                    if (item.gender === 'HOMEM') {
+                                        badgeStyles = "bg-blue-100 text-blue-600 border-blue-200 dark:bg-blue-900/30 dark:text-blue-400 dark:border-blue-800";
+                                    } else if (item.gender === 'MULHER') {
+                                        badgeStyles = "bg-pink-100 text-pink-600 border-pink-200 dark:bg-pink-900/30 dark:text-pink-400 dark:border-pink-800";
+                                    } else if (item.gender === 'CASAL') {
+                                        badgeStyles = "bg-purple-100 text-purple-600 border-purple-200 dark:bg-purple-900/30 dark:text-purple-400 dark:border-purple-800";
+                                    }
+
+                                    return (
+                                        <div className={`w-10 h-10 rounded-xl flex items-center justify-center shrink-0 shadow-sm border transition-colors ${badgeStyles}`}>
+                                            {item.gender === 'CASAL' ? (
+                                                <div className="flex -space-x-1.5">
+                                                    <User className="w-4 h-4 fill-current" />
+                                                    <User className="w-4 h-4 fill-current" />
+                                                </div>
+                                            ) : (
+                                                <User className="w-5 h-5 fill-current" />
+                                            )}
+                                        </div>
+                                    );
+                                }
+
                                 // Traditional Numeric Badge
                                 return (
                                     <div className="w-10 h-10 rounded-xl flex items-center justify-center font-bold text-sm shrink-0 shadow-sm border bg-primary-50 dark:bg-primary-900/10 text-primary-700 dark:text-primary-400 border-surface-border transition-colors">
@@ -552,7 +579,14 @@ function SharedPreviewContent() {
                                                 item.gender === 'MULHER' ? 'bg-pink-100 text-pink-700 dark:bg-pink-900/30 dark:text-pink-400' :
                                                 'bg-purple-100 text-purple-700 dark:bg-purple-900/30 dark:text-purple-400'
                                             }`}>
-                                                <User className="w-3 h-3 fill-current" />
+                                                {item.gender === 'CASAL' ? (
+                                                    <div className="flex -space-x-1">
+                                                        <User className="w-2.5 h-2.5 fill-current" />
+                                                        <User className="w-2.5 h-2.5 fill-current" />
+                                                    </div>
+                                                ) : (
+                                                    <User className="w-3 h-3 fill-current" />
+                                                )}
                                                 {item.gender === 'HOMEM' ? 'Homem' : item.gender === 'MULHER' ? 'Mulher' : 'Casal'}
                                             </span>
                                         )}
@@ -687,6 +721,7 @@ function SharedPreviewContent() {
                     <MapView
                         center={cityMapCenter || undefined}
                         isTraditional={isTraditional}
+                        showVisitStatusIcons={true}
                         referencePoints={referencePoints.map(p => ({
                             id: p.id,
                             lat: p.lat,
@@ -733,6 +768,7 @@ function SharedPreviewContent() {
                                 residentName: a.residentName, // Pass resident name for display
                                 fullAddress: a.number && a.number !== 'undefined' ? `${streetClean}, ${a.number}, Brasil` : `${streetClean}, Brasil`,
                                 googleMapsLink: a.googleMapsLink,
+                                wazeLink: a.wazeLink,
                                 gender: a.gender,
                                 lastVisit: a.lastVisitedAt ? (() => {
                                     try {
@@ -761,6 +797,7 @@ function SharedPreviewContent() {
                     onClose={() => setSelectedAddressForReport(null)}
                     onSave={handleSaveVisit}
                     onDelete={handleDeleteVisit}
+                    congregationType={congregationType || undefined}
                     forcedCongregationType={congregationType || undefined}
                     onViewHistory={() => {
                         setSelectedAddressForReport(null);

@@ -1071,6 +1071,34 @@ function AddressListContent() {
                                 );
                             }
 
+                            // Gender Mode (Sign Language / Foreign)
+                            if (!isTraditional && addr.gender) {
+                                let badgeStyles = "bg-gray-100 text-gray-600 border-gray-200 dark:bg-gray-800 dark:text-gray-400 dark:border-gray-700";
+                                if (addr.gender === 'HOMEM') {
+                                    badgeStyles = "bg-blue-100 text-blue-600 border-blue-200 dark:bg-blue-900/30 dark:text-blue-400 dark:border-blue-800";
+                                } else if (addr.gender === 'MULHER') {
+                                    badgeStyles = "bg-pink-100 text-pink-600 border-pink-200 dark:bg-pink-900/30 dark:text-pink-400 dark:border-pink-800";
+                                } else if (addr.gender === 'CASAL') {
+                                    badgeStyles = "bg-purple-100 text-purple-600 border-purple-200 dark:bg-purple-900/30 dark:text-purple-400 dark:border-purple-800";
+                                }
+
+                                return (
+                                    <div
+                                        title={lastVisitFormatted}
+                                        className={`w-10 h-10 rounded-lg flex items-center justify-center shrink-0 shadow-sm border transition-colors ${badgeStyles}`}
+                                    >
+                                        {addr.gender === 'CASAL' ? (
+                                            <div className="flex -space-x-1.5">
+                                                <User className="w-4 h-4 fill-current" />
+                                                <User className="w-4 h-4 fill-current" />
+                                            </div>
+                                        ) : (
+                                            <User className="w-5 h-5 fill-current" />
+                                        )}
+                                    </div>
+                                );
+                            }
+
                             let defaultStyles = "bg-primary-50 dark:bg-primary-900/10 text-primary-700 dark:text-primary-400 border-surface-border";
                             if (addr.visitStatus === 'partial') {
                                 defaultStyles = "bg-yellow-100 dark:bg-yellow-900/30 text-yellow-700 dark:text-yellow-400 border-yellow-200 dark:border-yellow-900/40";
@@ -1116,7 +1144,14 @@ function AddressListContent() {
                                         addr.gender === 'MULHER' ? 'bg-pink-100 text-pink-700 dark:bg-pink-900/30 dark:text-pink-400' :
                                         'bg-purple-100 text-purple-700 dark:bg-purple-900/30 dark:text-purple-400'
                                     }`}>
-                                        <User className="w-3 h-3 fill-current" />
+                                        {addr.gender === 'CASAL' ? (
+                                            <div className="flex -space-x-1">
+                                                <User className="w-2.5 h-2.5 fill-current" />
+                                                <User className="w-2.5 h-2.5 fill-current" />
+                                            </div>
+                                        ) : (
+                                            <User className="w-3 h-3 fill-current" />
+                                        )}
                                         {addr.gender === 'HOMEM' ? 'Homem' : addr.gender === 'MULHER' ? 'Mulher' : 'Casal'}
                                     </span>
                                 )}

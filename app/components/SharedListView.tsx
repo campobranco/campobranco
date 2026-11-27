@@ -31,7 +31,8 @@ import {
     ChevronUp,
     ChevronDown,
     Hand,
-    Home
+    Home,
+    User
 } from 'lucide-react';
 import VisitReportModal from '@/app/components/VisitReportModal';
 import VisitHistoryModal from '@/app/components/VisitHistoryModal';
@@ -715,12 +716,29 @@ export default function SharedListView({ id: propId }: SharedListViewProps) {
                                     <div className={`w-12 h-12 rounded-lg flex items-center justify-center shrink-0 transition-colors shadow-sm ${listData?.type === 'address' ? (
                                         item.visitStatus && item.visitStatus !== 'none' 
                                             ? (item.visitStatus === 'doNotVisit' ? 'bg-red-500 text-white shadow-red-500/30' : congregationType === 'TRADITIONAL' ? (item.visitStatus === 'partial' ? 'bg-yellow-500 text-white shadow-yellow-500/30' : 'bg-[#21832B] text-white') : (item.visitStatus === 'contacted' ? 'bg-[#21832B] text-white' : item.visitStatus === 'notContacted' ? 'bg-orange-500 text-white' : item.visitStatus === 'moved' ? 'bg-blue-500 text-white' : 'bg-primary-light/50 dark:bg-primary-dark/30 text-primary-dark dark:text-primary-light'))
-                                            : 'bg-primary-light/50 dark:bg-primary-dark/30 text-primary-dark dark:text-primary-light group-hover:bg-primary-light/80 dark:group-hover:bg-primary-dark/50 group-hover:text-primary-dark dark:group-hover:text-primary-light'
+                                            : congregationType !== 'TRADITIONAL' && item.gender
+                                                ? (item.gender === 'HOMEM'
+                                                    ? 'bg-blue-100 text-blue-600 border border-blue-200 dark:bg-blue-900/30 dark:text-blue-400 dark:border-blue-800'
+                                                    : item.gender === 'MULHER'
+                                                        ? 'bg-pink-100 text-pink-600 border border-pink-200 dark:bg-pink-900/30 dark:text-pink-400 dark:border-pink-800'
+                                                        : 'bg-purple-100 text-purple-600 border border-purple-200 dark:bg-purple-900/30 dark:text-purple-400 dark:border-purple-800')
+                                                : 'bg-primary-light/50 dark:bg-primary-dark/30 text-primary-dark dark:text-primary-light group-hover:bg-primary-light/80 dark:group-hover:bg-primary-dark/50 group-hover:text-primary-dark dark:group-hover:text-primary-light'
                                     ) : listData?.type === 'territory' && (addressCounts[item.id] > 0 && addressCounts[item.id] === processedCounts[item.id]) ? 'bg-green-600 text-white shadow-lg shadow-green-500/20' : 'bg-gray-50 dark:bg-gray-800 text-gray-400 dark:text-gray-500 border border-gray-100 dark:border-gray-700 group-hover:bg-primary-light/50 dark:group-hover:bg-primary-dark/30 group-hover:text-primary dark:group-hover:text-primary-light'}`}>
                                         {listData?.type === 'city' && <Building2 className="w-6 h-6" />}
                                         {listData?.type === 'territory' && <MapIcon className="w-6 h-6" />}
                                         {listData?.type === 'address' && (
-                                            <MapPin className={`w-6 h-6 ${item.visitStatus && item.visitStatus !== 'none' ? 'text-white' : 'text-primary'}`} />
+                                            (!item.visitStatus || item.visitStatus === 'none') && congregationType !== 'TRADITIONAL' && item.gender ? (
+                                                item.gender === 'CASAL' ? (
+                                                    <div className="flex -space-x-1.5">
+                                                        <User className="w-4 h-4 fill-current" />
+                                                        <User className="w-4 h-4 fill-current" />
+                                                    </div>
+                                                ) : (
+                                                    <User className="w-5 h-5 fill-current" />
+                                                )
+                                            ) : (
+                                                <MapPin className={`w-6 h-6 ${item.visitStatus && item.visitStatus !== 'none' ? 'text-white' : 'text-primary'}`} />
+                                            )
                                         )}
                                     </div>
                                     <div className="flex-1 min-w-0">
