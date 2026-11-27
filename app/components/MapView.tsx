@@ -115,6 +115,7 @@ export default function MapView({ items, center = defaultCenter, zoom = 15, onGe
     const [isInteractionEnabled, setIsInteractionEnabled] = useState(disableInteractionLock);
     const [showLockHint, setShowLockHint] = useState(false);
     const [isMapReady, setIsMapReady] = useState(false);
+    const lockHintTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
     // Sync Leaflet Handlers with Interaction State
     useEffect(() => {
@@ -258,6 +259,9 @@ export default function MapView({ items, center = defaultCenter, zoom = 15, onGe
         init();
 
         return () => {
+            if (lockHintTimeoutRef.current) {
+                clearTimeout(lockHintTimeoutRef.current);
+            }
             if (mapInstanceRef.current) {
                 mapInstanceRef.current.remove();
                 mapInstanceRef.current = null;
@@ -721,11 +725,17 @@ export default function MapView({ items, center = defaultCenter, zoom = 15, onGe
         <div
             className={`w-full h-full relative overflow-hidden rounded-lg shadow-sm border border-gray-100 ${isFullscreen ? 'fixed inset-0 z-[5000] rounded-none border-0 bg-white' : ''}`}
             style={isFullscreen ? { height: '100dvh', width: '100vw' } : {}}
-            onMouseDown={() => {
-                if (!isInteractionEnabled) {
-                    setShowLockHint(true);
-                    setTimeout(() => setShowLockHint(false), 2000);
+            onMouseDown={(e) => {
+                if (isInteractionEnabled) return;
+                const target = e.target as HTMLElement | null;
+                if (target?.closest('.leaflet-marker-icon, .custom-map-marker, .leaflet-popup, .leaflet-control, button, a')) {
+                    return;
                 }
+                setShowLockHint(true);
+                if (lockHintTimeoutRef.current) {
+                    clearTimeout(lockHintTimeoutRef.current);
+                }
+                lockHintTimeoutRef.current = setTimeout(() => setShowLockHint(false), 2000);
             }}
         >
             {/* Map Container - Removed transitions and filters that break Leaflet */}
