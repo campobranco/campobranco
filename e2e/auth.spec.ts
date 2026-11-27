@@ -12,7 +12,7 @@ test.describe('E2E: Authentication Gates', () => {
 
         // Expect visual confirmation of login page
         // Expect visual confirmation of login page
-        await expect(page.getByRole('button', { name: /Entrar com Google/i })).toBeVisible();
+        await expect(page.getByRole('button', { name: /Entrar com Google|Sign in with Google|Iniciar sesión con Google/i })).toBeVisible();
     });
 
     test('Protected Route: /settings should redirect to /login', async ({ page }) => {
