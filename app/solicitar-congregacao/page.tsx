@@ -26,7 +26,7 @@ export default function RequestCongregationPage() {
                     <div className="bg-surface p-4 rounded-xl border border-surface-border shadow-sm">
                         <p className="text-xs text-muted font-bold uppercase tracking-wider mb-1">E-mail para contato</p>
                         {(() => {
-                            const email = process.env.NEXT_PUBLIC_SUPPORT_EMAIL || process.env.NEXT_PUBLIC_MASTER_EMAIL || "campobrancojw@gmail.com";
+                            const email = process.env.NEXT_PUBLIC_SUPPORT_EMAIL || process.env.NEXT_PUBLIC_MASTER_EMAIL || "";
                             return (
                                 <a href={`mailto:${email}`} className="text-primary dark:text-blue-400 font-bold text-lg hover:underline break-all">
                                     {email}

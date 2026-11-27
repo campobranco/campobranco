@@ -53,7 +53,9 @@ export default function LoginClient() {
         let decoded = redirectParam;
         try {
             decoded = decodeURIComponent(redirectParam);
-        } catch (e) {}
+        } catch (e) {
+            console.warn('[LoginClient] Parâmetro redirect malformado ao decodificar URI:', e);
+        }
 
         // Permite caminhos que começam com '/' mas não com '//' (que poderiam indicar protocolo oculto)
         const isRelative = /^\/[^\/].*$/.test(decoded);
@@ -66,7 +68,9 @@ export default function LoginClient() {
                 if (parsed.origin === window.location.origin) {
                     return parsed.pathname + parsed.search;
                 }
-            } catch (e) {}
+            } catch (e) {
+                console.warn('[LoginClient] URL de redirect inválida:', e);
+            }
         }
 
         return '/dashboard';

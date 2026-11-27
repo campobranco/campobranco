@@ -15,10 +15,12 @@ const app: FirebaseApp = !getApps().length ? initializeApp(FIREBASE_CONFIG) : ge
 // Exporta instância do Auth (compatível com cliente, SSR e Node/Jest)
 const auth: Auth = getAuth(app);
 
-// Conecta o Auth ao emulador local se configurado
-const authEmulatorHost = process.env.FIREBASE_AUTH_EMULATOR_HOST || process.env.NEXT_PUBLIC_FIREBASE_AUTH_EMULATOR_HOST;
-if (authEmulatorHost) {
-    connectAuthEmulator(auth, `http://${authEmulatorHost}`, { disableWarnings: true });
+// Conecta o Auth ao emulador local apenas fora de produção (dev/test)
+if (process.env.NODE_ENV !== 'production') {
+    const authEmulatorHost = process.env.FIREBASE_AUTH_EMULATOR_HOST || process.env.NEXT_PUBLIC_FIREBASE_AUTH_EMULATOR_HOST;
+    if (authEmulatorHost) {
+        connectAuthEmulator(auth, `http://${authEmulatorHost}`, { disableWarnings: true });
+    }
 }
 
 // Configura persistência local exclusivamente no ambiente do navegador
@@ -40,8 +42,8 @@ if (typeof window !== 'undefined') {
     db = getFirestore(app, FIRESTORE_DATABASE_ID);
 }
 
-// Conecta o Firestore ao emulador local se a variável de ambiente correspondente estiver definida
-if (process.env.FIRESTORE_EMULATOR_HOST) {
+// Conecta o Firestore ao emulador local apenas fora de produção (dev/test)
+if (process.env.NODE_ENV !== 'production' && process.env.FIRESTORE_EMULATOR_HOST) {
     const [host, port] = process.env.FIRESTORE_EMULATOR_HOST.split(':');
     connectFirestoreEmulator(db, host, parseInt(port, 10));
 }

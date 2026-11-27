@@ -3,9 +3,10 @@
 import { Suspense, use } from 'react';
 import { useSearchParams } from 'next/navigation';
 import VisitsHistory from '@/app/components/Dashboard/VisitsHistory';
-import { ArrowLeft, History, Loader2 } from 'lucide-react';
+import { ArrowLeft, History } from 'lucide-react';
 import Link from 'next/link';
 import BottomNav from '@/app/components/BottomNav';
+import { ListPageSkeleton } from '@/app/components/Skeleton';
 
 function HistoryContent() {
     const searchParams = useSearchParams();
@@ -52,11 +53,7 @@ function HistoryContent() {
 
 export default function HistoryPage() {
     return (
-        <Suspense fallback={
-            <div className="min-h-screen flex items-center justify-center bg-background">
-                <Loader2 className="w-8 h-8 text-purple-600 animate-spin" />
-            </div>
-        }>
+        <Suspense fallback={<ListPageSkeleton showSearch={false} showBack={true} rightActions={0} contentMaxWidthClass="max-w-xl mx-auto" gridClassName="grid-cols-1 gap-3" cards={4} />}>
             <HistoryContent />
         </Suspense>
     );

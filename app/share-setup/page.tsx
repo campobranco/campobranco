@@ -11,6 +11,8 @@ import {
     getDocs
 } from "firebase/firestore";
 import { db } from "@/lib/firebase";
+import { Capacitor } from "@capacitor/core";
+import { getAppBaseUrl } from "@/lib/config";
 import {
     Loader2,
     ArrowLeft,
@@ -29,6 +31,7 @@ import {
 import { useAuth } from '@/app/context/AuthContext';
 import { toast } from 'sonner';
 import { AuthReadyGate } from '@/app/components/AuthReadyGate';
+import { ShareSetupPageSkeleton } from '@/app/components/Skeleton';
 
 // TODO(mutations): migrate to mutation layer - legacy module (admin/report/dashboard)
 // eslint-disable-next-line no-restricted-imports
@@ -222,7 +225,7 @@ function ShareSetupContent() {
                 return null;
             }
 
-            const link = `${process.env.NEXT_PUBLIC_APP_URL || window.location.origin}/share?id=${resData.data?.id}`;
+            const link = `${getAppBaseUrl(Capacitor.isNativePlatform())}/share?id=${resData.data?.id}`;
             setGeneratedLink(link);
             setLoadError('');
             return link;
@@ -288,11 +291,7 @@ function ShareSetupContent() {
     };
 
     if (loading) {
-        return (
-            <div className="min-h-screen flex items-center justify-center bg-background">
-                <Loader2 className="w-8 h-8 animate-spin text-primary" />
-            </div>
-        );
+        return <ShareSetupPageSkeleton />;
     }
 
     if (loadError) {
@@ -527,8 +526,8 @@ function ShareSetupContent() {
 
 export default function ShareSetupPage() {
     return (
-        <AuthReadyGate requireRole={true} requireCongregation={true}>
-            <Suspense fallback={<div className="min-h-screen flex items-center justify-center bg-background"><Loader2 className="w-8 h-8 animate-spin text-primary" /></div>}>
+        <AuthReadyGate requireRole={true} requireCongregation={true} fallback={<ShareSetupPageSkeleton />}>
+            <Suspense fallback={<ShareSetupPageSkeleton />}>
                 <ShareSetupContent />
             </Suspense>
         </AuthReadyGate>

@@ -1,0 +1,29 @@
+{
+  "common": {
+    "loading": "Carregando...",
+    "save": "Salvar",
+    "cancel": "Cancelar",
+    "close": "Fechar",
+    "error": "Ocorreu um erro."
+  },
+  "nav": {
+    "home": "INÍCIO",
+    "maps": "MAPAS",
+    "witnessing": "T. PÚBLICO",
+    "reports": "RELATÓRIO",
+    "settings": "CONFIG"
+  },
+  "settings": {
+    "appearance": {
+      "title": "Aparência"
+    },
+    "language": {
+      "title": "Idioma",
+      "description": "Escolha o idioma exibido na interface do aplicativo.",
+      "label": "Idioma da Interface",
+      "updatedToast": "Idioma alterado para {language}.",
+      "searchPlaceholder": "Buscar idioma...",
+      "noResults": "Nenhum idioma encontrado."
+    }
+  }
+}

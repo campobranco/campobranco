@@ -26,6 +26,7 @@ import dynamic from 'next/dynamic';
 import { sanitizeUrl } from '@/lib/validation';
 
 import RoleBasedSwitcher from '@/app/components/RoleBasedSwitcher';
+import { ListPageSkeleton, Skeleton } from '@/app/components/Skeleton';
 import CSVActionButtons from '@/app/components/CSVActionButtons';
 const BottomNav = dynamic(() => import('@/app/components/BottomNav'), { ssr: false });
 import ConfirmationModal from '@/app/components/ConfirmationModal';
@@ -467,7 +468,7 @@ function TerritoryListContent() {
         return matchesName;
     });
 
-    if (authLoading || loading) return <div className="min-h-screen flex items-center justify-center bg-background"><Loader2 className="w-10 h-10 text-primary animate-spin" /></div>;
+    if (authLoading || loading) return <ListPageSkeleton showBack={true} rightActions={2} />;
 
     if (!user) {
         return null;
@@ -577,7 +578,15 @@ function TerritoryListContent() {
                 </div>
 
                 {loading ? (
-                    <div className="flex justify-center p-8"><Loader2 className="w-8 h-8 animate-spin text-primary" /></div>
+                    <div className="grid grid-cols-1 lg:grid-cols-2 2xl:grid-cols-3 gap-4" role="status" aria-busy="true">
+                        <span className="sr-only">Carregando...</span>
+                        {Array.from({ length: 4 }).map((_, idx) => (
+                            <div key={idx} className="bg-surface border border-surface-border rounded-lg p-4 space-y-2.5">
+                                <Skeleton className="h-4 w-1/2" />
+                                <Skeleton className="h-3 w-1/3" />
+                            </div>
+                        ))}
+                    </div>
                 ) : filteredTerritories.length === 0 ? (
                     <div className="text-center py-12 opacity-50">
                         <MapIcon className="w-12 h-12 mx-auto mb-3 text-gray-300" />
@@ -1102,5 +1111,5 @@ function TerritoryListContent() {
 }
 
 export default function TerritoryListPage() {
-    return <Suspense fallback={<Loader2 className="w-8 h-8 animate-spin text-primary" />}><TerritoryListContent /></Suspense>;
+    return <Suspense fallback={<ListPageSkeleton showBack={true} rightActions={2} />}><TerritoryListContent /></Suspense>;
 }

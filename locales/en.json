@@ -1,0 +1,29 @@
+{
+  "common": {
+    "loading": "Loading...",
+    "save": "Save",
+    "cancel": "Cancel",
+    "close": "Close",
+    "error": "An error occurred."
+  },
+  "nav": {
+    "home": "HOME",
+    "maps": "MAPS",
+    "witnessing": "PUBLIC W.",
+    "reports": "REPORTS",
+    "settings": "SETTINGS"
+  },
+  "settings": {
+    "appearance": {
+      "title": "Appearance"
+    },
+    "language": {
+      "title": "Language",
+      "description": "Choose the language displayed in the app interface.",
+      "label": "Interface Language",
+      "updatedToast": "Language changed to {language}.",
+      "searchPlaceholder": "Search language...",
+      "noResults": "No language found."
+    }
+  }
+}

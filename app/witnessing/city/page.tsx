@@ -23,7 +23,7 @@ import {
 } from 'lucide-react';
 import dynamic from 'next/dynamic';
 
-import { MapSkeleton } from '@/app/components/Skeleton';
+import { ListPageSkeleton, MapSkeleton, Skeleton } from '@/app/components/Skeleton';
 import { sanitizeUrl } from '@/lib/validation';
 
 const MapView = dynamic(() => import('@/app/components/MapView'), {
@@ -444,7 +444,7 @@ function WitnessingPointListContent() {
         p.address.toLowerCase().includes(searchTerm.toLowerCase())
     );
 
-    if (authLoading) return <div className="min-h-screen flex items-center justify-center bg-background"><Loader2 className="w-8 h-8 animate-spin text-amber-500" /></div>;
+    if (authLoading) return <ListPageSkeleton showBack={true} rightActions={1} />;
 
     if (!congregationId) {
         return <div className="p-8 text-center text-muted">Parâmetros inválidos.</div>;
@@ -513,7 +513,15 @@ function WitnessingPointListContent() {
                     </div>
 
                     {loading ? (
-                        <div className="flex justify-center p-8"><Loader2 className="w-8 h-8 animate-spin text-amber-500" /></div>
+                        <div className="grid grid-cols-1 lg:grid-cols-2 2xl:grid-cols-3 gap-4 pb-6" role="status" aria-busy="true">
+                            <span className="sr-only">Carregando...</span>
+                            {Array.from({ length: 4 }).map((_, idx) => (
+                                <div key={idx} className="bg-surface rounded-lg p-4 border border-surface-border space-y-2.5">
+                                    <Skeleton className="h-4 w-2/3" />
+                                    <Skeleton className="h-3 w-1/2" />
+                                </div>
+                            ))}
+                        </div>
                     ) : hasError ? (
                         <div className="bg-surface p-6 rounded-lg shadow-sm border border-surface-border flex flex-col items-center justify-center text-center">
                             <AlertCircle className="w-8 h-8 text-orange-400 mb-2" />
@@ -755,7 +763,7 @@ function WitnessingPointListContent() {
 
 export default function WitnessingPointList() {
     return (
-        <Suspense fallback={<div className="min-h-screen flex items-center justify-center bg-background"><Loader2 className="w-8 h-8 animate-spin text-primary" /></div>}>
+        <Suspense fallback={<ListPageSkeleton showBack={true} rightActions={1} />}>
             <WitnessingPointListContent />
         </Suspense>
     );

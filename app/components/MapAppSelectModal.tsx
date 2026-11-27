@@ -1,8 +1,9 @@
 "use client";
 
 import React from 'react';
-import { Map as MapIcon, X } from 'lucide-react';
+import { Map as MapIcon, ChevronRight } from 'lucide-react';
 import { sanitizeUrl } from '@/lib/validation';
+import { resolveNavigationLinks } from '@/lib/map-links';
 
 /* 
  * Componente modal para seleção de aplicativo de mapa (Waze ou Google Maps)
@@ -15,20 +16,35 @@ interface MapAppSelectModalProps {
     address: {
         street?: string;
         number?: string;
+        lat?: number | string | null;
+        lng?: number | string | null;
+        cityName?: string | null;
         googleMapsLink?: string;
         wazeLink?: string;
     };
 }
 
+function cleanOptionalLink(link?: string | null): string {
+    const trimmed = (link || '').trim();
+    return trimmed === 'undefined' ? '' : trimmed;
+}
+
 export default function MapAppSelectModal({ isOpen, onClose, address }: MapAppSelectModalProps) {
     if (!isOpen) return null;
 
-    const googleLink = address.googleMapsLink;
-    const wazeLink = address.wazeLink;
+    const fullAddress = [address.street, address.number].filter(Boolean).join(', ');
+    const { googleMapsLink: googleLink, wazeLink } = resolveNavigationLinks({
+        googleMapsLink: cleanOptionalLink(address.googleMapsLink),
+        wazeLink: cleanOptionalLink(address.wazeLink),
+        lat: address.lat,
+        lng: address.lng,
+        address: fullAddress,
+        cityName: address.cityName,
+    });
 
     return (
         <div
-            className="fixed inset-0 z-[1100] flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm animate-in fade-in duration-200"
+            className="fixed inset-0 z-[10000] flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm animate-in fade-in duration-200"
             onClick={onClose}
         >
             <div
@@ -39,11 +55,11 @@ export default function MapAppSelectModal({ isOpen, onClose, address }: MapAppSe
                     <div className="w-14 h-14 bg-primary-50 dark:bg-primary-900/20 text-primary rounded-full flex items-center justify-center mx-auto mb-4 border border-primary-100 dark:border-primary-800/50">
                         <MapIcon className="w-7 h-7" />
                     </div>
-                    <h3 className="text-xl font-black text-main tracking-tight italic">Qual mapa usar?</h3>
+                    <h3 className="text-xl font-black text-main tracking-tight">Qual mapa usar?</h3>
                     <p className="text-sm text-muted mt-2 font-medium">Escolha seu aplicativo favorito para abrir a rota predefinida.</p>
                 </div>
 
-                <div className="grid grid-cols-2 gap-3 mb-4">
+                <div className="flex flex-col gap-3 mb-4">
                     {/* Botão Waze */}
                     <button
                         onClick={() => {
@@ -51,13 +67,16 @@ export default function MapAppSelectModal({ isOpen, onClose, address }: MapAppSe
                             onClose();
                         }}
                         disabled={!wazeLink}
-                        className={`flex flex-col items-center justify-center gap-3 p-4 rounded-2xl transition-all shadow-sm group active:scale-95 border-2 ${wazeLink
+                        className={`w-full flex items-center justify-between px-4 py-3.5 rounded-2xl transition-all shadow-sm group active:scale-[0.98] border-2 ${wazeLink
                                 ? 'bg-sky-50 hover:bg-sky-100 dark:bg-sky-900/10 dark:hover:bg-sky-900/20 border-sky-100 dark:border-sky-800/30 hover:border-sky-300 dark:hover:border-sky-600'
                                 : 'bg-gray-50 dark:bg-gray-800 border-gray-100 dark:border-gray-700 opacity-50 cursor-not-allowed'
                             }`}
                     >
-                        <img src="/icons/waze.svg" alt="Waze" className="w-10 h-10 drop-shadow-sm group-hover:scale-110 transition-transform" />
-                        <span className="font-extrabold text-[#33ccff] tracking-wide text-sm">Waze</span>
+                        <div className="flex items-center gap-3">
+                            <img src="/icons/waze.svg" alt="Waze" className="w-10 h-10 rounded-xl group-hover:scale-105 transition-transform object-cover" />
+                            <span className="font-extrabold text-sky-600 dark:text-sky-400 tracking-wide text-sm">Waze</span>
+                        </div>
+                        <ChevronRight className="w-4 h-4 text-sky-500/60" />
                     </button>
 
                     {/* Botão Google Maps */}
@@ -67,13 +86,16 @@ export default function MapAppSelectModal({ isOpen, onClose, address }: MapAppSe
                             onClose();
                         }}
                         disabled={!googleLink}
-                        className={`flex flex-col items-center justify-center gap-3 p-4 rounded-2xl transition-all shadow-sm group active:scale-95 border-2 ${googleLink
+                        className={`w-full flex items-center justify-between px-4 py-3.5 rounded-2xl transition-all shadow-sm group active:scale-[0.98] border-2 ${googleLink
                                 ? 'bg-gray-50 hover:bg-gray-100 dark:bg-slate-800 dark:hover:bg-slate-700 border-gray-100 dark:border-slate-700 hover:border-gray-300 dark:hover:border-slate-500'
                                 : 'bg-gray-50 dark:bg-gray-800 border-gray-100 dark:border-gray-700 opacity-50 cursor-not-allowed'
                             }`}
                     >
-                        <img src="/icons/google-maps.svg" alt="Google Maps" className="w-10 h-10 drop-shadow-sm group-hover:scale-110 transition-transform" />
-                        <span className="font-extrabold text-main text-sm">Maps</span>
+                        <div className="flex items-center gap-3">
+                            <img src="/icons/google-maps.svg" alt="Google Maps" className="w-10 h-10 rounded-xl group-hover:scale-105 transition-transform object-cover" />
+                            <span className="font-extrabold text-main text-sm">Google Maps</span>
+                        </div>
+                        <ChevronRight className="w-4 h-4 text-muted/60" />
                     </button>
                 </div>
 

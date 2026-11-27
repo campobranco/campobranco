@@ -3,11 +3,13 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useAuth } from '@/app/context/AuthContext';
+import { useTranslation } from '@/app/context/I18nContext';
 import { BarChart3, Map as MapIcon, FileText, User, Settings, Home, Store } from "lucide-react";
 
 export default function BottomNav() {
     const pathname = usePathname();
     const { congregationId, isAdminRoleGlobal, isElder, isServant, canViewReports, canManageMaps, canManageWitnessing } = useAuth();
+    const { t } = useTranslation();
 
     // Determine path for Maps link
     // Admins go to the Congregation List (/my-maps)
@@ -26,11 +28,11 @@ export default function BottomNav() {
     };
 
     let menuItems = [
-        { id: 'inicio', label: 'INÍCIO', icon: Home, path: '/dashboard' },
-        { id: 'maps', label: 'MAPAS', icon: MapIcon, path: mapsPath },
-        { id: 'witnessing', label: 'T. PÚBLICO', icon: Store, path: witnessingPath },
-        { id: 'reports', label: 'RELATÓRIO', icon: FileText, path: '/reports' },
-        { id: 'config', label: 'CONFIG', icon: Settings, path: '/settings' },
+        { id: 'inicio', label: t('nav.home'), icon: Home, path: '/dashboard' },
+        { id: 'maps', label: t('nav.maps'), icon: MapIcon, path: mapsPath },
+        { id: 'witnessing', label: t('nav.witnessing'), icon: Store, path: witnessingPath },
+        { id: 'reports', label: t('nav.reports'), icon: FileText, path: '/reports' },
+        { id: 'config', label: t('nav.settings'), icon: Settings, path: '/settings' },
     ];
 
     // Filter menu items based on fine-grained permissions

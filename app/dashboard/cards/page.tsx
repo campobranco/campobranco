@@ -21,8 +21,11 @@ import {
     writeBatch,
 } from "firebase/firestore";
 import { db } from "@/lib/firebase";
+import { Capacitor } from "@capacitor/core";
+import { getAppBaseUrl } from "@/lib/config";
 import Link from 'next/link';
 import BottomNav from "@/app/components/BottomNav";
+import { ListPageSkeleton, Skeleton } from "@/app/components/Skeleton";
 import {
     ArrowLeft,
     Loader2,
@@ -157,8 +160,8 @@ function CardsContent() {
 
     // Handlers
     const handleCopyLink = async (id: string) => {
-        const shareUrl = (process.env.NEXT_PUBLIC_APP_URL || window.location.origin) + "/share?id=" + id;
         try {
+            const shareUrl = `${getAppBaseUrl(Capacitor.isNativePlatform())}/share?id=${id}`;
             await navigator.clipboard.writeText(shareUrl);
             toast.success("Link copiado com sucesso!");
         } catch (err) {
@@ -168,7 +171,14 @@ function CardsContent() {
     };
 
     const handleShareLink = async (id: string, title?: string) => {
-        const shareUrl = (process.env.NEXT_PUBLIC_APP_URL || window.location.origin) + "/share?id=" + id;
+        let shareUrl: string;
+        try {
+            shareUrl = `${getAppBaseUrl(Capacitor.isNativePlatform())}/share?id=${id}`;
+        } catch (err) {
+            console.error("Error building share link:", err);
+            toast.error("Erro ao gerar link de compartilhamento.");
+            return;
+        }
         if (navigator.share) {
             try {
                 await navigator.share({
@@ -407,7 +417,15 @@ function CardsContent() {
                 </div>
 
                 {loading ? (
-                    <div className="flex justify-center p-8"><Loader2 className="w-8 h-8 animate-spin text-primary" /></div>
+                    <div className="space-y-3" role="status" aria-busy="true">
+                        <span className="sr-only">Carregando...</span>
+                        {Array.from({ length: 4 }).map((_, idx) => (
+                            <div key={idx} className="p-4 rounded-lg bg-surface border border-surface-border space-y-2.5">
+                                <Skeleton className="h-4 w-3/5" />
+                                <Skeleton className="h-3 w-1/3" />
+                            </div>
+                        ))}
+                    </div>
                 ) : lists.length === 0 ? (
                     <div className="text-center py-12 opacity-50 bg-surface rounded-lg border border-dashed border-surface-border">
                         <p className="text-sm text-muted">Nenhum cartão encontrado.</p>
@@ -578,11 +596,7 @@ function CardsContent() {
 
 export default function CardsPage() {
     return (
-        <Suspense fallback={
-            <div className="min-h-screen flex items-center justify-center bg-background">
-                <Loader2 className="w-8 h-8 text-primary animate-spin" />
-            </div>
-        }>
+        <Suspense fallback={<ListPageSkeleton showSearch={false} showBack={true} rightActions={0} contentMaxWidthClass="max-w-xl mx-auto" gridClassName="grid-cols-1 gap-3" cards={4} />}>
             <CardsContent />
         </Suspense>
     );

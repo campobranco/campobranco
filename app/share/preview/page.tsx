@@ -2,6 +2,7 @@
 
 import { useEffect, useState, Suspense, useCallback } from 'react';
 import { sanitizeUrl } from '@/lib/validation';
+import { resolveNavigationLinks } from '@/lib/map-links';
 import {
     Map as MapIcon,
     Loader2,
@@ -45,7 +46,8 @@ import { reportVisit, deleteVisitByAddressAndShare } from '@/lib/services/visits
 // TODO(mutations): migrate to mutation layer - legacy module (admin/report/dashboard)
 // eslint-disable-next-line no-restricted-imports
 import { getReferencePoints } from '@/lib/services/reference_points';
-import { resolveCityCenterCoordinates } from '@/lib/services/geocoding';
+import { resolveCityCenterCoordinates } from '@/lib/contracts/queries/geocodingQueries';
+import { SharePreviewPageSkeleton } from '@/app/components/Skeleton';
 
 interface PreviewItem {
     id: string;
@@ -355,48 +357,30 @@ function SharedPreviewContent() {
 
 
     const handleOpenMap = (item: PreviewItem) => {
-        // Se ambos os links existirem, abre o modal de seleção
-        if (item.googleMapsLink && item.wazeLink) {
-            setMapAppSelect({ isOpen: true, address: item });
-            return;
+        const cleanGoogle = (item.googleMapsLink || '').trim() === 'undefined' ? '' : item.googleMapsLink;
+        const cleanWaze = (item.wazeLink || '').trim() === 'undefined' ? '' : item.wazeLink;
+        const resolved = resolveNavigationLinks({
+            googleMapsLink: cleanGoogle,
+            wazeLink: cleanWaze,
+            lat: item.lat,
+            lng: item.lng,
+            address: [item.street, item.number].filter(Boolean).join(', '),
+        });
+
+        if (resolved.googleMapsLink || resolved.wazeLink) {
+            setMapAppSelect({
+                isOpen: true,
+                address: {
+                    ...item,
+                    googleMapsLink: resolved.googleMapsLink,
+                    wazeLink: resolved.wazeLink,
+                },
+            });
         }
-
-        const exactLink = item.googleMapsLink || item.wazeLink;
-
-        if (exactLink) {
-            const safeUrl = sanitizeUrl(exactLink);
-            if (safeUrl) {
-                window.open(safeUrl, '_blank');
-                return;
-            }
-        }
-
-        // Se não houver links salvos, tenta abrir via coordenadas ou endereço (query)
-        let url = '';
-        if (item.lat && item.lng) {
-            url = `https://www.google.com/maps/search/?api=1&query=${item.lat},${item.lng}`;
-        } else {
-            const query = `${item.street}${item.number ? `, ${item.number}` : ''}`;
-            const isIOS = /iPhone|iPad|iPod/i.test(navigator.userAgent);
-            const isAndroid = /Android/i.test(navigator.userAgent);
-
-            if (isIOS) url = `maps://?q=${encodeURIComponent(query)}`;
-            else if (isAndroid) url = `geo:0,0?q=${encodeURIComponent(query)}`;
-            else url = `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(query)}`;
-        }
-
-        if (url) window.open(url, '_blank');
     };
 
     if (loading) {
-        return (
-            <div className="min-h-screen flex items-center justify-center bg-background">
-                <div className="flex flex-col items-center gap-3">
-                    <Loader2 className="w-8 h-8 text-primary animate-spin" />
-                    <p className="text-muted text-sm font-bold animate-pulse">Carregando...</p>
-                </div>
-            </div>
-        );
+        return <SharePreviewPageSkeleton />;
     }
 
     if (error) {
@@ -587,7 +571,12 @@ function SharedPreviewContent() {
                                     <div className="absolute right-0 top-10 bg-surface rounded-xl shadow-xl border border-surface-border p-1 z-20 min-w-[160px] animate-in fade-in zoom-in-95 duration-200">
 
                                         {/* Dropdown Options */}
-                                        {((item.googleMapsLink && item.googleMapsLink.trim() !== '' && item.googleMapsLink !== 'undefined') || (item.wazeLink && item.wazeLink.trim() !== '' && item.wazeLink !== 'undefined')) && (
+                                        {Boolean(
+                                            (item.googleMapsLink && item.googleMapsLink.trim() !== '' && item.googleMapsLink !== 'undefined') ||
+                                            (item.wazeLink && item.wazeLink.trim() !== '' && item.wazeLink !== 'undefined') ||
+                                            (item.lat && item.lng) ||
+                                            (item.street && item.street.trim() !== '')
+                                        ) && (
                                             <button
                                                 onClick={(e) => {
                                                     e.stopPropagation();
@@ -597,7 +586,7 @@ function SharedPreviewContent() {
                                                 className="flex items-center gap-2 px-3 py-2 text-sm font-bold text-gray-600 dark:text-gray-300 hover:bg-primary-50 dark:hover:bg-primary-900/30 hover:text-primary-600 dark:hover:text-primary-400 rounded-lg transition-colors w-full text-left"
                                             >
                                                 <Navigation className="w-4 h-4" />
-                                                Abrir no Mapa
+                                                Ir para
                                             </button>
                                         )}
 
@@ -807,14 +796,7 @@ function SharedPreviewContent() {
 
 export default function SharedPreviewPage() {
     return (
-        <Suspense fallback={
-            <div className="min-h-screen flex items-center justify-center bg-background">
-                <div className="flex flex-col items-center gap-3">
-                    <Loader2 className="w-8 h-8 text-primary animate-spin" />
-                    <p className="text-muted text-sm font-bold animate-pulse">Carregando...</p>
-                </div>
-            </div>
-        }>
+        <Suspense fallback={<SharePreviewPageSkeleton />}>
             <SharedPreviewContent />
         </Suspense>
     );

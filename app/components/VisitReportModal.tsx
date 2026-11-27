@@ -2,7 +2,8 @@
 
 import { useState, useEffect } from 'react';
 import { createPortal } from 'react-dom';
-import { sanitizeUrl } from '@/lib/validation';
+import { resolveNavigationLinks } from '@/lib/map-links';
+import MapAppSelectModal from './MapAppSelectModal';
 import {
     X,
     ThumbsUp,
@@ -80,6 +81,15 @@ export default function VisitReportModal({
     const [publisherName, setPublisherName] = useState(address.publisherName || profileName || user?.displayName || '');
     const [isListening, setIsListening] = useState(false);
     const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
+    const [isMapSelectOpen, setIsMapSelectOpen] = useState(false);
+
+    const resolvedLinks = resolveNavigationLinks({
+        googleMapsLink: (address?.googleMapsLink || '').trim() === 'undefined' ? '' : address?.googleMapsLink,
+        wazeLink: (address?.wazeLink || '').trim() === 'undefined' ? '' : address?.wazeLink,
+        lat: address?.lat,
+        lng: address?.lng,
+        address: [address?.street, address?.number].filter(Boolean).join(', '),
+    });
     const [isMounted, setIsMounted] = useState(false);
 
     useEffect(() => {
@@ -342,16 +352,15 @@ export default function VisitReportModal({
                                 <History className="w-5 h-5" />
                             </button>
 
-                            {((address.googleMapsLink && address.googleMapsLink.trim() !== '' && address.googleMapsLink !== 'undefined') || (address.wazeLink && address.wazeLink.trim() !== '' && address.wazeLink !== 'undefined')) && (
-                                <a
-                                    href={sanitizeUrl(address.googleMapsLink || address.wazeLink) || '#'}
-                                    target="_blank"
-                                    rel="noopener noreferrer"
+                            {(resolvedLinks.googleMapsLink || resolvedLinks.wazeLink) && (
+                                <button
+                                    type="button"
+                                    onClick={() => setIsMapSelectOpen(true)}
                                     className="flex-1 bg-white hover:bg-gray-100 dark:bg-slate-800 dark:hover:bg-slate-700 text-gray-900 dark:text-white py-3.5 rounded-lg font-bold text-sm flex items-center justify-center gap-2 transition-colors border border-gray-200 dark:border-slate-700"
                                 >
                                     <Navigation className="w-4 h-4" />
-                                    Mapa
-                                </a>
+                                    Ir para
+                                </button>
                             )}
                             <button
                                 onClick={handleSave}
@@ -404,6 +413,11 @@ export default function VisitReportModal({
                     </div>
                 </div>
             </div>
+            <MapAppSelectModal
+                isOpen={isMapSelectOpen}
+                onClose={() => setIsMapSelectOpen(false)}
+                address={address || {}}
+            />
         </div >,
         document.body
     );

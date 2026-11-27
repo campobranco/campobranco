@@ -3,6 +3,7 @@
 import { useState, useEffect, useCallback, useRef, useLayoutEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { useAuth } from '@/app/context/AuthContext';
+import { Skeleton } from '@/app/components/Skeleton';
 import { getMapTileConfig } from '@/lib/map-tiles';
 import { ChevronLeft, Printer, MapPin, Building2, Filter, Loader2, LayoutGrid, FileText, Trash2, ImagePlus, Map as MapIcon, Sliders, Hexagon, Download, FolderDown, X, Image as ImageIcon, CheckCircle2 } from 'lucide-react';
 import html2canvas from 'html2canvas';
@@ -837,9 +838,18 @@ export default function MapCardPage() {
             {/* Conteúdo Principal */}
             <main className="w-full max-w-[1250px] mx-auto p-2 sm:p-4 md:p-8 print:p-0 print:max-w-none font-serif overflow-hidden">
                 {pageLoading || authLoading ? (
-                    <div className="text-center py-20 flex flex-col items-center gap-4 font-sans">
-                        <Loader2 className="w-8 h-8 text-primary animate-spin" />
-                        <p className="text-muted font-medium text-sm">Carregando cartões de mapa S-12-T...</p>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4 font-sans" role="status" aria-busy="true">
+                        <span className="sr-only">Carregando...</span>
+                        {Array.from({ length: 4 }).map((_, idx) => (
+                            <div key={idx} className="bg-surface border border-surface-border rounded-xl p-6 space-y-4">
+                                <div className="flex items-center justify-between">
+                                    <Skeleton className="h-5 w-40" />
+                                    <Skeleton className="h-4 w-16" />
+                                </div>
+                                <Skeleton className="h-3 w-32" />
+                                <Skeleton className="h-44 w-full rounded-lg" />
+                            </div>
+                        ))}
                     </div>
                 ) : filteredTerritories.length === 0 ? (
                     <div className="text-center py-20 bg-surface border border-surface-border rounded-2xl shadow-sm font-sans">

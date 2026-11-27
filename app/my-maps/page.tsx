@@ -3,23 +3,7 @@
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { useAuth } from '@/app/context/AuthContext';
-import {
-    Loader2,
-    Search,
-    Building2,
-    ArrowRight,
-    Pencil,
-    Trash2,
-    X,
-    LogOut,
-    Check,
-    Map,
-    MoreVertical
-} from 'lucide-react';
-import BottomNav from '@/app/components/BottomNav';
-import Link from 'next/link';
-import { toast } from 'sonner';
-import ConfirmationModal from '@/app/components/ConfirmationModal';
+import { ListPageSkeleton } from '@/app/components/Skeleton';
 
 interface Congregation {
     id: string;
@@ -59,14 +43,6 @@ export default function CongregationListPage() {
         }
     }, [user, authLoading, congregationId, isAdminRoleGlobal, canManageMaps, router]);
 
-    return (
-        <div className="bg-background min-h-screen pb-32 font-sans flex items-center justify-center">
-            <div className="flex flex-col items-center gap-4 opacity-50">
-                <Loader2 className="w-10 h-10 animate-spin text-primary" />
-                <p className="text-sm font-bold text-muted uppercase tracking-widest">Redirecionando...</p>
-            </div>
-            <BottomNav />
-        </div>
-    );
+    return <ListPageSkeleton surfaceList={true} rightActions={2} />;
 }
 

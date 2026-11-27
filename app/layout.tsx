@@ -5,6 +5,7 @@ import Script from 'next/script'
 import { AuthProvider } from './context/AuthContext';
 import { ThemeProvider } from './context/ThemeContext';
 import { AppIconProvider } from './context/AppIconContext';
+import { I18nProvider } from './context/I18nContext';
 // import FCMManager from './components/FCMManager'; // Removed
 import FloatingReportButton from './components/FloatingReportButton';
 import CookieBanner from './components/CookieBanner';
@@ -158,23 +159,25 @@ export default function RootLayout({
       </head>
       <body className={`${inter.className} min-h-screen flex flex-col`} suppressHydrationWarning={true}>
         <AppIconProvider>
-          <AuthProvider>
-            <ThemeProvider>
-              <PreviewIndicator />
-              {/* <FCMManager /> Removed */}
-              <FloatingReportButton />
-              <CookieBanner />
-              <Toaster richColors position="top-center" />
-              <main className="app-shell flex-1 relative">
-                {children}
-              </main>
-              <footer className="py-4 text-center print:hidden">
-                <p className="text-[10px] text-gray-400 font-mono opacity-60">
-                  v{appVersion}
-                </p>
-              </footer>
-            </ThemeProvider>
-          </AuthProvider>
+          <I18nProvider>
+            <AuthProvider>
+              <ThemeProvider>
+                <PreviewIndicator />
+                {/* <FCMManager /> Removed */}
+                <FloatingReportButton />
+                <CookieBanner />
+                <Toaster richColors position="top-center" />
+                <main className="app-shell flex-1 relative">
+                  {children}
+                </main>
+                <footer className="py-4 text-center print:hidden">
+                  <p className="text-[10px] text-gray-400 font-mono opacity-60">
+                    v{appVersion}
+                  </p>
+                </footer>
+              </ThemeProvider>
+            </AuthProvider>
+          </I18nProvider>
         </AppIconProvider>
       </body>
     </html>

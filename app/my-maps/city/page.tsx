@@ -3,6 +3,7 @@
 import { useState, useEffect, Suspense } from 'react';
 import { toast } from 'sonner';
 import RoleBasedSwitcher from '@/app/components/RoleBasedSwitcher';
+import { ListPageSkeleton, Skeleton } from '@/app/components/Skeleton';
 import {
     Plus,
     Link as LinkIcon,
@@ -24,9 +25,7 @@ import {
     AlertCircle
 } from 'lucide-react';
 import MapView from '@/app/components/MapView';
-// TODO(mutations): migrate to mutation layer - legacy module (admin/report/dashboard)
-// eslint-disable-next-line no-restricted-imports
-import { geocodeAddress } from '@/lib/services/geocoding';
+import { geocodeAddress, resolveCityCenterCoordinates } from '@/lib/contracts/queries/geocodingQueries';
 // TODO(mutations): migrate to mutation layer - legacy module (admin/report/dashboard)
 // eslint-disable-next-line no-restricted-imports
 import { getCityStats } from '@/lib/services/stats';
@@ -36,7 +35,6 @@ import { createCity, updateCity, deleteCity } from '@/lib/services/cities';
 import CongregationSelector from '@/app/components/CongregationSelector';
 import BottomNav from '@/app/components/BottomNav';
 import ConfirmationModal from '@/app/components/ConfirmationModal';
-import { resolveCityCenterCoordinates } from '@/lib/services/geocoding';
 import { db } from '@/lib/firebase';
 import {
     collection,
@@ -432,11 +430,7 @@ function CityListContent() {
     );
 
     if (authLoading || loading) {
-        return (
-            <div className="min-h-screen flex items-center justify-center bg-background">
-                <Loader2 className="w-10 h-10 text-primary animate-spin" />
-            </div>
-        );
+        return <ListPageSkeleton surfaceList={true} rightActions={2} />;
     }
 
     // Role Guard: Only authorized users can see this page
@@ -557,8 +551,17 @@ function CityListContent() {
 
                     <main className="px-6 py-4">
                         {loading ? (
-                            <div className="flex justify-center p-8">
-                                <Loader2 className="w-8 h-8 animate-spin text-primary" />
+                            <div className="grid grid-cols-1 lg:grid-cols-2 2xl:grid-cols-3 gap-4" role="status" aria-busy="true">
+                                <span className="sr-only">Carregando...</span>
+                                {Array.from({ length: 4 }).map((_, idx) => (
+                                    <div key={idx} className="bg-background rounded-lg p-4 border border-surface-border flex items-center gap-4">
+                                        <Skeleton className="w-10 h-10 rounded-lg shrink-0" />
+                                        <div className="space-y-2 flex-1">
+                                            <Skeleton className="h-4 w-3/5" />
+                                            <Skeleton className="h-3 w-2/5" />
+                                        </div>
+                                    </div>
+                                ))}
                             </div>
                         ) : filteredCities.length === 0 ? (
                             <div className="text-center py-12 opacity-50">
@@ -1114,11 +1117,7 @@ function CityListContent() {
 
 export default function CityListPage() {
     return (
-        <Suspense fallback={
-            <div className="min-h-screen flex items-center justify-center bg-background">
-                <Loader2 className="w-8 h-8 animate-spin text-primary" />
-            </div>
-        }>
+        <Suspense fallback={<ListPageSkeleton surfaceList={true} rightActions={2} />}>
             <CityListContent />
         </Suspense>
     );

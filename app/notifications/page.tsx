@@ -16,6 +16,7 @@ import { db } from "@/lib/firebase";
 import { ArrowLeft } from "lucide-react";
 import { useRouter } from 'next/navigation';
 import ActionCenter, { IdleTerritory, DoNotVisitAddress } from "@/app/components/Dashboard/ActionCenter";
+import { ActionCenterSkeleton, NotificationsPageSkeleton } from "@/app/components/Skeleton";
 
 export default function NotificationsPage() {
     const { user, role, isElder, isServant, congregationId, loading, profileName } = useAuth();
@@ -27,11 +28,18 @@ export default function NotificationsPage() {
     const [doNotVisitAddresses, setDoNotVisitAddresses] = useState<DoNotVisitAddress[]>([]);
     const [cityCompletion, setCityCompletion] = useState<{ cityName: string; percentage: number } | undefined>();
     const [expiringMaps, setExpiringMaps] = useState<{ id: string, title: string, daysLeft: number }[]>([]);
+    const [assignmentsLoading, setAssignmentsLoading] = useState(true);
+    const [congregationDataLoading, setCongregationDataLoading] = useState(true);
 
     // 1. Fetch User Assignments (Pending & Expiring)
     useEffect(() => {
-        if (!user) return;
+        if (loading) return;
+        if (!user) {
+            setAssignmentsLoading(false);
+            return;
+        }
         const fetchAssignments = async () => {
+            setAssignmentsLoading(true);
             try {
                 const listsRef = collection(db, 'shared_lists');
                 const q = query(
@@ -65,16 +73,25 @@ export default function NotificationsPage() {
                     };
                 });
                 setExpiringMaps(expiring);
-            } catch (e) { console.error(e); }
+            } catch (e) {
+                console.error(e);
+            } finally {
+                setAssignmentsLoading(false);
+            }
         };
         fetchAssignments();
-    }, [user]);
+    }, [user, loading]);
 
     // 2. Fetch Idle Territories & Stats (Simplified for notifications)
     useEffect(() => {
-        if (!congregationId) return; // Always require congregationId now
+        if (loading) return;
+        if (!congregationId || !(isElder || isServant || role === 'ADMIN')) {
+            setCongregationDataLoading(false);
+            return;
+        }
 
         const fetchIdleAndCompletion = async () => {
+            setCongregationDataLoading(true);
             try {
                 // Fetch Territories - restricted to congregation
                 const terrRef = collection(db, 'territories');
@@ -227,19 +244,19 @@ export default function NotificationsPage() {
                 setDoNotVisitAddresses(dnvList);
             } catch (e) {
                 console.error(e);
+            } finally {
+                setCongregationDataLoading(false);
             }
         };
 
-        if (isElder || isServant || role === 'ADMIN') {
-            fetchIdleAndCompletion();
-        }
-    }, [congregationId, role, isElder, isServant]);
+        fetchIdleAndCompletion();
+    }, [congregationId, role, isElder, isServant, loading]);
 
     const handleQuickAssign = async (territory: IdleTerritory) => {
         router.push(`/share-setup?ids=${territory.id}&returnUrl=/notifications`);
     };
 
-    if (loading) return null;
+    if (loading) return <NotificationsPageSkeleton />;
 
     return (
         <div className="bg-background min-h-screen pb-24 font-sans text-main">
@@ -254,29 +271,33 @@ export default function NotificationsPage() {
             </header>
 
             <main className="px-6 py-6 max-w-xl mx-auto">
-                <ActionCenter
-                    userName={profileName || 'Publicador'}
-                    pendingMapsCount={pendingMapsCount}
-                    hasPendingAnnotation={false}
-                    doNotVisitAddresses={isElder || isServant || role === 'ADMIN' ? doNotVisitAddresses : []}
-                    idleTerritories={isElder || isServant || role === 'ADMIN' ? idleTerritories : []}
-                    cityCompletion={cityCompletion}
-                    expiringMaps={expiringMaps}
-                    onAssignTerritory={handleQuickAssign}
-                    onReviewDoNotVisit={(addr) => {
-                        if (addr.territoryId) {
-                            const params = new URLSearchParams();
-                            if (addr.congregationId) params.set('congregationId', addr.congregationId);
-                            if (addr.cityId) params.set('cityId', addr.cityId);
-                            params.set('territoryId', addr.territoryId);
-                            params.set('highlight', addr.id);
-                            router.push(`/my-maps/address?${params.toString()}`);
-                        } else {
-                            router.push('/my-maps');
-                        }
-                    }}
-                // No limit here
-                />
+                {assignmentsLoading || congregationDataLoading ? (
+                    <ActionCenterSkeleton cards={5} />
+                ) : (
+                    <ActionCenter
+                        userName={profileName || 'Publicador'}
+                        pendingMapsCount={pendingMapsCount}
+                        hasPendingAnnotation={false}
+                        doNotVisitAddresses={isElder || isServant || role === 'ADMIN' ? doNotVisitAddresses : []}
+                        idleTerritories={isElder || isServant || role === 'ADMIN' ? idleTerritories : []}
+                        cityCompletion={cityCompletion}
+                        expiringMaps={expiringMaps}
+                        onAssignTerritory={handleQuickAssign}
+                        onReviewDoNotVisit={(addr) => {
+                            if (addr.territoryId) {
+                                const params = new URLSearchParams();
+                                if (addr.congregationId) params.set('congregationId', addr.congregationId);
+                                if (addr.cityId) params.set('cityId', addr.cityId);
+                                params.set('territoryId', addr.territoryId);
+                                params.set('highlight', addr.id);
+                                router.push(`/my-maps/address?${params.toString()}`);
+                            } else {
+                                router.push('/my-maps');
+                            }
+                        }}
+                    // No limit here
+                    />
+                )}
             </main>
         </div>
     );

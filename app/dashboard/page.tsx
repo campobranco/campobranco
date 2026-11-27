@@ -23,6 +23,8 @@ import {
     updateDoc
 } from "firebase/firestore";
 import { db } from "@/lib/firebase";
+import { Capacitor } from "@capacitor/core";
+import { getAppBaseUrl } from "@/lib/config";
 import { useAppIcon } from "@/app/context/AppIconContext";
 import {
     User,
@@ -53,6 +55,7 @@ import ActionCenter, { DoNotVisitAddress } from "@/app/components/Dashboard/Acti
 import VisitsHistory from "@/app/components/Dashboard/VisitsHistory";
 import ConfirmationModal from "@/app/components/ConfirmationModal";
 import DropDownItem from "@/app/components/DropDownItem";
+import { ActionCenterSkeleton, DashboardSkeleton, Skeleton } from "@/app/components/Skeleton";
 
 // --- UTILS ---
 
@@ -69,6 +72,8 @@ export default function DashboardPage() {
     const [sharedHistory, setSharedHistory] = useState<any[]>([]);
     const [myAssignments, setMyAssignments] = useState<any[]>([]);
     const [historyLoading, setHistoryLoading] = useState(false);
+    const [assignmentsLoading, setAssignmentsLoading] = useState(true);
+    const [statsLoading, setStatsLoading] = useState(true);
     const [hasError, setHasError] = useState(false);
     const [stats, setStats] = useState({
         congregations: 0,
@@ -138,9 +143,13 @@ export default function DashboardPage() {
     }, [loading, user, isServant, can, congregationId]);
 
     useEffect(() => {
-        if (!user) return;
+        if (loading) return;
+        if (!user || (!congregationId && role !== 'ADMIN')) {
+            setAssignmentsLoading(false);
+            return;
+        }
         const fetchMyAssignments = async () => {
-            if (!user || (!congregationId && role !== 'ADMIN')) return;
+            setAssignmentsLoading(true);
             try {
                 const userId = user.uid;
                 const q = query(
@@ -181,10 +190,12 @@ export default function DashboardPage() {
                 setPendingMapsCount(processedLists.length);
             } catch (e) {
                 console.error("Error fetching my assignments:", e);
+            } finally {
+                setAssignmentsLoading(false);
             }
         };
         fetchMyAssignments();
-    }, [user, isAdminRoleGlobal, congregationId, role]);
+    }, [user, isAdminRoleGlobal, congregationId, role, loading]);
 
     useEffect(() => {
         const handleClickOutside = () => setOpenMenuId(null);
@@ -253,6 +264,7 @@ export default function DashboardPage() {
     useEffect(() => {
         if (!congregationId && role !== 'ADMIN') return;
         const fetchStats = async () => {
+            setStatsLoading(true);
             try {
                 const targetCong = congregationId;
                 const citiesRef = collection(db, 'cities');
@@ -369,25 +381,37 @@ export default function DashboardPage() {
                     revisits: 0, pubs: 0, coverage: validTerritories.length > 0 ? Math.floor((coveredCount / validTerritories.length) * 100) : 0
                 });
                 if (coveredCount >= validTerritories.length && validTerritories.length > 0) setCityCompletion({ cityName: "Território Completo", percentage: 100 });
-            } catch (e) { console.error("Stats error:", e); }
+            } catch (e) {
+                console.error("Stats error:", e);
+            } finally {
+                setStatsLoading(false);
+            }
         };
         if (loading) return;
-        if (!congregationId && role !== 'ADMIN') return;
+        if (!congregationId && role !== 'ADMIN') {
+            setStatsLoading(false);
+            return;
+        }
         fetchStats();
         fetchSharedHistory();
     }, [congregationId, role, isElder, isServant, user?.uid, loading, fetchSharedHistory]);
 
     const handleCopyLink = async (id: string) => {
-        try { await navigator.clipboard.writeText((process.env.NEXT_PUBLIC_APP_URL || window.location.origin) + "/share?id=" + id); toast.success("Link copiado!"); }
+        try { await navigator.clipboard.writeText(`${getAppBaseUrl(Capacitor.isNativePlatform())}/share?id=${id}`); toast.success("Link copiado!"); }
         catch (err) { toast.error("Erro ao copiar."); }
     };
 
     const handleShareLink = async (id: string, title?: string) => {
-        const url = (process.env.NEXT_PUBLIC_APP_URL || window.location.origin) + "/share?id=" + id;
-        if (navigator.share) {
-            try { await navigator.share({ title: title || 'Campo Branco', text: 'Acesse o cartão:', url }); }
-            catch (err) { if ((err as Error).name !== 'AbortError') console.error(err); }
-        } else handleCopyLink(id);
+        try {
+            const url = `${getAppBaseUrl(Capacitor.isNativePlatform())}/share?id=${id}`;
+            if (navigator.share) {
+                try { await navigator.share({ title: title || 'Campo Branco', text: 'Acesse o cartão:', url }); }
+                catch (err) { if ((err as Error).name !== 'AbortError') console.error(err); }
+            } else handleCopyLink(id);
+        } catch (err) {
+            console.error(err);
+            toast.error("Erro ao gerar link.");
+        }
     };
 
     const handleDeleteShare = async (id: string) => {
@@ -434,7 +458,7 @@ export default function DashboardPage() {
         }
     };
 
-    const SharedHistoryListComponent = ({ title, items, icon: Icon = HistoryIcon }: { title: string, items: any[], icon?: any }) => {
+    const SharedHistoryListComponent = ({ title, items, icon: Icon = HistoryIcon, isLoading = false }: { title: string, items: any[], icon?: any, isLoading?: boolean }) => {
         const isMine = title === 'Meus Cartões';
         const limit = 4;
         const visibleItems = items.slice(0, limit);
@@ -450,7 +474,14 @@ export default function DashboardPage() {
                     )}
                 </div>
                 <div className="space-y-3">
-                    {items.length === 0 ? (
+                    {isLoading ? (
+                        Array.from({ length: 2 }).map((_, idx) => (
+                            <div key={idx} className="p-4 rounded-lg bg-background border border-surface-border space-y-2">
+                                <Skeleton className="h-4 w-2/3" />
+                                <Skeleton className="h-3 w-1/3" />
+                            </div>
+                        ))
+                    ) : items.length === 0 ? (
                         <div className="py-12 text-center border-2 border-dashed border-surface-border rounded-xl bg-background/50">
                             <Icon className="w-8 h-8 text-muted/30 mx-auto mb-3" />
                             <p className="text-xs font-bold text-muted uppercase tracking-widest">Nenhum cartão encontrado</p>
@@ -532,7 +563,7 @@ export default function DashboardPage() {
 
     const { appIconSrc } = useAppIcon();
 
-    if (loading) return null;
+    if (loading) return <DashboardSkeleton />;
 
     return (
         <div className="bg-background min-h-screen pb-24 font-sans text-main">
@@ -602,38 +633,42 @@ export default function DashboardPage() {
                 <section className="space-y-6">
                     <div className="flex items-center gap-2 px-1"><div className="w-1 h-6 bg-primary rounded-full" /><h2 className="text-lg font-bold text-main uppercase text-[12px]">Ministério</h2></div>
                     {(isElder || isServant || role === 'ADMIN') && (
-                        <ActionCenter
-                            userName={profileName || user?.displayName || user?.email || 'Publicador'}
-                            pendingMapsCount={pendingMapsCount}
-                            hasPendingAnnotation={false}
-                            doNotVisitAddresses={doNotVisitAddresses}
-                            idleTerritories={idleTerritories}
-                            cityCompletion={cityCompletion}
-                            expiringMaps={expiringMaps}
-                            onAssignTerritory={(t) => router.push(`/share-setup?ids=${t.id}&returnUrl=/dashboard`)}
-                            onReviewDoNotVisit={(addr) => {
-                                if (addr.territoryId) {
-                                    const params = new URLSearchParams();
-                                    if (addr.congregationId) params.set('congregationId', addr.congregationId);
-                                    if (addr.cityId) params.set('cityId', addr.cityId);
-                                    params.set('territoryId', addr.territoryId);
-                                    params.set('highlight', addr.id);
-                                    router.push(`/my-maps/address?${params.toString()}`);
-                                } else {
-                                    router.push('/my-maps');
-                                }
-                            }}
-                            limit={4}
-                        />
+                        statsLoading || assignmentsLoading ? (
+                            <ActionCenterSkeleton cards={2} showViewAll={true} />
+                        ) : (
+                            <ActionCenter
+                                userName={profileName || user?.displayName || user?.email || 'Publicador'}
+                                pendingMapsCount={pendingMapsCount}
+                                hasPendingAnnotation={false}
+                                doNotVisitAddresses={doNotVisitAddresses}
+                                idleTerritories={idleTerritories}
+                                cityCompletion={cityCompletion}
+                                expiringMaps={expiringMaps}
+                                onAssignTerritory={(t) => router.push(`/share-setup?ids=${t.id}&returnUrl=/dashboard`)}
+                                onReviewDoNotVisit={(addr) => {
+                                    if (addr.territoryId) {
+                                        const params = new URLSearchParams();
+                                        if (addr.congregationId) params.set('congregationId', addr.congregationId);
+                                        if (addr.cityId) params.set('cityId', addr.cityId);
+                                        params.set('territoryId', addr.territoryId);
+                                        params.set('highlight', addr.id);
+                                        router.push(`/my-maps/address?${params.toString()}`);
+                                    } else {
+                                        router.push('/my-maps');
+                                    }
+                                }}
+                                limit={4}
+                            />
+                        )
                     )}
-                    <SharedHistoryListComponent title="Meus Cartões" items={myAssignments} icon={User} />
+                    <SharedHistoryListComponent title="Meus Cartões" items={myAssignments} icon={User} isLoading={assignmentsLoading} />
                     <VisitsHistory scope="mine" />
                 </section>
 
                 {(isElder || isServant || role === 'ADMIN') && (
                     <section className="space-y-6">
                         <div className="flex items-center gap-2 px-1"><div className="w-1 h-6 bg-purple-600 rounded-full" /><h2 className="text-lg font-bold text-main uppercase text-[12px]">Gestão de Territórios</h2></div>
-                        <SharedHistoryListComponent title="Cartões Enviados" items={sharedHistory.filter(l => l.status !== 'completed' || isElder || isServant).slice(0, 15)} />
+                        <SharedHistoryListComponent title="Cartões Enviados" items={sharedHistory.filter(l => l.status !== 'completed' || isElder || isServant).slice(0, 15)} isLoading={historyLoading} />
                         <VisitsHistory scope="all" />
                     </section>
                 )}

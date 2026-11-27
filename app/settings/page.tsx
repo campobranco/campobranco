@@ -4,6 +4,7 @@ import { useEffect, useState } from 'react';
 import Image from 'next/image';
 
 import { useAuth } from '@/app/context/AuthContext';
+import { SettingsSkeleton } from '@/app/components/Skeleton';
 import { useRouter } from 'next/navigation';
 import { updateProfile, deleteUser } from 'firebase/auth';
 import {
@@ -25,6 +26,7 @@ import {
     addDoc
 } from 'firebase/firestore';
 import { db, auth, storage } from '@/lib/firebase';
+import { getAppBaseUrl } from '@/lib/config';
 import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
 import {
     LogOut,
@@ -64,10 +66,13 @@ import {
     Key,
     Store,
     Terminal,
+    Globe,
 } from 'lucide-react';
 import Link from 'next/link';
 // import NotificationToggle from '@/app/components/NotificationToggle'; // Removed
 import { useTheme, ThemeMode } from '@/app/context/ThemeContext';
+import { useTranslation } from '@/app/context/I18nContext';
+import { LOCALE_LABELS, Locale } from '@/lib/i18n';
 import { toast } from 'sonner';
 import { Capacitor } from '@capacitor/core';
 
@@ -75,6 +80,7 @@ import BottomNav from '@/app/components/BottomNav';
 import { APP_VERSION } from '@/lib/version';
 
 import ConfirmationModal from '@/app/components/ConfirmationModal';
+import LanguagePickerModal from '@/app/components/LanguagePickerModal';
 
 
 export default function SettingsPage() {
@@ -95,6 +101,14 @@ export default function SettingsPage() {
     } = useAuth();
     const router = useRouter();
     const { textSize, displayScale, themeMode, updatePreferences } = useTheme();
+    const { locale, setLocale, t } = useTranslation();
+    const [isLanguageModalOpen, setIsLanguageModalOpen] = useState(false);
+
+    const changeLanguage = (nextLocale: Locale) => {
+        if (nextLocale === locale) return;
+        setLocale(nextLocale);
+        toast.success(t('settings.language.updatedToast', { language: LOCALE_LABELS[nextLocale] }));
+    };
 
     const changeTextSize = (delta: number) => {
         const newSize = Math.max(12, Math.min(24, textSize + delta));
@@ -546,7 +560,7 @@ const [uploading, setUploading] = useState(false);
 
                             if (token) {
                                 setInviteToken(token);
-                                const baseUrl = Capacitor.isNativePlatform() ? (process.env.NEXT_PUBLIC_APP_URL || window.location.origin) : window.location.origin;
+                                const baseUrl = getAppBaseUrl(Capacitor.isNativePlatform());
                                 setInviteLink(`${baseUrl}/invite?token=${token}`);
                             } else if (canInviteMembers) {
                                  setInviteLink(`Erro ao carregar link. Contate o suporte: ${process.env.NEXT_PUBLIC_SUPPORT_EMAIL || process.env.NEXT_PUBLIC_MASTER_EMAIL}`);
@@ -614,7 +628,7 @@ const [uploading, setUploading] = useState(false);
                     });
 
                     setInviteToken(newToken);
-                    const baseUrl = Capacitor.isNativePlatform() ? (process.env.NEXT_PUBLIC_APP_URL || window.location.origin) : window.location.origin;
+                    const baseUrl = getAppBaseUrl(Capacitor.isNativePlatform());
                     setInviteLink(`${baseUrl}/invite?token=${newToken}`);
                     toast.success("Novo link gerado com sucesso!");
                 } catch (e) {
@@ -762,11 +776,7 @@ const [uploading, setUploading] = useState(false);
     }, [user, loading, router]);
 
     if (loading || !user) {
-        return (
-            <div className="min-h-screen flex items-center justify-center bg-background">
-                <Loader2 className="w-10 h-10 text-primary animate-spin" />
-            </div>
-        );
+        return <SettingsSkeleton />;
     }
 
     return (
@@ -856,7 +866,7 @@ const [uploading, setUploading] = useState(false);
 
                 {/* Appearance Settings */}
                 <section className="space-y-4">
-                    <h2 className="text-sm font-bold text-muted uppercase tracking-widest pl-1">Aparência</h2>
+                    <h2 className="text-sm font-bold text-muted uppercase tracking-widest pl-1">{t('settings.appearance.title')}</h2>
                     <div className="bg-surface p-6 rounded-lg shadow-sm border border-surface-border space-y-6">
 
                         {/* Theme Selection */}
@@ -908,6 +918,36 @@ const [uploading, setUploading] = useState(false);
                                 </button>
                             </div>
                         </div>
+
+                        <hr className="border-surface-border" />
+
+                        {/* Language Selector */}
+                        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+                            <div className="flex items-center gap-4">
+                                <div className="p-3 bg-primary-light/50 text-primary dark:bg-primary-dark/30 dark:text-primary-light rounded-xl">
+                                    <Globe className="w-6 h-6" />
+                                </div>
+                                <div>
+                                    <h3 className="font-bold text-main">{t('settings.language.title')}</h3>
+                                    <p className="text-sm text-muted">{t('settings.language.description')}</p>
+                                </div>
+                            </div>
+                            <button
+                                type="button"
+                                onClick={() => setIsLanguageModalOpen(true)}
+                                aria-haspopup="dialog"
+                                aria-label={`${t('settings.language.label')}: ${LOCALE_LABELS[locale]}`}
+                                className="flex items-center gap-2 bg-background hover:bg-surface border border-surface-border px-4 py-2 rounded-xl text-sm font-bold text-main transition-all self-end sm:self-auto"
+                            >
+                                <span>{LOCALE_LABELS[locale]}</span>
+                                <ChevronDown className="w-4 h-4 text-muted" />
+                            </button>
+                        </div>
+                        <LanguagePickerModal
+                            isOpen={isLanguageModalOpen}
+                            onClose={() => setIsLanguageModalOpen(false)}
+                            onSelect={changeLanguage}
+                        />
 
                         <hr className="border-surface-border" />
 

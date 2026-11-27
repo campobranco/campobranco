@@ -28,6 +28,28 @@ export const APP_CONFIG = {
     description: process.env.NEXT_PUBLIC_APP_DESCRIPTION || 'Gestão de Territórios',
     version: APP_VERSION,
     url: process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000',
-    supportEmail: process.env.NEXT_PUBLIC_SUPPORT_EMAIL || '',
+    supportEmail: process.env.NEXT_PUBLIC_SUPPORT_EMAIL || process.env.NEXT_PUBLIC_MASTER_EMAIL || '',
 };
+
+/**
+ * Retorna a URL base para links compartilháveis de acordo com o ambiente (Web ou Capacitor).
+ * Remove barras finais para evitar URLs com barra dupla e falha explicitamente no nativo
+ * caso NEXT_PUBLIC_APP_URL não tenha sido injetada no build.
+ */
+export function getAppBaseUrl(isNativePlatform: boolean): string {
+    const configuredUrl = (process.env.NEXT_PUBLIC_APP_URL || '').trim().replace(/\/+$/, '');
+
+    if (isNativePlatform) {
+        if (!configuredUrl) {
+            throw new Error('NEXT_PUBLIC_APP_URL não está configurada para o aplicativo nativo.');
+        }
+        return configuredUrl;
+    }
+
+    if (typeof window !== 'undefined' && window.location?.origin) {
+        return window.location.origin.replace(/\/+$/, '');
+    }
+
+    return configuredUrl;
+}
 

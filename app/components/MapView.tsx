@@ -22,7 +22,7 @@ export interface MapItem {
     fullAddress?: string;   // Endereço completo para geocodificação
     googleMapsLink?: string; // Link opcional para extrair coordenadas
     gender?: 'HOMEM' | 'MULHER' | 'CASAL';
-    variant?: 'default' | 'city' | 'numbered' | 'store';
+    variant?: 'default' | 'city' | 'numbered' | 'store' | 'existing' | 'selected';
     index?: number;         // Índice usado na variante numerada
     lastVisit?: string;     // Data formatada da última visita
     isDeaf?: boolean;
@@ -271,8 +271,8 @@ export default function MapView({ items, center = defaultCenter, zoom = 15, onGe
         const zoomChanged = prevZoomRef.current !== zoom;
 
         if (centerChanged || zoomChanged) {
-            // Só sobrescreve a visão para center se não houver marcadores válidos com fitBounds ativo
-            const hasValidMarkers = displayItems.some(i => i.lat && i.lng);
+            // Só sobrescreve a visão para center se não houver marcadores principais com fitBounds ativo
+            const hasValidMarkers = displayItems.some(i => i.lat && i.lng && i.variant !== 'existing');
             if (!hasValidMarkers) {
                 map.setView([center.lat, center.lng], zoom);
             }
@@ -298,8 +298,10 @@ export default function MapView({ items, center = defaultCenter, zoom = 15, onGe
         displayItems.forEach(item => {
             if (!item.lat || !item.lng) return; // Skip if still waiting for geocode
 
-            hasValidMarkers = true;
-            bounds.extend([item.lat, item.lng]);
+            if (item.variant !== 'existing') {
+                hasValidMarkers = true;
+                bounds.extend([item.lat, item.lng]);
+            }
 
             // Determine Style based on Status
             const statusKey = (item.status || 'LIVRE') as keyof typeof STATUS_CONFIG;
@@ -323,9 +325,17 @@ export default function MapView({ items, center = defaultCenter, zoom = 15, onGe
             // City: MapIcon. Address: item.number/index
             const isCity = item.variant === 'city';
             const isStore = item.variant === 'store';
+            const isExisting = item.variant === 'existing';
+            const isSelected = item.variant === 'selected';
             const isDoNotVisit = statusKey === 'NAO_VISITAR';
 
-            const innerContent = isDoNotVisit ? (
+            const innerContent = isSelected ? (
+                <MapPin size={20} strokeWidth={2.5} />
+            ) : isExisting ? (
+                <span className="text-[10px] font-bold leading-none tracking-tighter">
+                    {item.index ?? item.number ?? ''}
+                </span>
+            ) : isDoNotVisit ? (
                 <Hand size={18} strokeWidth={2.5} />
             ) : isCity ? (
                 <MapIcon size={18} strokeWidth={2.5} />
@@ -338,9 +348,7 @@ export default function MapView({ items, center = defaultCenter, zoom = 15, onGe
             );
 
             // Determina a cor de fundo e borda baseada no status
-            // Para cidades, sempre azul? User said: "Cidades deve mostrar a bolinha azul"
-            // Se LIVRE (Aguardando), usar Cinza? Sim, config.color resolve isso.
-            const circleColor = isCity ? '#3b82f6' : displayColor;
+            const circleColor = isSelected ? '#2563eb' : isExisting ? '#64748b' : isCity ? '#3b82f6' : displayColor;
             const borderColor = '#ffffff';
 
             // Label Content
@@ -352,11 +360,11 @@ export default function MapView({ items, center = defaultCenter, zoom = 15, onGe
             // Custom HTML Marker Construction
             // Circle with Number/Icon inside + Label Below
             const iconHtml = renderToStaticMarkup(
-                <div className={`relative flex flex-col items-center justify-center transform transition-all duration-300 hover:scale-110 hover:z-50 cursor-pointer group ${isDoNotVisit ? 'opacity-50' : 'opacity-100'}`} style={{ width: 'auto', minWidth: '40px', height: 'auto' }}>
+                <div className={`relative flex flex-col items-center justify-center transform transition-all duration-300 hover:scale-110 hover:z-50 cursor-pointer group ${isDoNotVisit ? 'opacity-50' : isExisting ? 'opacity-80' : 'opacity-100'}`} style={{ width: 'auto', minWidth: isExisting ? '28px' : '40px', height: 'auto' }}>
 
                     {/* Main Circle */}
                     <div
-                        className="w-9 h-9 rounded-full border-[3px] shadow-md flex items-center justify-center text-white mb-1 transition-colors"
+                        className={`${isExisting ? 'min-w-7 h-7 px-1 border-2 shadow-sm' : isSelected ? 'w-10 h-10 border-[3px] shadow-lg' : 'w-9 h-9 border-[3px] shadow-md'} rounded-full flex items-center justify-center text-white mb-1 transition-colors`}
                         style={{ backgroundColor: circleColor, borderColor: borderColor }}
                     >
                         {innerContent}
@@ -392,7 +400,7 @@ export default function MapView({ items, center = defaultCenter, zoom = 15, onGe
             const marker = L.marker([item.lat, item.lng], {
                 icon: displayIcon,
                 draggable: !!onMarkerDragEnd,
-                zIndexOffset: isDoNotVisit ? -1000 : 0
+                zIndexOffset: isSelected ? 1000 : isExisting ? -500 : isDoNotVisit ? -1000 : 0
             })
                 .addTo(map)
                 .on('dragend', function (event: any) {
@@ -588,7 +596,10 @@ export default function MapView({ items, center = defaultCenter, zoom = 15, onGe
             });
         }
 
-        const currentFingerprint = displayItems.map(item => `${item.id}:${item.lat}:${item.lng}`).join('|');
+        const currentFingerprint = displayItems
+            .filter(item => item.variant !== 'existing')
+            .map(item => `${item.id}:${item.lat}:${item.lng}`)
+            .join('|');
         const fingerprintChanged = prevMarkerFingerprintRef.current !== currentFingerprint;
 
         if (hasValidMarkers && fingerprintChanged) {

@@ -10,6 +10,7 @@ import { db } from '@/lib/firebase';
 // eslint-disable-next-line no-restricted-imports
 import { collection, getDocs, query, orderBy, doc, updateDoc, getDoc } from 'firebase/firestore';
 import { useAuth } from '@/app/context/AuthContext';
+import { ListPageSkeleton } from '@/app/components/Skeleton';
 import {
     Bug,
     ChevronLeft,
@@ -155,11 +156,7 @@ export default function BugReportsAdminPage() {
     });
 
     if (authLoading || (!isAdminRoleGlobal && !authLoading)) {
-        return (
-            <div className="min-h-screen flex items-center justify-center bg-background">
-                <Loader2 className="w-10 h-10 text-primary animate-spin" />
-            </div>
-        );
+        return <ListPageSkeleton showBack={true} showBottomNav={false} rightActions={0} headerMaxWidthClass="max-w-6xl mx-auto" contentMaxWidthClass="max-w-6xl mx-auto" gridClassName="grid-cols-1 lg:grid-cols-2 gap-6" cards={4} />;
     }
 
     return (

@@ -9,7 +9,8 @@ import { db } from '@/lib/firebase';
 // TODO(mutations): migrate to mutation layer - legacy module (admin/report/dashboard)
 // eslint-disable-next-line no-restricted-imports
 import { collection, query, orderBy, onSnapshot, doc, updateDoc } from 'firebase/firestore';
-import { Loader2, Bug, CheckCircle2, Clock, MapPin, Monitor } from 'lucide-react';
+import { Bug, CheckCircle2, Clock, MapPin, Monitor } from 'lucide-react';
+import { ListPageSkeleton, Skeleton } from '@/app/components/Skeleton';
 import { useAuth } from '@/app/context/AuthContext';
 import { toast } from 'sonner';
 import Link from 'next/link';
@@ -70,7 +71,7 @@ export default function AdminReportsPage() {
         }
     };
 
-    if (authLoading) return <div className="flex justify-center p-8"><Loader2 className="w-8 h-8 animate-spin" /></div>;
+    if (authLoading) return <ListPageSkeleton showSearch={false} showBottomNav={false} rightActions={1} headerMaxWidthClass="max-w-7xl mx-auto" contentMaxWidthClass="max-w-7xl mx-auto" gridClassName="grid-cols-1 gap-6" cards={3} />;
     if (!isAdminRoleGlobal) return <div className="p-8 text-center">Acesso Negado</div>;
 
     return (
@@ -89,9 +90,18 @@ export default function AdminReportsPage() {
             </header>
 
             {loading ? (
-                <div className="text-center py-24">
-                    <Loader2 className="w-12 h-12 animate-spin mx-auto text-primary" />
-                    <p className="mt-4 text-muted font-bold">Buscando relatórios no Firebase...</p>
+                <div className="grid grid-cols-1 gap-6 pb-20" role="status" aria-busy="true">
+                    <span className="sr-only">Carregando...</span>
+                    {Array.from({ length: 3 }).map((_, idx) => (
+                        <div key={idx} className="bg-surface rounded-3xl border border-surface-border p-6 md:p-8 flex flex-col md:flex-row gap-8">
+                            <Skeleton className="md:w-1/3 aspect-video rounded-2xl shrink-0" />
+                            <div className="flex-1 space-y-4">
+                                <Skeleton className="h-5 w-1/3" />
+                                <Skeleton className="h-4 w-full" />
+                                <Skeleton className="h-4 w-2/3" />
+                            </div>
+                        </div>
+                    ))}
                 </div>
             ) : reports.length === 0 ? (
                 <div className="text-center py-20 bg-surface rounded-3xl border border-dashed border-surface-border">

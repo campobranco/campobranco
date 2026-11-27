@@ -44,14 +44,20 @@ export const VALID_VISIT_STATUSES = ['none', 'contacted', 'partial', 'notContact
 
 export async function saveAddress(id: string | null, data: any) {
     try {
-        if (!data.street || !data.street.trim()) {
-            throw new Error('street (Logradouro/Rua) do endereço é obrigatório.');
-        }
-        if (data.number === undefined || data.number === null) {
-            throw new Error('number (Número) do endereço é obrigatório.');
-        }
-        if (!data.congregationId || !data.congregationId.trim()) {
-            throw new Error('congregationId é obrigatório para o endereço.');
+        if (!id) {
+            if (!data.street || !String(data.street).trim()) {
+                throw new Error('street (Logradouro/Rua) do endereço é obrigatório.');
+            }
+            if (!data.congregationId || !String(data.congregationId).trim()) {
+                throw new Error('congregationId é obrigatório para o endereço.');
+            }
+        } else {
+            if (data.street !== undefined && !String(data.street).trim()) {
+                throw new Error('street (Logradouro/Rua) do endereço é obrigatório.');
+            }
+            if (data.congregationId !== undefined && !String(data.congregationId).trim()) {
+                throw new Error('congregationId é obrigatório para o endereço.');
+            }
         }
         if (data.visitStatus && !VALID_VISIT_STATUSES.includes(data.visitStatus as any)) {
             throw new Error(`visitStatus inválido: "${data.visitStatus}". Use: ${VALID_VISIT_STATUSES.join(', ')}`);
@@ -80,8 +86,9 @@ export async function saveAddress(id: string | null, data: any) {
             });
 
             // Se o status de atividade mudou, ajusta a contagem de endereços ativos no bairro
-            if (wasActive !== isActive && data.cityId) {
-                const cityRef = doc(db, 'cities', data.cityId);
+            const effectiveCityId = data.cityId || oldData.cityId;
+            if (wasActive !== isActive && effectiveCityId) {
+                const cityRef = doc(db, 'cities', effectiveCityId);
                 batch.set(cityRef, {
                     stats: {
                         totalAddresses: increment(isActive ? 1 : -1)
@@ -127,13 +134,15 @@ export async function saveAddress(id: string | null, data: any) {
 
             const diffText = changes.length > 0 ? changes.join(' | ') : 'Nenhuma alteração de valor detectada';
 
+            const formattedAddress = [data.street || oldData.street, data.number || oldData.number].filter(Boolean).join(', ');
+
             logActivity({
                 level: 'SUCCESS',
                 category: 'TERRITORY',
                 action: 'ADDRESS_UPDATE',
-                message: `ADDRESS_UPDATE: Endereço "${data.street || oldData.street || ''}, ${data.number || oldData.number || ''}" atualizado`,
+                message: `ADDRESS_UPDATE: Endereço "${formattedAddress}" atualizado`,
                 congregationId: data.congregationId || oldData.congregationId,
-                details: `Alterações: [${diffText}] | CityID: ${data.cityId || oldData.cityId || ''}`
+                details: `Alterações: [${diffText}] | CityID: ${effectiveCityId || ''}`
             });
 
             return { success: true, id };
@@ -162,11 +171,13 @@ export async function saveAddress(id: string | null, data: any) {
 
             await batch.commit();
 
+            const formattedAddress = [data.street, data.number].filter(Boolean).join(', ');
+
             logActivity({
                 level: 'SUCCESS',
                 category: 'TERRITORY',
                 action: 'ADDRESS_CREATE',
-                message: `ADDRESS_CREATE: Adicionado novo endereço "${data.street || ''}, ${data.number || ''}"`,
+                message: `ADDRESS_CREATE: Adicionado novo endereço "${formattedAddress}"`,
                 congregationId: data.congregationId,
                 details: `CityID: ${data.cityId || ''} | Bairro: ${data.neighborhood || ''}`
             });
@@ -207,11 +218,13 @@ export async function deleteAddress(id: string) {
 
         await batch.commit();
 
+        const formattedAddress = [addrData.street, addrData.number].filter(Boolean).join(', ');
+
         logActivity({
             level: 'WARN',
             category: 'TERRITORY',
             action: 'ADDRESS_DELETE',
-            message: `ADDRESS_DELETE: Endereço "${addrData.street || ''}, ${addrData.number || ''}" excluído`,
+            message: `ADDRESS_DELETE: Endereço "${formattedAddress}" excluído`,
             congregationId: addrData.congregationId,
             details: `ID: ${id} | CityID: ${cityId || ''}`
         });

@@ -34,6 +34,7 @@ import Link from "next/link";
 import { toast } from "sonner";
 import ConfirmationModal from "@/app/components/ConfirmationModal";
 import DropDownItem from "@/app/components/DropDownItem";
+import { VisitsHistoryCardSkeleton } from "@/app/components/Skeleton";
 export default function VisitsHistory({ scope = 'all', showViewAll = true }: { scope?: 'mine' | 'all', showViewAll?: boolean }) {
     const { user, congregationId, role, isElder, isServant, profileName, loading: authLoading, congregationType } = useAuth();
     const [visits, setVisits] = useState<any[]>([]);
@@ -287,11 +288,7 @@ export default function VisitsHistory({ scope = 'all', showViewAll = true }: { s
         }
     };
 
-    if (loading) return (
-        <div className="bg-surface p-6 rounded-lg shadow-sm border border-surface-border h-40 flex items-center justify-center">
-            <Loader2 className="w-6 h-6 animate-spin text-primary" />
-        </div>
-    );
+    if (loading) return <VisitsHistoryCardSkeleton />;
 
     if (hasError) return (
         <div className="bg-surface p-6 rounded-lg shadow-sm border border-surface-border h-46 flex flex-col items-center justify-center text-center">

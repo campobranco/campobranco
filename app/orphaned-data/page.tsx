@@ -10,6 +10,7 @@ import { collection, getDocs, query, where, doc, getDoc, updateDoc } from 'fireb
 import { useAuth } from '@/app/context/AuthContext';
 import { useRouter } from 'next/navigation';
 import { ArrowLeft, Database, Trash2, Link as LinkIcon, AlertTriangle, Check, Loader2, Pencil } from 'lucide-react';
+import { ListPageSkeleton, Skeleton } from '@/app/components/Skeleton';
 import Link from 'next/link';
 import { toast } from 'sonner';
 import BottomNav from '@/app/components/BottomNav';
@@ -443,7 +444,8 @@ export default function OrphanedDataPage() {
         });
     };
 
-    if (authLoading || !isAdminRoleGlobal) return null;
+    if (authLoading) return <ListPageSkeleton showSearch={false} showBack={true} showBottomNav={false} rightActions={0} contentMaxWidthClass="max-w-2xl mx-auto" gridClassName="grid-cols-1 gap-3" cards={4} />;
+    if (!isAdminRoleGlobal) return null;
 
     return (
         <div className="min-h-screen bg-background pb-10 font-sans text-main">
@@ -462,8 +464,14 @@ export default function OrphanedDataPage() {
 
             <main className="px-6 py-8 max-w-2xl mx-auto">
                 {loading ? (
-                    <div className="flex justify-center py-10">
-                        <Loader2 className="w-8 h-8 text-primary animate-spin" />
+                    <div className="space-y-3" role="status" aria-busy="true">
+                        <span className="sr-only">Carregando...</span>
+                        {Array.from({ length: 4 }).map((_, idx) => (
+                            <div key={idx} className="bg-surface rounded-lg p-4 border border-surface-border space-y-2">
+                                <Skeleton className="h-4 w-1/2" />
+                                <Skeleton className="h-3 w-1/3" />
+                            </div>
+                        ))}
                     </div>
                 ) : orphans.length === 0 ? (
                     <div className="text-center py-20 bg-surface rounded-xl border-2 border-dashed border-surface-border">

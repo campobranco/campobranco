@@ -31,6 +31,7 @@ import { db } from "@/lib/firebase";
 import { collection, query, where, getDocs } from "firebase/firestore";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
+import { ReportsContentSkeleton } from "@/app/components/Skeleton";
 // TODO(mutations): migrate to mutation layer - legacy module (admin/report/dashboard)
 // eslint-disable-next-line no-restricted-imports
 import { getRegistryData } from "@/lib/services/reports";
@@ -427,10 +428,7 @@ export default function ReportsPage() {
                 )}
 
                 {loading ? (
-                    <div className="flex flex-col items-center justify-center py-20 gap-4">
-                        <div className="w-10 h-10 border-4 border-primary border-t-transparent rounded-full animate-spin"></div>
-                        <p className="text-muted font-bold text-sm animate-pulse uppercase tracking-widest">Calculando Métricas...</p>
-                    </div>
+                    <ReportsContentSkeleton />
                 ) : (
                     <>
                         {/* KPI Cards Row */}

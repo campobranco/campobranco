@@ -32,6 +32,7 @@ import { useRouter } from 'next/navigation';
 import { toast } from 'sonner';
 import BottomNav from '@/app/components/BottomNav';
 import ConfirmationModal from '@/app/components/ConfirmationModal';
+import { ListPageSkeleton, Skeleton } from '@/app/components/Skeleton';
 // TODO(mutations): migrate to mutation layer - legacy module (admin/report/dashboard)
 // eslint-disable-next-line no-restricted-imports
 import { getCongregations, saveCongregation, deleteCongregation, migrateCongregation } from '@/lib/services/admin';
@@ -264,7 +265,7 @@ export default function CongregationsPage() {
         return matchesSearch && matchesCategory;
     });
 
-    if (authLoading) return <div className="h-screen flex items-center justify-center"><Loader2 className="animate-spin text-primary" /></div>;
+    if (authLoading) return <ListPageSkeleton showBack={true} showBottomNav={true} rightActions={1} headerMaxWidthClass="max-w-5xl mx-auto" contentMaxWidthClass="max-w-5xl mx-auto" cards={6} />;
 
     return (
         <div className="min-h-screen bg-background pb-32 font-sans text-main">
@@ -326,9 +327,17 @@ export default function CongregationsPage() {
                 )}
 
                 {loading ? (
-                    <div className="flex flex-col items-center justify-center py-20 gap-4">
-                        <Loader2 className="w-10 h-10 text-primary animate-spin" />
-                        <p className="text-muted font-bold animate-pulse uppercase tracking-widest text-[10px]">Carregando...</p>
+                    <div className="grid grid-cols-1 lg:grid-cols-2 2xl:grid-cols-3 gap-4" role="status" aria-busy="true">
+                        <span className="sr-only">Carregando...</span>
+                        {Array.from({ length: 4 }).map((_, idx) => (
+                            <div key={idx} className="bg-surface rounded-lg p-5 border border-surface-border flex items-center gap-4">
+                                <Skeleton className="w-12 h-12 rounded-lg shrink-0" />
+                                <div className="space-y-2 flex-1">
+                                    <Skeleton className="h-4 w-3/5" />
+                                    <Skeleton className="h-3 w-2/5" />
+                                </div>
+                            </div>
+                        ))}
                     </div>
                 ) : filtered.length === 0 ? (
                     <div className="text-center py-12 opacity-50">

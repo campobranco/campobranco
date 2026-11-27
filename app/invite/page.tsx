@@ -4,6 +4,7 @@ import { useEffect, useState, Suspense } from 'react';
 import { useAuth } from '@/app/context/AuthContext';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { Users, Loader2, CheckCircle, AlertCircle } from 'lucide-react';
+import { InviteCardSkeleton } from '@/app/components/Skeleton';
 import { toast } from 'sonner';
 import ConfirmationModal from '@/app/components/ConfirmationModal';
 import { db } from '@/lib/firebase';
@@ -185,11 +186,7 @@ function InviteContent() {
     };
 
     if (authLoading || loading) {
-        return (
-            <div className="min-h-screen flex items-center justify-center bg-background">
-                <Loader2 className="w-8 h-8 text-primary animate-spin" />
-            </div>
-        );
+        return <InviteCardSkeleton />;
     }
 
     return (
@@ -251,7 +248,7 @@ function InviteContent() {
 export default function InvitePage() {
     return (
         <div className="min-h-screen bg-background flex items-center justify-center p-6 font-sans text-main">
-            <Suspense fallback={<Loader2 className="w-8 h-8 text-primary animate-spin" />}>
+            <Suspense fallback={<InviteCardSkeleton />}>
                 <InviteContent />
             </Suspense>
         </div>

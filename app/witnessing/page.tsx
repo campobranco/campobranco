@@ -3,9 +3,10 @@
 import { useAuth } from '@/app/context/AuthContext';
 import { useRouter } from 'next/navigation';
 import { useEffect, useState } from 'react';
-import { Loader2, Building2, ChevronRight, Search, Store } from 'lucide-react';
+import { Building2, ChevronRight, Search, Store } from 'lucide-react';
 import Link from 'next/link';
 import BottomNav from '@/app/components/BottomNav';
+import { ListPageSkeleton } from '@/app/components/Skeleton';
 import { db } from '@/lib/firebase';
 import { collection, getDocs } from 'firebase/firestore';
 
@@ -71,7 +72,7 @@ export default function WitnessingPage() {
     );
 
     if (authLoading || (isAdminRoleGlobal && loading)) {
-        return <div className="min-h-screen flex items-center justify-center bg-background"><Loader2 className="w-8 h-8 animate-spin text-primary" /></div>;
+        return <ListPageSkeleton rightActions={0} />;
     }
 
     if (!isAdminRoleGlobal && !congregationId) {

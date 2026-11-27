@@ -8,6 +8,8 @@ import { getSharedListWithData } from '@/lib/services/shared_lists';
 import { returnMapMutation, returnTerritoryMutation, acceptResponsibilityMutation } from '@/lib/contracts/mutations/territoryMutations';
 import { reportVisitMutation, deleteVisitMutation, markAllAsWorkedMutation } from '@/lib/contracts/mutations/visitMutations';
 import { sanitizeUrl } from '@/lib/validation';
+import { resolveNavigationLinks } from '@/lib/map-links';
+import { SharePageSkeleton } from '@/app/components/Skeleton';
 import {
     Map as MapIcon,
     Loader2,
@@ -528,29 +530,26 @@ export default function SharedListView({ id: propId }: SharedListViewProps) {
     };
 
     const handleOpenMap = (item: any) => {
-        if (item.wazeLink) {
-            setMapSelectionItem(item);
-            return;
+        const cleanGoogle = (item.googleMapsLink || '').trim() === 'undefined' ? '' : item.googleMapsLink;
+        const cleanWaze = (item.wazeLink || '').trim() === 'undefined' ? '' : item.wazeLink;
+        const resolved = resolveNavigationLinks({
+            googleMapsLink: cleanGoogle,
+            wazeLink: cleanWaze,
+            lat: item.lat,
+            lng: item.lng,
+            address: [item.street, item.number].filter(Boolean).join(', '),
+        });
+        if (resolved.googleMapsLink || resolved.wazeLink) {
+            setMapSelectionItem({
+                ...item,
+                googleMapsLink: resolved.googleMapsLink,
+                wazeLink: resolved.wazeLink,
+            });
         }
-        const query = `${item.street}, ${item.number}`;
-        const isIOS = /iPhone|iPad|iPod/i.test(navigator.userAgent);
-        const isAndroid = /Android/i.test(navigator.userAgent);
-        let url = '';
-        if (isIOS) url = `maps://?q=${encodeURIComponent(query)}`;
-        else if (isAndroid) url = `geo:0,0?q=${encodeURIComponent(query)}`;
-        else url = (item.googleMapsLink ? sanitizeUrl(item.googleMapsLink) : '') || `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(query)}`;
-        if (url) window.open(url, '_blank');
     };
 
     if (loading) {
-        return (
-            <div className="min-h-screen flex items-center justify-center bg-background">
-                <div className="flex flex-col items-center gap-3">
-                    <Loader2 className="w-8 h-8 text-primary animate-spin" />
-                    <p className="text-muted text-sm font-bold animate-pulse">Carregando lista...</p>
-                </div>
-            </div>
-        );
+        return <SharePageSkeleton />;
     }
 
     if (error) {
@@ -775,10 +774,15 @@ export default function SharedListView({ id: propId }: SharedListViewProps) {
                                                                     setOpenMenuId(null);
                                                                 }} 
                                                             />
-                                                            {((item.googleMapsLink && item.googleMapsLink.trim() !== '' && item.googleMapsLink !== 'undefined') || (item.wazeLink && item.wazeLink.trim() !== '' && item.wazeLink !== 'undefined')) && (
+                                                            {Boolean(
+                                                                (item.googleMapsLink && item.googleMapsLink.trim() !== '' && item.googleMapsLink !== 'undefined') ||
+                                                                (item.wazeLink && item.wazeLink.trim() !== '' && item.wazeLink !== 'undefined') ||
+                                                                (item.lat && item.lng) ||
+                                                                (item.street && item.street.trim() !== '')
+                                                            ) && (
                                                                 <DropDownItem 
                                                                     icon={Navigation} 
-                                                                    label="Abrir no Mapa" 
+                                                                    label="Ir para" 
                                                                     variant="primary" 
                                                                     onClick={(e) => {
                                                                         e.stopPropagation();
@@ -978,7 +982,14 @@ export default function SharedListView({ id: propId }: SharedListViewProps) {
                                 </button>
                                 <button
                                     onClick={() => {
-                                        const safeWaze = mapSelectionItem.wazeLink ? sanitizeUrl(mapSelectionItem.wazeLink) : '';
+                                        const resolved = resolveNavigationLinks({
+                                            googleMapsLink: mapSelectionItem.googleMapsLink,
+                                            wazeLink: mapSelectionItem.wazeLink,
+                                            lat: mapSelectionItem.lat,
+                                            lng: mapSelectionItem.lng,
+                                            address: [mapSelectionItem.street, mapSelectionItem.number].filter(Boolean).join(', '),
+                                        });
+                                        const safeWaze = resolved.wazeLink ? sanitizeUrl(resolved.wazeLink) : '';
                                         if (safeWaze) window.open(safeWaze, '_blank');
                                         setMapSelectionItem(null);
                                     }}

@@ -32,7 +32,9 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
                     const parsed = JSON.parse(saved);
                     if (parsed.textSize) return parsed.textSize;
                 }
-            } catch (e) {}
+            } catch (e) {
+                console.warn('[ThemeContext] Falha ao ler textSize do localStorage:', e);
+            }
         }
         return 16;
     });
@@ -44,7 +46,9 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
                     const parsed = JSON.parse(saved);
                     if (parsed.displayScale) return parsed.displayScale;
                 }
-            } catch (e) {}
+            } catch (e) {
+                console.warn('[ThemeContext] Falha ao ler displayScale do localStorage:', e);
+            }
         }
         return 1;
     });
@@ -56,7 +60,9 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
                     const parsed = JSON.parse(saved);
                     if (parsed.themeMode) return parsed.themeMode;
                 }
-            } catch (e) {}
+            } catch (e) {
+                console.warn('[ThemeContext] Falha ao ler themeMode do localStorage:', e);
+            }
         }
         return 'system';
     });
@@ -144,7 +150,9 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
                                         displayScale: newScale,
                                         themeMode: newTheme
                                     }));
-                                } catch {}
+                                } catch (e) {
+                                    console.warn('[ThemeContext] Falha ao salvar app-preferences no localStorage:', e);
+                                }
                             }
                         } else {
                             // Se o Firestore não possui preferências gravadas, envia a preferência local atual
@@ -153,7 +161,9 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
                                 displayScale,
                                 themeMode
                             };
-                            updateDoc(userRef, { preferences: currentPrefs }).catch(() => {});
+                            updateDoc(userRef, { preferences: currentPrefs }).catch((err) => {
+                                console.error('[ThemeContext] Falha ao salvar preferências iniciais:', err);
+                            });
                         }
                     }
                 } catch (error) {

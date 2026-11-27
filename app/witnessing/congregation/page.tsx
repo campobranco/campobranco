@@ -4,7 +4,6 @@ import { useState, useEffect, Suspense } from 'react';
 import {
     Map as MapIcon,
     Search,
-    Loader2,
     Store,
     ArrowRight,
     AlertCircle
@@ -15,6 +14,7 @@ import Link from 'next/link';
 import { useAuth } from '@/app/context/AuthContext';
 import { useSearchParams, useRouter } from 'next/navigation';
 import BottomNav from '@/app/components/BottomNav';
+import { ListPageSkeleton, Skeleton } from '@/app/components/Skeleton';
 
 interface City {
     id: string;
@@ -102,11 +102,7 @@ function WitnessingCityListContent() {
     );
 
     if (authLoading) {
-        return (
-            <div className="min-h-screen flex items-center justify-center bg-background">
-                <Loader2 className="w-8 h-8 animate-spin text-primary" />
-            </div>
-        );
+        return <ListPageSkeleton />;
     }
 
     if (!congregationId) {
@@ -169,8 +165,17 @@ function WitnessingCityListContent() {
             {/* List */}
             <main className="px-6 py-4 grid grid-cols-1 lg:grid-cols-2 2xl:grid-cols-3 gap-4">
                 {loading ? (
-                    <div className="flex justify-center p-8">
-                        <Loader2 className="w-8 h-8 animate-spin text-amber-500" />
+                    <div className="col-span-full grid grid-cols-1 lg:grid-cols-2 2xl:grid-cols-3 gap-4" role="status" aria-busy="true">
+                        <span className="sr-only">Carregando...</span>
+                        {Array.from({ length: 4 }).map((_, idx) => (
+                            <div key={idx} className="bg-surface rounded-lg p-4 border border-surface-border flex items-center gap-4">
+                                <Skeleton className="w-10 h-10 rounded-lg shrink-0" />
+                                <div className="space-y-2 flex-1">
+                                    <Skeleton className="h-4 w-3/5" />
+                                    <Skeleton className="h-3 w-1/3" />
+                                </div>
+                            </div>
+                        ))}
                     </div>
                 ) : hasError ? (
                     <div className="bg-surface p-6 rounded-lg shadow-sm border border-surface-border flex flex-col items-center justify-center text-center">
@@ -222,7 +227,7 @@ function WitnessingCityListContent() {
 
 export default function WitnessingCityList() {
     return (
-        <Suspense fallback={<div className="min-h-screen flex items-center justify-center bg-background"><Loader2 className="w-8 h-8 animate-spin text-primary" /></div>}>
+        <Suspense fallback={<ListPageSkeleton />}>
             <WitnessingCityListContent />
         </Suspense>
     );

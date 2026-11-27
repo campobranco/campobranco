@@ -5,6 +5,7 @@
 
 import { useState, useEffect } from 'react';
 import { useAuth } from '@/app/context/AuthContext';
+import { Skeleton } from '@/app/components/Skeleton';
 import { useRouter } from 'next/navigation';
 import { getSystemLogsQuery as getSystemLogs, SystemLog, LogLevel, LogCategory } from '@/lib/contracts/mutations/auditMutations';
 import {
@@ -437,12 +438,16 @@ export default function SystemLogsAdminPage() {
                             </thead>
                             <tbody className="divide-y divide-surface-border text-xs font-medium">
                                 {loadingLogs ? (
-                                    <tr>
-                                        <td colSpan={6} className="p-12 text-center text-muted">
-                                            <Loader2 className="w-8 h-8 mx-auto mb-2 animate-spin text-primary" />
-                                            <p className="text-sm font-medium">Carregando logs...</p>
-                                        </td>
-                                    </tr>
+                                    Array.from({ length: 6 }).map((_, idx) => (
+                                        <tr key={idx} className="border-b border-surface-border last:border-b-0">
+                                            <td className="py-3 px-4"><Skeleton className="h-5 w-14 rounded" /></td>
+                                            <td className="py-3 px-4"><Skeleton className="h-4 w-28" /></td>
+                                            <td className="py-3 px-4"><Skeleton className="h-4 w-20" /></td>
+                                            <td className="py-3 px-4"><Skeleton className="h-4 w-48" /></td>
+                                            <td className="py-3 px-4"><Skeleton className="h-4 w-24" /></td>
+                                            <td className="py-3 px-4 text-right"><Skeleton className="h-4 w-12 ml-auto" /></td>
+                                        </tr>
+                                    ))
                                 ) : filteredLogs.length === 0 ? (
                                     <tr>
                                         <td colSpan={6} className="p-12 text-center text-muted">

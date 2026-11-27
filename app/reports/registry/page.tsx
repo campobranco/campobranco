@@ -9,6 +9,7 @@ import { addDoc, collection, doc, updateDoc } from 'firebase/firestore';
 import { deleteSharedListMutation as deleteSharedList } from '@/lib/contracts/mutations/territoryMutations';
 import { ChevronLeft, ChevronRight, Plus, Save, X, Edit2, Trash2, Calendar, User, FileText, Download, Printer, Building2 } from "lucide-react";
 import ConfirmationModal from '@/app/components/ConfirmationModal';
+import { RegistryTableSkeleton } from '@/app/components/Skeleton';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { getServiceYear, getServiceYearLabel, getServiceYearRange } from '@/lib/serviceYearUtils';
@@ -459,10 +460,7 @@ export default function RegistryPage() {
                 </div>
 
                 {pageLoading ? (
-                    <div className="text-center py-20 flex flex-col items-center gap-4">
-                        <div className="w-8 h-8 border-4 border-primary border-t-transparent rounded-full animate-spin"></div>
-                        <p className="text-muted font-medium">Carregando registros...</p>
-                    </div>
+                    <RegistryTableSkeleton />
                 ) : (
                     <div className="flex flex-col gap-8 print:block">
                         {/* Verifica se existem linhas para exibir; se não houver, mostra um estado vazio amigável */}
