@@ -28,6 +28,7 @@ import {
 } from 'firebase/firestore';
 import Link from 'next/link';
 import { useAuth } from '@/app/context/AuthContext';
+import { useTranslation } from '@/app/context/I18nContext';
 import { useRouter } from 'next/navigation';
 import { toast } from 'sonner';
 import BottomNav from '@/app/components/BottomNav';
@@ -56,6 +57,7 @@ const CATEGORY_LABELS: Record<string, string> = {
 };
 
 export default function CongregationsPage() {
+    const { t } = useTranslation();
     const { user, isAdminRoleGlobal, loading: authLoading, congregationId: userCongId } = useAuth();
     const [confirmModal, setConfirmModal] = useState<{
         title: string;
@@ -276,8 +278,8 @@ export default function CongregationsPage() {
                             <ChevronLeft className="w-6 h-6" />
                         </Link>
                         <div>
-                            <h1 className="text-xl font-bold text-main tracking-tight">Gerenciar Congregações</h1>
-                            <p className="text-xs text-muted font-medium">Controle de unidades</p>
+                            <h1 className="text-xl font-bold text-main tracking-tight">{t('admin.congregations.title')}</h1>
+                            <p className="text-xs text-muted font-medium">{t('admin.congregations.subtitle')}</p>
                         </div>
                     </div>
                     <button
@@ -289,7 +291,7 @@ export default function CongregationsPage() {
                         className="bg-primary hover:bg-primary-dark text-white font-bold py-2 px-4 rounded-lg flex items-center gap-2 shadow-lg shadow-primary-light/500/30 transition-all active:scale-95"
                     >
                         <Plus className="w-4 h-4" />
-                        Nova Congregação
+                        {t('admin.congregations.newButton')}
                     </button>
                 </div>
             </header>
@@ -299,7 +301,7 @@ export default function CongregationsPage() {
                     <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-muted w-5 h-5 group-focus-within:text-primary-light/500 transition-colors" />
                     <input
                         type="text"
-                        placeholder="Buscar congregação..."
+                        placeholder={t('admin.congregations.searchPlaceholder')}
                         value={searchTerm}
                         onChange={(e) => setSearchTerm(e.target.value)}
                         className="w-full bg-surface border border-surface-border text-main text-sm font-medium rounded-lg py-4 pl-12 pr-4 shadow-sm focus:ring-2 focus:ring-primary-light/500/20 focus:outline-none transition-all placeholder:text-muted"
@@ -312,7 +314,7 @@ export default function CongregationsPage() {
                             onClick={() => setCategoryFilter('Todas')}
                             className={`px-4 py-2 rounded-md text-xs font-bold whitespace-nowrap transition-all border ${categoryFilter === 'Todas' ? 'bg-primary text-white border-primary shadow-md shadow-primary-light/500/20' : 'bg-surface text-muted border-surface-border hover:border-primary-light/500'}`}
                         >
-                            Todos os Tipos
+                            {t('admin.congregations.allTypes')}
                         </button>
                         {categories.sort().map(cat => (
                             <button
@@ -320,7 +322,13 @@ export default function CongregationsPage() {
                                 onClick={() => setCategoryFilter(cat)}
                                 className={`px-4 py-2 rounded-md text-xs font-bold whitespace-nowrap transition-all border ${categoryFilter === cat ? 'bg-primary text-white border-primary shadow-md shadow-primary-light/500/20' : 'bg-surface text-muted border-surface-border hover:border-primary-light/500'}`}
                             >
-                                {CATEGORY_LABELS[cat] || cat}
+                                {cat === 'TRADITIONAL' || cat === 'Tradicional'
+                                    ? t('settings.congregation.types.traditional')
+                                    : cat === 'SIGN_LANGUAGE' || cat === 'Língua de Sinais'
+                                        ? t('settings.congregation.types.signLanguage')
+                                        : cat === 'FOREIGN_LANGUAGE' || cat === 'Língua Estrangeira'
+                                            ? t('settings.congregation.types.foreignLanguage')
+                                            : CATEGORY_LABELS[cat] || cat}
                             </button>
                         ))}
                     </div>
@@ -328,7 +336,7 @@ export default function CongregationsPage() {
 
                 {loading ? (
                     <div className="grid grid-cols-1 lg:grid-cols-2 2xl:grid-cols-3 gap-4" role="status" aria-busy="true">
-                        <span className="sr-only">Carregando...</span>
+                        <span className="sr-only">{t('common.loading')}</span>
                         {Array.from({ length: 4 }).map((_, idx) => (
                             <div key={idx} className="bg-surface rounded-lg p-5 border border-surface-border flex items-center gap-4">
                                 <Skeleton className="w-12 h-12 rounded-lg shrink-0" />
@@ -342,7 +350,7 @@ export default function CongregationsPage() {
                 ) : filtered.length === 0 ? (
                     <div className="text-center py-12 opacity-50">
                         <Building2 className="w-16 h-16 mx-auto mb-4 text-muted" />
-                        <p className="text-muted font-medium">Nenhuma congregação encontrada.</p>
+                        <p className="text-muted font-medium">{t('admin.congregations.empty')}</p>
                     </div>
                 ) : (
                     <div className="grid grid-cols-1 lg:grid-cols-2 2xl:grid-cols-3 gap-4">
@@ -363,12 +371,18 @@ export default function CongregationsPage() {
                                                 )}
                                             </div>
                                             <p className="text-[10px] text-muted truncate">
-                                                {cong.city ? `${cong.city} • ` : ''}Modo: {cong.termType === 'neighborhood' ? 'Bairros' : 'Cidades'}
+                                                {cong.city ? `${cong.city} • ` : ''}{t('admin.congregations.modeLabel')}: {cong.termType === 'neighborhood' ? t('settings.congregation.grouping.neighborhoods') : t('settings.congregations.grouping.cities')}
                                             </p>
                                             {cong.category && (
                                                 <div className="mt-1.5">
                                                     <span className="px-1.5 py-0.5 bg-primary-light/50 dark:bg-blue-900/20 text-primary dark:text-blue-400 rounded-md text-[8px] font-black uppercase tracking-tighter border border-primary-light dark:border-blue-800/30">
-                                                        {CATEGORY_LABELS[cong.category] || cong.category}
+                                                        {cong.category === 'TRADITIONAL' || cong.category === 'Tradicional'
+                                                            ? t('settings.congregation.types.traditional')
+                                                            : cong.category === 'SIGN_LANGUAGE' || cong.category === 'Língua de Sinais'
+                                                                ? t('settings.congregation.types.signLanguage')
+                                                                : cong.category === 'FOREIGN_LANGUAGE' || cong.category === 'Língua Estrangeira'
+                                                                    ? t('settings.congregation.types.foreignLanguage')
+                                                                    : CATEGORY_LABELS[cong.category] || cong.category}
                                                     </span>
                                                 </div>
                                             )}
@@ -384,7 +398,7 @@ export default function CongregationsPage() {
                                                 <h3 className="font-bold text-muted truncate">{cong.name}</h3>
                                             </div>
                                             <p className="text-[9px] text-orange-500 font-bold uppercase tracking-tight">
-                                                Use o menu ao lado para "Entrar" e ver os mapas
+                                                {t('admin.congregations.enterHint')}
                                             </p>
                                         </div>
                                     </div>
@@ -412,7 +426,7 @@ export default function CongregationsPage() {
                                             <div className="absolute right-0 top-full mt-1 w-48 bg-surface border border-surface-border rounded-xl shadow-2xl z-50 p-1 animate-in fade-in zoom-in-95 duration-200 origin-top-right">
                                                 <DropDownItem
                                                     icon={Pencil}
-                                                    label="Editar"
+                                                    label={t('admin.congregations.actions.edit')}
                                                     variant="neutral"
                                                     onClick={(e) => {
                                                         e.stopPropagation();
@@ -430,7 +444,7 @@ export default function CongregationsPage() {
                                                 {userCongId === cong.id ? (
                                                     <DropDownItem
                                                         icon={LogOut}
-                                                        label="Sair desta"
+                                                        label={t('admin.congregations.actions.leave')}
                                                         variant="orange"
                                                         onClick={(e) => {
                                                             e.stopPropagation();
@@ -441,7 +455,7 @@ export default function CongregationsPage() {
                                                 ) : (
                                                     <DropDownItem
                                                         icon={LogIn}
-                                                        label="Entrar nesta"
+                                                        label={t('admin.congregations.actions.enter')}
                                                         variant="primary"
                                                         onClick={(e) => {
                                                             e.stopPropagation();
@@ -455,14 +469,14 @@ export default function CongregationsPage() {
 
                                                 <DropDownItem
                                                     icon={Trash2}
-                                                    label="Excluir"
+                                                    label={t('admin.congregations.actions.delete')}
                                                     variant="danger"
                                                     onClick={(e) => {
                                                         e.stopPropagation();
                                                         setOpenMenuId(null);
                                                         setConfirmModal({
-                                                            title: 'Excluir congregação?',
-                                                            message: `Tem certeza que deseja apagar a congregação "${cong.name}"? Esta ação não pode ser desfeita.`,
+                                                            title: t('admin.congregations.deleteConfirm.title'),
+                                                            message: t('admin.congregations.deleteConfirm.message', { name: cong.name }),
                                                             variant: 'danger',
                                                             onConfirm: () => handleDelete(cong.id)
                                                         });
@@ -483,7 +497,7 @@ export default function CongregationsPage() {
                     <div className="flex min-h-full items-center justify-center p-4 pb-24 text-center sm:p-6">
                         <div className="relative w-full max-w-md transform rounded-xl bg-surface p-8 text-left shadow-2xl transition-all border border-surface-border animate-in zoom-in-95 duration-300">
                             <div className="flex justify-between items-start mb-6">
-                                <h2 className="text-2xl font-bold text-main tracking-tight">{editingCongregation ? 'Editar Congregação' : 'Nova Congregação'}</h2>
+                                <h2 className="text-2xl font-bold text-main tracking-tight">{editingCongregation ? t('admin.congregations.modal.editTitle') : t('admin.congregations.modal.createTitle')}</h2>
                                 <button onClick={() => setIsCreateModalOpen(false)} className="p-2 hover:bg-background rounded-full transition-colors">
                                     <X className="w-6 h-6 text-muted" />
                                 </button>
@@ -491,76 +505,76 @@ export default function CongregationsPage() {
 
                             <form onSubmit={handleCreateCongregation} className="space-y-4">
                                 <div className="space-y-1.5">
-                                    <label className="text-[10px] font-bold text-muted uppercase tracking-widest ml-1">Nome</label>
+                                    <label className="text-[10px] font-bold text-muted uppercase tracking-widest ml-1">{t('admin.congregations.modal.nameLabel')}</label>
                                     <input
                                         required
                                         type="text"
                                         value={newName}
                                         onChange={(e) => setNewName(e.target.value)}
                                         className="w-full bg-background border border-surface-border rounded-lg py-3 px-4 text-sm font-bold focus:ring-2 focus:ring-primary-light/500/20 focus:border-primary-light/500 transition-all text-main placeholder-muted"
-                                        placeholder="Ex: Congregação Central"
+                                        placeholder={t('admin.congregations.modal.namePlaceholder')}
                                     />
                                 </div>
 
                                 <div className="space-y-1.5">
-                                    <label className="text-[10px] font-bold text-muted uppercase tracking-widest ml-1">Cidade (Opcional)</label>
+                                    <label className="text-[10px] font-bold text-muted uppercase tracking-widest ml-1">{t('admin.congregations.modal.cityLabel')}</label>
                                     <input
                                         type="text"
                                         value={newCity}
                                         onChange={(e) => setNewCity(e.target.value)}
                                         className="w-full bg-background border border-surface-border rounded-lg py-3 px-4 text-sm font-bold focus:ring-2 focus:ring-primary-light/500/20 focus:border-primary-light/500 transition-all text-main placeholder-muted"
-                                        placeholder="Ex: São Paulo"
+                                        placeholder={t('admin.congregations.modal.cityPlaceholder')}
                                     />
                                 </div>
 
                                 <div className="space-y-1.5">
-                                    <label className="text-[10px] font-bold text-muted uppercase tracking-widest ml-1">Tipo de congregação</label>
+                                    <label className="text-[10px] font-bold text-muted uppercase tracking-widest ml-1">{t('admin.congregations.modal.typeLabel')}</label>
                                     <select
                                         required
                                         value={newCategory}
                                         onChange={(e) => setNewCategory(e.target.value)}
                                         className="w-full bg-background border border-surface-border rounded-lg py-3 px-4 text-sm font-bold focus:ring-2 focus:ring-primary-light/500/20 focus:border-primary-light/500 transition-all text-main appearance-none"
                                     >
-                                        <option value="" disabled>Selecione o tipo...</option>
-                                        <option value="TRADITIONAL">Tradicional</option>
-                                        <option value="SIGN_LANGUAGE">Língua de Sinais</option>
-                                        <option value="FOREIGN_LANGUAGE">Língua Estrangeira</option>
+                                        <option value="" disabled>{t('admin.congregations.modal.typePlaceholder')}</option>
+                                        <option value="TRADITIONAL">{t('settings.congregation.types.traditional')}</option>
+                                        <option value="SIGN_LANGUAGE">{t('settings.congregation.types.signLanguage')}</option>
+                                        <option value="FOREIGN_LANGUAGE">{t('settings.congregation.types.foreignLanguage')}</option>
                                     </select>
                                 </div>
 
                                 <div className="space-y-1.5">
-                                    <label className="text-[10px] font-bold text-muted uppercase tracking-widest ml-1">Modo de Organização</label>
+                                    <label className="text-[10px] font-bold text-muted uppercase tracking-widest ml-1">{t('admin.congregations.modal.orgModeLabel')}</label>
                                     <div className="flex gap-2 p-1 bg-background border border-surface-border rounded-lg">
                                         <button
                                             type="button"
                                             onClick={() => setNewTermType('city')}
                                             className={`flex-1 py-2 px-4 rounded-md text-xs font-bold transition-all ${newTermType === 'city' ? 'bg-primary text-white shadow-md' : 'text-muted hover:text-main'}`}
                                         >
-                                            Cidades
+                                            {t('settings.congregation.grouping.cities')}
                                         </button>
                                         <button
                                             type="button"
                                             onClick={() => setNewTermType('neighborhood')}
                                             className={`flex-1 py-2 px-4 rounded-md text-xs font-bold transition-all ${newTermType === 'neighborhood' ? 'bg-primary text-white shadow-md' : 'text-muted hover:text-main'}`}
                                         >
-                                            Bairros
+                                            {t('settings.congregation.grouping.neighborhoods')}
                                         </button>
                                     </div>
                                 </div>
 
                                 <div className="space-y-1.5">
-                                    <label className="text-[10px] font-bold text-muted uppercase tracking-widest ml-1">ID Personalizado (opcional)</label>
+                                    <label className="text-[10px] font-bold text-muted uppercase tracking-widest ml-1">{t('admin.congregations.modal.customIdLabel')}</label>
                                     <input
                                         type="text"
                                         value={customId}
                                         onChange={e => setCustomId(e.target.value.toLowerCase().replace(/\s+/g, '-'))}
                                         className="w-full bg-background border border-surface-border rounded-lg py-3 px-4 text-sm font-bold focus:ring-2 focus:ring-primary-light/500/20 focus:border-primary-light/500 transition-all text-main placeholder-muted"
-                                        placeholder="ex: sao-paulo-central"
+                                        placeholder={t('admin.congregations.modal.customIdPlaceholder')}
                                     />
-                                    <p className="text-[10px] text-muted italic">Isso definirá a URL da congregação.</p>
+                                    <p className="text-[10px] text-muted italic">{t('admin.congregations.modal.customIdHint')}</p>
                                     {editingCongregation && (
                                         <p className="text-[10px] text-orange-500 font-bold mt-1">
-                                            Alterar o ID pode quebrar links existentes se houver dados vinculados!
+                                            {t('admin.congregations.modal.customIdWarning')}
                                         </p>
                                     )}
                                 </div>
@@ -571,13 +585,13 @@ export default function CongregationsPage() {
                                         onClick={() => setIsCreateModalOpen(false)}
                                         className="flex-1 bg-background hover:bg-surface-highlight text-muted hover:text-main border border-surface-border font-bold py-3.5 rounded-lg transition-all active:scale-95"
                                     >
-                                        Cancelar
+                                        {t('common.cancel')}
                                     </button>
                                     <button
                                         type="submit"
                                         className="flex-1 bg-primary hover:bg-primary-dark text-white font-bold py-3.5 rounded-lg shadow-lg shadow-primary-light/500/30 transition-all active:scale-95"
                                     >
-                                        {editingCongregation ? 'Salvar' : 'Criar'}
+                                        {editingCongregation ? t('common.save') : t('admin.congregations.modal.createButton')}
                                     </button>
                                 </div>
                             </form>
@@ -592,7 +606,7 @@ export default function CongregationsPage() {
                 onConfirm={() => confirmModal?.onConfirm()}
                 title={confirmModal?.title || ''}
                 message={confirmModal?.message || ''}
-                confirmText="Confirmar"
+                confirmText={t('admin.congregations.deleteConfirm.confirm')}
                 variant={confirmModal?.variant || 'danger'}
                 isLoading={loading}
             />

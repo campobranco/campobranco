@@ -15,6 +15,7 @@ import { useAuth } from '@/app/context/AuthContext';
 import { useSearchParams, useRouter } from 'next/navigation';
 import BottomNav from '@/app/components/BottomNav';
 import { ListPageSkeleton, Skeleton } from '@/app/components/Skeleton';
+import { useTranslation } from '@/app/context/I18nContext';
 
 interface City {
     id: string;
@@ -24,6 +25,7 @@ interface City {
 }
 
 function WitnessingCityListContent() {
+    const { t } = useTranslation();
     const searchParams = useSearchParams();
     const router = useRouter();
     const congregationId = searchParams.get('congregationId');
@@ -108,7 +110,7 @@ function WitnessingCityListContent() {
     if (!congregationId) {
         return (
             <div className="min-h-screen flex items-center justify-center bg-background">
-                <p>Congregação não especificada.</p>
+                <p>{t('witnessing.congregationMissing')}</p>
             </div>
         );
     }
@@ -123,9 +125,9 @@ function WitnessingCityListContent() {
                     </div>
                     <div>
                         <span className="font-bold text-lg text-main tracking-tight block leading-tight">
-                            {termType === 'neighborhood' ? 'Bairros' : 'Cidades'}
+                            {termType === 'neighborhood' ? t('witnessing.neighborhoods') : t('witnessing.cities')}
                         </span>
-                        <span className="text-[10px] text-muted font-bold uppercase tracking-widest block">Selecione para T. Público</span>
+                        <span className="text-[10px] text-muted font-bold uppercase tracking-widest block">{t('witnessing.selectForPublic')}</span>
                     </div>
                 </div>
                 {congregationId && (
@@ -135,14 +137,14 @@ function WitnessingCityListContent() {
                             className="flex items-center gap-2 px-3 py-1.5 rounded-md text-xs font-bold transition-all bg-white dark:bg-slate-700 text-amber-600 dark:text-amber-400 shadow-sm"
                         >
                             <Store className="w-3.5 h-3.5" />
-                            <span>{termType === 'neighborhood' ? 'Bairros' : 'Cidades'}</span>
+                            <span>{termType === 'neighborhood' ? t('witnessing.neighborhoods') : t('witnessing.cities')}</span>
                         </button>
                         <Link
                             href={`/witnessing/city?congregationId=${congregationId}`}
                             className="flex items-center gap-2 px-3 py-1.5 rounded-md text-xs font-bold transition-all text-gray-500 hover:text-gray-900 dark:hover:text-gray-300"
                         >
                             <MapIcon className="w-3.5 h-3.5" />
-                            <span>Todos</span>
+                            <span>{t('witnessing.all')}</span>
                         </Link>
                     </div>
                 )}
@@ -154,7 +156,7 @@ function WitnessingCityListContent() {
                     <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-muted w-5 h-5 group-focus-within:text-amber-500 transition-colors" />
                     <input
                         type="text"
-                        placeholder={termType === 'neighborhood' ? "Buscar bairro..." : "Buscar cidade..."}
+                        placeholder={termType === 'neighborhood' ? t('witnessing.searchNeighborhood') : t('witnessing.searchCity')}
                         value={searchTerm}
                         onChange={(e) => setSearchTerm(e.target.value)}
                         className="w-full bg-surface border-0 text-main text-sm font-medium rounded-lg py-4 pl-12 pr-4 shadow-[0_4px_30px_rgba(0,0,0,0.03)] focus:ring-2 focus:ring-amber-500/20 focus:outline-none transition-all placeholder:text-muted"
@@ -166,7 +168,7 @@ function WitnessingCityListContent() {
             <main className="px-6 py-4 grid grid-cols-1 lg:grid-cols-2 2xl:grid-cols-3 gap-4">
                 {loading ? (
                     <div className="col-span-full grid grid-cols-1 lg:grid-cols-2 2xl:grid-cols-3 gap-4" role="status" aria-busy="true">
-                        <span className="sr-only">Carregando...</span>
+                        <span className="sr-only">{t('witnessing.loading')}</span>
                         {Array.from({ length: 4 }).map((_, idx) => (
                             <div key={idx} className="bg-surface rounded-lg p-4 border border-surface-border flex items-center gap-4">
                                 <Skeleton className="w-10 h-10 rounded-lg shrink-0" />
@@ -180,8 +182,8 @@ function WitnessingCityListContent() {
                 ) : hasError ? (
                     <div className="bg-surface p-6 rounded-lg shadow-sm border border-surface-border flex flex-col items-center justify-center text-center">
                         <AlertCircle className="w-8 h-8 text-orange-400 mb-2" />
-                        <p className="text-sm font-bold text-main">O carregamento está demorando muito.</p>
-                        <p className="text-[10px] text-muted mb-4 px-4 text-pretty leading-relaxed">Verifique sua conexão ou tente recarregar.</p>
+                        <p className="text-sm font-bold text-main">{t('witnessing.loadingSlow')}</p>
+                        <p className="text-[10px] text-muted mb-4 px-4 text-pretty leading-relaxed">{t('witnessing.checkConnection')}</p>
                         <button
                             onClick={() => {
                                 setHasError(false);
@@ -190,14 +192,14 @@ function WitnessingCityListContent() {
                             }}
                             className="bg-primary hover:bg-primary-dark text-white text-xs font-bold py-2 px-6 rounded-full transition-colors flex items-center gap-2"
                         >
-                            Recarregar Página
+                            {t('witnessing.reloadPage')}
                         </button>
                     </div>
                 ) : filteredCities.length === 0 ? (
                     <div className="text-center py-12 opacity-50">
                         <MapIcon className="w-12 h-12 mx-auto mb-3 text-muted" />
                         <p className="text-muted font-medium">
-                            {termType === 'neighborhood' ? 'Nenhum bairro encontrado' : 'Nenhuma cidade encontrada'}
+                            {termType === 'neighborhood' ? t('witnessing.noNeighborhoodFound') : t('witnessing.noCityFound')}
                         </p>
                     </div>
                 ) : (
@@ -212,7 +214,7 @@ function WitnessingCityListContent() {
                             </div>
                             <div className="flex-1 min-w-0">
                                 <h3 className="font-bold text-main text-base truncate">{city.name}</h3>
-                                <p className="text-[10px] font-bold text-muted uppercase tracking-wider">VER PONTOS</p>
+                                <p className="text-[10px] font-bold text-muted uppercase tracking-wider">{t('witnessing.viewPoints')}</p>
                             </div>
                             <ArrowRight className="w-4 h-4 text-muted group-hover:text-amber-500 transition-colors" />
                         </Link>

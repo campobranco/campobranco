@@ -15,6 +15,7 @@ import { useRouter } from 'next/navigation';
 import { getServiceYear, getServiceYearLabel, getServiceYearRange } from '@/lib/serviceYearUtils';
 import { format } from 'date-fns';
 import { toast } from 'sonner';
+import { useTranslation } from '@/app/context/I18nContext';
 
 // TODO(mutations): migrate to mutation layer - legacy module (admin/report/dashboard)
 // eslint-disable-next-line no-restricted-imports
@@ -44,7 +45,10 @@ interface RegistryRow {
     assignments: Assignment[];
 }
 
+const NO_CITY_KEY = '__NO_CITY__';
+
 export default function RegistryPage() {
+    const { t } = useTranslation();
     const { user, congregationId, isElder, isServant, isAdminRoleGlobal, loading, canViewReports, canViewS13, canCreateS13, canEditS13, canDeleteS13 } = useAuth();
     const router = useRouter();
 
@@ -96,7 +100,7 @@ export default function RegistryPage() {
 
     useEffect(() => {
         if (rows.length > 0) {
-            const cities = Array.from(new Set(rows.map(r => (r.territory.cityName || 'Sem Cidade').trim()))).sort();
+            const cities = Array.from(new Set(rows.map(r => (r.territory.cityName || NO_CITY_KEY).trim()))).sort();
             setAvailableCities(cities);
             // Só define cidades selecionadas se ainda não estiverem definidas (evita resetar a seleção em re-renders)
             if (selectedCities.length === 0) {
@@ -249,11 +253,11 @@ export default function RegistryPage() {
 
         } catch (e) {
             console.error(e);
-            toast.error("Erro ao carregar registros.");
+            toast.error(t('reports.registry.loadError'));
         } finally {
             setPageLoading(false);
         }
-    }, [selectedCongregationId, congregationId, currentServiceYear]);
+    }, [selectedCongregationId, congregationId, currentServiceYear, t]);
 
     useEffect(() => {
         fetchData();
@@ -261,21 +265,21 @@ export default function RegistryPage() {
 
     const handleSaveAssignment = async () => {
         if (!selectedTerritoryId) {
-            toast.error("Território não selecionado.");
+            toast.error(t('reports.registry.territoryRequired'));
             return;
         }
         if (!editingAssignment?.publisherName?.trim()) {
-            toast.error("O nome do publicador é obrigatório.");
+            toast.error(t('reports.registry.publisherRequired'));
             return;
         }
         if (!editingAssignment.assignedDate) {
-            toast.error("A data da designação é obrigatória.");
+            toast.error(t('reports.registry.assignedDateRequired'));
             return;
         }
 
         try {
             const targetCongId = selectedCongregationId || congregationId;
-            if (!targetCongId) throw new Error("Congregação não identificada.");
+            if (!targetCongId) throw new Error(t('reports.registry.congregationMissing'));
 
             const assignedDateIso = new Date(editingAssignment.assignedDate).toISOString();
             const payload: any = {
@@ -312,12 +316,12 @@ export default function RegistryPage() {
             setIsModalOpen(false);
             setEditingAssignment(null);
             fetchData();
-            toast.success(editingAssignment.id ? "Registro atualizado!" : "Registro salvo!");
+            toast.success(editingAssignment.id ? t('reports.registry.recordUpdated') : t('reports.registry.recordSaved'));
 
         } catch (e: any) {
             console.error("Save Assignment Error:", e);
             const msg = e.message || (typeof e === 'string' ? e : JSON.stringify(e));
-            toast.error(`Erro ao salvar registro: ${msg}`);
+            toast.error(t('reports.registry.saveError', { msg }));
         }
     };
 
@@ -337,29 +341,29 @@ export default function RegistryPage() {
             fetchData();
         } catch (e) {
             console.error(e);
-            toast.error("Erro ao salvar data histórica.");
+            toast.error(t('reports.registry.legacySaveError'));
         }
     };
 
     const handleDeleteAssignment = async (id: string) => {
         setConfirmModal({
-            title: "Remover Registro?",
-            message: "Esta ação não pode ser desfeita. O registro será excluído permanentemente do histórico.",
+            title: t('reports.registry.deleteTitle'),
+            message: t('reports.registry.deleteMessage'),
             variant: 'danger',
             onConfirm: async () => {
                 setIsDeleting(true);
                 try {
                     const res = await deleteSharedList(id);
                     if (!res.success) {
-                        throw new Error(res.error || "Erro ao excluir registro.");
+                        throw new Error(res.error || t('reports.registry.deleteError'));
                     }
 
-                    toast.success("Registro removido.");
+                    toast.success(t('reports.registry.recordRemoved'));
                     fetchData();
 
                 } catch (e: any) {
                     console.error(e);
-                    toast.error("Erro ao excluir registro.");
+                    toast.error(t('reports.registry.deleteError'));
                 } finally {
                     setIsDeleting(false);
                     setConfirmModal(null);
@@ -387,7 +391,8 @@ export default function RegistryPage() {
 
         // 2. Atualiza o título para o nome do arquivo
         const yearLabel = getServiceYearLabel(currentServiceYear).replace('/', '-');
-        document.title = `S-13_T [${yearLabel} - ${city}]`;
+        const cityDisplay = city === NO_CITY_KEY ? t('reports.registry.noCity') : city;
+        document.title = `S-13_T [${yearLabel} - ${cityDisplay}]`;
 
         // 3. Aguarda e imprime
         setTimeout(() => {
@@ -411,7 +416,7 @@ export default function RegistryPage() {
                         <ChevronLeft className="w-5 h-5 text-muted" />
                     </button>
                     <h1 className="text-sm sm:text-xl font-bold text-main truncate max-w-[140px] xs:max-w-[180px] sm:max-w-none">
-                        Registro S-13
+                        {t('reports.registry.headerTitle')}
                     </h1>
                 </div>
 
@@ -439,7 +444,7 @@ export default function RegistryPage() {
                         className="bg-primary hover:bg-primary-dark text-white font-bold py-1.5 px-2.5 sm:py-2 sm:px-4 rounded-lg flex items-center gap-1.5 transition-colors shadow-sm text-xs sm:text-sm"
                     >
                         <Download className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
-                        <span className="hidden xs:inline">Imprimir</span>
+                        <span className="hidden xs:inline">{t('reports.registry.print')}</span>
                     </button>
                 </div>
             </header>
@@ -452,9 +457,9 @@ export default function RegistryPage() {
                 </div>
                 {/* Cabeçalho em tela (oculto na impressão) */}
                 <div className="text-center mb-6 print:hidden">
-                    <h1 className="text-xl font-bold uppercase mb-1 font-sans text-main">REGISTRO DE DESIGNAÇÃO DE TERRITÓRIO</h1>
+                    <h1 className="text-xl font-bold uppercase mb-1 font-sans text-main">{t('reports.registry.formTitle')}</h1>
                     <div className="flex items-center justify-center gap-2 font-bold font-sans text-sm text-main">
-                        <span>Ano de Serviço:</span>
+                        <span>{t('reports.registry.serviceYearLabel')}</span>
                         <span className="border border-current px-2 py-0.5 min-w-[100px] rounded dark:border-gray-700">{getServiceYearLabel(currentServiceYear)}</span>
                     </div>
                 </div>
@@ -469,9 +474,9 @@ export default function RegistryPage() {
                                 <div className="bg-gray-100 dark:bg-gray-800 w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-4 border border-transparent dark:border-gray-700">
                                     <Building2 className="w-8 h-8 text-muted" />
                                 </div>
-                                <h3 className="text-lg font-bold text-main mb-1">Nenhum território encontrado</h3>
+                                <h3 className="text-lg font-bold text-main mb-1">{t('reports.registry.emptyTitle')}</h3>
                                 <p className="text-muted max-w-xs mx-auto text-sm leading-relaxed">
-                                    Não há territórios cadastrados ou designações neste ano de serviço para gerar o registro.
+                                    {t('reports.registry.emptyDesc')}
                                 </p>
                             </div>
                         ) : (
@@ -480,7 +485,8 @@ export default function RegistryPage() {
                                 {availableCities
                                     .filter(city => selectedCities.includes(city))
                                     .map((city, cityIndex) => {
-                                        const cityRows = rows.filter(r => (r.territory.cityName || 'Sem Cidade') === city);
+                                        const cityRows = rows.filter(r => (r.territory.cityName || NO_CITY_KEY).trim() === city);
+                                        const cityDisplay = city === NO_CITY_KEY ? t('reports.registry.noCity') : city;
 
                                         // Determina quantas páginas são necessárias para esta cidade (designações por página baseado em columnsPerPage)
                                         const currentMinColumns = minColumns[city] || 4;
@@ -509,9 +515,9 @@ export default function RegistryPage() {
                                                     {/* Cabeçalho global somente na impressão */}
                                                     {showMainHeader && (
                                                         <div className={`mb-2 hidden print:block ${isStrictFirst || isPageBreakMode ? 'pt-2' : 'pt-8 border-t border-black mt-8'}`}>
-                                                            <h1 className="text-center text-[18px] font-bold uppercase mb-6 font-sans text-black tracking-wide">REGISTRO DE DESIGNAÇÃO DE TERRITÓRIO</h1>
+                                                            <h1 className="text-center text-[18px] font-bold uppercase mb-6 font-sans text-black tracking-wide">{t('reports.registry.formTitle')}</h1>
                                                             <div className="font-bold font-sans text-[14px] text-black text-left pl-0.5 mb-1">
-                                                                Ano de Serviço: <span className="border-b border-black min-w-[150px] inline-block pl-2">{getServiceYearLabel(currentServiceYear)}</span>
+                                                                {t('reports.registry.serviceYearLabel')} <span className="border-b border-black min-w-[150px] inline-block pl-2">{getServiceYearLabel(currentServiceYear)}</span>
                                                             </div>
                                                         </div>
                                                     )}
@@ -521,24 +527,24 @@ export default function RegistryPage() {
                                                         {showTableHeaders && (
                                                             <div className="flex border-b border-black bg-gray-200 dark:bg-gray-900 print:bg-gray-200 font-bold text-[9px] text-center tracking-tight font-sans text-black dark:text-gray-300 print:text-black print:border-black">
                                                                 <div className="w-[50px] border-r border-black print:border-black flex items-center justify-center p-1 flex-col leading-tight">
-                                                                    <span>Terr.</span>
-                                                                    <span>n.º</span>
+                                                                    <span>{t('reports.registry.terrCol')}</span>
+                                                                    <span>{t('reports.registry.noCol')}</span>
                                                                 </div>
                                                                 <div className="w-[80px] border-r border-black print:border-black flex items-center justify-center p-1 leading-tight">
-                                                                    Última data concluída*
+                                                                    {t('reports.registry.lastDateCompleted')}
                                                                 </div>
 
                                                                 {Array.from({ length: 4 }).map((_, i) => (
                                                                     <div key={i} className="flex-1 flex flex-col border-r border-black print:border-black last:border-r-0">
                                                                         <div className="h-6 flex items-center justify-center border-b border-black print:border-black w-full text-black dark:text-gray-300 print:text-black bg-gray-200 dark:bg-gray-900 print:bg-gray-200">
-                                                                            Designado para
+                                                                            {t('reports.registry.assignedTo')}
                                                                         </div>
                                                                         <div className="flex flex-1 h-8">
                                                                             <div className="w-1/2 p-1 border-r border-black print:border-black flex items-center justify-center leading-tight text-black dark:text-gray-300 print:text-black bg-gray-200 dark:bg-gray-900 print:bg-gray-200 text-[8px]">
-                                                                                Data da designação
+                                                                                {t('reports.registry.dateAssigned')}
                                                                             </div>
                                                                             <div className="w-1/2 p-1 flex items-center justify-center leading-tight text-black dark:text-gray-300 print:text-black bg-gray-200 dark:bg-gray-900 print:bg-gray-200 text-[8px]">
-                                                                                Data da conclusão
+                                                                                {t('reports.registry.dateCompleted')}
                                                                             </div>
                                                                         </div>
                                                                     </div>
@@ -551,14 +557,14 @@ export default function RegistryPage() {
                                                         {/* Linha do nome da cidade */}
                                                         {showCityName && (
                                                             <div className={`bg-gray-100 dark:bg-gray-800 print:bg-gray-100 border-b border-black print:border-black p-1 font-bold text-xs text-center tracking-wide text-black dark:text-gray-200 print:text-black relative group/header ${showTableHeaders ? 'border-t-black print:border-t-black' : ''}`}>
-                                                                {city} {totalPages > 1 && `(Parte ${pageIndex + 1})`}
+                                                                {cityDisplay} {totalPages > 1 && t('reports.registry.partLabel', { part: pageIndex + 1 })}
 
                                                                 {/* Botão de impressão individual - apenas na primeira página para indicar impressão do grupo */}
                                                                 {pageIndex === 0 && (
                                                                     <button
                                                                         onClick={(e) => { e.stopPropagation(); handlePrintSingleCity(city); }}
                                                                         className="absolute right-1 top-1/2 -translate-y-1/2 p-0.5 rounded hover:bg-white/50 text-gray-500 hover:text-black dark:text-gray-400 dark:hover:text-white transition-colors no-print"
-                                                                        title={`Imprimir arquivo de ${city}`}
+                                                                        title={t('reports.registry.printCityTitle', { city: cityDisplay })}
                                                                     >
                                                                         <Printer className="w-3.5 h-3.5" />
                                                                     </button>
@@ -657,7 +663,7 @@ export default function RegistryPage() {
                                                                                 ...prev,
                                                                                 [city]: Math.max(prev[city] || 4, maxAssignments) + 4
                                                                             }))}
-                                                                            title="Adicionar Página (Mais 4 Colunas)"
+                                                                            title={t('reports.registry.addPageTitle')}
                                                                         >
                                                                             <Plus className="w-4 h-4 text-green-500 opacity-0 group-hover/add-col:opacity-100 transition-opacity" />
                                                                         </div>
@@ -670,9 +676,9 @@ export default function RegistryPage() {
                                                     {
                                                         showFooter && (
                                                             <div className="mt-1 text-[14px] text-black font-sans hidden print:block text-left leading-tight font-medium">
-                                                                *Ao iniciar uma nova folha, use esta coluna para registrar a data em que cada território foi concluído pela última vez.
+                                                                {t('reports.registry.footerNote')}
                                                                 <br />
-                                                                S-13-T 01/22
+                                                                {t('reports.registry.formCode')}
                                                             </div>
                                                         )
                                                     }
@@ -692,21 +698,21 @@ export default function RegistryPage() {
                 <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm animate-in fade-in no-print">
                     <div className="bg-white dark:bg-gray-900 rounded-2xl w-full max-w-md p-6 shadow-2xl animate-in zoom-in-95">
                         <div className="flex justify-between items-center mb-6">
-                            <h2 className="text-lg font-bold text-main">Opções de Impressão</h2>
+                            <h2 className="text-lg font-bold text-main">{t('reports.registry.printOptionsTitle')}</h2>
                             <button onClick={() => setIsPrintSettingsOpen(false)} className="text-muted hover:text-main"><X className="w-5 h-5" /></button>
                         </div>
 
                         <div className="space-y-6">
                             {/* Modo de layout */}
                             <div>
-                                <h3 className="text-sm font-bold text-gray-700 dark:text-gray-400 mb-2 uppercase">Layout</h3>
+                                <h3 className="text-sm font-bold text-gray-700 dark:text-gray-400 mb-2 uppercase">{t('reports.registry.layoutLabel')}</h3>
                                 <div className="grid grid-cols-2 gap-3">
                                     <button
                                         onClick={() => setPrintMode('page-break')}
                                         className={`p-3 rounded-xl border flex flex-col items-center gap-2 transition-colors ${printMode === 'page-break' ? 'border-primary bg-primary-light/50 dark:bg-blue-900/20 text-primary-dark dark:text-blue-400' : 'border-gray-200 dark:border-gray-700 hover:border-gray-300 dark:hover:border-gray-600 text-main'}`}
                                     >
                                         <FileText className="w-5 h-5" />
-                                        <span className="text-sm font-medium">Uma Cidade por Página</span>
+                                        <span className="text-sm font-medium">{t('reports.registry.oneCityPerPage')}</span>
                                     </button>
                                     <button
                                         onClick={() => setPrintMode('continuous')}
@@ -716,7 +722,7 @@ export default function RegistryPage() {
                                             <FileText className="w-4 h-4" />
                                             <FileText className="w-4 h-4 -mt-2 opacity-60" />
                                         </div>
-                                        <span className="text-sm font-medium">Tabela Contínua</span>
+                                        <span className="text-sm font-medium">{t('reports.registry.continuousTable')}</span>
                                     </button>
                                 </div>
                             </div>
@@ -724,20 +730,20 @@ export default function RegistryPage() {
                             {/* Filtro de cidade */}
                             <div>
                                 <div className="flex items-center justify-between mb-2">
-                                    <h3 className="text-sm font-bold text-gray-700 dark:text-gray-400 uppercase">Cidades</h3>
+                                    <h3 className="text-sm font-bold text-gray-700 dark:text-gray-400 uppercase">{t('reports.registry.citiesLabel')}</h3>
                                     <div className="flex gap-2 text-xs">
                                         <button
                                             onClick={() => setSelectedCities(availableCities)}
                                             className="text-primary dark:text-blue-400 hover:text-blue-800 dark:hover:text-blue-300 font-medium"
                                         >
-                                            Todas
+                                            {t('reports.registry.all')}
                                         </button>
                                         <span className="text-gray-300 dark:text-gray-600">|</span>
                                         <button
                                             onClick={() => setSelectedCities([])}
                                             className="text-primary dark:text-blue-400 hover:text-blue-800 dark:hover:text-blue-300 font-medium"
                                         >
-                                            Nenhuma
+                                            {t('reports.registry.none')}
                                         </button>
                                     </div>
                                 </div>
@@ -753,7 +759,7 @@ export default function RegistryPage() {
                                                     else setSelectedCities(prev => prev.filter(c => c !== city));
                                                 }}
                                             />
-                                            <span className="text-sm font-medium text-gray-700 dark:text-gray-200">{city}</span>
+                                            <span className="text-sm font-medium text-gray-700 dark:text-gray-200">{city === NO_CITY_KEY ? t('reports.registry.noCity') : city}</span>
                                         </label>
                                     ))}
                                 </div>
@@ -765,14 +771,15 @@ export default function RegistryPage() {
 
                                     // Define o título dinâmico do documento para o nome do arquivo de impressão
                                     const yearLabel = getServiceYearLabel(currentServiceYear).replace('/', '-');
+                                    const displayCities = selectedCities.map(c => c === NO_CITY_KEY ? t('reports.registry.noCity') : c);
                                     let cityLabel = '';
 
-                                    if (selectedCities.length === 1) {
-                                        cityLabel = selectedCities[0];
-                                    } else if (selectedCities.length <= 3) {
-                                        cityLabel = selectedCities.join(' e ');
+                                    if (displayCities.length === 1) {
+                                        cityLabel = displayCities[0];
+                                    } else if (displayCities.length <= 3) {
+                                        cityLabel = displayCities.join(t('reports.registry.citiesJoinAnd'));
                                     } else {
-                                        cityLabel = `${selectedCities.length} Cidades`;
+                                        cityLabel = t('reports.registry.citiesCountLabel', { count: displayCities.length });
                                     }
 
                                     const originalTitle = document.title;
@@ -789,7 +796,7 @@ export default function RegistryPage() {
                                 disabled={selectedCities.length === 0}
                             >
                                 <Download className="w-5 h-5" />
-                                Imprimir {selectedCities.length} Cidade(s)
+                                {t('reports.registry.printCitiesBtn', { count: selectedCities.length })}
                             </button>
                         </div>
                     </div>
@@ -802,20 +809,20 @@ export default function RegistryPage() {
                     <div className="bg-white dark:bg-gray-900 rounded-2xl w-full max-w-sm p-6 shadow-2xl animate-in zoom-in-95">
                         <div className="flex justify-between items-center mb-6">
                             <h2 className="text-lg font-bold text-main">
-                                {editingAssignment?.id ? 'Editar Registro' : 'Novo Registro Manual'}
+                                {editingAssignment?.id ? t('reports.registry.editRecordTitle') : t('reports.registry.newRecordTitle')}
                             </h2>
                             <button onClick={() => setIsModalOpen(false)} className="text-muted hover:text-main"><X className="w-5 h-5" /></button>
                         </div>
 
                         <div className="space-y-4">
                             <div>
-                                <label className="block text-xs font-bold text-gray-500 dark:text-gray-400 uppercase mb-1">Publicador</label>
+                                <label className="block text-xs font-bold text-gray-500 dark:text-gray-400 uppercase mb-1">{t('reports.registry.publisherLabel')}</label>
                                 <div className="relative">
                                     <User className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400 dark:text-gray-500" />
                                     <input
                                         type="text"
                                         className="w-full pl-10 p-3 bg-gray-50 dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 font-medium text-main"
-                                        placeholder="Nome do Publicador"
+                                        placeholder={t('reports.registry.publisherPlaceholder')}
                                         value={editingAssignment?.publisherName || ''}
                                         onChange={e => setEditingAssignment(prev => ({ ...prev, publisherName: e.target.value }))}
                                     />
@@ -824,7 +831,7 @@ export default function RegistryPage() {
 
                             <div className="grid grid-cols-2 gap-4">
                                 <div>
-                                    <label className="block text-xs font-bold text-gray-500 dark:text-gray-400 uppercase mb-1">Designação</label>
+                                    <label className="block text-xs font-bold text-gray-500 dark:text-gray-400 uppercase mb-1">{t('reports.registry.assignedLabel')}</label>
                                     <input
                                         type="date"
                                         className="w-full p-3 bg-gray-50 dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 font-medium text-sm text-main"
@@ -836,7 +843,7 @@ export default function RegistryPage() {
                                     />
                                 </div>
                                 <div>
-                                    <label className="block text-xs font-bold text-gray-500 dark:text-gray-400 uppercase mb-1">Conclusão</label>
+                                    <label className="block text-xs font-bold text-gray-500 dark:text-gray-400 uppercase mb-1">{t('reports.registry.completedLabel')}</label>
                                     <input
                                         type="date"
                                         className="w-full p-3 bg-gray-50 dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 font-medium text-sm text-main"
@@ -854,7 +861,7 @@ export default function RegistryPage() {
                                 className="w-full bg-primary hover:bg-primary-dark text-white font-bold py-3.5 rounded-xl mt-2 flex items-center justify-center gap-2"
                             >
                                 <Save className="w-4 h-4" />
-                                Salvar Registro
+                                {t('reports.registry.saveRecordBtn')}
                             </button>
                         </div>
                     </div>
@@ -866,17 +873,16 @@ export default function RegistryPage() {
                 <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm animate-in fade-in no-print">
                     <div className="bg-white dark:bg-gray-900 rounded-2xl w-full max-w-sm p-6 shadow-2xl animate-in zoom-in-95">
                         <div className="flex justify-between items-center mb-6">
-                            <h2 className="text-lg font-bold text-main">Última Data Concluída</h2>
+                            <h2 className="text-lg font-bold text-main">{t('reports.registry.legacyTitle')}</h2>
                             <button onClick={() => setIsLegacyModalOpen(false)} className="text-muted hover:text-main"><X className="w-5 h-5" /></button>
                         </div>
 
                         <div className="space-y-4">
                             <p className="text-sm text-gray-500 dark:text-gray-400">
-                                Defina a data histórica de conclusão para o território <strong>{editingLegacy?.name}</strong>.
-                                Esta data aparecerá na coluna &quot;Última Data Concluída&quot;.
+                                {t('reports.registry.legacyDesc', { name: editingLegacy?.name || '' })}
                             </p>
                             <div>
-                                <label className="block text-xs font-bold text-gray-500 dark:text-gray-400 uppercase mb-1">Data</label>
+                                <label className="block text-xs font-bold text-gray-500 dark:text-gray-400 uppercase mb-1">{t('reports.registry.dateLabel')}</label>
                                 <input
                                     type="date"
                                     className="w-full p-3 bg-gray-50 dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 font-medium text-sm text-main"
@@ -893,7 +899,7 @@ export default function RegistryPage() {
                                 className="w-full bg-primary hover:bg-primary-dark text-white font-bold py-3.5 rounded-xl mt-2 flex items-center justify-center gap-2"
                             >
                                 <Save className="w-4 h-4" />
-                                Salvar Data
+                                {t('reports.registry.saveDateBtn')}
                             </button>
                         </div>
                     </div>

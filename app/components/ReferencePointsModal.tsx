@@ -30,6 +30,7 @@ import { geocodeAddress } from '@/lib/services/geocoding';
 import dynamic from 'next/dynamic';
 import { MapSkeleton } from '@/app/components/Skeleton';
 import { useAuth } from '@/app/context/AuthContext';
+import { useTranslation } from '@/app/context/I18nContext';
 
 const MapView = dynamic(() => import('@/app/components/MapView'), {
     loading: () => <MapSkeleton />,
@@ -66,6 +67,7 @@ export default function ReferencePointsModal({
         isElder,
         isAdminRoleGlobal
     } = useAuth();
+    const { t } = useTranslation();
     const hasFullRole = isServant || isElder || isAdminRoleGlobal;
     const canCreate = hasFullRole || (context === 'witnessing' ? canCreateWitnessing : canCreateMaps);
     const canEdit = hasFullRole || (context === 'witnessing' ? canEditWitnessing : canEditMaps);
@@ -90,7 +92,7 @@ export default function ReferencePointsModal({
 
     const handleSearchAddress = async () => {
         if (!searchAddressQuery.trim()) {
-            toast.error("Digite um endereço para buscar.");
+            toast.error(t('referencePoints.searchAddressRequired'));
             return;
         }
         setSearchingAddress(true);
@@ -102,16 +104,16 @@ export default function ReferencePointsModal({
                 if (!isNaN(lat) && !isNaN(lng)) {
                     setPickerCoords({ lat, lng });
                     setMapCenter({ lat, lng });
-                    toast.success("Endereço encontrado!");
+                    toast.success(t('referencePoints.addressFound'));
                 } else {
-                    toast.error("Erro ao processar as coordenadas do endereço.");
+                    toast.error(t('referencePoints.coordsError'));
                 }
             } else {
-                toast.error("Endereço não encontrado. Tente outro termo ou clique no mapa.");
+                toast.error(t('referencePoints.addressNotFound'));
             }
         } catch (error) {
             console.error("Erro na busca de endereço:", error);
-            toast.error("Erro ao buscar endereço.");
+            toast.error(t('referencePoints.searchAddressError'));
         } finally {
             setSearchingAddress(false);
         }
@@ -127,7 +129,7 @@ export default function ReferencePointsModal({
                 setMapCenter({ lat: result.data[0].lat, lng: result.data[0].lng });
             }
         } else {
-            toast.error("Erro ao carregar pontos de referência: " + result.error);
+            toast.error(t('referencePoints.loadError') + result.error);
         }
         setLoading(false);
     }, [congregationId, cityId]);
@@ -188,18 +190,18 @@ export default function ReferencePointsModal({
     };
 
     const handleDeleteClick = async (pointId: string, pointName: string) => {
-        if (!confirm(`Tem certeza que deseja excluir o ponto de referência "${pointName}"?`)) {
+        if (!confirm(t('referencePoints.deleteConfirm', { name: pointName }))) {
             return;
         }
 
-        const toastId = toast.loading("Excluindo ponto de referência...");
+        const toastId = toast.loading(t('referencePoints.deletingToast'));
         const result = await deleteReferencePoint(pointId);
         if (result.success) {
-            toast.success("Ponto de referência excluído com sucesso!", { id: toastId });
+            toast.success(t('referencePoints.deleteSuccess'), { id: toastId });
             fetchPoints();
             if (onSuccess) onSuccess();
         } else {
-            toast.error("Erro ao excluir: " + result.error, { id: toastId });
+            toast.error(t('referencePoints.deleteError') + result.error, { id: toastId });
         }
     };
 
@@ -209,7 +211,7 @@ export default function ReferencePointsModal({
 
     const handleUseCurrentLocation = () => {
         if (!navigator.geolocation) {
-            toast.error("Geolocalização não é suportada por este navegador.");
+            toast.error(t('referencePoints.geoNotSupported'));
             return;
         }
 
@@ -221,10 +223,10 @@ export default function ReferencePointsModal({
                 };
                 setPickerCoords(coords);
                 setMapCenter(coords);
-                toast.success("Localização atual carregada!");
+                toast.success(t('referencePoints.currentLocationLoaded'));
             },
             (error) => {
-                toast.error("Erro ao obter localização: " + error.message);
+                toast.error(t('referencePoints.geoError') + error.message);
             }
         );
     };
@@ -232,20 +234,20 @@ export default function ReferencePointsModal({
     const handleSave = async (e: React.FormEvent) => {
         e.preventDefault();
         if (editingPoint ? !canEdit : !canCreate) {
-            toast.error("Você não tem permissão para realizar esta ação.");
+            toast.error(t('referencePoints.noPermission'));
             return;
         }
         if (!name.trim()) {
-            toast.error("O nome é obrigatório.");
+            toast.error(t('referencePoints.nameRequired'));
             return;
         }
         if (!pickerCoords) {
-            toast.error("Selecione um local no mapa.");
+            toast.error(t('referencePoints.selectOnMap'));
             return;
         }
 
         setSaving(true);
-        const toastId = toast.loading("Salvando ponto de referência...");
+        const toastId = toast.loading(t('referencePoints.savingToast'));
 
         if (editingPoint) {
             // Update
@@ -257,14 +259,14 @@ export default function ReferencePointsModal({
             });
 
             if (result.success) {
-                toast.success("Ponto de referência atualizado com sucesso!", { id: toastId });
+                toast.success(t('referencePoints.updateSuccess'), { id: toastId });
                 setIsFormOpen(false);
                 setEditingPoint(null);
                 clearForm();
                 fetchPoints();
                 if (onSuccess) onSuccess();
             } else {
-                toast.error("Erro ao atualizar: " + result.error, { id: toastId });
+                toast.error(t('referencePoints.updateError') + result.error, { id: toastId });
             }
         } else {
             // Create
@@ -278,13 +280,13 @@ export default function ReferencePointsModal({
             });
 
             if (result.success) {
-                toast.success("Ponto de referência criado com sucesso!", { id: toastId });
+                toast.success(t('referencePoints.createSuccess'), { id: toastId });
                 setIsFormOpen(false);
                 clearForm();
                 fetchPoints();
                 if (onSuccess) onSuccess();
             } else {
-                toast.error("Erro ao criar: " + result.error, { id: toastId });
+                toast.error(t('referencePoints.createError') + result.error, { id: toastId });
             }
         }
         setSaving(false);
@@ -312,8 +314,8 @@ export default function ReferencePointsModal({
                             <div>
                                 <h2 className="text-lg font-bold text-gray-900 dark:text-white">
                                     {isFormOpen 
-                                        ? (editingPoint ? 'Editar Ponto de Referência' : 'Novo Ponto de Referência') 
-                                        : 'Pontos de Referência'
+                                        ? (editingPoint ? t('referencePoints.titleEdit') : t('referencePoints.titleNew')) 
+                                        : t('referencePoints.titleList')
                                     }
                                 </h2>
                                 <p className="text-[10px] text-muted font-bold uppercase tracking-widest leading-none mt-0.5">
@@ -334,26 +336,26 @@ export default function ReferencePointsModal({
                         /* FORMULÁRIO DE CADASTRO/EDIÇÃO */
                         <form onSubmit={handleSave} className="space-y-4">
                             <div>
-                                <label className="block text-xs font-bold text-muted uppercase tracking-wider mb-2">Nome do Ponto de Referência</label>
+                                <label className="block text-xs font-bold text-muted uppercase tracking-wider mb-2">{t('referencePoints.nameLabel')}</label>
                                 <input
                                     type="text"
                                     className="w-full bg-gray-50 dark:bg-gray-800 border border-gray-100 dark:border-gray-700 rounded-lg p-3 font-bold text-sm text-main focus:ring-2 focus:ring-orange-500/20 focus:outline-none"
                                     value={name}
                                     onChange={e => setName(e.target.value)}
-                                    placeholder="Ex: Mercado Compre Bem, Ponto de Ônibus..."
+                                    placeholder={t('referencePoints.namePlaceholder')}
                                     required
                                     disabled={saving}
                                 />
                             </div>
 
                             <div>
-                                <label className="block text-xs font-bold text-muted uppercase tracking-wider mb-2">Observações / Detalhes (Opcional)</label>
+                                <label className="block text-xs font-bold text-muted uppercase tracking-wider mb-2">{t('referencePoints.observationsLabel')}</label>
                                 <textarea
                                     className="w-full bg-gray-50 dark:bg-gray-800 border border-gray-100 dark:border-gray-700 rounded-lg p-3 font-bold text-sm text-main focus:ring-2 focus:ring-orange-500/20 focus:outline-none resize-none"
                                     rows={2}
                                     value={observations}
                                     onChange={e => setObservations(e.target.value)}
-                                    placeholder="Ex: Próximo à esquina, faixas pintadas..."
+                                    placeholder={t('referencePoints.observationsPlaceholder')}
                                     disabled={saving}
                                 />
                             </div>
@@ -361,13 +363,13 @@ export default function ReferencePointsModal({
                             {/* Picker de Coordenadas */}
                             <div className="space-y-3">
                                 <div className="flex justify-between items-center">
-                                    <label className="block text-xs font-bold text-muted uppercase tracking-wider">Selecione o local no mapa</label>
+                                    <label className="block text-xs font-bold text-muted uppercase tracking-wider">{t('referencePoints.selectLocationLabel')}</label>
                                     <button
                                         type="button"
                                         onClick={handleUseCurrentLocation}
                                         className="text-[10px] font-bold text-orange-600 hover:text-orange-700 transition-colors flex items-center gap-1 uppercase tracking-wider"
                                     >
-                                        <Navigation className="w-3.5 h-3.5 fill-current" /> Minha Localização
+                                        <Navigation className="w-3.5 h-3.5 fill-current" /> {t('referencePoints.myLocationBtn')}
                                     </button>
                                 </div>
 
@@ -377,7 +379,7 @@ export default function ReferencePointsModal({
                                         <input
                                             type="text"
                                             className="w-full bg-gray-50 dark:bg-gray-800 border border-gray-100 dark:border-gray-700 rounded-lg pl-9 pr-3 py-2 font-bold text-xs text-main focus:ring-2 focus:ring-orange-500/20 focus:outline-none"
-                                            placeholder="Buscar endereço..."
+                                            placeholder={t('referencePoints.searchPlaceholder')}
                                             value={searchAddressQuery}
                                             onChange={e => setSearchAddressQuery(e.target.value)}
                                             onKeyDown={e => {
@@ -399,7 +401,7 @@ export default function ReferencePointsModal({
                                         {searchingAddress ? (
                                             <Loader2 className="w-3.5 h-3.5 animate-spin" />
                                         ) : (
-                                            'Buscar'
+                                            t('referencePoints.searchBtn')
                                         )}
                                     </button>
                                 </div>
@@ -410,7 +412,7 @@ export default function ReferencePointsModal({
                                             id: 'temp-picker',
                                             lat: pickerCoords.lat,
                                             lng: pickerCoords.lng,
-                                            title: name || 'Novo Ponto',
+                                            title: name || t('referencePoints.newPointFallback'),
                                             variant: 'numbered',
                                             index: 1,
                                             status: 'PENDENTE'
@@ -438,7 +440,7 @@ export default function ReferencePointsModal({
                                     className="px-4 py-2 border border-gray-200 dark:border-slate-700 text-gray-500 rounded-lg text-xs font-bold hover:bg-gray-50 dark:hover:bg-slate-800 transition-colors"
                                     disabled={saving}
                                 >
-                                    Cancelar
+                                    {t('referencePoints.cancelBtn')}
                                 </button>
                                 <button
                                     type="submit"
@@ -448,10 +450,10 @@ export default function ReferencePointsModal({
                                     {saving ? (
                                         <>
                                             <Loader2 className="w-3.5 h-3.5 animate-spin" />
-                                            Salvando...
+                                            {t('referencePoints.savingBtn')}
                                         </>
                                     ) : (
-                                        'Salvar'
+                                        t('referencePoints.saveBtn')
                                     )}
                                 </button>
                             </div>
@@ -468,7 +470,7 @@ export default function ReferencePointsModal({
                                         className="bg-orange-50 dark:bg-orange-950/20 text-orange-600 dark:text-orange-400 hover:bg-orange-100 dark:hover:bg-orange-950/40 border border-orange-100 dark:border-orange-900/30 px-3 py-2 rounded-lg text-xs font-bold transition-all flex items-center gap-1.5 active:scale-95"
                                     >
                                         <Plus className="w-4 h-4" />
-                                        Novo Ponto de Referência
+                                        {t('referencePoints.newPointBtn')}
                                     </button>
                                 </div>
                             )}
@@ -481,8 +483,8 @@ export default function ReferencePointsModal({
                             ) : points.length === 0 ? (
                                 <div className="text-center py-10 border border-dashed border-gray-200 dark:border-slate-800 rounded-xl bg-gray-50/50 dark:bg-slate-900/50">
                                     <AlertCircle className="w-8 h-8 mx-auto mb-2 text-gray-400" />
-                                    <p className="text-sm font-bold text-gray-500 dark:text-gray-400">Nenhum ponto cadastrado neste mapa</p>
-                                    <p className="text-[10px] text-gray-400 mt-1 max-w-[280px] mx-auto leading-normal">Eles servem para orientar os publicadores durante o testemunho sem interferir na centralização dos mapas.</p>
+                                    <p className="text-sm font-bold text-gray-500 dark:text-gray-400">{t('referencePoints.emptyTitle')}</p>
+                                    <p className="text-[10px] text-gray-400 mt-1 max-w-[280px] mx-auto leading-normal">{t('referencePoints.emptyDesc')}</p>
                                 </div>
                             ) : (
                                 <div className="max-h-80 overflow-y-auto pr-1 space-y-2.5 custom-scrollbar">
@@ -510,7 +512,7 @@ export default function ReferencePointsModal({
                                                             type="button"
                                                             onClick={() => handleEditClick(point)}
                                                             className="p-1.5 rounded-lg text-gray-400 hover:text-blue-600 hover:bg-blue-50 dark:hover:bg-blue-950/20 transition-colors"
-                                                            title="Editar"
+                                                            title={t('referencePoints.editTitle')}
                                                         >
                                                             <Pencil className="w-4 h-4" />
                                                         </button>
@@ -520,7 +522,7 @@ export default function ReferencePointsModal({
                                                             type="button"
                                                             onClick={() => handleDeleteClick(point.id, point.name)}
                                                             className="p-1.5 rounded-lg text-gray-400 hover:text-red-600 hover:bg-red-50 dark:hover:bg-red-950/20 transition-colors"
-                                                            title="Excluir"
+                                                            title={t('referencePoints.deleteTitle')}
                                                         >
                                                             <Trash2 className="w-4 h-4" />
                                                         </button>

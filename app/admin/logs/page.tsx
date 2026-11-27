@@ -33,6 +33,7 @@ import {
 import Link from 'next/link';
 import { toast } from 'sonner';
 import BottomNav from '@/app/components/BottomNav';
+import { useTranslation } from '@/app/context/I18nContext';
 
 const LEVEL_CONFIG: Record<LogLevel, { label: string, badge: string, icon: any }> = {
     'INFO': { label: 'INFO', badge: 'bg-blue-100 text-blue-700 dark:bg-blue-900/40 dark:text-blue-300 border-blue-200 dark:border-blue-800', icon: Info },
@@ -42,6 +43,7 @@ const LEVEL_CONFIG: Record<LogLevel, { label: string, badge: string, icon: any }
 };
 
 export default function SystemLogsAdminPage() {
+    const { t } = useTranslation();
     const { isAdminRoleGlobal, loading: authLoading } = useAuth();
     const router = useRouter();
     const [logs, setLogs] = useState<SystemLog[]>([]);
@@ -233,7 +235,7 @@ export default function SystemLogsAdminPage() {
                     <div className="flex items-center justify-between border-b border-surface-border pb-2.5">
                         <p className="text-xs font-bold text-amber-500 uppercase tracking-wider flex items-center gap-1.5">
                             <AlertTriangle className="w-3.5 h-3.5" />
-                            Relatório de Exclusão em Cascata
+                            {t('admin.logs.drawer.cascadeTitle')}
                         </p>
                         {idPart && idPart.startsWith('ID:') && (
                             <span className="font-mono text-[10px] text-muted bg-surface px-2 py-0.5 rounded border border-surface-border">
@@ -245,7 +247,7 @@ export default function SystemLogsAdminPage() {
                     <div className="space-y-2">
                         {activeDeletions.length === 0 ? (
                             <p className="text-xs text-muted font-medium py-1">
-                                Nenhuma entidade vinculada foi afetada (cidade/bairro estava sem territórios cadastrados).
+                                {t('admin.logs.drawer.cascadeEmpty')}
                             </p>
                         ) : (
                             activeDeletions.map((item, idx) => (
@@ -255,7 +257,9 @@ export default function SystemLogsAdminPage() {
                                         {item.label}
                                     </span>
                                     <span className="font-bold text-red-500 bg-red-500/10 px-2 py-0.5 rounded border border-red-500/20">
-                                        {item.count} {item.count === 1 ? 'item removido' : 'itens removidos'}
+                                        {item.count === 1
+                                            ? t('admin.logs.drawer.itemRemovedSingular', { count: item.count })
+                                            : t('admin.logs.drawer.itemRemovedPlural', { count: item.count })}
                                     </span>
                                 </div>
                             ))
@@ -294,8 +298,8 @@ export default function SystemLogsAdminPage() {
                                 <Terminal className="w-5 h-5" />
                             </div>
                             <div>
-                                <h1 className="text-xl font-bold text-main tracking-tight">Logs do Sistema</h1>
-                                <p className="text-xs text-muted font-medium">Auditoria centralizada e histórico de segurança</p>
+                                <h1 className="text-xl font-bold text-main tracking-tight">{t('admin.logs.title')}</h1>
+                                <p className="text-xs text-muted font-medium">{t('admin.logs.subtitle')}</p>
                             </div>
                         </div>
                     </div>
@@ -321,7 +325,7 @@ export default function SystemLogsAdminPage() {
                             className="flex items-center gap-2 text-xs font-bold bg-surface border border-surface-border hover:bg-background px-3 py-2 rounded-lg transition-colors text-muted hover:text-main disabled:opacity-50"
                         >
                             <RefreshCw className={`w-3.5 h-3.5 ${loadingLogs ? 'animate-spin' : ''}`} />
-                            Atualizar
+                            {t('admin.logs.refresh')}
                         </button>
                     </div>
                 </div>
@@ -336,7 +340,7 @@ export default function SystemLogsAdminPage() {
                             <Search className="w-5 h-5 absolute left-3 top-1/2 -translate-y-1/2 text-muted" />
                             <input
                                 type="text"
-                                placeholder="Buscar por mensagem, usuário, CID ou detalhes..."
+                                placeholder={t('admin.logs.searchPlaceholder')}
                                 value={searchTerm}
                                 onChange={(e) => setSearchTerm(e.target.value)}
                                 className="w-full pl-10 pr-4 py-2 bg-background border border-surface-border rounded-xl text-sm focus:outline-none focus:border-primary text-main placeholder:text-muted"
@@ -351,7 +355,7 @@ export default function SystemLogsAdminPage() {
                                 }}
                                 className="w-full py-2 px-3 bg-background border border-surface-border rounded-xl text-sm focus:outline-none focus:border-primary text-main"
                             >
-                                <option value="ALL">Todos os Níveis (Severity)</option>
+                                <option value="ALL">{t('admin.logs.allLevels')}</option>
                                 <option value="INFO">INFO</option>
                                 <option value="WARN">WARN</option>
                                 <option value="ERROR">ERROR</option>
@@ -367,15 +371,15 @@ export default function SystemLogsAdminPage() {
                                 }}
                                 className="w-full py-2 px-3 bg-background border border-surface-border rounded-xl text-sm focus:outline-none focus:border-primary text-main"
                             >
-                                <option value="ALL">Todas as Categorias</option>
-                                <option value="TERRITORY">TERRITORY (Territórios/Endereços)</option>
-                                <option value="CONGREGATION">CONGREGATION (Congregações)</option>
-                                <option value="MEMBERS">MEMBERS (Membros/Privilégios)</option>
-                                <option value="ASSIGNMENTS">ASSIGNMENTS (Designações)</option>
-                                <option value="WITNESSING">WITNESSING (Testemunho)</option>
-                                <option value="REPORTS">REPORTS (Relatórios S-13)</option>
-                                <option value="AUTH">AUTH (Autenticação/Segurança)</option>
-                                <option value="ADMIN">ADMIN (Administração)</option>
+                                <option value="ALL">{t('admin.logs.allCategories')}</option>
+                                <option value="TERRITORY">{t('admin.logs.categories.TERRITORY')}</option>
+                                <option value="CONGREGATION">{t('admin.logs.categories.CONGREGATION')}</option>
+                                <option value="MEMBERS">{t('admin.logs.categories.USER')}</option>
+                                <option value="ASSIGNMENTS">{t('admin.logs.categories.ASSIGNMENT')}</option>
+                                <option value="WITNESSING">{t('admin.logs.categories.WITNESSING')}</option>
+                                <option value="REPORTS">{t('admin.logs.categories.REPORT')}</option>
+                                <option value="AUTH">{t('admin.logs.categories.AUTH')}</option>
+                                <option value="ADMIN">{t('admin.logs.categories.ADMIN')}</option>
                             </select>
                         </div>
                     </div>
@@ -385,10 +389,10 @@ export default function SystemLogsAdminPage() {
                         <div className="flex flex-wrap items-center gap-3">
                             <span className="font-bold flex items-center gap-1 text-muted">
                                 <Filter className="w-3.5 h-3.5 text-primary" />
-                                Período:
+                                {t('admin.logs.period')}
                             </span>
                             <div className="flex items-center gap-1.5">
-                                <label className="text-muted">De:</label>
+                                <label className="text-muted">{t('admin.logs.from')}</label>
                                 <input 
                                     type="date" 
                                     value={startDate}
@@ -397,7 +401,7 @@ export default function SystemLogsAdminPage() {
                                 />
                             </div>
                             <div className="flex items-center gap-1.5">
-                                <label className="text-muted">Até:</label>
+                                <label className="text-muted">{t('admin.logs.to')}</label>
                                 <input 
                                     type="date" 
                                     value={endDate}
@@ -410,14 +414,14 @@ export default function SystemLogsAdminPage() {
                                     onClick={() => { setStartDate(''); setEndDate(''); }}
                                     className="text-xs text-red-500 hover:underline font-semibold"
                                 >
-                                    Limpar Datas
+                                    {t('admin.logs.clearDates')}
                                 </button>
                             )}
                         </div>
 
                         <span className="text-muted font-mono font-medium">
-                            {filteredLogs.length} evento{filteredLogs.length !== 1 ? 's' : ''} carregados
-                            {hasMore && <span className="text-primary"> · há mais</span>}
+                            {t('admin.logs.eventsLoaded', { count: filteredLogs.length })}
+                            {hasMore && <span className="text-primary"> {t('admin.logs.hasMore')}</span>}
                         </span>
                     </div>
                 </div>
@@ -428,12 +432,12 @@ export default function SystemLogsAdminPage() {
                         <table className="w-full text-left border-collapse">
                             <thead>
                                 <tr className="border-b border-surface-border bg-background/50 text-[11px] font-bold text-muted uppercase tracking-wider">
-                                    <th className="py-3 px-4">Nível</th>
-                                    <th className="py-3 px-4">Data / Hora</th>
-                                    <th className="py-3 px-4">Módulo</th>
-                                    <th className="py-3 px-4">Mensagem / Ação</th>
-                                    <th className="py-3 px-4">Usuário</th>
-                                    <th className="py-3 px-4 text-right">Ação</th>
+                                    <th className="py-3 px-4">{t('admin.logs.table.level')}</th>
+                                    <th className="py-3 px-4">{t('admin.logs.table.dateTime')}</th>
+                                    <th className="py-3 px-4">{t('admin.logs.table.module')}</th>
+                                    <th className="py-3 px-4">{t('admin.logs.table.messageAction')}</th>
+                                    <th className="py-3 px-4">{t('admin.logs.table.user')}</th>
+                                    <th className="py-3 px-4 text-right">{t('admin.logs.table.action')}</th>
                                 </tr>
                             </thead>
                             <tbody className="divide-y divide-surface-border text-xs font-medium">
@@ -452,7 +456,7 @@ export default function SystemLogsAdminPage() {
                                     <tr>
                                         <td colSpan={6} className="p-12 text-center text-muted">
                                             <Terminal className="w-10 h-10 mx-auto mb-2 opacity-40" />
-                                            <p className="font-bold text-sm">Nenhum evento registrado</p>
+                                            <p className="font-bold text-sm">{t('admin.logs.empty')}</p>
                                         </td>
                                     </tr>
                                 ) : (
@@ -490,7 +494,7 @@ export default function SystemLogsAdminPage() {
                                                 </td>
                                                 <td className="py-2.5 px-4 whitespace-nowrap font-mono text-[11px] text-muted">
                                                     <div className="flex items-center gap-1.5">
-                                                        <span>{log.user || 'Sistema'}</span>
+                                                        <span>{log.user || t('admin.logs.systemAuthor')}</span>
                                                         {log.role && (
                                                             <span className={`text-[9px] px-1.5 py-0.5 rounded font-bold uppercase tracking-wider ${
                                                                 log.role === 'ADMIN' ? 'bg-red-500/15 text-red-400' :
@@ -504,7 +508,7 @@ export default function SystemLogsAdminPage() {
                                                     </div>
                                                 </td>
                                                 <td className="py-2.5 px-4 whitespace-nowrap text-right text-primary font-bold text-[11px]">
-                                                    Inspecionar
+                                                    {t('admin.logs.inspect')}
                                                 </td>
                                             </tr>
                                         );
@@ -524,9 +528,9 @@ export default function SystemLogsAdminPage() {
                             className="flex items-center gap-2 text-sm font-bold bg-surface border border-surface-border hover:bg-background px-6 py-3 rounded-xl transition-colors text-muted hover:text-main disabled:opacity-50"
                         >
                             {loadingMore ? (
-                                <><Loader2 className="w-4 h-4 animate-spin" /> Carregando...</>
+                                <><Loader2 className="w-4 h-4 animate-spin" /> {t('admin.logs.loading')}</>
                             ) : (
-                                <><RefreshCw className="w-4 h-4" /> Carregar mais 50 eventos</>
+                                <><RefreshCw className="w-4 h-4" /> {t('admin.logs.loadMore')}</>
                             )}
                         </button>
                     </div>
@@ -556,26 +560,26 @@ export default function SystemLogsAdminPage() {
 
                         <div>
                             <h2 className="text-base font-bold text-main">{selectedLog.message}</h2>
-                            <p className="text-xs text-muted font-mono mt-1">ID Evento: {selectedLog.id || 'N/A'}</p>
+                            <p className="text-xs text-muted font-mono mt-1">{t('admin.logs.drawer.eventId')} {selectedLog.id || 'N/A'}</p>
                         </div>
 
                         {/* Informações Técnicas */}
                         <div className="bg-background border border-surface-border rounded-xl p-4 space-y-3 text-xs font-mono">
                             <div className="flex items-center justify-between">
                                 <span className="text-muted flex items-center gap-1">
-                                    <UserIcon className="w-3.5 h-3.5 text-primary" /> Usuário / Ator:
+                                    <UserIcon className="w-3.5 h-3.5 text-primary" /> {t('admin.logs.drawer.userActor')}
                                 </span>
-                                <span className="font-bold text-main">{selectedLog.user || 'Sistema'}</span>
+                                <span className="font-bold text-main">{selectedLog.user || t('admin.logs.systemAuthor')}</span>
                             </div>
                             <div className="flex items-center justify-between">
                                 <span className="text-muted flex items-center gap-1">
-                                    <Tag className="w-3.5 h-3.5 text-primary" /> Privilégio no Momento da Ação:
+                                    <Tag className="w-3.5 h-3.5 text-primary" /> {t('admin.logs.drawer.roleAtAction')}
                                 </span>
-                                <span className="font-bold text-primary uppercase">{selectedLog.role || 'Não registrado'}</span>
+                                <span className="font-bold text-primary uppercase">{selectedLog.role || t('admin.logs.drawer.notRecorded')}</span>
                             </div>
                             <div className="flex items-center justify-between">
                                 <span className="text-muted flex items-center gap-1">
-                                    <Calendar className="w-3.5 h-3.5 text-primary" /> Data / Hora:
+                                    <Calendar className="w-3.5 h-3.5 text-primary" /> {t('admin.logs.drawer.dateTime')}
                                 </span>
                                 <span className="text-main">{selectedLog.timestamp}</span>
                             </div>
@@ -591,7 +595,7 @@ export default function SystemLogsAdminPage() {
                             {selectedLog.userAgent && (
                                 <div className="space-y-1 pt-2 border-t border-surface-border">
                                     <span className="text-muted flex items-center gap-1">
-                                        <Globe className="w-3.5 h-3.5 text-primary" /> User-Agent / Origem:
+                                        <Globe className="w-3.5 h-3.5 text-primary" /> {t('admin.logs.drawer.userAgent')}
                                     </span>
                                     <p className="text-[11px] text-muted break-all bg-surface p-2 rounded border border-surface-border">
                                         {selectedLog.userAgent}

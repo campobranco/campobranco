@@ -4,13 +4,16 @@ import { useState, useEffect } from 'react';
 import { auth } from '@/lib/firebase';
 import { GoogleAuthProvider, signInWithCredential, signInWithPopup, signInWithEmailAndPassword } from 'firebase/auth';
 import { useRouter, useSearchParams } from 'next/navigation';
-import { AlertCircle, Mail, Lock, Loader2 } from 'lucide-react';
+import { AlertCircle, Mail, Lock, Loader2, Globe, ChevronDown } from 'lucide-react';
+import LanguagePickerModal from '@/app/components/LanguagePickerModal';
+import { LOCALE_LABELS } from '@/lib/i18n';
 
 import { Capacitor } from '@capacitor/core';
 import { FirebaseAuthentication } from '@capacitor-firebase/authentication';
 import { useAppIcon } from '@/app/context/AppIconContext';
 import { useAuth } from '@/app/context/AuthContext';
 import { logActivityMutation as logActivity } from '@/lib/contracts/mutations/auditMutations';
+import { useTranslation } from '@/app/context/I18nContext';
 
 export async function performGoogleSignIn(authInstance = auth) {
     if (Capacitor.isNativePlatform()) {
@@ -37,6 +40,8 @@ export async function performGoogleSignIn(authInstance = auth) {
 }
 
 export default function LoginClient() {
+    const { t, locale, setLocale } = useTranslation();
+    const [isLanguageModalOpen, setIsLanguageModalOpen] = useState(false);
     const { user, loading: authLoading } = useAuth();
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState('');
@@ -87,7 +92,7 @@ export default function LoginClient() {
             <div className="min-h-screen bg-primary dark:bg-background flex flex-col items-center justify-center p-6 font-sans">
                 <div className="w-full max-w-sm bg-white dark:bg-surface rounded-2xl p-8 shadow-2xl flex flex-col items-center gap-4">
                     <Loader2 className="w-12 h-12 text-primary animate-spin" />
-                    <p className="text-gray-500 dark:text-muted font-bold uppercase tracking-widest text-[10px]">Redirecionando...</p>
+                    <p className="text-gray-500 dark:text-muted font-bold uppercase tracking-widest text-[10px]">{t('login.redirecting')}</p>
                 </div>
             </div>
         );
@@ -119,7 +124,7 @@ export default function LoginClient() {
                 error.code !== '12501' && 
                 error.message !== 'canceled'
             ) {
-                setError("Erro ao conectar com Google. Use o login com e-mail ou tente novamente.");
+                setError(t('login.googleError'));
                 setShowEmailLogin(true);
             }
         } finally {
@@ -130,7 +135,7 @@ export default function LoginClient() {
     const handleEmailLogin = async (e: React.FormEvent) => {
         e.preventDefault();
         if (!email || !password) {
-            setError("Por favor, preencha todos os campos.");
+            setError(t('login.fillAllFields'));
             return;
         }
 
@@ -155,22 +160,22 @@ export default function LoginClient() {
             console.error("Erro no login com e-mail:", error);
             switch (error.code) {
                 case 'auth/invalid-email':
-                    setError("Endereço de e-mail inválido.");
+                    setError(t('login.invalidEmail'));
                     break;
                 case 'auth/user-disabled':
-                    setError("Esta conta foi desativada.");
+                    setError(t('login.userDisabled'));
                     break;
                 case 'auth/user-not-found':
-                    setError("Usuário não encontrado.");
+                    setError(t('login.userNotFound'));
                     break;
                 case 'auth/wrong-password':
-                    setError("Senha incorreta.");
+                    setError(t('login.wrongPassword'));
                     break;
                 case 'auth/invalid-credential':
-                    setError("E-mail ou senha incorretos.");
+                    setError(t('login.invalidCredential'));
                     break;
                 default:
-                    setError("Erro ao fazer login com e-mail e senha. Verifique suas credenciais.");
+                    setError(t('login.genericEmailError'));
             }
             setLoading(false);
         }
@@ -179,6 +184,22 @@ export default function LoginClient() {
 
     return (
         <div className="min-h-[100dvh] bg-primary dark:bg-background flex flex-col items-center justify-center p-6 font-sans transition-colors duration-300 relative z-10">
+            <button
+                type="button"
+                onClick={() => setIsLanguageModalOpen(true)}
+                aria-haspopup="dialog"
+                aria-label={`${t('settings.language.label')}: ${LOCALE_LABELS[locale]}`}
+                className="absolute top-4 right-4 z-20 flex items-center gap-2 rounded-full bg-white/15 dark:bg-surface/80 backdrop-blur-md border border-white/25 dark:border-surface-border px-3.5 py-2 shadow-lg text-white dark:text-main text-xs font-bold transition-all hover:bg-white/25 active:scale-95 max-w-[60vw]"
+            >
+                <Globe className="w-4 h-4 shrink-0" />
+                <span className="truncate">{LOCALE_LABELS[locale]}</span>
+                <ChevronDown className="w-3.5 h-3.5 shrink-0 opacity-80" />
+            </button>
+            <LanguagePickerModal
+                isOpen={isLanguageModalOpen}
+                onClose={() => setIsLanguageModalOpen(false)}
+                onSelect={setLocale}
+            />
             <div className="w-full max-w-sm">
                 <div className="bg-white dark:bg-surface rounded-2xl p-8 shadow-2xl animate-in slide-in-from-bottom-12 fade-in duration-1000 border border-transparent dark:border-surface-border transition-colors">
                     <div className="text-center mb-8">
@@ -186,7 +207,7 @@ export default function LoginClient() {
                             <img src={appIconSrc} alt="Campo Branco" width={96} height={96} className="w-full h-full object-contain" />
                         </div>
                         <h1 className="text-2xl font-black text-gray-900 dark:text-white tracking-tighter mb-1">Campo Branco</h1>
-                        <p className="text-primary dark:text-primary-light text-[10px] font-bold opacity-80 uppercase tracking-widest">Acesso Restrito</p>
+                        <p className="text-primary dark:text-primary-light text-[10px] font-bold opacity-80 uppercase tracking-widest">{t('login.restrictedAccess')}</p>
                     </div>
 
                     {error && (
@@ -199,7 +220,7 @@ export default function LoginClient() {
                     {!showEmailLogin ? (
                         <div className="space-y-6">
                             <div className="text-center">
-                                <p className="text-gray-500 dark:text-gray-300 text-sm font-medium">Escolha uma forma de login para entrar.</p>
+                                <p className="text-gray-500 dark:text-gray-300 text-sm font-medium">{t('login.chooseMethod')}</p>
                             </div>
 
                             <button
@@ -214,12 +235,12 @@ export default function LoginClient() {
                                     <path d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z" fill="#FBBC05" />
                                     <path d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z" fill="#EA4335" />
                                 </svg>
-                                <span>{loading ? 'Carregando...' : 'Entrar com Google'}</span>
+                                <span>{loading ? t('login.loading') : t('login.signInGoogle')}</span>
                             </button>
 
                             <div className="relative flex py-2 items-center">
                                 <div className="flex-grow border-t border-gray-100 dark:border-gray-800"></div>
-                                <span className="flex-shrink mx-4 text-gray-400 dark:text-gray-505 text-[10px] font-bold uppercase tracking-wider">ou</span>
+                                <span className="flex-shrink mx-4 text-gray-400 dark:text-gray-505 text-[10px] font-bold uppercase tracking-wider">{t('login.or')}</span>
                                 <div className="flex-grow border-t border-gray-100 dark:border-gray-800"></div>
                             </div>
 
@@ -232,20 +253,20 @@ export default function LoginClient() {
                                 className="w-full bg-transparent hover:bg-gray-50 dark:hover:bg-gray-800/50 text-gray-600 dark:text-gray-300 hover:text-primary dark:hover:text-primary-light font-bold py-3.5 px-6 rounded-xl border border-gray-100 dark:border-gray-800 transition-all flex items-center justify-center gap-2 text-xs"
                             >
                                 <Mail className="w-4 h-4" />
-                                Fazer login com email e senha
+                                {t('login.signInWithEmail')}
                             </button>
                         </div>
                     ) : (
                         <form onSubmit={handleEmailLogin} className="space-y-4 animate-in fade-in zoom-in-95 duration-200">
                             <div>
-                                <label className="block text-xs font-bold text-gray-400 dark:text-gray-500 uppercase tracking-wider mb-2">E-mail</label>
+                                <label className="block text-xs font-bold text-gray-400 dark:text-gray-500 uppercase tracking-wider mb-2">{t('login.emailLabel')}</label>
                                 <div className="relative">
                                     <Mail className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400 dark:text-gray-500 w-4 h-4" />
                                     <input
                                         type="email"
                                         value={email}
                                         onChange={(e) => setEmail(e.target.value)}
-                                        placeholder="seuemail@exemplo.com"
+                                        placeholder={t('login.emailPlaceholder')}
                                         className="w-full bg-gray-50 dark:bg-gray-800/80 border border-gray-100 dark:border-gray-700 text-gray-900 dark:text-white text-sm font-medium rounded-xl py-3.5 pl-11 pr-4 focus:ring-2 focus:ring-primary/20 focus:outline-none transition-all placeholder:text-gray-400 dark:placeholder:text-gray-500"
                                         required
                                     />
@@ -253,7 +274,7 @@ export default function LoginClient() {
                             </div>
 
                             <div>
-                                <label className="block text-xs font-bold text-gray-400 dark:text-gray-500 uppercase tracking-wider mb-2">Senha</label>
+                                <label className="block text-xs font-bold text-gray-400 dark:text-gray-500 uppercase tracking-wider mb-2">{t('login.passwordLabel')}</label>
                                 <div className="relative">
                                     <Lock className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400 dark:text-gray-500 w-4 h-4" />
                                     <input
@@ -272,7 +293,7 @@ export default function LoginClient() {
                                 disabled={loading}
                                 className="w-full bg-primary hover:bg-primary-dark text-white font-extrabold py-4 px-6 rounded-xl transition-all active:scale-95 disabled:opacity-70 shadow-md flex items-center justify-center gap-2 mt-6"
                             >
-                                {loading ? 'Carregando...' : 'Entrar'}
+                                {loading ? t('login.loading') : t('login.signInBtn')}
                             </button>
 
                             <button
@@ -283,13 +304,13 @@ export default function LoginClient() {
                                 }}
                                 className="w-full text-center text-xs font-bold text-gray-400 dark:text-gray-550 hover:text-primary dark:hover:text-primary-light transition-colors py-2 mt-2"
                             >
-                                Voltar para login principal
+                                {t('login.backToMainLogin')}
                             </button>
                         </form>
                     )}
 
                     <div className="mt-8 text-center border-t border-surface-border pt-6">
-                        <p className="text-[10px] text-muted font-bold uppercase tracking-[0.2em]">Exclusivo para membros autorizados</p>
+                        <p className="text-[10px] text-muted font-bold uppercase tracking-[0.2em]">{t('login.authorizedOnly')}</p>
                     </div>
                 </div>
             </div>

@@ -43,6 +43,7 @@ import { toast } from 'sonner';
 import Link from 'next/link';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { useAuth } from '@/app/context/AuthContext';
+import { useTranslation } from '@/app/context/I18nContext';
 import BottomNav from '@/app/components/BottomNav';
 
 interface SharedList {
@@ -67,6 +68,7 @@ export default function SharedListView({ id: propId }: SharedListViewProps) {
     const searchParams = useSearchParams();
     const id = propId || searchParams.get('id');
     const { user, profileName, role, congregationType: userCongregationType } = useAuth();
+    const { t } = useTranslation();
     const router = useRouter();
 
     const [loading, setLoading] = useState(true);
@@ -114,7 +116,7 @@ export default function SharedListView({ id: propId }: SharedListViewProps) {
     useEffect(() => {
         const fetchList = async () => {
             if (!id) {
-                setError("Link incompleto (ID ausente).");
+                setError(t('sharedList.missingIdError'));
                 setLoading(false);
                 return;
             }
@@ -124,9 +126,9 @@ export default function SharedListView({ id: propId }: SharedListViewProps) {
                 const resData = await getSharedListWithData(id);
 
                 if (!resData.success) {
-                    if (resData.status === 404) setError("Link não encontrado.");
-                    else if (resData.status === 410) setError("Link expirado.");
-                    else setError(resData.error || "Erro ao carregar link.");
+                    if (resData.status === 404) setError(t('sharedList.notFoundError'));
+                    else if (resData.status === 410) setError(t('sharedList.expiredError'));
+                    else setError(resData.error || t('sharedList.loadError'));
                     setLoading(false);
                     return;
                 }
@@ -255,7 +257,7 @@ export default function SharedListView({ id: propId }: SharedListViewProps) {
                 }
             } catch (err) {
                 console.error("Fetch Shared List Error:", err);
-                setError("Erro ao carregar lista compartilhada.");
+                setError(t('sharedList.fetchError'));
             } finally {
                 setLoading(false);
             }
@@ -271,16 +273,16 @@ export default function SharedListView({ id: propId }: SharedListViewProps) {
             const resData = await returnMapMutation({ 
                 shareId: id as string,
                 userId: user.uid,
-                userName: profileName || 'Irmão sem Nome',
+                userName: profileName || t('sharedList.unnamedBrother'),
                 userCongregationId: listData?.congregationId || '',
                 currentUserRole: role || null
             });
-            if (!resData.success) throw new Error(resData.message || 'Erro ao devolver mapa');
-            toast.success("Mapa devolvido com sucesso! O acesso será encerrado em 24 horas.");
+            if (!resData.success) throw new Error(resData.message || t('sharedList.returnMapError'));
+            toast.success(t('sharedList.returnMapSuccess'));
             window.location.reload();
         } catch (e: any) {
             console.error(e);
-            toast.error(e.message || "Erro ao devolver mapa.");
+            toast.error(e.message || t('sharedList.returnMapError'));
             setReturning(false);
         }
     };
@@ -289,14 +291,14 @@ export default function SharedListView({ id: propId }: SharedListViewProps) {
         if (!id || !user) return;
 
         if (!canReturn) {
-            toast.error("Apenas o responsável pelo mapa, anciãos ou servos podem devolver.");
+            toast.error(t('sharedList.onlyResponsibleCanReturn'));
             return;
         }
 
         // Verifica se há responsável designado para o mapa. Se não, bloqueia a devolução e avisa
         const hasResponsible = listData?.assignedTo || listData?.assignedName;
         if (!hasResponsible) {
-            toast.error("Aceite ser o responsável para devolver o mapa.");
+            toast.error(t('sharedList.acceptToReturnError'));
             setIsResponsibilityModalOpen(true);
             return;
         }
@@ -323,8 +325,8 @@ export default function SharedListView({ id: propId }: SharedListViewProps) {
 
         setConfirmModal({
             isOpen: true,
-            title: "Devolver Mapa",
-            message: "Confirmar devolução do mapa? O link será encerrado em breve.",
+            title: t('sharedList.returnMapTitle'),
+            message: t('sharedList.returnMapConfirm'),
             variant: 'info',
             onConfirm: async () => {
                 setConfirmModal(prev => ({ ...prev, isOpen: false }));
@@ -347,11 +349,11 @@ export default function SharedListView({ id: propId }: SharedListViewProps) {
                 currentUserRole: role || null,
                 undo: false 
             });
-            if (!resData.success) throw new Error(resData.message || 'Erro ao devolver território');
-            toast.success(`Território ${territoryName} devolvido.`);
+            if (!resData.success) throw new Error(resData.message || t('sharedList.returnTerritoryError'));
+            toast.success(t('sharedList.returnTerritorySuccess', { name: territoryName }));
         } catch (e: any) {
             console.error(e);
-            toast.error(e.message || "Erro ao sincronizar devolução. Tente novamente.");
+            toast.error(e.message || t('sharedList.syncReturnError'));
             setItems(prev => prev.map(item =>
                 item.id === territoryId ? { ...item, visitStatus: 'active' } : item
             ));
@@ -362,7 +364,7 @@ export default function SharedListView({ id: propId }: SharedListViewProps) {
 
     const handleReturnTerritory = async (territoryId: string, territoryName: string) => {
         if (!canReturn) {
-            toast.error("Apenas o responsável pelo mapa, anciãos ou servos podem devolver.");
+            toast.error(t('sharedList.onlyResponsibleCanReturn'));
             return;
         }
         // Se for congregação TRADITIONAL
@@ -387,8 +389,8 @@ export default function SharedListView({ id: propId }: SharedListViewProps) {
 
         setConfirmModal({
             isOpen: true,
-            title: "Devolver Território",
-            message: `Confirmar devolução do território ${territoryName}?`,
+            title: t('sharedList.returnTerritoryTitle'),
+            message: t('sharedList.returnTerritoryConfirm', { name: territoryName }),
             variant: 'info',
             onConfirm: async () => {
                 setConfirmModal(prev => ({ ...prev, isOpen: false }));
@@ -399,13 +401,13 @@ export default function SharedListView({ id: propId }: SharedListViewProps) {
 
     const handleUndoReturnTerritory = async (territoryId: string, territoryName: string) => {
         if (!canReturn) {
-            toast.error("Apenas o responsável pelo mapa, anciãos ou servos podem desfazer a devolução.");
+            toast.error(t('sharedList.onlyResponsibleCanUndo'));
             return;
         }
         setConfirmModal({
             isOpen: true,
-            title: "Desfazer Devolução",
-            message: `Desfazer devolução do território ${territoryName}?`,
+            title: t('sharedList.undoReturnTitle'),
+            message: t('sharedList.undoReturnConfirm', { name: territoryName }),
             variant: 'info',
             onConfirm: async () => {
                 setConfirmModal(prev => ({ ...prev, isOpen: false }));
@@ -422,16 +424,16 @@ export default function SharedListView({ id: propId }: SharedListViewProps) {
                         currentUserRole: role || null,
                         undo: true 
                     });
-                    if (!resData.success) throw new Error(resData.error || 'Erro ao desfazer');
+                    if (!resData.success) throw new Error(resData.error || t('sharedList.undoError'));
                     if (listData?.status === 'completed') {
                         setListData(prev => prev ? { ...prev, status: 'active' } : null);
-                        toast.success("Mapa reativado!");
+                        toast.success(t('sharedList.mapReactivated'));
                     } else {
-                        toast.success(`Retorno do território ${territoryName} desfeito.`);
+                        toast.success(t('sharedList.undoSuccess', { name: territoryName }));
                     }
                 } catch (e: any) {
                     console.error(e);
-                    toast.error(e.message || "Erro ao desfazer ação.");
+                    toast.error(e.message || t('sharedList.undoActionError'));
                     setItems(prev => prev.map(item =>
                         item.id === territoryId ? { ...item, visitStatus: 'completed' } : item
                     ));
@@ -451,17 +453,17 @@ export default function SharedListView({ id: propId }: SharedListViewProps) {
             const resData = await acceptResponsibilityMutation({
                 shareId: id,
                 userId: user.uid,
-                userName: profileName || 'Irmão sem Nome',
+                userName: profileName || t('sharedList.unnamedBrother'),
                 userCongregationId: listData?.congregationId || ''
             });
             
             if (!resData.success) {
-                throw new Error(resData.message || 'Erro ao aceitar responsabilidade.');
+                throw new Error(resData.message || t('sharedList.acceptResponsibilityError'));
             }
             window.location.reload();
         } catch (e: any) {
             console.error("Error accepting responsibility:", e);
-            toast.error(e.message || "Erro ao aceitar responsabilidade.");
+            toast.error(e.message || t('sharedList.acceptResponsibilityError'));
         } finally {
             setAccepting(false);
         }
@@ -482,7 +484,7 @@ export default function SharedListView({ id: propId }: SharedListViewProps) {
                 addressId: savedItem.id,
                 territoryId: savedItem.territoryId || listData?.territoryId,
                 userId: user?.uid || 'anonymous',
-                userName: data.publisherName || profileName || 'Visitante',
+                userName: data.publisherName || profileName || t('sharedList.visitorFallback'),
                 status: data.status,
                 notes: data.observations || '',
                 visitDate: visitDate
@@ -497,10 +499,10 @@ export default function SharedListView({ id: propId }: SharedListViewProps) {
                 visitDate: visitData.visitDate,
                 userName: visitData.userName
             });
-            if (!resData.success) throw new Error(resData.error || 'Erro ao salvar visita');
+            if (!resData.success) throw new Error(resData.error || t('sharedList.saveVisitError'));
         } catch (e: any) {
             console.error("Error saving visit:", e);
-            toast.error(e.message || "Erro ao salvar. Verifique sua conexão.");
+            toast.error(e.message || t('sharedList.saveConnectionError'));
             setItems(prev => prev.map(item =>
                 item.id === savedItem.id
                     ? { ...item, completed: false, visitStatus: savedItem.visitStatus }
@@ -513,16 +515,16 @@ export default function SharedListView({ id: propId }: SharedListViewProps) {
         if (!visitingItem || !id) return;
         try {
             const resData = await deleteVisitMutation({ addressId: visitingItem.id, sharedListId: id as string });
-            if (!resData.success) throw new Error(resData.error || 'Erro ao remover visita');
+            if (!resData.success) throw new Error(resData.error || t('sharedList.deleteVisitError'));
             setItems(prev => prev.map(item =>
                 item.id === visitingItem.id
                     ? { ...item, completed: false, visitStatus: 'none', visitNotes: '' }
                     : item
             ));
-            toast.success("Resposta removida com sucesso!");
+            toast.success(t('sharedList.deleteVisitSuccess'));
         } catch (e: any) {
             console.error("Error deleting visit:", e);
-            toast.error(e.message || "Erro ao remover visita.");
+            toast.error(e.message || t('sharedList.deleteVisitError'));
         }
     };
 
@@ -556,7 +558,7 @@ export default function SharedListView({ id: propId }: SharedListViewProps) {
                     <div className="w-16 h-16 bg-primary-light/30 rounded-full flex items-center justify-center mx-auto text-primary">
                         <MapIcon className="w-8 h-8" />
                     </div>
-                    <h1 className="text-xl font-bold text-main">Ops!</h1>
+                    <h1 className="text-xl font-bold text-main">{t('sharedList.oops')}</h1>
                     <p className="text-muted">{error}</p>
                 </div>
             </div>
@@ -570,7 +572,7 @@ export default function SharedListView({ id: propId }: SharedListViewProps) {
                     <div className="w-8 h-8 text-primary bg-primary-light/50 dark:bg-primary-dark/30 rounded-lg flex items-center justify-center shadow-md shadow-primary-light/10 dark:shadow-none">
                         <Share2 className="w-4 h-4" />
                     </div>
-                    <span className="font-bold text-lg text-main tracking-tight">Lista Compartilhada</span>
+                    <span className="font-bold text-lg text-main tracking-tight">{t('sharedList.headerTitle')}</span>
                 </div>
             </header>
 
@@ -578,11 +580,11 @@ export default function SharedListView({ id: propId }: SharedListViewProps) {
                 {listData?.type === 'territory' && (
                     <div className="bg-surface rounded-lg p-6 shadow-xl shadow-primary-light/5 space-y-6 border border-surface-border relative overflow-hidden">
                         <div className="flex flex-col gap-1">
-                            <h2 className="text-2xl font-bold text-main">Cobertura do mapa</h2>
+                            <h2 className="text-2xl font-bold text-main">{t('sharedList.coverageTitle')}</h2>
                             <p className="text-muted text-sm">
                                 {globalStats.total > 0 && globalStats.processed === globalStats.total
-                                    ? (listData?.status === 'completed' ? "Este mapa já foi devolvido." : "Parabéns! Todos os territórios foram trabalhados.")
-                                    : "Registre o resultado de cada visita abaixo."}
+                                    ? (listData?.status === 'completed' ? t('sharedList.coverageReturned') : t('sharedList.coverageAllWorked'))
+                                    : t('sharedList.coveragePrompt')}
                             </p>
                         </div>
                         {listData?.status === 'completed' && (
@@ -591,49 +593,49 @@ export default function SharedListView({ id: propId }: SharedListViewProps) {
                                     <HistoryIcon className="w-5 h-5" />
                                 </div>
                                 <div className="space-y-0.5">
-                                    <p className="text-sm font-bold text-orange-800 dark:text-orange-300">Acesso Temporário</p>
-                                    <p className="text-xs text-orange-600 dark:text-orange-400 font-medium">O acesso a este link será encerrado automaticamente em 24h.</p>
+                                    <p className="text-sm font-bold text-orange-800 dark:text-orange-300">{t('sharedList.tempAccessTitle')}</p>
+                                    <p className="text-xs text-orange-600 dark:text-orange-400 font-medium">{t('sharedList.tempAccessDesc')}</p>
                                 </div>
                             </div>
                         )}
                         {globalStats.total > 0 && (
                             <div className="space-y-2">
                                 <div className="h-4 w-full bg-gray-100 dark:bg-gray-800 rounded-full overflow-hidden flex">
-                                    <div style={{ width: `${(globalStats.contacted / globalStats.total) * 100}%` }} className="bg-green-600 h-full transition-all duration-500" title={`Concluído: ${globalStats.contacted}`} />
-                                    <div style={{ width: `${(globalStats.partial / globalStats.total) * 100}%` }} className="bg-yellow-500 h-full transition-all duration-500" title={`Parcial: ${globalStats.partial}`} />
+                                    <div style={{ width: `${(globalStats.contacted / globalStats.total) * 100}%` }} className="bg-green-600 h-full transition-all duration-500" title={`${t('sharedList.legendCompleted')}: ${globalStats.contacted}`} />
+                                    <div style={{ width: `${(globalStats.partial / globalStats.total) * 100}%` }} className="bg-yellow-500 h-full transition-all duration-500" title={`${t('sharedList.legendPartial')}: ${globalStats.partial}`} />
                                     {congregationType !== 'TRADITIONAL' && (
                                         <>
-                                            <div style={{ width: `${(globalStats.notContacted / globalStats.total) * 100}%` }} className="bg-orange-500 h-full transition-all duration-500" title={`Não Contatados: ${globalStats.notContacted}`} />
-                                            <div style={{ width: `${(globalStats.moved / globalStats.total) * 100}%` }} className="bg-blue-500 h-full transition-all duration-500" title={`Mudou-se: ${globalStats.moved}`} />
-                                            <div style={{ width: `${(globalStats.doNotVisit / globalStats.total) * 100}%` }} className="bg-red-500 h-full transition-all duration-500" title={`Não Visitar: ${globalStats.doNotVisit}`} />
+                                            <div style={{ width: `${(globalStats.notContacted / globalStats.total) * 100}%` }} className="bg-orange-500 h-full transition-all duration-500" title={`${t('sharedList.legendNotContacted')}: ${globalStats.notContacted}`} />
+                                            <div style={{ width: `${(globalStats.moved / globalStats.total) * 100}%` }} className="bg-blue-500 h-full transition-all duration-500" title={`${t('sharedList.legendMoved')}: ${globalStats.moved}`} />
+                                            <div style={{ width: `${(globalStats.doNotVisit / globalStats.total) * 100}%` }} className="bg-red-500 h-full transition-all duration-500" title={`${t('sharedList.legendDoNotVisit')}: ${globalStats.doNotVisit}`} />
                                         </>
                                     )}
                                 </div>
                                 <div className="flex justify-between text-xs font-bold text-muted">
-                                    <span>{globalStats.processed} de {globalStats.total} visitas concluídas</span>
+                                    <span>{t('sharedList.visitsProgress', { processed: globalStats.processed, total: globalStats.total })}</span>
                                     <span>{Math.round((globalStats.processed / globalStats.total) * 100)}%</span>
                                 </div>
                                 <div className="flex flex-wrap gap-3 pt-2">
                                     <div className="flex items-center gap-1.5">
                                         <div className="w-2 h-2 rounded-full bg-green-600" />
                                         <span className="text-[10px] text-muted font-bold uppercase">
-                                            {congregationType === 'TRADITIONAL' ? 'Concluído' : 'Contatado'}
+                                            {congregationType === 'TRADITIONAL' ? t('sharedList.legendCompleted') : t('sharedList.legendContacted')}
                                         </span>
                                     </div>
                                     {congregationType === 'TRADITIONAL' && (
                                         <div className="flex items-center gap-1.5">
                                             <div className="w-2 h-2 rounded-full bg-yellow-500" />
-                                            <span className="text-[10px] text-muted font-bold uppercase">Parcial</span>
+                                            <span className="text-[10px] text-muted font-bold uppercase">{t('sharedList.legendPartial')}</span>
                                         </div>
                                     )}
                                     {congregationType !== 'TRADITIONAL' && (
                                         <>
-                                            <div className="flex items-center gap-1.5"><div className="w-2 h-2 rounded-full bg-orange-500" /><span className="text-[10px] text-muted font-bold uppercase">Não Contatado</span></div>
-                                            <div className="flex items-center gap-1.5"><div className="w-2 h-2 rounded-full bg-blue-500" /><span className="text-[10px] text-muted font-bold uppercase">Mudou</span></div>
-                                            <div className="flex items-center gap-1.5"><div className="w-2 h-2 rounded-full bg-red-500" /><span className="text-[10px] text-muted font-bold uppercase">Não Visitar</span></div>
+                                            <div className="flex items-center gap-1.5"><div className="w-2 h-2 rounded-full bg-orange-500" /><span className="text-[10px] text-muted font-bold uppercase">{t('sharedList.legendNotContacted')}</span></div>
+                                            <div className="flex items-center gap-1.5"><div className="w-2 h-2 rounded-full bg-blue-500" /><span className="text-[10px] text-muted font-bold uppercase">{t('sharedList.legendMoved')}</span></div>
+                                            <div className="flex items-center gap-1.5"><div className="w-2 h-2 rounded-full bg-red-500" /><span className="text-[10px] text-muted font-bold uppercase">{t('sharedList.legendDoNotVisit')}</span></div>
                                         </>
                                     )}
-                                    <div className="flex items-center gap-1.5"><div className="w-2 h-2 rounded-full bg-gray-300 dark:bg-gray-600" /><span className="text-[10px] text-muted font-bold uppercase">Não Trabalhado</span></div>
+                                    <div className="flex items-center gap-1.5"><div className="w-2 h-2 rounded-full bg-gray-300 dark:bg-gray-600" /><span className="text-[10px] text-muted font-bold uppercase">{t('sharedList.legendUnworked')}</span></div>
                                 </div>
                             </div>
                         )}
@@ -644,17 +646,17 @@ export default function SharedListView({ id: propId }: SharedListViewProps) {
                                 className={`flex-1 px-6 py-3.5 rounded-lg text-sm font-bold uppercase tracking-wider flex items-center justify-center gap-2 transition-all active:scale-95 shadow-lg ${listData?.status === 'completed' ? 'bg-gray-100 dark:bg-gray-800 text-gray-400 dark:text-gray-500 border border-gray-200 dark:border-gray-700 shadow-none cursor-not-allowed' : !canReturn ? 'bg-gray-100 dark:bg-gray-800 text-gray-400 dark:text-gray-500 border border-gray-200 dark:border-gray-700 shadow-none cursor-not-allowed opacity-50' : 'bg-green-600 hover:bg-green-700 text-white shadow-green-500/20'}`}
                             >
                                 {returning ? <Loader2 className="w-4 h-4 animate-spin" /> : (listData?.status === 'completed' ? <CheckCircle className="w-5 h-5" /> : <CheckCircle2 className="w-5 h-5" />)}
-                                {listData?.status === 'completed' ? 'Mapa Devolvido' : 'Devolver Mapa'}
+                                {listData?.status === 'completed' ? t('sharedList.mapReturnedBtn') : t('sharedList.returnMapBtn')}
                             </button>
                             <button
                                 onClick={() => {
                                     navigator.clipboard.writeText(window.location.href);
-                                    toast.success("Link copiado!");
+                                    toast.success(t('sharedList.linkCopied'));
                                 }}
                                 className="flex-1 bg-surface hover:bg-background text-primary dark:text-primary-light active:scale-95 transition-all px-6 py-3.5 rounded-lg text-sm font-bold uppercase tracking-wider flex items-center justify-center gap-2 border border-surface-border shadow-sm"
                             >
                                 <Share2 className="w-4 h-4" />
-                                <span className="uppercase text-xs font-bold tracking-wider">Copiar Link</span>
+                                <span className="uppercase text-xs font-bold tracking-wider">{t('sharedList.copyLinkBtn')}</span>
                             </button>
                         </div>
                     </div>
@@ -663,21 +665,20 @@ export default function SharedListView({ id: propId }: SharedListViewProps) {
                 {listData?.type !== 'territory' && (
                     <div className="bg-primary rounded-lg p-6 shadow-xl shadow-primary-light/20 text-white space-y-6">
                         <div>
-                            <h2 className="text-2xl font-bold mb-2">Relatório de Campo</h2>
+                            <h2 className="text-2xl font-bold mb-2">{t('sharedList.fieldReportTitle')}</h2>
                             <p className="text-primary-light/80 text-sm leading-relaxed">
-                                Clique em cada endereço abaixo para registrar o resultado da sua visita.
-                                O mapa será marcado como concluído automaticamente ao terminar todos.
+                                {t('sharedList.fieldReportDesc')}
                             </p>
                         </div>
                         <button
                             onClick={() => {
                                 navigator.clipboard.writeText(window.location.href);
-                                toast.success("Link copiado!");
+                                toast.success(t('sharedList.linkCopied'));
                             }}
                             className="bg-white/10 hover:bg-white/20 active:scale-95 transition-all text-white px-6 py-3 rounded-lg text-xs font-bold uppercase tracking-wider flex items-center gap-2 border border-white/10 w-full justify-center sm:w-auto"
                         >
                             <Share2 className="w-4 h-4" />
-                            Copiar Link do Cartão
+                            {t('sharedList.copyCardLinkBtn')}
                         </button>
                     </div>
                 )}
@@ -685,7 +686,7 @@ export default function SharedListView({ id: propId }: SharedListViewProps) {
                 <div className="space-y-3">
                     {items.length === 0 && !loading && (
                         <div className="text-center py-10 text-muted">
-                            <p>Nenhum item encontrado nesta lista.</p>
+                            <p>{t('sharedList.noItemsFound')}</p>
                             <p className="text-xs mt-2 opacity-50">ID: {id}</p>
                         </div>
                     )}
@@ -753,12 +754,12 @@ export default function SharedListView({ id: propId }: SharedListViewProps) {
                                                 <div className="flex items-center gap-2">
                                                     <h3 className="font-bold text-main text-base truncate">{item.name}</h3>
                                                     {addressCounts[item.id] > 0 && addressCounts[item.id] === processedCounts[item.id] ? (
-                                                        <span className="flex items-center gap-1 text-[10px] font-bold text-green-700 bg-green-100 dark:bg-green-900/30 dark:text-green-400 px-2 py-0.5 rounded-full whitespace-nowrap"><CheckCircle2 className="w-3 h-3" /> Concluído</span>
+                                                        <span className="flex items-center gap-1 text-[10px] font-bold text-green-700 bg-green-100 dark:bg-green-900/30 dark:text-green-400 px-2 py-0.5 rounded-full whitespace-nowrap"><CheckCircle2 className="w-3 h-3" /> {t('sharedList.legendCompleted')}</span>
                                                     ) : (
-                                                        <span className="text-[10px] font-bold text-primary-dark bg-primary-light/50 dark:bg-primary-dark/50 dark:text-primary-light px-2 py-0.5 rounded-full whitespace-nowrap">{addressCounts[item.id] || 0} Endereços</span>
+                                                        <span className="text-[10px] font-bold text-primary-dark bg-primary-light/50 dark:bg-primary-dark/50 dark:text-primary-light px-2 py-0.5 rounded-full whitespace-nowrap">{t('sharedList.addressesCount', { count: addressCounts[item.id] || 0 })}</span>
                                                     )}
                                                 </div>
-                                                <p className="text-[10px] font-bold text-gray-400 uppercase tracking-wider line-clamp-1">{item.description || 'VER ENDEREÇOS'}</p>
+                                                <p className="text-[10px] font-bold text-gray-400 uppercase tracking-wider line-clamp-1">{item.description || t('sharedList.viewAddresses')}</p>
                                             </div>
                                         )}
                                     </div>
@@ -780,7 +781,7 @@ export default function SharedListView({ id: propId }: SharedListViewProps) {
                                                         <div className="absolute right-0 top-10 bg-white dark:bg-slate-900 rounded-xl shadow-2xl border border-surface-border p-1 z-30 min-w-[200px] animate-in fade-in zoom-in-95 duration-200">
                                                             <DropDownItem 
                                                                 icon={HistoryIcon} 
-                                                                label="Ver Histórico" 
+                                                                label={t('sharedList.viewHistory')} 
                                                                 variant="indigo" 
                                                                 onClick={(e) => {
                                                                     e.stopPropagation();
@@ -796,7 +797,7 @@ export default function SharedListView({ id: propId }: SharedListViewProps) {
                                                             ) && (
                                                                 <DropDownItem 
                                                                     icon={Navigation} 
-                                                                    label="Ir para" 
+                                                                    label={t('sharedList.navigateTo')} 
                                                                     variant="primary" 
                                                                     onClick={(e) => {
                                                                         e.stopPropagation();
@@ -814,9 +815,9 @@ export default function SharedListView({ id: propId }: SharedListViewProps) {
                                                 {listData?.type === 'territory' && canReturn && (
                                                     <div onClick={e => e.stopPropagation()}>
                                                         {item.visitStatus === 'completed' ? (
-                                                            <button onClick={(e) => { e.stopPropagation(); handleUndoReturnTerritory(item.id, item.name); }} className="p-2 rounded-full bg-green-100 text-green-600 hover:bg-green-200 transition-colors" title="Desfazer devolução"><CheckCircle className="w-5 h-5" /></button>
+                                                            <button onClick={(e) => { e.stopPropagation(); handleUndoReturnTerritory(item.id, item.name); }} className="p-2 rounded-full bg-green-100 text-green-600 hover:bg-green-200 transition-colors" title={t('sharedList.undoReturnTitleAttr')}><CheckCircle className="w-5 h-5" /></button>
                                                         ) : (
-                                                            <button onClick={(e) => { e.stopPropagation(); handleReturnTerritory(item.id, item.name); }} className="p-2 rounded-full text-gray-300 hover:text-green-500 hover:bg-green-50 transition-colors" title="Devolver Território"><CheckCircle2 className="w-5 h-5" /></button>
+                                                            <button onClick={(e) => { e.stopPropagation(); handleReturnTerritory(item.id, item.name); }} className="p-2 rounded-full text-gray-300 hover:text-green-500 hover:bg-green-50 transition-colors" title={t('sharedList.returnTerritoryTitleAttr')}><CheckCircle2 className="w-5 h-5" /></button>
                                                         )}
                                                     </div>
                                                 )}
@@ -834,7 +835,7 @@ export default function SharedListView({ id: propId }: SharedListViewProps) {
                     <div className="mt-6 flex justify-center">
                         <span className="inline-flex items-center gap-2 px-4 py-2 bg-indigo-50 dark:bg-indigo-900/30 text-indigo-700 dark:text-indigo-400 text-sm font-black rounded-full border border-indigo-100 dark:border-indigo-800/50 shadow-sm">
                             <span className="w-2 h-2 rounded-full bg-indigo-500 animate-pulse"></span>
-                            Designado para: {listData.assignedName}
+                            {t('sharedList.assignedTo', { name: listData.assignedName })}
                         </span>
                     </div>
                 )}
@@ -870,11 +871,11 @@ export default function SharedListView({ id: propId }: SharedListViewProps) {
             {isResponsibilityModalOpen && (
                 <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4 animate-in fade-in duration-200">
                     <div className="bg-surface border border-surface-border w-full max-w-sm rounded-[2rem] p-6 space-y-6 shadow-2xl animate-in zoom-in-95 duration-200">
-                        <h2 className="text-xl font-black text-center text-main">Aceitar Responsabilidade?</h2>
-                        <p className="text-center text-muted">Ao aceitar, você se compromete a trabalhar este território.</p>
+                        <h2 className="text-xl font-black text-center text-main">{t('sharedList.acceptResponsibilityTitle')}</h2>
+                        <p className="text-center text-muted">{t('sharedList.acceptResponsibilityDesc')}</p>
                         <div className="space-y-3">
-                            <button onClick={handleAcceptResponsibility} disabled={accepting} className="w-full bg-primary hover:bg-primary-dark text-white py-4 rounded-xl font-bold transition-colors">{accepting ? "Aceitando..." : "Sim, Aceitar"}</button>
-                            <button onClick={() => setIsResponsibilityModalOpen(false)} className="w-full text-muted hover:text-main py-3 font-bold transition-colors">Apenas Visualizar</button>
+                            <button onClick={handleAcceptResponsibility} disabled={accepting} className="w-full bg-primary hover:bg-primary-dark text-white py-4 rounded-xl font-bold transition-colors">{accepting ? t('sharedList.acceptingBtn') : t('sharedList.acceptYesBtn')}</button>
+                            <button onClick={() => setIsResponsibilityModalOpen(false)} className="w-full text-muted hover:text-main py-3 font-bold transition-colors">{t('sharedList.viewOnlyBtn')}</button>
                         </div>
                     </div>
                 </div>
@@ -883,9 +884,9 @@ export default function SharedListView({ id: propId }: SharedListViewProps) {
             {returnValidationModal.isOpen && (
                 <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4 animate-in fade-in duration-200">
                     <div className="bg-surface border border-surface-border rounded-xl w-full max-w-sm p-6 shadow-2xl animate-in zoom-in-95 duration-200 text-center space-y-4">
-                        <h2 className="text-xl font-bold text-main">Devolver {pendingTerritoryInfo ? 'Território' : 'Mapa'}</h2>
+                        <h2 className="text-xl font-bold text-main">{t('sharedList.returnValidationTitle', { target: pendingTerritoryInfo ? t('sharedList.returnTargetTerritory') : t('sharedList.returnTargetMap') })}</h2>
                         <p className="text-muted text-sm leading-relaxed">
-                            Ainda existem endereços não trabalhados ou marcados como parciais neste território.
+                            {t('sharedList.returnValidationDesc')}
                         </p>
                         <div className="flex items-center gap-3 bg-gray-50 dark:bg-slate-800 p-4 rounded-xl border border-gray-200 dark:border-slate-700 text-left">
                             <input
@@ -896,7 +897,7 @@ export default function SharedListView({ id: propId }: SharedListViewProps) {
                                 className="w-5 h-5 rounded border-gray-300 text-primary focus:ring-primary cursor-pointer shrink-0"
                             />
                             <label htmlFor="confirm-all-worked" className="text-xs font-bold text-main cursor-pointer select-none">
-                                Todas as ruas foram trabalhadas
+                                {t('sharedList.confirmAllWorked')}
                             </label>
                         </div>
                         <div className="flex gap-3 pt-2">
@@ -907,7 +908,7 @@ export default function SharedListView({ id: propId }: SharedListViewProps) {
                                 }}
                                 className="flex-1 bg-surface-highlight hover:bg-background text-main border border-surface-border py-3 rounded-lg font-bold text-sm transition-colors"
                             >
-                                Cancelar
+                                {t('sharedList.cancel')}
                             </button>
                             <button
                                 onClick={async () => {
@@ -925,18 +926,18 @@ export default function SharedListView({ id: propId }: SharedListViewProps) {
                                             const markResult = await markAllAsWorkedMutation({
                                                 shareId: id as string,
                                                 userId: user.uid,
-                                                userName: profileName || 'Visitante',
+                                                userName: profileName || t('sharedList.visitorFallback'),
                                                 territoryId: isTerr ? terrId : undefined
                                             });
                                             if (!markResult.success) {
-                                                toast.error(markResult.message || 'Erro ao marcar endereços.');
+                                                toast.error(markResult.message || t('sharedList.markAddressesError'));
                                                 return;
                                             }
                                             if (markResult.message) {
                                                 toast.success(markResult.message);
                                             }
                                         } catch (e: any) {
-                                            toast.error(e.message || 'Erro ao marcar endereços como trabalhados.');
+                                            toast.error(e.message || t('sharedList.markAddressesWorkedError'));
                                             return;
                                         }
                                     }
@@ -954,7 +955,7 @@ export default function SharedListView({ id: propId }: SharedListViewProps) {
                                         : 'bg-gray-300 dark:bg-slate-800 text-gray-400 dark:text-gray-500 cursor-not-allowed shadow-none'
                                 }`}
                             >
-                                Confirmar
+                                {t('sharedList.confirm')}
                             </button>
                         </div>
                     </div>
@@ -975,8 +976,8 @@ export default function SharedListView({ id: propId }: SharedListViewProps) {
                                 </div>
                             </div>
                             <div className="space-y-2">
-                                <h2 className="text-2xl font-black tracking-tight">Onde deseja abrir?</h2>
-                                <p className="text-muted text-sm font-medium">Escolha seu aplicativo de navegação favorito.</p>
+                                <h2 className="text-2xl font-black tracking-tight">{t('sharedList.whereToOpenTitle')}</h2>
+                                <p className="text-muted text-sm font-medium">{t('sharedList.whereToOpenDesc')}</p>
                             </div>
                             <div className="flex flex-col gap-3">
                                 <button
@@ -1015,7 +1016,7 @@ export default function SharedListView({ id: propId }: SharedListViewProps) {
                                     </div>
                                     <ChevronRight className="w-4 h-4 opacity-50" />
                                 </button>
-                                <button onClick={() => setMapSelectionItem(null)} className="w-full py-4 text-muted font-bold hover:text-main transition-colors text-sm">Cancelar</button>
+                                <button onClick={() => setMapSelectionItem(null)} className="w-full py-4 text-muted font-bold hover:text-main transition-colors text-sm">{t('sharedList.cancel')}</button>
                             </div>
                         </div>
                     </div>

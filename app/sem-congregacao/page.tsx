@@ -1,6 +1,7 @@
 "use client";
 
 import { useAuth } from '@/app/context/AuthContext';
+import { useTranslation } from '@/app/context/I18nContext';
 import { LogOut, Link as LinkIcon, Users, MapPin, Building2, Shield } from 'lucide-react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
@@ -8,6 +9,7 @@ import { useEffect } from 'react';
 
 export default function NoCongregationPage() {
     const { user, role, logout, loading, profileName, congregationId } = useAuth();
+    const { t } = useTranslation();
     const router = useRouter();
 
     useEffect(() => {
@@ -45,16 +47,16 @@ export default function NoCongregationPage() {
                 </div>
 
                 <div className="space-y-4">
-                    <h1 className="text-2xl font-black text-main tracking-tight">Sem Congregação</h1>
+                    <h1 className="text-2xl font-black text-main tracking-tight">{t('noCongregation.title')}</h1>
                     <p className="text-muted font-medium text-sm leading-relaxed">
-                        Olá, <strong>{profileName || 'visitante'}</strong>. Sua conta foi identificada, mas você ainda não pertence a nenhuma congregação.
+                        {t('noCongregation.greetingStart')} <strong>{profileName || t('noCongregation.visitorFallback')}</strong>. {t('noCongregation.greetingEnd')}
                     </p>
                 </div>
 
                 <div className="space-y-4 bg-gray-50 dark:bg-slate-800/50 p-6 rounded-2xl border border-gray-100 dark:border-slate-700/50 text-left">
                     <h3 className="font-bold text-main text-sm uppercase tracking-wide flex items-center gap-2">
                         <Users className="w-4 h-4 text-orange-500" />
-                        Como liberar meu acesso?
+                        {t('noCongregation.howToUnlock')}
                     </h3>
 
                     <ul className="space-y-4 text-sm text-muted">
@@ -63,8 +65,8 @@ export default function NoCongregationPage() {
                                 <LinkIcon className="w-4 h-4 text-orange-500" />
                             </div>
                             <div>
-                                <span className="font-bold text-main">Peça um Convite</span>
-                                <p className="text-xs mt-1">Solicite ao ancião ou servo de territórios o <span className="font-mono bg-orange-100 dark:bg-orange-900/40 text-orange-600 dark:text-orange-300 px-1 rounded">Link de Convite</span>.</p>
+                                <span className="font-bold text-main">{t('noCongregation.askInviteTitle')}</span>
+                                <p className="text-xs mt-1">{t('noCongregation.askInviteStart')} <span className="font-mono bg-orange-100 dark:bg-orange-900/40 text-orange-600 dark:text-orange-300 px-1 rounded">{t('noCongregation.askInviteBadge')}</span>.</p>
                             </div>
                         </li>
                         <li className="flex gap-3">
@@ -72,8 +74,8 @@ export default function NoCongregationPage() {
                                 <MapPin className="w-4 h-4 text-green-500" />
                             </div>
                             <div>
-                                <span className="font-bold text-main">Aceite um Território</span>
-                                <p className="text-xs mt-1">Se você aceitar um link de território compartilhado, será vinculado automaticamente.</p>
+                                <span className="font-bold text-main">{t('noCongregation.acceptTerritoryTitle')}</span>
+                                <p className="text-xs mt-1">{t('noCongregation.acceptTerritoryDesc')}</p>
                             </div>
                         </li>
                         <li className="flex gap-3">
@@ -81,8 +83,8 @@ export default function NoCongregationPage() {
                                 <Building2 className="w-4 h-4 text-orange-500" />
                             </div>
                             <div>
-                                <span className="font-bold text-main">Administrador?</span>
-                                <p className="text-xs mt-1">Você pode <Link href="/solicitar-congregacao" className="text-orange-600 dark:text-orange-400 font-bold hover:underline">solicitar uma nova congregação</Link>.</p>
+                                <span className="font-bold text-main">{t('noCongregation.adminTitle')}</span>
+                                <p className="text-xs mt-1">{t('noCongregation.adminStart')} <Link href="/solicitar-congregacao" className="text-orange-600 dark:text-orange-400 font-bold hover:underline">{t('noCongregation.adminLink')}</Link>.</p>
                             </div>
                         </li>
                     </ul>
@@ -93,7 +95,7 @@ export default function NoCongregationPage() {
                     className="w-full bg-surface hover:bg-red-50 dark:hover:bg-red-950/30 text-red-600 font-bold py-4 rounded-2xl border border-surface-border hover:border-red-200 dark:hover:border-red-900/50 transition-all flex items-center justify-center gap-2 text-sm uppercase tracking-wider"
                 >
                     <LogOut className="w-5 h-5" />
-                    Sair da Conta
+                    {t('noCongregation.logoutBtn')}
                 </button>
             </div>
         </div>

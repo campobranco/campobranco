@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import { useAuth } from '@/app/context/AuthContext';
+import { useTranslation } from '@/app/context/I18nContext';
 import { db } from '@/lib/firebase';
 import {
     collection,
@@ -71,7 +72,15 @@ const ROLE_DEFINITIONS = [
 ];
 
 export default function AdminUsersPage() {
+    const { t } = useTranslation();
     const { user, isAdminRoleGlobal, isElder, congregationId, loading } = useAuth();
+
+    const getRoleLabel = (role: string) => {
+        if (role === 'ADMIN' || role === 'ANCIAO' || role === 'SERVO' || role === 'PUBLICADOR') {
+            return t(`admin.users.roles.${role}`);
+        }
+        return ROLE_DEFINITIONS.find(r => r.value === role)?.label || role;
+    };
     const [users, setUsers] = useState<UserProfile[]>([]);
     const [congregations, setCongregations] = useState<Congregation[]>([]);
     const [loadingData, setLoadingData] = useState(true);
@@ -328,9 +337,11 @@ export default function AdminUsersPage() {
                             <Users className="w-5 h-5" />
                         </div>
                         <div>
-                            <h1 className="font-bold text-lg text-main tracking-tight leading-tight">Membros</h1>
+                            <h1 className="font-bold text-lg text-main tracking-tight leading-tight">{t('admin.users.title')}</h1>
                             <p className="text-[10px] text-muted font-bold uppercase tracking-widest">
-                                {isAdminRoleGlobal ? `Administração Global (${users.length} usuários)` : `Gestão da Congregação (${users.length} membros)`}
+                                {isAdminRoleGlobal
+                                    ? t('admin.users.globalSubtitle', { count: users.length })
+                                    : t('admin.users.congregationSubtitle', { count: users.length })}
                             </p>
                         </div>
                     </div>
@@ -341,7 +352,7 @@ export default function AdminUsersPage() {
                     className="bg-emerald-600 hover:bg-emerald-700 text-white font-bold py-2 px-4 rounded-lg flex items-center gap-2 shadow-lg shadow-emerald-500/20 transition-all active:scale-95 text-sm"
                 >
                     <UserPlus2 className="w-4 h-4" />
-                    <span className="hidden sm:inline">Adicionar</span>
+                    <span className="hidden sm:inline">{t('admin.users.addButton')}</span>
 
                 </button>
             </header>
@@ -352,7 +363,7 @@ export default function AdminUsersPage() {
                     <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-muted w-5 h-5 group-focus-within:text-emerald-500 transition-colors" />
                     <input
                         type="text"
-                        placeholder="Buscar membros..."
+                        placeholder={t('admin.users.searchPlaceholder')}
                         value={searchTerm}
                         onChange={(e) => setSearchTerm(e.target.value)}
                         className="w-full bg-surface border-0 text-main text-sm font-medium rounded-lg py-4 pl-12 pr-4 shadow-sm focus:ring-2 focus:ring-emerald-500/20 focus:outline-none transition-all placeholder:text-muted"
@@ -361,7 +372,7 @@ export default function AdminUsersPage() {
 
                 {loadingData ? (
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4" role="status" aria-busy="true">
-                        <span className="sr-only">Carregando...</span>
+                        <span className="sr-only">{t('common.loading')}</span>
                         {Array.from({ length: 4 }).map((_, idx) => (
                             <div key={idx} className="bg-surface rounded-lg p-4 border border-surface-border flex items-center gap-4">
                                 <Skeleton className="w-11 h-11 rounded-full shrink-0" />
@@ -377,7 +388,7 @@ export default function AdminUsersPage() {
                         {filteredUsers.length === 0 ? (
                             <div className="col-span-full py-20 text-center opacity-50">
                                 <Users className="w-12 h-12 mx-auto mb-3 text-muted" />
-                                <p className="text-muted font-medium">Nenhum membro encontrado</p>
+                                <p className="text-muted font-medium">{t('admin.users.empty')}</p>
                             </div>
                         ) : (
                             filteredUsers.map((u) => (
@@ -388,7 +399,7 @@ export default function AdminUsersPage() {
                                                 <User className="w-6 h-6" />
                                             </div>
                                             <div className="min-w-0">
-                                                <h3 className="font-bold text-main text-base truncate">{u.name || 'Sem nome'}</h3>
+                                                <h3 className="font-bold text-main text-base truncate">{u.name || t('admin.users.unnamed')}</h3>
                                                 <div className="flex flex-col gap-0.5 mt-1">
                                                     <span className="text-xs text-muted flex items-center gap-1.5 truncate">
                                                         <Mail className="w-3 h-3 shrink-0" />
@@ -421,7 +432,7 @@ export default function AdminUsersPage() {
                                                 const def = ROLE_DEFINITIONS.find(r => r.value === role);
                                                 return (
                                                     <span key={role} className={`px-3 py-1 rounded-full text-[10px] font-bold uppercase tracking-wider border ${def?.color || 'bg-background text-muted border-surface-border'}`}>
-                                                        {def?.label || role}
+                                                        {getRoleLabel(role)}
                                                     </span>
                                                 );
                                             })}
@@ -435,7 +446,7 @@ export default function AdminUsersPage() {
                                             <div className="absolute right-4 top-14 bg-surface rounded-xl shadow-2xl border border-surface-border p-1 z-50 min-w-[170px] animate-in fade-in zoom-in-95 duration-150 origin-top-right">
                                                 <DropDownItem
                                                     icon={Pencil}
-                                                    label="Editar"
+                                                    label={t('admin.congregations.actions.edit')}
                                                     variant="neutral"
                                                     onClick={() => {
                                                         setEditingUser(u);
@@ -451,7 +462,7 @@ export default function AdminUsersPage() {
                                                 />
                                                 <DropDownItem
                                                     icon={Trash2}
-                                                    label="Excluir"
+                                                    label={t('admin.congregations.actions.delete')}
                                                     variant="danger"
                                                     onClick={() => {
                                                         handleDeleteUser(u);
@@ -481,39 +492,39 @@ export default function AdminUsersPage() {
                         <div className="flex justify-between items-center mb-6">
                             <h2 className="text-xl font-bold text-main flex items-center gap-2">
                                 <UserPlus2 className="w-6 h-6 text-primary" />
-                                Novo Membro
+                                {t('admin.users.createModal.title')}
                             </h2>
                             <button onClick={() => setShowCreateModal(false)}><X className="w-5 h-5 text-muted hover:text-main" /></button>
                         </div>
 
                         <form onSubmit={handleCreateUser} className="space-y-4">
                             <div>
-                                <label className="block text-xs font-bold text-muted uppercase tracking-wider mb-2 text-left">Nome Completo</label>
+                                <label className="block text-xs font-bold text-muted uppercase tracking-wider mb-2 text-left">{t('admin.users.createModal.fullNameLabel')}</label>
                                 <input
                                     required
                                     type="text"
                                     value={newUser.name}
                                     onChange={(e) => setNewUser({ ...newUser, name: e.target.value })}
                                     className="w-full bg-background border border-surface-border rounded-lg p-4 font-bold text-main placeholder-muted focus:ring-2 focus:ring-primary/20 outline-none"
-                                    placeholder="Digite o nome..."
+                                    placeholder={t('admin.users.createModal.fullNamePlaceholder')}
                                 />
                             </div>
 
                             <div>
-                                <label className="block text-xs font-bold text-muted uppercase tracking-wider mb-2 text-left">E-mail de Acesso</label>
+                                <label className="block text-xs font-bold text-muted uppercase tracking-wider mb-2 text-left">{t('admin.users.createModal.emailLabel')}</label>
                                 <input
                                     required
                                     type="email"
                                     value={newUser.email}
                                     onChange={(e) => setNewUser({ ...newUser, email: e.target.value })}
                                     className="w-full bg-background border border-surface-border rounded-lg p-4 font-bold text-main placeholder-muted focus:ring-2 focus:ring-primary/20 outline-none"
-                                    placeholder="exemplo@gmail.com"
+                                    placeholder={t('admin.users.createModal.emailPlaceholder')}
                                 />
                             </div>
 
                             {isAdminRoleGlobal && (
                                 <div className="relative">
-                                    <label className="block text-xs font-bold text-muted uppercase tracking-wider mb-2 text-left">Congregação</label>
+                                    <label className="block text-xs font-bold text-muted uppercase tracking-wider mb-2 text-left">{t('admin.users.createModal.congregationLabel')}</label>
                                     <div className="relative">
                                         <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted pointer-events-none" />
                                         <input
@@ -521,7 +532,7 @@ export default function AdminUsersPage() {
                                             value={congSearchCreate}
                                             onChange={(e) => { setCongSearchCreate(e.target.value); setShowCongDropCreate(true); if (!e.target.value) { setNewUser({ ...newUser, congregationId: '' }); } }}
                                             onFocus={() => setShowCongDropCreate(true)}
-                                            placeholder={newUser.congregationId ? (congregations.find(c => c.id === newUser.congregationId)?.name || 'Buscar congregação...') : 'Buscar congregação...'}
+                                            placeholder={newUser.congregationId ? (congregations.find(c => c.id === newUser.congregationId)?.name || t('admin.congregations.searchPlaceholder')) : t('admin.congregations.searchPlaceholder')}
                                             className="w-full bg-background border border-surface-border rounded-lg py-3 pl-10 pr-4 font-bold text-main placeholder-muted focus:ring-2 focus:ring-primary/20 outline-none text-sm"
                                         />
                                     </div>
@@ -534,7 +545,7 @@ export default function AdminUsersPage() {
                                                     onClick={() => { setNewUser({ ...newUser, congregationId: '' }); setCongSearchCreate(''); setShowCongDropCreate(false); }}
                                                     className="w-full text-left px-4 py-2.5 text-sm text-muted hover:bg-background font-medium border-b border-surface-border"
                                                 >
-                                                    Sem vínculo inicial
+                                                    {t('admin.users.createModal.noInitialLink')}
                                                 </button>
                                                 {congregations.filter(c => c.name.toLowerCase().includes(congSearchCreate.toLowerCase())).map(c => (
                                                     <button
@@ -547,7 +558,7 @@ export default function AdminUsersPage() {
                                                     </button>
                                                 ))}
                                                 {congregations.filter(c => c.name.toLowerCase().includes(congSearchCreate.toLowerCase())).length === 0 && (
-                                                    <p className="px-4 py-3 text-xs text-muted text-center">Nenhuma congregação encontrada</p>
+                                                    <p className="px-4 py-3 text-xs text-muted text-center">{t('admin.congregations.empty')}</p>
                                                 )}
                                             </div>
                                         </>
@@ -560,7 +571,7 @@ export default function AdminUsersPage() {
                                 disabled={loadingData}
                                 className="w-full py-4 bg-primary hover:bg-primary-dark text-white rounded-lg font-bold shadow-lg mt-2 flex items-center justify-center gap-2 active:scale-95 transition-transform"
                             >
-                                {loadingData ? <Loader2 className="w-5 h-5 animate-spin" /> : 'Criar Membro'}
+                                {loadingData ? <Loader2 className="w-5 h-5 animate-spin" /> : t('admin.users.createModal.submit')}
                             </button>
                         </form>
                     </div>
@@ -574,14 +585,14 @@ export default function AdminUsersPage() {
                         <div className="flex justify-between items-center mb-6">
                             <h2 className="text-xl font-bold text-main flex items-center gap-2">
                                 <Pencil className="w-6 h-6 text-primary" />
-                                Editar Membro
+                                {t('admin.users.editModal.title')}
                             </h2>
                             <button onClick={() => setShowEditModal(false)}><X className="w-5 h-5 text-muted hover:text-main" /></button>
                         </div>
 
                         <div className="space-y-5">
                             <div>
-                                <label className="block text-xs font-bold text-muted uppercase tracking-wider mb-2 text-left">Nome</label>
+                                <label className="block text-xs font-bold text-muted uppercase tracking-wider mb-2 text-left">{t('admin.congregations.modal.nameLabel')}</label>
                                 <input
                                     type="text"
                                     value={editName}
@@ -592,7 +603,7 @@ export default function AdminUsersPage() {
 
                             {isAdminRoleGlobal && (
                                 <div className="relative">
-                                    <label className="block text-xs font-bold text-muted uppercase tracking-wider mb-2 text-left">Congregação</label>
+                                    <label className="block text-xs font-bold text-muted uppercase tracking-wider mb-2 text-left">{t('admin.users.createModal.congregationLabel')}</label>
                                     <div className="relative">
                                         <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted pointer-events-none" />
                                         <input
@@ -600,7 +611,7 @@ export default function AdminUsersPage() {
                                             value={congSearchEdit}
                                             onChange={(e) => { setCongSearchEdit(e.target.value); setShowCongDropEdit(true); if (!e.target.value) { setEditCongId(''); } }}
                                             onFocus={() => setShowCongDropEdit(true)}
-                                            placeholder={editCongId ? (congregations.find(c => c.id === editCongId)?.name || 'Buscar congregação...') : 'Buscar congregação...'}
+                                            placeholder={editCongId ? (congregations.find(c => c.id === editCongId)?.name || t('admin.congregations.searchPlaceholder')) : t('admin.congregations.searchPlaceholder')}
                                             className="w-full bg-background border border-surface-border rounded-lg py-3 pl-10 pr-4 font-bold text-main placeholder-muted focus:ring-2 focus:ring-primary/20 outline-none text-sm"
                                         />
                                     </div>
@@ -613,7 +624,7 @@ export default function AdminUsersPage() {
                                                     onClick={() => { setEditCongId(''); setCongSearchEdit(''); setShowCongDropEdit(false); }}
                                                     className="w-full text-left px-4 py-2.5 text-sm text-muted hover:bg-background font-medium border-b border-surface-border"
                                                 >
-                                                    Sem vínculo
+                                                    {t('admin.users.editModal.noLink')}
                                                 </button>
                                                 {congregations.filter(c => c.name.toLowerCase().includes(congSearchEdit.toLowerCase())).map(c => (
                                                     <button
@@ -626,7 +637,7 @@ export default function AdminUsersPage() {
                                                     </button>
                                                 ))}
                                                 {congregations.filter(c => c.name.toLowerCase().includes(congSearchEdit.toLowerCase())).length === 0 && (
-                                                    <p className="px-4 py-3 text-xs text-muted text-center">Nenhuma congregação encontrada</p>
+                                                    <p className="px-4 py-3 text-xs text-muted text-center">{t('admin.congregations.empty')}</p>
                                                 )}
                                             </div>
                                         </>
@@ -635,15 +646,15 @@ export default function AdminUsersPage() {
                             )}
 
                             <div>
-                                <label className="block text-xs font-bold text-muted uppercase tracking-wider mb-2 text-left">Nível de Acesso (Função)</label>
+                                <label className="block text-xs font-bold text-muted uppercase tracking-wider mb-2 text-left">{t('admin.users.editModal.roleLabel')}</label>
                                 {editingUser?.id === user?.uid ? (
                                     <div className="bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800 rounded-lg p-4 flex flex-col gap-2">
                                         <div className="flex items-center gap-2 text-amber-700 dark:text-amber-400 font-bold text-xs uppercase">
                                             <AlertCircle className="w-4 h-4" />
-                                            Segurança de Acesso
+                                            {t('admin.users.editModal.securityTitle')}
                                         </div>
                                         <p className="text-[11px] text-amber-600 dark:text-amber-500 font-medium">
-                                            Por segurança, você não pode alterar seu próprio nível de acesso. Peça a outro administrador para realizar esta alteração se for necessário.
+                                            {t('admin.users.editModal.securityMessage')}
                                         </p>
                                     </div>
                                 ) : (
@@ -661,7 +672,7 @@ export default function AdminUsersPage() {
                                                         }
                                                     `}
                                                 >
-                                                    <span>{role.label}</span>
+                                                    <span>{getRoleLabel(role.value)}</span>
                                                     {isActive && <CheckCircle2 className="w-4 h-4 text-primary dark:text-primary-light" />}
                                                     {!isActive && <div className="w-4 h-4 rounded-full border-2 border-surface-border" />}
                                                 </button>
@@ -676,7 +687,7 @@ export default function AdminUsersPage() {
                                 disabled={updatingId === editingUser.id}
                                 className="w-full py-4 bg-primary hover:bg-primary-dark text-white rounded-lg font-bold shadow-lg mt-2 flex items-center justify-center gap-2 active:scale-95 transition-transform"
                             >
-                                {updatingId === editingUser.id ? <Loader2 className="w-5 h-5 animate-spin" /> : 'Confirmar Alterações'}
+                                {updatingId === editingUser.id ? <Loader2 className="w-5 h-5 animate-spin" /> : t('admin.users.editModal.submit')}
                             </button>
                         </div>
                     </div>
@@ -691,9 +702,9 @@ export default function AdminUsersPage() {
                     setUserToDelete(null);
                 }}
                 onConfirm={confirmDeleteUser}
-                title="Excluir Membro"
-                message={`Tem certeza que deseja remover "${userToDelete?.name || userToDelete?.email}"? Esta ação não pode ser desfeita.`}
-                confirmText="Excluir"
+                title={t('admin.users.deleteConfirm.title')}
+                message={t('admin.users.deleteConfirm.message', { name: userToDelete?.name || userToDelete?.email || '' })}
+                confirmText={t('admin.congregations.actions.delete')}
                 variant="danger"
                 isLoading={isDeleting}
             />

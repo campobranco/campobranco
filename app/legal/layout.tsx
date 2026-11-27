@@ -3,6 +3,7 @@
 import Link from 'next/link';
 import { ArrowLeft, Shield, FileText, Lock, UserCheck, Scale } from 'lucide-react';
 import { useAppIcon } from '@/app/context/AppIconContext';
+import { useTranslation } from '@/app/context/I18nContext';
 
 export default function LegalLayout({
     children,
@@ -10,6 +11,7 @@ export default function LegalLayout({
     children: React.ReactNode;
 }) {
     const { appIconSrc } = useAppIcon();
+    const { t } = useTranslation();
 
     return (
         <div className="min-h-screen bg-gray-50 dark:bg-slate-950 flex flex-col font-sans transition-colors">
@@ -18,7 +20,7 @@ export default function LegalLayout({
                 <div className="container mx-auto px-4 h-16 flex items-center justify-between">
                     <Link href="/settings" className="flex items-center gap-2 text-gray-600 dark:text-gray-300 hover:text-[#16a34a] dark:hover:text-green-400 transition-colors">
                         <ArrowLeft className="w-5 h-5" />
-                        <span className="font-bold text-sm">Voltar</span>
+                        <span className="font-bold text-sm">{t('legal.layout.back')}</span>
                     </Link>
                     <div className="flex items-center gap-2">
                         <img src={appIconSrc} alt="Logo Campo Branco" width={32} height={32} className="rounded-lg object-contain" />
@@ -41,27 +43,27 @@ export default function LegalLayout({
                     <div className="flex flex-wrap justify-center gap-6 md:gap-8">
                         <Link prefetch={false} href="/legal/terms" className="text-sm font-medium text-gray-500 dark:text-gray-400 hover:text-[#16a34a] dark:hover:text-green-400 transition-colors flex items-center gap-1.5">
                             <FileText className="w-4 h-4" />
-                            Termos de Uso
+                            {t('legal.layout.terms')}
                         </Link>
                         <Link prefetch={false} href="/legal/privacy" className="text-sm font-medium text-gray-500 dark:text-gray-400 hover:text-[#16a34a] dark:hover:text-green-400 transition-colors flex items-center gap-1.5">
                             <Lock className="w-4 h-4" />
-                            Política de Privacidade
+                            {t('legal.layout.privacy')}
                         </Link>
                         <Link prefetch={false} href="/legal/data-usage" className="text-sm font-medium text-gray-500 dark:text-gray-400 hover:text-[#16a34a] dark:hover:text-green-400 transition-colors flex items-center gap-1.5">
                             <Shield className="w-4 h-4" />
-                            Uso de Dados
+                            {t('legal.layout.dataUsage')}
                         </Link>
                         <Link prefetch={false} href="/legal/user-commitment" className="text-sm font-medium text-gray-500 dark:text-gray-400 hover:text-[#16a34a] dark:hover:text-green-400 transition-colors flex items-center gap-1.5">
                             <UserCheck className="w-4 h-4" />
-                            Compromisso
+                            {t('legal.layout.commitment')}
                         </Link>
                         <Link prefetch={false} href="/legal/open-source" className="text-sm font-medium text-gray-500 dark:text-gray-400 hover:text-[#16a34a] dark:hover:text-green-400 transition-colors flex items-center gap-1.5">
                             <Scale className="w-4 h-4" />
-                            Código Aberto
+                            {t('legal.layout.openSource')}
                         </Link>
                     </div>
                     <p className="text-center text-xs text-gray-400 dark:text-gray-600 mt-6">
-                        © 2025–{new Date().getFullYear()} Paulo Jacomelli · Campo Branco — Código-fonte sob Licença MIT.
+                        {t('legal.layout.copyright', { year: new Date().getFullYear() })}
                     </p>
                 </div>
             </footer>

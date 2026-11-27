@@ -44,6 +44,7 @@ import Link from 'next/link';
 import { useAuth } from '@/app/context/AuthContext';
 import { useSearchParams, useRouter } from 'next/navigation';
 import { toast } from 'sonner';
+import { useTranslation } from '@/app/context/I18nContext';
 // TODO(mutations): migrate to mutation layer - legacy module (admin/report/dashboard)
 // eslint-disable-next-line no-restricted-imports
 import { checkInWitnessingPoint, deleteWitnessingPoint } from '@/lib/services/witnessing';
@@ -64,6 +65,7 @@ interface WitnessingPoint {
 }
 
 function WitnessingPointListContent() {
+    const { t } = useTranslation();
     const searchParams = useSearchParams();
     const router = useRouter();
     const congregationId = searchParams.get('congregationId');
@@ -223,7 +225,7 @@ function WitnessingPointListContent() {
         }
 
         if (!cityId) {
-            setCityName('Todas as Cidades');
+            setCityName(t('witnessing.allCities'));
         }
 
         fetchPoints();
@@ -297,18 +299,18 @@ function WitnessingPointListContent() {
     const handleDeletePoint = async (id: string, name: string) => {
         setConfirmModal({
             isOpen: true,
-            title: "Excluir Ponto",
-            message: `Tem certeza que deseja excluir o ponto "${name}"?`,
+            title: t('witnessing.deletePointTitle'),
+            message: t('witnessing.deletePointMessage', { name }),
             variant: 'danger',
             onConfirm: async () => {
                 setConfirmModal(prev => ({ ...prev, isOpen: false }));
                 try {
                     const result = await deleteWitnessingPoint(id);
                     if (!result.success) throw new Error(result.error);
-                    toast.success("Ponto excluído com sucesso.");
+                    toast.success(t('witnessing.deletePointSuccess'));
                 } catch (error) {
                     console.error("Error deleting point:", error);
-                    toast.error("Erro ao excluir ponto.");
+                    toast.error(t('witnessing.deletePointError'));
                 }
             }
         });
@@ -354,11 +356,11 @@ function WitnessingPointListContent() {
     const handleCheckInClick = async (point: WitnessingPoint) => {
         if (!user) {
             console.warn("Check-in attempt without authenticated user");
-            toast.error("Você precisa estar logado para fazer check-in.");
+            toast.error(t('witnessing.loginRequired'));
             return;
         }
 
-        const userName = profileName || user.displayName || user.email?.split('@')[0] || 'Publicador';
+        const userName = profileName || user.displayName || user.email?.split('@')[0] || t('witnessing.publisherFallback');
         const userId = user.uid;
 
         // Verifica se o usuario ja esta neste ponto
@@ -393,7 +395,7 @@ function WitnessingPointListContent() {
                     await executeCheckInOut(point, false);
                 } catch (err) {
                     console.error("Error auto-switching:", err);
-                    toast.error("Erro ao trocar de ponto automaticamente.");
+                    toast.error(t('witnessing.autoSwitchError'));
                 }
             } else {
                 // Checkin normal
@@ -404,7 +406,7 @@ function WitnessingPointListContent() {
 
     const executeCheckInOut = async (point: WitnessingPoint, isCheckingOut: boolean) => {
         if (!user) return;
-        const userName = profileName || user.displayName || user.email?.split('@')[0] || 'Publicador';
+        const userName = profileName || user.displayName || user.email?.split('@')[0] || t('witnessing.publisherFallback');
         const userId = user.uid;
 
         let newActiveUsers = [...(point.activeUsers || [])];
@@ -435,7 +437,7 @@ function WitnessingPointListContent() {
                 throw new Error(result.error || 'Erro ao processar check-in');
             }
         } catch (error: any) {
-            toast.error(`Erro ao salvar: ${error.message}`);
+            toast.error(t('witnessing.saveError', { msg: error.message }));
         }
     };
 
@@ -447,7 +449,7 @@ function WitnessingPointListContent() {
     if (authLoading) return <ListPageSkeleton showBack={true} rightActions={1} />;
 
     if (!congregationId) {
-        return <div className="p-8 text-center text-muted">Parâmetros inválidos.</div>;
+        return <div className="p-8 text-center text-muted">{t('witnessing.invalidParams')}</div>;
     }
 
     return (
@@ -459,9 +461,9 @@ function WitnessingPointListContent() {
                         <ArrowRight className="w-5 h-5 rotate-180" />
                     </Link>
                     <div>
-                        <h1 className="font-bold text-lg text-main tracking-tight leading-tight">Pontos</h1>
+                        <h1 className="font-bold text-lg text-main tracking-tight leading-tight">{t('witnessing.pointsTitle')}</h1>
                         <p className="text-[10px] text-muted font-bold uppercase tracking-widest">
-                            {cityId ? cityName : (termType === 'neighborhood' ? 'Todos os Bairros' : 'Todas as Cidades')}
+                            {cityId ? cityName : (termType === 'neighborhood' ? t('witnessing.allNeighborhoods') : t('witnessing.allCities'))}
                         </p>
                     </div>
                 </div>
@@ -473,14 +475,14 @@ function WitnessingPointListContent() {
                                 className="flex items-center gap-2 px-3 py-1.5 rounded-md text-xs font-bold transition-all text-gray-500 hover:text-gray-900 dark:hover:text-gray-300"
                             >
                                 <Store className="w-3.5 h-3.5" />
-                                <span>{termType === 'neighborhood' ? 'Bairros' : 'Cidades'}</span>
+                                <span>{termType === 'neighborhood' ? t('witnessing.neighborhoods') : t('witnessing.cities')}</span>
                             </Link>
                             <button
                                 disabled
                                 className="flex items-center gap-2 px-3 py-1.5 rounded-md text-xs font-bold transition-all bg-white dark:bg-slate-700 text-amber-600 dark:text-amber-400 shadow-sm"
                             >
                                 <MapIcon className="w-3.5 h-3.5" />
-                                <span>Todos</span>
+                                <span>{t('witnessing.all')}</span>
                             </button>
                         </div>
                     ) : (
@@ -505,7 +507,7 @@ function WitnessingPointListContent() {
                         <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-muted w-5 h-5 group-focus-within:text-amber-500 transition-colors" />
                         <input
                             type="text"
-                            placeholder="Buscar ponto..."
+                            placeholder={t('witnessing.searchPoint')}
                             value={searchTerm}
                             onChange={(e) => setSearchTerm(e.target.value)}
                             className="w-full bg-surface border-0 text-main text-sm font-medium rounded-lg py-4 pl-12 pr-4 shadow-sm focus:ring-2 focus:ring-amber-500/20 focus:outline-none transition-all placeholder:text-muted"
@@ -514,7 +516,7 @@ function WitnessingPointListContent() {
 
                     {loading ? (
                         <div className="grid grid-cols-1 lg:grid-cols-2 2xl:grid-cols-3 gap-4 pb-6" role="status" aria-busy="true">
-                            <span className="sr-only">Carregando...</span>
+                            <span className="sr-only">{t('witnessing.loading')}</span>
                             {Array.from({ length: 4 }).map((_, idx) => (
                                 <div key={idx} className="bg-surface rounded-lg p-4 border border-surface-border space-y-2.5">
                                     <Skeleton className="h-4 w-2/3" />
@@ -525,8 +527,8 @@ function WitnessingPointListContent() {
                     ) : hasError ? (
                         <div className="bg-surface p-6 rounded-lg shadow-sm border border-surface-border flex flex-col items-center justify-center text-center">
                             <AlertCircle className="w-8 h-8 text-orange-400 mb-2" />
-                            <p className="text-sm font-bold text-main">O carregamento está demorando muito.</p>
-                            <p className="text-[10px] text-muted mb-4 px-4 text-pretty leading-relaxed">Isso pode ocorrer se houver instabilidade no banco de dados ou em sua conexão.</p>
+                            <p className="text-sm font-bold text-main">{t('witnessing.loadingSlow')}</p>
+                            <p className="text-[10px] text-muted mb-4 px-4 text-pretty leading-relaxed">{t('witnessing.connectionInstability')}</p>
                             <button
                                 onClick={() => {
                                     setHasError(false);
@@ -535,13 +537,13 @@ function WitnessingPointListContent() {
                                 }}
                                 className="bg-primary hover:bg-primary-dark text-white text-xs font-bold py-2 px-6 rounded-full transition-colors flex items-center gap-2"
                             >
-                                Tentar Novamente
+                                {t('witnessing.tryAgain')}
                             </button>
                         </div>
                     ) : filteredPoints.length === 0 ? (
                         <div className="text-center py-12 opacity-50">
                             <Store className="w-12 h-12 mx-auto mb-3 text-muted" />
-                            <p className="text-muted font-medium">Nenhum ponto encontrado</p>
+                            <p className="text-muted font-medium">{t('witnessing.noPointFound')}</p>
                         </div>
                     ) : (
                         <div className="grid grid-cols-1 lg:grid-cols-2 2xl:grid-cols-3 gap-4 pb-6">
@@ -549,7 +551,7 @@ function WitnessingPointListContent() {
                                 const isOccupied = point.status === 'OCCUPIED';
 
                                 // Determina o nome e status de check-in do usuário atual
-                                const currentUserName = profileName || user?.displayName || user?.email?.split('@')[0] || 'Publicador';
+                                const currentUserName = profileName || user?.displayName || user?.email?.split('@')[0] || t('witnessing.publisherFallback');
                                 const userIsCheckedIn = usuarioEstaAtivo(point.activeUsers, user?.uid || '', currentUserName);
 
                                 return (
@@ -613,7 +615,7 @@ function WitnessingPointListContent() {
                                                             {!point.googleMapsLink && !point.wazeLink && (
                                                                 <DropDownItem
                                                                     icon={Navigation}
-                                                                    label="Navegar"
+                                                                    label={t('witnessing.navigate')}
                                                                     variant="neutral"
                                                                     onClick={() => {
                                                                         handleOpenPointMap(point);
@@ -624,7 +626,7 @@ function WitnessingPointListContent() {
                                                             {canEditWitnessing && (
                                                                 <DropDownItem
                                                                     icon={Pencil}
-                                                                    label="Editar"
+                                                                    label={t('witnessing.edit')}
                                                                     variant="primary"
                                                                     onClick={() => {
                                                                         handleEditClick(point);
@@ -635,7 +637,7 @@ function WitnessingPointListContent() {
                                                             {canDeleteWitnessing && (
                                                                 <DropDownItem
                                                                     icon={Trash2}
-                                                                    label="Excluir"
+                                                                    label={t('witnessing.delete')}
                                                                     variant="danger"
                                                                     onClick={() => {
                                                                         handleDeletePoint(point.id, point.name);
@@ -665,13 +667,13 @@ function WitnessingPointListContent() {
                                                                 {pub.uid ? (
                                                                     <AssignedUserBadge userId={pub.uid} fallbackName={pub.name} />
                                                                 ) : (
-                                                                    pub.name ? pub.name.split(' ')[0] : 'Publicador'
+                                                                    pub.name ? pub.name.split(' ')[0] : t('witnessing.publisherFallback')
                                                                 )}
                                                             </span>
                                                         </div>
                                                     ))
                                                 ) : (
-                                                    <span className="text-xs text-muted italic">Disponível</span>
+                                                    <span className="text-xs text-muted italic">{t('witnessing.available')}</span>
                                                 )}
                                             </div>
 
@@ -714,8 +716,8 @@ function WitnessingPointListContent() {
                             title: p.name,
                             variant: 'store',
                             subtitle: p.activeUsers && p.activeUsers.length > 0
-                                ? `Ocupado por: ${p.activeUsers.map(u => u.name || 'Publicador').join(', ')}`
-                                : 'Livre',
+                                ? t('witnessing.occupiedBy', { users: p.activeUsers.map(u => u.name || t('witnessing.publisherFallback')).join(', ') })
+                                : t('witnessing.free'),
                             status: p.status === 'OCCUPIED' ? 'OCUPADO' : 'LIVRE',
                             fullAddress: `${p.address}, ${cityName}`
                         }))}

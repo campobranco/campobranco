@@ -4,6 +4,7 @@ import React from 'react';
 import { Map as MapIcon, ChevronRight } from 'lucide-react';
 import { sanitizeUrl } from '@/lib/validation';
 import { resolveNavigationLinks } from '@/lib/map-links';
+import { useTranslation } from '@/app/context/I18nContext';
 
 /* 
  * Componente modal para seleção de aplicativo de mapa (Waze ou Google Maps)
@@ -30,6 +31,7 @@ function cleanOptionalLink(link?: string | null): string {
 }
 
 export default function MapAppSelectModal({ isOpen, onClose, address }: MapAppSelectModalProps) {
+    const { t } = useTranslation();
     if (!isOpen) return null;
 
     const fullAddress = [address.street, address.number].filter(Boolean).join(', ');
@@ -55,8 +57,8 @@ export default function MapAppSelectModal({ isOpen, onClose, address }: MapAppSe
                     <div className="w-14 h-14 bg-primary-50 dark:bg-primary-900/20 text-primary rounded-full flex items-center justify-center mx-auto mb-4 border border-primary-100 dark:border-primary-800/50">
                         <MapIcon className="w-7 h-7" />
                     </div>
-                    <h3 className="text-xl font-black text-main tracking-tight">Qual mapa usar?</h3>
-                    <p className="text-sm text-muted mt-2 font-medium">Escolha seu aplicativo favorito para abrir a rota predefinida.</p>
+                    <h3 className="text-xl font-black text-main tracking-tight">{t('mapAppModal.title')}</h3>
+                    <p className="text-sm text-muted mt-2 font-medium">{t('mapAppModal.subtitle')}</p>
                 </div>
 
                 <div className="flex flex-col gap-3 mb-4">
@@ -103,7 +105,7 @@ export default function MapAppSelectModal({ isOpen, onClose, address }: MapAppSe
                     onClick={onClose}
                     className="w-full bg-gray-100 dark:bg-slate-800 hover:bg-gray-200 dark:hover:bg-slate-700 text-gray-500 dark:text-gray-400 font-bold py-3.5 rounded-2xl transition-colors text-sm"
                 >
-                    Cancelar
+                    {t('mapAppModal.cancel')}
                 </button>
             </div>
         </div>

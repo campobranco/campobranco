@@ -1,6 +1,13 @@
+'use client';
+
 import { Lock } from 'lucide-react';
+import { useTranslation } from '@/app/context/I18nContext';
 
 export default function PrivacyPage() {
+    const { t } = useTranslation();
+    const appName = process.env.NEXT_PUBLIC_APP_NAME || 'Campo Branco';
+    const supportEmail = process.env.NEXT_PUBLIC_SUPPORT_EMAIL || process.env.NEXT_PUBLIC_MASTER_EMAIL || '';
+
     return (
         <article className="prose prose-slate dark:prose-invert max-w-none">
             <div className="flex items-center gap-3 mb-8">
@@ -8,147 +15,145 @@ export default function PrivacyPage() {
                     <Lock className="w-6 h-6" />
                 </div>
                 <div>
-                    <h1 className="text-2xl font-black text-gray-900 dark:text-white m-0 leading-tight">Política de Privacidade</h1>
-                    <p className="text-sm text-gray-500 dark:text-gray-400 m-0">Última atualização: 13/10/2026</p>
+                    <h1 className="text-2xl font-black text-gray-900 dark:text-white m-0 leading-tight">{t('legal.privacy.title')}</h1>
+                    <p className="text-sm text-gray-500 dark:text-gray-400 m-0">{t('legal.privacy.lastUpdated')}</p>
                 </div>
             </div>
 
             <section className="space-y-6 text-gray-600 dark:text-gray-300">
                 <p>
-                    A sua privacidade é uma prioridade. Esta Política de Privacidade explica, de forma clara e transparente, como o <strong>{process.env.NEXT_PUBLIC_APP_NAME || 'Campo Branco'}</strong> coleta, utiliza, armazena e protege dados pessoais, em conformidade com a Lei Geral de Proteção de Dados (Lei nº 13.709/2018 – LGPD).
+                    {t('legal.privacy.intro1Start')} <strong>{appName}</strong> {t('legal.privacy.intro1End')}
                 </p>
                 <p>
-                    O {process.env.NEXT_PUBLIC_APP_NAME || 'Campo Branco'} é uma ferramenta digital destinada ao apoio das atividades religiosas, pastorais e organizacionais realizadas por congregações das Testemunhas de Jeová e por seus membros.
+                    {t('legal.privacy.intro2', { appName })}
                 </p>
                 <p>
-                    O aplicativo não é operado, administrado, mantido nem endossado oficialmente pela organização religiosa das Testemunhas de Jeová. Sua utilização ocorre de forma independente, sob responsabilidade das congregações locais e dos usuários que o operam.
+                    {t('legal.privacy.intro3')}
                 </p>
 
-                <h3>1. PAPÉIS E RESPONSABILIDADES (LGPD)</h3>
-                <p><strong>Controlador dos Dados:</strong> A congregação local que utiliza o aplicativo e/ou os usuários administradores por ela designados, responsáveis pelo cadastro, definição de finalidade, manutenção, acesso e exclusão das informações inseridas no sistema.</p>
-                <p>A organização religiosa das Testemunhas de Jeová, em âmbito institucional, não atua como controladora, não define as finalidades do tratamento e não possui acesso direto aos dados armazenados no aplicativo.</p>
+                <h3>{t('legal.privacy.s1Title')}</h3>
+                <p><strong>{t('legal.privacy.s1ControllerLabel')}</strong> {t('legal.privacy.s1ControllerDesc')}</p>
+                <p>{t('legal.privacy.s1OrgNote')}</p>
 
-                <p><strong>Operador dos Dados:</strong> O {process.env.NEXT_PUBLIC_APP_NAME || 'Campo Branco'}, que fornece a plataforma tecnológica e executa o tratamento de dados pessoais exclusivamente conforme as instruções do controlador.</p>
-                <p>O {process.env.NEXT_PUBLIC_APP_NAME || 'Campo Branco'} não decide a finalidade do uso dos dados, limitando-se a disponibilizar os meios técnicos para sua organização e uso interno.</p>
+                <p><strong>{t('legal.privacy.s1ProcessorLabel')}</strong> {t('legal.privacy.s1ProcessorDesc', { appName })}</p>
+                <p>{t('legal.privacy.s1ProcessorNote', { appName })}</p>
 
-                <h3>2. CATEGORIAS DE DADOS TRATADOS</h3>
-                <p>Em estrita observância ao Princípio da Necessidade e Minimização de Dados (Art. 6º, III da LGPD), o sistema não realiza cadastro nominal de moradores, não realiza perfilamento de gênero e não coleta dados pessoais sensíveis de saúde ou de menores de idade.</p>
+                <h3>{t('legal.privacy.s2Title')}</h3>
+                <p>{t('legal.privacy.s2Intro')}</p>
 
-                <h4>2.1. Dados Territoriais e Logísticos (Não Pessoais de Moradores)</h4>
+                <h4>{t('legal.privacy.s2_1Title')}</h4>
                 <ul className="list-disc pl-5 space-y-2 marker:text-emerald-500">
-                    <li>Endereço público (logradouro, número e referência territorial)</li>
-                    <li>Status operacional de visitação (ex.: "Visitado", "Livre", "Não Visitar")</li>
-                    <li>Notas de acesso predial (ex.: campainha, portão, cão no quintal)</li>
+                    <li>{t('legal.privacy.s2_1Item1')}</li>
+                    <li>{t('legal.privacy.s2_1Item2')}</li>
+                    <li>{t('legal.privacy.s2_1Item3')}</li>
                 </ul>
 
-                <h4>2.2. Dados dos Usuários do Sistema (Voluntários/Administradores)</h4>
+                <h4>{t('legal.privacy.s2_2Title')}</h4>
                 <ul className="list-disc pl-5 space-y-2 marker:text-emerald-500">
-                    <li>Nome do usuário</li>
-                    <li>E-mail cadastrado</li>
-                    <li>Credenciais e registros de acesso/permissões internas</li>
+                    <li>{t('legal.privacy.s2_2Item1')}</li>
+                    <li>{t('legal.privacy.s2_2Item2')}</li>
+                    <li>{t('legal.privacy.s2_2Item3')}</li>
                 </ul>
 
-                <h3>3. FINALIDADE E BASE LEGAL DO TRATAMENTO</h3>
-                <p>O tratamento de dados restringe-se às seguintes hipóteses legais previstas na LGPD:</p>
+                <h3>{t('legal.privacy.s3Title')}</h3>
+                <p>{t('legal.privacy.s3Lead1')}</p>
                 <ul className="list-disc pl-5 space-y-2 marker:text-emerald-500">
-                    <li>Legítimo interesse (Art. 7º, IX) para planejamento territorial e logístico</li>
-                    <li>Exercício regular de atividade pastoral e religiosa interna</li>
-                    <li>Cumprimento de direitos do titular (Art. 18), incluindo a marcação de "Não Visitar" para moradores que expressarem oposição a visitas</li>
+                    <li>{t('legal.privacy.s3LegalItem1')}</li>
+                    <li>{t('legal.privacy.s3LegalItem2')}</li>
+                    <li>{t('legal.privacy.s3LegalItem3')}</li>
                 </ul>
-                <p>Os dados são utilizados exclusivamente para:</p>
+                <p>{t('legal.privacy.s3Lead2')}</p>
                 <ul className="list-disc pl-5 space-y-2 marker:text-emerald-500">
-                    <li>Organização de rotas de visitação pública e pastoral</li>
-                    <li>Evitar visitas repetitivas ou inoportunas em residências que solicitaram não ser contatadas</li>
-                    <li>Apoio logístico interno da congregação</li>
+                    <li>{t('legal.privacy.s3UseItem1')}</li>
+                    <li>{t('legal.privacy.s3UseItem2')}</li>
+                    <li>{t('legal.privacy.s3UseItem3')}</li>
                 </ul>
-                <p>Os dados jamais são comercializados, compartilhados com terceiros para fins de marketing ou explorados economicamente.</p>
+                <p>{t('legal.privacy.s3Note')}</p>
 
-                <h3>4. PROTEÇÃO CONTRA A COLETA DE DADOS EXCESSIVOS</h3>
+                <h3>{t('legal.privacy.s4Title')}</h3>
                 <p>
-                    O aplicativo opera sob diretrizes de <em>Privacy by Design</em> (privacidade desde a concepção). O sistema veda expressamente o armazenamento de nomes de pessoas físicas residentes, condição de saúde, deficiência ou dados de crianças e adolescentes. Toda anotação livre é restrita a características físicas de acesso ao lote.
+                    {t('legal.privacy.s4Start')} <em>{t('legal.privacy.s4Em')}</em> {t('legal.privacy.s4End')}
                 </p>
 
-                <h3>5. ARMAZENAMENTO, INFRAESTRUTURA E OPEN SOURCE</h3>
-                <h4>5.1. Banco de Dados</h4>
-                <p>O banco de dados oficial do Campo Branco é fechado, privado e protegido, sendo acessível apenas a usuários autorizados dentro da mesma congregação.</p>
+                <h3>{t('legal.privacy.s5Title')}</h3>
+                <h4>{t('legal.privacy.s5_1Title')}</h4>
+                <p>{t('legal.privacy.s5_1Desc')}</p>
 
-                <h4>5.2. Software Open Source</h4>
-                <p>Embora o software {process.env.NEXT_PUBLIC_APP_NAME || 'Campo Branco'} seja disponibilizado como código aberto (Licença MIT), isso não se aplica:</p>
+                <h4>{t('legal.privacy.s5_2Title')}</h4>
+                <p>{t('legal.privacy.s5_2Desc', { appName })}</p>
                 <ul className="list-disc pl-5 space-y-2 marker:text-emerald-500">
-                    <li>ao banco de dados oficial</li>
-                    <li>à infraestrutura de produção</li>
-                    <li>aos dados pessoais armazenados</li>
+                    <li>{t('legal.privacy.s5_2Item1')}</li>
+                    <li>{t('legal.privacy.s5_2Item2')}</li>
+                    <li>{t('legal.privacy.s5_2Item3')}</li>
                 </ul>
 
-                <h4>5.3. Auto-hospedagem</h4>
-                <p>Qualquer cópia, bifurcação (fork) ou auto-hospedagem do software deverá operar com banco de dados próprio e independente, não tendo acesso ao banco de dados oficial do Campo Branco, sendo de inteira responsabilidade de quem a operar.</p>
+                <h4>{t('legal.privacy.s5_3Title')}</h4>
+                <p>{t('legal.privacy.s5_3Desc')}</p>
 
-                <h3>6. COMPARTILHAMENTO DE DADOS</h3>
-                <p>O Campo Branco não vende, não aluga e não compartilha dados pessoais com terceiros para fins comerciais.</p>
-                <p>O acesso aos dados ocorre exclusivamente de forma interna, entre usuários autorizados da mesma congregação, conforme permissões definidas (ex.: anciãos, servos designados).</p>
+                <h3>{t('legal.privacy.s6Title')}</h3>
+                <p>{t('legal.privacy.s6P1')}</p>
+                <p>{t('legal.privacy.s6P2')}</p>
 
-                <h3>7. RETENÇÃO E EXCLUSÃO DE DADOS</h3>
-                <p>Os dados pessoais são mantidos apenas enquanto necessários para a finalidade religiosa e organizacional.</p>
-                <p>A exclusão pode ocorrer:</p>
+                <h3>{t('legal.privacy.s7Title')}</h3>
+                <p>{t('legal.privacy.s7P1')}</p>
+                <p>{t('legal.privacy.s7Lead')}</p>
                 <ul className="list-disc pl-5 space-y-2 marker:text-emerald-500">
-                    <li>por decisão dos usuários autorizados</li>
-                    <li>quando o dado deixar de ser necessário</li>
-                    <li>mediante solicitação do titular, quando aplicável</li>
+                    <li>{t('legal.privacy.s7Item1')}</li>
+                    <li>{t('legal.privacy.s7Item2')}</li>
+                    <li>{t('legal.privacy.s7Item3')}</li>
                 </ul>
-                <p>Após a exclusão definitiva, os dados não permanecem acessíveis ao usuário.</p>
+                <p>{t('legal.privacy.s7Note')}</p>
 
-                <h3>8. SEGURANÇA DA INFORMAÇÃO</h3>
-                <p>O Campo Branco adota medidas técnicas e organizacionais adequadas, incluindo:</p>
+                <h3>{t('legal.privacy.s8Title')}</h3>
+                <p>{t('legal.privacy.s8Lead')}</p>
                 <ul className="list-disc pl-5 space-y-2 marker:text-emerald-500">
-                    <li>isolamento de dados por congregação</li>
-                    <li>controle rigoroso de acesso</li>
-                    <li>regras de segurança no banco de dados</li>
-                    <li>criptografia em trânsito e, quando aplicável, em repouso</li>
+                    <li>{t('legal.privacy.s8Item1')}</li>
+                    <li>{t('legal.privacy.s8Item2')}</li>
+                    <li>{t('legal.privacy.s8Item3')}</li>
+                    <li>{t('legal.privacy.s8Item4')}</li>
                 </ul>
-                <p>Apesar das boas práticas adotadas, nenhum sistema é totalmente isento de riscos inerentes ao ambiente digital.</p>
+                <p>{t('legal.privacy.s8Note')}</p>
 
-                <h3>9. DIREITOS DOS TITULARES</h3>
-                <p>Nos termos da LGPD, o titular dos dados pode solicitar:</p>
+                <h3>{t('legal.privacy.s9Title')}</h3>
+                <p>{t('legal.privacy.s9Lead')}</p>
                 <ul className="list-disc pl-5 space-y-2 marker:text-emerald-500">
-                    <li>confirmação da existência de tratamento</li>
-                    <li>acesso aos dados</li>
-                    <li>correção de dados incompletos, inexatos ou desatualizados</li>
-                    <li>exclusão de dados, quando aplicável</li>
+                    <li>{t('legal.privacy.s9Item1')}</li>
+                    <li>{t('legal.privacy.s9Item2')}</li>
+                    <li>{t('legal.privacy.s9Item3')}</li>
+                    <li>{t('legal.privacy.s9Item4')}</li>
                 </ul>
-                <p>As solicitações devem ser realizadas por meio dos canais da congregação responsável ou do suporte indicado no aplicativo.</p>
+                <p>{t('legal.privacy.s9Note')}</p>
 
-                <h3>10. ALTERAÇÕES DESTA POLÍTICA</h3>
-                <p>
-                    Esta Política de Privacidade pode ser atualizada a qualquer momento. A versão mais recente estará sempre disponível no aplicativo.
-                </p>
-                <p>
-                    O uso contínuo do Campo Branco após eventuais alterações implica ciência e concordância com a versão vigente.
-                </p>
+                <h3>{t('legal.privacy.s10Title')}</h3>
+                <p>{t('legal.privacy.s10P1')}</p>
+                <p>{t('legal.privacy.s10P2')}</p>
 
-                <h3>11. CONTATO E ENCARREGADO (DPO)</h3>
-                <p>
-                    Para dúvidas, solicitações ou esclarecimentos relacionados à privacidade e proteção de dados pessoais, o Campo Branco disponibiliza canais específicos em conformidade com a LGPD.
-                </p>
+                <h3>{t('legal.privacy.s11Title')}</h3>
+                <p>{t('legal.privacy.s11P1')}</p>
 
-                <h4>11.1. ENCARREGADO DE PROTEÇÃO DE DADOS (DPO)</h4>
-                <p>
-                    O Encarregado de Proteção de Dados (DPO) é o ponto de contato entre os titulares de dados, o Campo Branco e a Autoridade Nacional de Proteção de Dados (ANPD). Suas responsabilidades incluem:
-                </p>
+                <h4>{t('legal.privacy.s11_1Title')}</h4>
+                <p>{t('legal.privacy.s11_1P1')}</p>
                 <ul className="list-disc pl-5 space-y-2 marker:text-emerald-500">
-                    <li>Receber e responder às solicitações dos titulares de dados</li>
-                    <li>Orientar sobre as melhores práticas de proteção de dados</li>
-                    <li>Atuar como canal de comunicação com a ANPD</li>
+                    <li>{t('legal.privacy.s11_1Item1')}</li>
+                    <li>{t('legal.privacy.s11_1Item2')}</li>
+                    <li>{t('legal.privacy.s11_1Item3')}</li>
                 </ul>
                 <p>
-                    <strong>Contato Suporte:</strong> <a href={`mailto:${process.env.NEXT_PUBLIC_SUPPORT_EMAIL || process.env.NEXT_PUBLIC_MASTER_EMAIL}`} className="text-emerald-600 dark:text-emerald-400 no-underline hover:underline">{process.env.NEXT_PUBLIC_SUPPORT_EMAIL || process.env.NEXT_PUBLIC_MASTER_EMAIL}</a>
+                    <strong>{t('legal.privacy.s11_1ContactLabel')}</strong>{' '}
+                    <a href={`mailto:${supportEmail}`} className="text-emerald-600 dark:text-emerald-400 no-underline hover:underline">
+                        {supportEmail}
+                    </a>
                 </p>
 
-                <h4>11.2. CANAIS DE SOLICITAÇÃO LGPD</h4>
-                <p>
-                    Os titulares podem exercer seus direitos através de:
-                </p>
+                <h4>{t('legal.privacy.s11_2Title')}</h4>
+                <p>{t('legal.privacy.s11_2Lead')}</p>
                 <ul className="list-disc pl-5 space-y-2 marker:text-emerald-500">
-                    <li><strong>Solicitações:</strong> <a href={`mailto:${process.env.NEXT_PUBLIC_SUPPORT_EMAIL || process.env.NEXT_PUBLIC_MASTER_EMAIL}`} className="text-emerald-600 dark:text-emerald-400 no-underline hover:underline">{process.env.NEXT_PUBLIC_SUPPORT_EMAIL || process.env.NEXT_PUBLIC_MASTER_EMAIL}</a></li>
+                    <li>
+                        <strong>{t('legal.privacy.s11_2RequestsLabel')}</strong>{' '}
+                        <a href={`mailto:${supportEmail}`} className="text-emerald-600 dark:text-emerald-400 no-underline hover:underline">
+                            {supportEmail}
+                        </a>
+                    </li>
                 </ul>
             </section>
         </article>

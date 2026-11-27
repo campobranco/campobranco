@@ -16,6 +16,7 @@ import {
     Compass
 } from 'lucide-react';
 import { useRouter } from 'next/navigation';
+import { useTranslation } from '@/app/context/I18nContext';
 import { toast } from 'sonner';
 import { Capacitor } from '@capacitor/core';
 import { getAppBaseUrl } from '@/lib/config';
@@ -50,6 +51,7 @@ export default function AddressActionsMenu({
     canDeleteMaps = false,
     onReferencePointsClick
 }: AddressActionsMenuProps) {
+    const { t } = useTranslation();
     const [isImportModalOpen, setIsImportModalOpen] = useState(false);
     const [isCSVMenuOpen, setIsCSVMenuOpen] = useState(false);
     const [isShareMenuOpen, setIsShareMenuOpen] = useState(false);
@@ -163,7 +165,7 @@ export default function AddressActionsMenu({
                         ? 'bg-green-600 text-white border-green-600' 
                         : 'bg-green-50 dark:bg-green-900/20 text-green-600 dark:text-green-400 border-green-100 dark:border-green-900/30 hover:bg-green-100 dark:hover:bg-green-900/40'
                     }`}
-                    title="Opções de Compartilhamento"
+                    title={t('addressActions.shareOptionsTitle')}
                 >
                     <Share2 className="w-5 h-5" />
                     <ChevronDown className={`w-3 h-3 transition-transform ${isShareMenuOpen ? 'rotate-180' : ''}`} />
@@ -175,24 +177,24 @@ export default function AddressActionsMenu({
                         onClick={(e) => e.stopPropagation()}
                     >
                         <div className="px-3 py-2">
-                             <p className="text-[10px] font-black text-muted uppercase tracking-[0.15em] opacity-50">Distribuição</p>
+                             <p className="text-[10px] font-black text-muted uppercase tracking-[0.15em] opacity-50">{t('addressActions.distributionHeader')}</p>
                         </div>
 
                         <DropDownItem 
                             icon={ExternalLink} 
-                            label="Abrir" 
+                            label={t('addressActions.open')} 
                             variant="success" 
                             onClick={handleOpenShareSetup} 
                         />
                         <DropDownItem 
                             icon={Copy} 
-                            label="Copiar Link" 
+                            label={t('addressActions.copyLink')} 
                             variant="primary" 
                             onClick={handleCopyLink} 
                         />
                         <DropDownItem 
                             icon={Share2} 
-                            label="Compartilhar" 
+                            label={t('addressActions.share')} 
                             variant="success" 
                             onClick={handleNativeShare} 
                         />
@@ -213,7 +215,7 @@ export default function AddressActionsMenu({
                         ? 'bg-blue-600 text-white border-blue-600' 
                         : 'bg-blue-50 dark:bg-blue-900/20 text-blue-600 dark:text-blue-400 border-blue-100 dark:border-blue-900/30 hover:bg-blue-100 dark:hover:bg-blue-900/40'
                     }`}
-                    title="Opções de CSV"
+                    title={t('addressActions.csvOptionsTitle')}
                 >
                     <Upload className="w-5 h-5" />
                     <ChevronDown className={`w-3 h-3 transition-transform ${isCSVMenuOpen ? 'rotate-180' : ''}`} />
@@ -225,13 +227,13 @@ export default function AddressActionsMenu({
                         onClick={(e) => e.stopPropagation()}
                     >
                         <div className="px-3 py-2">
-                             <p className="text-[10px] font-black text-muted uppercase tracking-[0.15em] opacity-50">Dados & CSV</p>
+                             <p className="text-[10px] font-black text-muted uppercase tracking-[0.15em] opacity-50">{t('addressActions.dataAndCsvHeader')}</p>
                         </div>
 
                         {canCreateMaps && (
                             <DropDownItem 
                                 icon={Upload} 
-                                label="Importar CSV" 
+                                label={t('addressActions.importCsv')} 
                                 variant="primary" 
                                 onClick={() => {
                                     setIsImportModalOpen(true);
@@ -241,13 +243,13 @@ export default function AddressActionsMenu({
                         )}
                         <DropDownItem 
                             icon={Download} 
-                            label="Exportar para CSV" 
+                            label={t('addressActions.exportCsv')} 
                             variant="indigo" 
                             onClick={handleExport} 
                         />
                         <DropDownItem 
                             icon={FileSpreadsheet} 
-                            label="Planilha Modelo" 
+                            label={t('addressActions.templateSheet')} 
                             variant="success" 
                             onClick={downloadTemplate} 
                         />
@@ -260,7 +262,7 @@ export default function AddressActionsMenu({
                 <button
                     onClick={onCreateClick}
                     className="p-2.5 bg-[#16A34A] text-white rounded-xl hover:bg-[#15803d] hover:scale-105 active:scale-95 transition-all shadow-md border border-[#16A34A]"
-                    title="Novo Endereço"
+                    title={t('addressActions.newAddressTitle')}
                 >
                     <Plus className="w-5 h-5" />
                 </button>

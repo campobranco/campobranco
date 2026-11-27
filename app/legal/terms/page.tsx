@@ -1,6 +1,13 @@
+'use client';
+
 import { FileText } from 'lucide-react';
+import { useTranslation } from '@/app/context/I18nContext';
 
 export default function TermsPage() {
+    const { t } = useTranslation();
+    const appName = process.env.NEXT_PUBLIC_APP_NAME || "Campo Branco";
+    const supportEmail = process.env.NEXT_PUBLIC_SUPPORT_EMAIL || process.env.NEXT_PUBLIC_MASTER_EMAIL || "";
+
     return (
         <article className="prose prose-slate dark:prose-invert max-w-none">
             <div className="flex items-center gap-3 mb-8">
@@ -8,119 +15,110 @@ export default function TermsPage() {
                     <FileText className="w-6 h-6" />
                 </div>
                 <div>
-                    <h1 className="text-2xl font-black text-gray-900 dark:text-white m-0 leading-tight">Termos de Uso</h1>
-                    <p className="text-sm text-gray-500 dark:text-gray-400 m-0">Última atualização: 05/01/2026</p>
+                    <h1 className="text-2xl font-black text-gray-900 dark:text-white m-0 leading-tight">{t('legal.terms.title')}</h1>
+                    <p className="text-sm text-gray-500 dark:text-gray-400 m-0">{t('legal.terms.lastUpdated')}</p>
                 </div>
             </div>
 
             <section className="space-y-6 text-gray-600 dark:text-gray-300">
                 <p>
-                    Bem-vindo ao <strong>{process.env.NEXT_PUBLIC_APP_NAME || "Campo Branco"}</strong>.
-                    Ao acessar, cadastrar-se ou utilizar este aplicativo, você declara que <strong>leu, compreendeu e concorda integralmente</strong> com estes Termos de Uso. Caso não concorde com qualquer condição aqui descrita, <strong>não utilize o aplicativo</strong>.
+                    {t('legal.terms.intro1')} <strong>{appName}</strong>.{' '}
+                    {t('legal.terms.intro2')} <strong>{t('legal.terms.intro2Bold')}</strong> {t('legal.terms.intro2End')} <strong>{t('legal.terms.intro2EndBold')}</strong>.
                 </p>
 
-                <h3>1. DEFINIÇÃO DO SERVIÇO</h3>
+                <h3>{t('legal.terms.s1Title')}</h3>
                 <p>
-                    O <strong>{process.env.NEXT_PUBLIC_APP_NAME || "Campo Branco"}</strong> é uma ferramenta digital destinada <strong>exclusivamente</strong> ao apoio da <strong>organização e gestão de territórios, endereços e visitas religiosas/pastorais</strong> realizadas por congregações locais e seus membros, no contexto das atividades das Testemunhas de Jeová.
+                    {t('legal.terms.s1P1Start') ? `${t('legal.terms.s1P1Start')} ` : ''}<strong>{appName}</strong> {t('legal.terms.s1P1Mid')} <strong>{t('legal.terms.s1P1Bold1')}</strong> {t('legal.terms.s1P1Mid2')} <strong>{t('legal.terms.s1P1Bold2')}</strong> {t('legal.terms.s1P1End')}
                 </p>
                 <p>
-                    O aplicativo não é operado, administrado, endossado nem representa oficialmente a organização religiosa das Testemunhas de Jeová, sendo utilizado de forma independente por congregações e usuários locais.
+                    {t('legal.terms.s1P2')}
                 </p>
-                <p>É <strong>expressamente proibido</strong> o uso do aplicativo para:</p>
+                <p>{t('legal.terms.s1ProhibitedLead')} <strong>{t('legal.terms.s1ProhibitedBold')}</strong> {t('legal.terms.s1ProhibitedEnd')}</p>
                 <ul className="list-disc pl-5 space-y-2 marker:text-blue-500">
-                    <li>fins comerciais ou publicitários</li>
-                    <li>marketing, vendas ou prospecção</li>
-                    <li>cobrança, assédio ou pressão indevida</li>
-                    <li>coleta de dados para finalidades externas à atividade religiosa</li>
+                    <li>{t('legal.terms.s1ProhibitedItem1')}</li>
+                    <li>{t('legal.terms.s1ProhibitedItem2')}</li>
+                    <li>{t('legal.terms.s1ProhibitedItem3')}</li>
+                    <li>{t('legal.terms.s1ProhibitedItem4')}</li>
                 </ul>
-                <p>O descumprimento poderá resultar em <strong>suspensão ou banimento imediato da conta</strong>, sem aviso prévio.</p>
+                <p>{t('legal.terms.s1PenaltyStart')} <strong>{t('legal.terms.s1PenaltyBold')}</strong>{t('legal.terms.s1PenaltyEnd')}</p>
 
-                <h3>2. ELEGIBILIDADE E ACESSO</h3>
-                <p>2.1. O uso do Campo Branco é restrito a:</p>
+                <h3>{t('legal.terms.s2Title')}</h3>
+                <p>{t('legal.terms.s2_1')}</p>
                 <ul className="list-disc pl-5 space-y-2 marker:text-blue-500">
-                    <li>usuários <strong>autorizados pela congregação local</strong> ou por administradores responsáveis</li>
-                    <li>maiores de 18 anos ou devidamente autorizados</li>
+                    <li>{t('legal.terms.s2_1Item1Start')} <strong>{t('legal.terms.s2_1Item1Bold')}</strong> {t('legal.terms.s2_1Item1End')}</li>
+                    <li>{t('legal.terms.s2_1Item2')}</li>
                 </ul>
-                <p>2.2. O acesso é <strong>individual e intransferível</strong>. O usuário é responsável por manter a confidencialidade de suas credenciais e por todas as ações realizadas em sua conta.</p>
+                <p>{t('legal.terms.s2_2Start')} <strong>{t('legal.terms.s2_2Bold')}</strong>{t('legal.terms.s2_2End')}</p>
 
-                <h3>3. RESPONSABILIDADES DO USUÁRIO</h3>
-                <p>Ao utilizar o Campo Branco, o usuário declara que:</p>
+                <h3>{t('legal.terms.s3Title')}</h3>
+                <p>{t('legal.terms.s3Lead')}</p>
                 <ul className="list-disc pl-5 space-y-2 marker:text-blue-500">
-                    <li>As informações inseridas (endereços, nomes, observações, marcações) são de sua <strong>inteira responsabilidade</strong></li>
-                    <li>Utilizará os dados <strong>apenas para fins religiosos/pastorais legítimos</strong></li>
-                    <li>Não compartilhará dados com terceiros não autorizados</li>
-                    <li>Agirá com <strong>respeito, ética e discrição</strong>, especialmente em visitas pessoais</li>
+                    <li>{t('legal.terms.s3Item1Start')} <strong>{t('legal.terms.s3Item1Bold')}</strong></li>
+                    <li>{t('legal.terms.s3Item2Start')} <strong>{t('legal.terms.s3Item2Bold')}</strong></li>
+                    <li>{t('legal.terms.s3Item3')}</li>
+                    <li>{t('legal.terms.s3Item4Start')} <strong>{t('legal.terms.s3Item4Bold')}</strong>{t('legal.terms.s3Item4End')}</li>
                 </ul>
 
-                <h4>3.1. Dados sensíveis</h4>
-                <p>O usuário compromete-se a registrar <strong>dados sensíveis apenas quando estritamente necessário</strong> e tratar com cuidado especial marcações como menores de idade, condições de acessibilidade e preferências de abordagem.</p>
+                <h4>{t('legal.terms.s3_1Title')}</h4>
+                <p>{t('legal.terms.s3_1Start')} <strong>{t('legal.terms.s3_1Bold')}</strong> {t('legal.terms.s3_1End')}</p>
 
-                <h3>4. USO DE DADOS E CONFORMIDADE LEGAL</h3>
-                <p>4.1. O Campo Branco atua como <strong>OPERADOR de dados</strong>, nos termos da Lei Geral de Proteção de Dados (Lei nº 13.709/2018 – LGPD).</p>
-                <p>4.2. O <strong>CONTROLADOR dos dados</strong> é a congregação local e/ou os usuários administradores responsáveis pelo cadastro, definição de finalidade, manutenção e exclusão das informações inseridas no sistema.</p>
-                <p>4.3. O tratamento de dados ocorre com base em interesse legítimo, exercício regular de atividade religiosa, finalidade pastoral e organizacional, e observância dos princípios da LGPD.</p>
-                <p>4.4. O aplicativo não utiliza rastreadores externos, não exibe anúncios, não comercializa dados e não compartilha dados com terceiros.</p>
+                <h3>{t('legal.terms.s4Title')}</h3>
+                <p>{t('legal.terms.s4_1Start')} <strong>{t('legal.terms.s4_1Bold')}</strong>{t('legal.terms.s4_1End')}</p>
+                <p>{t('legal.terms.s4_2Start')} <strong>{t('legal.terms.s4_2Bold')}</strong> {t('legal.terms.s4_2End')}</p>
+                <p>{t('legal.terms.s4_3')}</p>
+                <p>{t('legal.terms.s4_4')}</p>
 
-                <h3>5. DADOS DE CRIANÇAS E ADOLESCENTES</h3>
+                <h3>{t('legal.terms.s5Title')}</h3>
                 <p>
-                    Quando houver registro de dados relacionados a menores de idade, isso ocorrerá <strong>exclusivamente</strong> para alertar sobre a necessidade de abordagem responsável e incentivar boas práticas, como buscar autorização dos responsáveis.
-                    O tratamento será sempre feito <strong>no melhor interesse do menor</strong>, conforme o <strong>Art. 14 da LGPD</strong>.
+                    {t('legal.terms.s5Start')} <strong>{t('legal.terms.s5Bold1')}</strong> {t('legal.terms.s5Mid1')}{' '}
+                    <strong>{t('legal.terms.s5Bold2')}</strong>{t('legal.terms.s5Mid2')} <strong>{t('legal.terms.s5Bold3')}</strong>.
                 </p>
 
-                <h3>6. RETENÇÃO E EXCLUSÃO DE DADOS</h3>
-                <p>6.1. Os dados permanecem armazenados <strong>somente enquanto necessários</strong> para a finalidade religiosa.</p>
-                <p>6.2. A exclusão de dados pode ser realizada manualmente por usuários autorizados, quando o dado deixar de ser necessário ou por solicitação interna da congregação ou do usuário controlador responsável.</p>
-                <p>6.3. O Campo Branco não mantém backups históricos acessíveis ao usuário após exclusão definitiva.</p>
+                <h3>{t('legal.terms.s6Title')}</h3>
+                <p>{t('legal.terms.s6_1Start')} <strong>{t('legal.terms.s6_1Bold')}</strong> {t('legal.terms.s6_1End')}</p>
+                <p>{t('legal.terms.s6_2')}</p>
+                <p>{t('legal.terms.s6_3')}</p>
 
-                <h3>7. SEGURANÇA DA INFORMAÇÃO</h3>
-                <p>
-                    O Campo Branco adota medidas técnicas e organizacionais adequadas, incluindo isolamento de dados por congregação, controle rigoroso de acesso e regras de segurança no banco de dados.
-                    Apesar disso, nenhum sistema é absolutamente imune. O usuário reconhece os riscos inerentes ao uso de tecnologias digitais.
-                </p>
+                <h3>{t('legal.terms.s7Title')}</h3>
+                <p>{t('legal.terms.s7P1')}</p>
 
-                <h3>8. LICENÇA OPEN SOURCE, INFRAESTRUTURA E DADOS</h3>
-                <p>8.1. O Campo Branco é um software de código aberto (open source), distribuído sob os termos da Licença MIT, aplicável exclusivamente ao código-fonte do software.</p>
-                <p>8.2. A Licença MIT concede a qualquer pessoa que obtenha uma cópia do software os direitos de usar, copiar, modificar, mesclar, publicar e distribuir o software, inclusive para fins comerciais, desde que respeitados os termos da licença.</p>
+                <h3>{t('legal.terms.s8Title')}</h3>
+                <p>{t('legal.terms.s8_1')}</p>
+                <p>{t('legal.terms.s8_2')}</p>
 
-                <p><strong>8.3. A licença open source NÃO se aplica:</strong></p>
+                <p><strong>{t('legal.terms.s8_3Title')}</strong></p>
                 <ul className="list-disc pl-5 space-y-2 marker:text-blue-500">
-                    <li>ao banco de dados oficial do {process.env.NEXT_PUBLIC_APP_NAME || "Campo Branco"}</li>
-                    <li>à infraestrutura de produção</li>
-                    <li>aos dados armazenados por usuários ou organizações</li>
-                    <li>aos ambientes operacionais mantidos pelos desenvolvedores</li>
+                    <li>{t('legal.terms.s8_3Item1', { appName })}</li>
+                    <li>{t('legal.terms.s8_3Item2')}</li>
+                    <li>{t('legal.terms.s8_3Item3')}</li>
+                    <li>{t('legal.terms.s8_3Item4')}</li>
                 </ul>
-                <p>Esses elementos são privados, fechados e protegidos.</p>
+                <p>{t('legal.terms.s8_3Note')}</p>
 
-                <p>8.4. Qualquer instalação própria, bifurcação (fork), cópia ou auto-hospedagem do software deverá operar com banco de dados próprio e independente, não terá acesso, integração ou sincronização com o banco de dados oficial do {process.env.NEXT_PUBLIC_APP_NAME || "Campo Branco"} e será de inteira responsabilidade de quem a operar.</p>
-                <p>8.5. Este Termo de Uso não substitui nem invalida a Licença MIT, mas regula especificamente o uso da aplicação oficial em produção, o acesso à infraestrutura e as responsabilidades dos usuários finais.</p>
-                <p>8.6. O nome {process.env.NEXT_PUBLIC_APP_NAME || "Campo Branco"}, sua identidade visual e documentação não estão cobertos pela Licença MIT, salvo indicação expressa.</p>
+                <p>{t('legal.terms.s8_4', { appName })}</p>
+                <p>{t('legal.terms.s8_5')}</p>
+                <p>{t('legal.terms.s8_6', { appName })}</p>
 
-                <h3>9. LIMITAÇÃO DE RESPONSABILIDADE</h3>
+                <h3>{t('legal.terms.s9Title')}</h3>
                 <p>
-                    O {process.env.NEXT_PUBLIC_APP_NAME || "Campo Branco"} não garante resultados específicos, não se responsabiliza por uso indevido do aplicativo e não responde por informações inseridas pelos usuários.
-                    A responsabilidade pelo conteúdo cadastrado é <strong>exclusivamente do usuário e da organização controladora</strong>.
+                    {t('legal.terms.s9Start', { appName })} <strong>{t('legal.terms.s9Bold')}</strong>.
                 </p>
 
-                <h3>10. SUSPENSÃO E ENCERRAMENTO</h3>
+                <h3>{t('legal.terms.s10Title')}</h3>
+                <p>{t('legal.terms.s10P1')}</p>
+
+                <h3>{t('legal.terms.s11Title')}</h3>
                 <p>
-                    O acesso poderá ser suspenso ou encerrado em caso de violação destes Termos, uso indevido ou ilegal, ou solicitação da organização religiosa.
-                    O encerramento ou suspensão de acesso não implica vínculo institucional, representação ou responsabilidade da organização religiosa das Testemunhas de Jeová sobre o uso do aplicativo.
+                    {t('legal.terms.s11Start')} <strong>{t('legal.terms.s11Bold')}</strong> {t('legal.terms.s11End')}
                 </p>
 
-                <h3>11. ALTERAÇÕES DOS TERMOS</h3>
+                <h3>{t('legal.terms.s12Title')}</h3>
                 <p>
-                    Estes Termos podem ser atualizados a qualquer momento. A versão mais recente estará sempre disponível no aplicativo. O uso continuado após alterações implica <strong>aceitação automática</strong> dos novos termos.
+                    {t('legal.terms.s12Start')} <strong>{supportEmail}</strong>.
                 </p>
 
-                <h3>12. CONTATO</h3>
-                <p>
-                    Para dúvidas, solicitações ou comunicações relacionadas a estes Termos, utilize o canal de suporte dentro do aplicativo ou o e-mail administrativo informado na plataforma: <strong>{process.env.NEXT_PUBLIC_SUPPORT_EMAIL || process.env.NEXT_PUBLIC_MASTER_EMAIL}</strong>.
-                </p>
-
-                <h3>13. DISPOSIÇÕES FINAIS</h3>
-                <p>
-                    Estes Termos são regidos pelas leis da República Federativa do Brasil. Qualquer controvérsia será resolvida conforme a legislação aplicável.
-                </p>
+                <h3>{t('legal.terms.s13Title')}</h3>
+                <p>{t('legal.terms.s13P1')}</p>
             </section>
         </article>
     );

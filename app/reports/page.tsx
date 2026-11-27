@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import BottomNav from "@/app/components/BottomNav";
 import { useAuth } from "@/app/context/AuthContext";
+import { useTranslation } from "@/app/context/I18nContext";
 import {
     FileText,
     Lock,
@@ -38,6 +39,7 @@ import { getRegistryData } from "@/lib/services/reports";
 
 
 export default function ReportsPage() {
+    const { t } = useTranslation();
     const router = useRouter();
     const { user, role, isElder, isServant, isAdminRoleGlobal, congregationId: userCongregationId, loading: authLoading, canViewReports, canViewS13 } = useAuth();
     const [loading, setLoading] = useState(true);
@@ -66,8 +68,8 @@ export default function ReportsPage() {
         stuckMapsCount: 0
     });
 
-    const [chartData, setChartData] = useState<{ month: string, count: number, height: number }[]>([]);
-    const [insights, setInsights] = useState<{ type: 'warning' | 'info' | 'success', message: string, detail?: string }[]>([]);
+    const [chartData, setChartData] = useState<{ monthIndex: number, count: number, height: number }[]>([]);
+    const [insights, setInsights] = useState<{ type: 'warning' | 'info' | 'success', kind: 'stuck' | 'healthy', count?: number }[]>([]);
     const [stuckMapsList, setStuckMapsList] = useState<any[]>([]);
     const [isStuckMapsModalOpen, setIsStuckMapsModalOpen] = useState(false);
 
@@ -101,7 +103,7 @@ export default function ReportsPage() {
                 // Fetch all data via Client Service (consistent with registry page)
                 const resData = await getRegistryData(targetCongId, true);
 
-                if (!resData.success) throw new Error(resData.error || "Erro ao buscar dados do servidor");
+                if (!resData.success) throw new Error(resData.error || t('reports.fetchError'));
 
                 const territories = resData.territories || [];
                 const history = resData.shared_lists || [];
@@ -173,9 +175,8 @@ export default function ReportsPage() {
                 const avgRotationDays = completedCount > 0 ? Math.round(totalDays / completedCount) : 0;
 
                 // --- CHARTS (Monthly History) ---
-                const months = ['Jan', 'Fev', 'Mar', 'Abr', 'Mai', 'Jun', 'Jul', 'Ago', 'Set', 'Out', 'Nov', 'Dez'];
-                const chartLabels: string[] = [];
-                const monthCounts: Record<string, number> = {};
+                const chartMonthIndices: number[] = [];
+                const monthCounts: Record<number, number> = {};
 
                 const { start: syStart, end: syEnd } = getServiceYearRange(selectedServiceYear);
                 const now = new Date();
@@ -183,9 +184,9 @@ export default function ReportsPage() {
                 let current = new Date(syStart);
                 while (current <= syEnd) {
                     if (current > now && selectedServiceYear === getServiceYear()) break;
-                    const mName = months[current.getMonth()];
-                    monthCounts[mName] = 0;
-                    chartLabels.push(mName);
+                    const mIdx = current.getMonth();
+                    monthCounts[mIdx] = 0;
+                    chartMonthIndices.push(mIdx);
                     current.setMonth(current.getMonth() + 1);
                 }
 
@@ -193,7 +194,7 @@ export default function ReportsPage() {
                     if (h.returnedAt) {
                         const date = parseDate(h.returnedAt);
                         if (date && date >= syStart && date <= (current > now ? now : syEnd)) {
-                            const key = months[date.getMonth()];
+                            const key = date.getMonth();
                             if (monthCounts[key] !== undefined) {
                                 monthCounts[key]++;
                             }
@@ -202,10 +203,10 @@ export default function ReportsPage() {
                 });
 
                 const maxVal = Math.max(...Object.values(monthCounts), 1);
-                const chart = chartLabels.map(month => ({
-                    month,
-                    count: monthCounts[month],
-                    height: Math.round((monthCounts[month] / maxVal) * 100)
+                const chart = chartMonthIndices.map(monthIndex => ({
+                    monthIndex,
+                    count: monthCounts[monthIndex],
+                    height: Math.round((monthCounts[monthIndex] / maxVal) * 100)
                 }));
 
                 // --- INSIGHTS (Comprehensive Stuck Maps Check) ---
@@ -240,7 +241,8 @@ export default function ReportsPage() {
                             name: t.name,
                             description: t.notes || '',
                             days: null,
-                            assignee: 'Disponível'
+                            assigneeName: null,
+                            isAvailable: true
                         });
                     } else {
                         const referenceDate = activeAssign
@@ -256,7 +258,8 @@ export default function ReportsPage() {
                                     name: t.name,
                                     description: t.notes || '',
                                     days: diffDays,
-                                    assignee: activeAssign ? (activeAssign.assignedName || 'Publicador') : 'Disponível'
+                                    assigneeName: activeAssign ? (activeAssign.assignedName || null) : null,
+                                    isAvailable: !activeAssign
                                 });
                             }
                         }
@@ -266,14 +269,13 @@ export default function ReportsPage() {
                 if (stuckMaps.length > 0) {
                     newInsights.push({
                         type: 'warning',
-                        message: `${stuckMaps.length} mapas sem trabalho há mais de 6 meses`,
-                        detail: 'Verifique a lista abaixo e considere designar ou cobrar a devolução.'
+                        kind: 'stuck',
+                        count: stuckMaps.length
                     });
                 } else if (territories.length > 0) {
                     newInsights.push({
                         type: 'success',
-                        message: 'Nenhum mapa parado!',
-                        detail: 'O giro do território está saudável.'
+                        kind: 'healthy'
                     });
                 }
 
@@ -327,7 +329,7 @@ export default function ReportsPage() {
 
             } catch (error: any) {
                 console.error("Error fetching reports (General):", error?.message || error);
-                setError(error?.message || "Erro desconhecido ao carregar relatórios.");
+                setError(error?.message || t('reports.unknownError'));
                 if (error?.details) console.error("Details:", error.details);
                 if (error?.hint) console.error("Hint:", error.hint);
                 if (error?.code) console.error("Code:", error.code);
@@ -346,9 +348,9 @@ export default function ReportsPage() {
                 <div className="bg-gray-100 dark:bg-gray-800 p-4 rounded-full mb-4">
                     <Lock className="w-8 h-8 text-muted" />
                 </div>
-                <h1 className="font-bold text-lg text-main">Acesso Restrito</h1>
+                <h1 className="font-bold text-lg text-main">{t('reports.restrictedTitle')}</h1>
                 <p className="text-muted text-sm mt-2 max-w-xs">
-                    Esta área contém relatórios gerenciais disponíveis apenas para Superintendentes de Serviço e Servos de Territórios.
+                    {t('reports.restrictedDesc')}
                 </p>
                 <BottomNav />
             </div>
@@ -363,8 +365,8 @@ export default function ReportsPage() {
                         <BarChart3 className="w-5 h-5" />
                     </div>
                     <div>
-                        <h1 className="font-bold text-lg text-main tracking-tight leading-tight">Relatórios</h1>
-                        <p className="text-[10px] text-muted font-bold uppercase tracking-widest">Inteligência de Território</p>
+                        <h1 className="font-bold text-lg text-main tracking-tight leading-tight">{t('reports.title')}</h1>
+                        <p className="text-[10px] text-muted font-bold uppercase tracking-widest">{t('reports.subtitle')}</p>
                     </div>
                 </div>
 
@@ -401,26 +403,26 @@ export default function ReportsPage() {
                         )}
                         <div>
                             <h3 className={`font-bold text-sm ${error.includes('building') ? 'text-blue-800 dark:text-blue-400' : 'text-red-800 dark:text-red-400'}`}>
-                                {error.includes('building') ? 'Preparando Banco de Dados' : 'Erro de Dados'}
+                                {error.includes('building') ? t('reports.preparingDb') : t('reports.dataError')}
                             </h3>
                             <p className={`text-xs mt-1 break-all ${error.includes('building') ? 'text-blue-600 dark:text-blue-500' : 'text-red-600 dark:text-red-500'}`}>
                                 {error?.includes('https://') ? (
                                     <>
-                                        {error.includes('building') ? 'O Firebase está criando um índice necessário para esta consulta. Isso pode levar alguns minutos.' : error.split('https://')[0]}
+                                        {error.includes('building') ? t('reports.indexBuildingDesc') : error.split('https://')[0]}
                                         <a
                                             href={`https://${error.split('https://')[1]}`}
                                             target="_blank"
                                             rel="noopener noreferrer"
                                             className={`underline font-extrabold transition-colors block mt-2 p-2 rounded border ${error.includes('building') ? 'bg-blue-500/10 border-blue-500/20 hover:text-blue-800' : 'bg-red-500/10 border-red-500/20 hover:text-red-800'}`}
                                         >
-                                            {error.includes('building') ? 'Ver progresso no Firebase Console' : 'Clique aqui para criar o índice no Firebase Console'}
+                                            {error.includes('building') ? t('reports.viewProgressConsole') : t('reports.createIndexConsole')}
                                         </a>
                                     </>
                                 ) : error}
                             </p>
                             {!error.includes('building') && (
                                 <p className="text-red-500 dark:text-red-400 text-[10px] mt-2 leading-relaxed">
-                                    Isso pode ocorrer se o esquema do banco de dados estiver incompleto ou se uma consulta exigir um índice composto que ainda não foi criado no Firebase Console.
+                                    {t('reports.schemaHint')}
                                 </p>
                             )}
                         </div>
@@ -439,7 +441,7 @@ export default function ReportsPage() {
                                     <MapIcon className="w-5 h-5" />
                                 </div>
                                 <p className="text-xl sm:text-3xl font-black text-main mb-1">{kpis.totalMaps}</p>
-                                <p className="text-[8px] sm:text-[10px] font-bold text-muted uppercase tracking-widest text-center">Mapas Totais</p>
+                                <p className="text-[8px] sm:text-[10px] font-bold text-muted uppercase tracking-widest text-center">{t('reports.totalMaps')}</p>
                             </div>
 
                             {/* Card 2: Coverage */}
@@ -448,7 +450,7 @@ export default function ReportsPage() {
                                     <TrendingUp className="w-5 h-5" />
                                 </div>
                                 <p className="text-xl sm:text-3xl font-black text-main mb-1">{kpis.coveredPercentage}%</p>
-                                <p className="text-[8px] sm:text-[10px] font-bold text-muted uppercase tracking-widest text-center">Cobertura</p>
+                                <p className="text-[8px] sm:text-[10px] font-bold text-muted uppercase tracking-widest text-center">{t('reports.coverage')}</p>
                             </div>
 
                             {/* Card 3: Rotation (Alert if high) */}
@@ -460,19 +462,19 @@ export default function ReportsPage() {
                                 <p className={`text-xl sm:text-3xl font-black mb-1 ${kpis.avgRotationDays && kpis.avgRotationDays > 120 ? 'text-red-900 dark:text-red-100' : 'text-main'}`}>
                                     {kpis.avgRotationDays === null ? '-' : kpis.avgRotationDays}
                                 </p>
-                                <p className={`text-[8px] sm:text-[10px] font-bold uppercase tracking-widest text-center ${kpis.avgRotationDays && kpis.avgRotationDays > 120 ? 'text-red-400 dark:text-red-300' : 'text-muted'}`}>Giro (Dias)</p>
+                                <p className={`text-[8px] sm:text-[10px] font-bold uppercase tracking-widest text-center ${kpis.avgRotationDays && kpis.avgRotationDays > 120 ? 'text-red-400 dark:text-red-300' : 'text-muted'}`}>{t('reports.rotationDays')}</p>
                             </div>
                         </div>
 
                         {/* Visits by Period */}
                         <div className="bg-surface p-6 rounded-lg shadow-sm border border-surface-border mb-6">
                             <div className="flex items-center justify-between mb-4">
-                                <h2 className="font-bold text-main">Visitas por Período</h2>
+                                <h2 className="font-bold text-main">{t('reports.visitsByPeriod')}</h2>
                                 <Clock className="w-5 h-5 text-muted" />
                             </div>
                             <div className="grid grid-cols-3 gap-3">
                                 <div className="bg-orange-500/5 dark:bg-orange-500/10 p-4 rounded-lg border border-surface-border flex flex-col items-center">
-                                    <span className="text-[10px] font-bold text-orange-400 uppercase tracking-widest mb-1">Manhã</span>
+                                    <span className="text-[10px] font-bold text-orange-400 uppercase tracking-widest mb-1">{t('reports.morning')}</span>
                                     <span className="text-2xl font-black text-orange-500">{visitPeriods.morning.total}</span>
                                     <div className="flex items-center gap-1 mt-1">
                                         <span className="text-[10px] text-orange-400 font-bold">
@@ -480,11 +482,11 @@ export default function ReportsPage() {
                                                 ? Math.round((visitPeriods.morning.found / visitPeriods.morning.total) * 100)
                                                 : 0}%
                                         </span>
-                                        <span className="text-[10px] text-orange-300 dark:text-orange-500/70">Aprov.</span>
+                                        <span className="text-[10px] text-orange-300 dark:text-orange-500/70">{t('reports.efficiencyShort')}</span>
                                     </div>
                                 </div>
                                 <div className="bg-primary-light/10 dark:bg-primary-dark/10 p-4 rounded-lg border border-surface-border flex flex-col items-center">
-                                    <span className="text-[10px] font-bold text-primary dark:text-primary-light uppercase tracking-widest mb-1">Tarde</span>
+                                    <span className="text-[10px] font-bold text-primary dark:text-primary-light uppercase tracking-widest mb-1">{t('reports.afternoon')}</span>
                                     <span className="text-2xl font-black text-primary dark:text-primary-light">{visitPeriods.afternoon.total}</span>
                                     <div className="flex items-center gap-1 mt-1">
                                         <span className="text-[10px] text-primary font-bold dark:text-primary-light">
@@ -492,11 +494,11 @@ export default function ReportsPage() {
                                                 ? Math.round((visitPeriods.afternoon.found / visitPeriods.afternoon.total) * 100)
                                                 : 0}%
                                         </span>
-                                        <span className="text-[10px] text-primary-light/70">Aprov.</span>
+                                        <span className="text-[10px] text-primary-light/70">{t('reports.efficiencyShort')}</span>
                                     </div>
                                 </div>
                                 <div className="bg-blue-500/5 dark:bg-blue-500/10 p-4 rounded-lg border border-surface-border flex flex-col items-center">
-                                    <span className="text-[10px] font-bold text-blue-400 uppercase tracking-widest mb-1">Noite</span>
+                                    <span className="text-[10px] font-bold text-blue-400 uppercase tracking-widest mb-1">{t('reports.night')}</span>
                                     <span className="text-2xl font-black text-blue-600 dark:text-blue-400">{visitPeriods.night.total}</span>
                                     <div className="flex items-center gap-1 mt-1">
                                         <span className="text-[10px] text-blue-400 font-bold">
@@ -504,7 +506,7 @@ export default function ReportsPage() {
                                                 ? Math.round((visitPeriods.night.found / visitPeriods.night.total) * 100)
                                                 : 0}%
                                         </span>
-                                        <span className="text-[10px] text-blue-300 dark:text-blue-500/70">Aprov.</span>
+                                        <span className="text-[10px] text-blue-300 dark:text-blue-500/70">{t('reports.efficiencyShort')}</span>
                                     </div>
                                 </div>
                             </div>
@@ -513,8 +515,10 @@ export default function ReportsPage() {
                         {/* Chart Section */}
                         <div className="bg-surface p-6 rounded-lg shadow-sm border border-surface-border">
                             <div className="flex items-center justify-between mb-6">
-                                <h2 className="font-bold text-main">Histórico de Trabalho</h2>
-                                <span className="text-xs font-bold text-muted bg-surface-border text-primary dark:text-primary-light px-2 py-1 rounded-full">Ano de Serviço {getServiceYearLabel(selectedServiceYear)}</span>
+                                <h2 className="font-bold text-main">{t('reports.workHistory')}</h2>
+                                <span className="text-xs font-bold text-muted bg-surface-border text-primary dark:text-primary-light px-2 py-1 rounded-full">
+                                    {t('reports.serviceYear', { year: getServiceYearLabel(selectedServiceYear) })}
+                                </span>
                             </div>
 
                             <div className="h-40 grid grid-cols-12 items-end gap-1 sm:gap-2">
@@ -529,11 +533,11 @@ export default function ReportsPage() {
                                             >
                                                 {/* Tooltip */}
                                                 <div className="absolute -top-8 left-1/2 -translate-x-1/2 bg-gray-900 text-white text-[10px] font-bold px-2 py-1 rounded opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap z-10">
-                                                    {item.count} Mapas
+                                                    {t('reports.mapsCount', { count: item.count })}
                                                 </div>
                                             </div>
                                         </div>
-                                        <span className="text-[10px] font-bold text-muted uppercase">{item.month}</span>
+                                        <span className="text-[10px] font-bold text-muted uppercase">{t(`reports.months.${item.monthIndex}`)}</span>
                                     </div>
                                 ))}
                             </div>
@@ -541,7 +545,7 @@ export default function ReportsPage() {
 
                         {/* Insights Section */}
                         <div>
-                            <h2 className="font-bold text-main text-lg mb-4 px-1">Insights Inteligentes</h2>
+                            <h2 className="font-bold text-main text-lg mb-4 px-1">{t('reports.smartInsights')}</h2>
                             <div className="space-y-4">
                                 {insights.map((insight, idx) => (
                                     <div key={idx} className={`p-5 rounded-lg border flex gap-4 ${insight.type === 'warning' ? 'bg-red-50 dark:bg-red-900/20 border-red-100 dark:border-red-900/30' :
@@ -560,11 +564,19 @@ export default function ReportsPage() {
                                             <h3 className={`font-bold text-sm mb-1 ${insight.type === 'warning' ? 'text-red-900 dark:text-red-100' :
                                                 insight.type === 'success' ? 'text-green-900 dark:text-green-100' :
                                                     'text-primary-dark dark:text-primary-light'
-                                                }`}>{insight.message}</h3>
+                                                }`}>
+                                                {insight.kind === 'stuck'
+                                                    ? t('reports.stuckMapsWarningTitle', { count: insight.count ?? 0 })
+                                                    : t('reports.noStuckMapsTitle')}
+                                            </h3>
                                             <p className={`text-xs leading-relaxed ${insight.type === 'warning' ? 'text-red-700 dark:text-red-300' :
                                                 insight.type === 'success' ? 'text-green-700 dark:text-green-300' :
                                                     'text-primary-dark dark:text-primary-light'
-                                                }`}>{insight.detail}</p>
+                                                }`}>
+                                                {insight.kind === 'stuck'
+                                                    ? t('reports.stuckMapsWarningDetail')
+                                                    : t('reports.noStuckMapsDetail')}
+                                            </p>
                                         </div>
                                     </div>
                                 ))}
@@ -573,7 +585,7 @@ export default function ReportsPage() {
                                 {stuckMapsList.length > 0 && (
                                     <div className="bg-surface rounded-lg border border-surface-border overflow-hidden shadow-sm">
                                         <div className="bg-red-50 dark:bg-red-900/20 px-5 py-3 border-b border-red-100 dark:border-red-900/30 flex justify-between items-center">
-                                            <span className="text-xs font-bold text-red-700 dark:text-red-300 uppercase tracking-widest">Mapas Parados</span>
+                                            <span className="text-xs font-bold text-red-700 dark:text-red-300 uppercase tracking-widest">{t('reports.stuckMapsHeader')}</span>
                                             <span className="text-xs font-bold bg-surface text-red-600 px-2 py-0.5 rounded-full">{stuckMapsList.length}</span>
                                         </div>
                                         <div className="divide-y divide-gray-50 dark:divide-gray-800">
@@ -583,18 +595,24 @@ export default function ReportsPage() {
                                                         <p className="font-bold text-main text-sm">
                                                             {map.name}{map.description ? ` - ${map.description}` : ''}
                                                         </p>
-                                                        <p className="text-xs text-muted mt-0.5">Com: {map.assignee}</p>
+                                                        <p className="text-xs text-muted mt-0.5">
+                                                            {t('reports.withAssignee', {
+                                                                assignee: map.isAvailable
+                                                                    ? t('reports.available')
+                                                                    : (map.assigneeName || t('reports.publisherFallback'))
+                                                            })}
+                                                        </p>
                                                     </div>
                                                     <div className="text-right">
                                                         {map.days === null ? (
                                                             <>
-                                                                <p className="font-bold text-red-600 dark:text-red-400 text-sm">Nunca visitado</p>
-                                                                <p className="text-[10px] text-muted font-bold uppercase">Sem registro</p>
+                                                                <p className="font-bold text-red-600 dark:text-red-400 text-sm">{t('reports.neverVisited')}</p>
+                                                                <p className="text-[10px] text-muted font-bold uppercase">{t('reports.noRecord')}</p>
                                                             </>
                                                         ) : (
                                                             <>
-                                                                <p className="font-bold text-red-600 dark:text-red-400 text-sm">{map.days} dias</p>
-                                                                <p className="text-[10px] text-muted font-bold uppercase">Parado</p>
+                                                                <p className="font-bold text-red-600 dark:text-red-400 text-sm">{t('reports.daysCount', { days: map.days })}</p>
+                                                                <p className="text-[10px] text-muted font-bold uppercase">{t('reports.stuckStatus')}</p>
                                                             </>
                                                         )}
                                                     </div>
@@ -606,7 +624,7 @@ export default function ReportsPage() {
                                                         onClick={() => setIsStuckMapsModalOpen(true)}
                                                         className="text-xs font-bold text-primary dark:text-primary-light hover:text-primary-dark flex items-center justify-center gap-1 mx-auto"
                                                     >
-                                                        Ver Todos <ArrowRight className="w-3 h-3" />
+                                                        {t('reports.viewAll')} <ArrowRight className="w-3 h-3" />
                                                     </button>
                                                 </div>
                                             )}
@@ -619,7 +637,7 @@ export default function ReportsPage() {
                         {/* Registry Section */}
                         {canViewS13 && (
                             <div>
-                                <h2 className="font-bold text-main text-lg mb-4 px-1">Registros</h2>
+                                <h2 className="font-bold text-main text-lg mb-4 px-1">{t('reports.recordsTitle')}</h2>
                                 <div className="flex flex-col gap-4">
                                     <Link prefetch={false} href="/reports/registry" className="block bg-surface p-6 rounded-lg shadow-sm border border-surface-border hover:border-primary-light dark:hover:border-primary-dark transition-all group">
                                         <div className="flex items-center justify-between">
@@ -628,8 +646,8 @@ export default function ReportsPage() {
                                                     <FileText className="w-5 h-5" />
                                                 </div>
                                                 <div>
-                                                    <h3 className="font-bold text-main group-hover:text-primary dark:group-hover:text-primary-light transition-colors">Registro de Designação de Território</h3>
-                                                    <p className="text-xs text-muted">Acesse o formulário S-13-T 01/22 com histórico de designações.</p>
+                                                    <h3 className="font-bold text-main group-hover:text-primary dark:group-hover:text-primary-light transition-colors">{t('reports.s13Title')}</h3>
+                                                    <p className="text-xs text-muted">{t('reports.s13Desc')}</p>
                                                 </div>
                                             </div>
                                             <div className="bg-gray-100 dark:bg-gray-800 p-2 rounded-full">
@@ -645,8 +663,8 @@ export default function ReportsPage() {
                                                     <MapPin className="w-5 h-5" />
                                                 </div>
                                                 <div>
-                                                    <h3 className="font-bold text-main group-hover:text-primary dark:group-hover:text-primary-light transition-colors">Cartão de Mapa de Território</h3>
-                                                    <p className="text-xs text-muted">Acesse o formulário S-12-T 6/72 com mapa e registro de designações.</p>
+                                                    <h3 className="font-bold text-main group-hover:text-primary dark:group-hover:text-primary-light transition-colors">{t('reports.s12Title')}</h3>
+                                                    <p className="text-xs text-muted">{t('reports.s12Desc')}</p>
                                                 </div>
                                             </div>
                                             <div className="bg-gray-100 dark:bg-gray-800 p-2 rounded-full">
@@ -668,8 +686,8 @@ export default function ReportsPage() {
                     <div className="bg-surface rounded-2xl w-full max-w-lg max-h-[80vh] flex flex-col shadow-2xl animate-in zoom-in-95 border border-surface-border">
                         <div className="px-6 py-4 border-b border-surface-border flex justify-between items-center bg-gray-50 dark:bg-gray-900 rounded-t-2xl">
                             <div>
-                                <h2 className="font-bold text-main">Lista Completa de Mapas Parados</h2>
-                                <p className="text-[10px] text-muted font-bold uppercase tracking-widest">{stuckMapsList.length} Territórios Identificados</p>
+                                <h2 className="font-bold text-main">{t('reports.stuckModalTitle')}</h2>
+                                <p className="text-[10px] text-muted font-bold uppercase tracking-widest">{t('reports.stuckModalSubtitle', { count: stuckMapsList.length })}</p>
                             </div>
                             <button
                                 onClick={() => setIsStuckMapsModalOpen(false)}
@@ -686,18 +704,24 @@ export default function ReportsPage() {
                                             <p className="font-bold text-main text-sm">
                                                 {map.name}{map.description ? ` - ${map.description}` : ''}
                                             </p>
-                                            <p className="text-xs text-muted mt-0.5">Com: {map.assignee}</p>
+                                            <p className="text-xs text-muted mt-0.5">
+                                                {t('reports.withAssignee', {
+                                                    assignee: map.isAvailable
+                                                        ? t('reports.available')
+                                                        : (map.assigneeName || t('reports.publisherFallback'))
+                                                })}
+                                            </p>
                                         </div>
                                         <div className="text-right">
                                             {map.days === null ? (
                                                 <>
-                                                    <p className="font-bold text-red-600 dark:text-red-400 text-sm">Nunca visitado</p>
-                                                    <p className="text-[10px] text-muted font-bold uppercase">Sem registro</p>
+                                                    <p className="font-bold text-red-600 dark:text-red-400 text-sm">{t('reports.neverVisited')}</p>
+                                                    <p className="text-[10px] text-muted font-bold uppercase">{t('reports.noRecord')}</p>
                                                 </>
                                             ) : (
                                                 <>
-                                                    <p className="font-bold text-red-600 dark:text-red-400 text-sm">{map.days} dias</p>
-                                                    <p className="text-[10px] text-muted font-bold uppercase">Sem trabalho</p>
+                                                    <p className="font-bold text-red-600 dark:text-red-400 text-sm">{t('reports.daysCount', { days: map.days })}</p>
+                                                    <p className="text-[10px] text-muted font-bold uppercase">{t('reports.unworkedStatus')}</p>
                                                 </>
                                             )}
                                         </div>
@@ -710,7 +734,7 @@ export default function ReportsPage() {
                                 onClick={() => setIsStuckMapsModalOpen(false)}
                                 className="w-full bg-primary py-3 rounded-xl text-white font-bold text-sm shadow-md active:scale-95 transition-transform"
                             >
-                                Fechar
+                                {t('reports.close')}
                             </button>
                         </div>
                     </div>

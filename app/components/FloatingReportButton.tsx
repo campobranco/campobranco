@@ -16,8 +16,10 @@ import { useAuth } from '@/app/context/AuthContext';
 import { toast } from 'sonner';
 import { getConsoleLogs, resetErrorCount } from '@/lib/logger';
 import { APP_VERSION } from '@/lib/version';
+import { useTranslation } from '@/app/context/I18nContext';
 
 export default function FloatingReportButton() {
+    const { t } = useTranslation();
     const { user } = useAuth();
     const [isOpen, setIsOpen] = useState(false);
     const [loading, setLoading] = useState(false);
@@ -101,7 +103,7 @@ export default function FloatingReportButton() {
             setIsOpen(true);
         } catch (error) {
             console.error("Screenshot failed:", error);
-            toast.error("Não foi possível capturar a tela.");
+            toast.error(t('bugReport.screenshotError'));
         } finally {
             setLoading(false);
         }
@@ -109,7 +111,7 @@ export default function FloatingReportButton() {
 
     const handleSubmit = async () => {
         if (!description.trim()) {
-            toast.error("Por favor, descreva o problema.");
+            toast.error(t('bugReport.descriptionRequired'));
             return;
         }
 
@@ -139,7 +141,7 @@ export default function FloatingReportButton() {
             });
 
             setSuccess(true);
-            toast.success("Bug relatado com sucesso! Obrigado.");
+            toast.success(t('bugReport.submitSuccess'));
 
             setTimeout(() => {
                 setSuccess(false);
@@ -149,7 +151,7 @@ export default function FloatingReportButton() {
             }, 2000);
         } catch (error) {
             console.error("Report submit error:", error);
-            toast.error("Erro ao enviar relatório. Tente novamente.");
+            toast.error(t('bugReport.submitError'));
         } finally {
             setLoading(false);
         }
@@ -172,7 +174,7 @@ export default function FloatingReportButton() {
                     <div className="p-4 border-b border-gray-100 dark:border-slate-800 flex justify-between items-center">
                         <h3 className="font-bold text-lg dark:text-white flex items-center gap-2">
                             <Bug className="w-5 h-5 text-red-500" />
-                            Reportar Problema
+                            {t('bugReport.modalTitle')}
                         </h3>
                         <button onClick={() => setIsOpen(false)} className="p-2 hover:bg-gray-100 dark:hover:bg-slate-800 rounded-md text-gray-500 dark:text-gray-400">
                             <X className="w-5 h-5" />
@@ -181,7 +183,7 @@ export default function FloatingReportButton() {
 
                     <div className="p-6 overflow-y-auto space-y-4">
                         <div className="space-y-2">
-                            <label className="text-xs font-bold text-muted uppercase">Captura de Tela</label>
+                            <label className="text-xs font-bold text-muted uppercase">{t('bugReport.screenshotLabel')}</label>
                             {screenshot && (
                                 <div className="rounded-md overflow-hidden border border-gray-200 dark:border-slate-700 w-full h-48 bg-gray-100 dark:bg-slate-800 relative group">
                                     <img src={screenshot} alt="Screenshot" className="w-full h-full object-contain" />
@@ -190,11 +192,11 @@ export default function FloatingReportButton() {
                         </div>
 
                         <div className="space-y-2">
-                            <label className="text-xs font-bold text-muted uppercase">Descrição</label>
+                            <label className="text-xs font-bold text-muted uppercase">{t('bugReport.descriptionLabel')}</label>
                             <textarea
                                 value={description}
                                 onChange={(e) => setDescription(e.target.value)}
-                                placeholder="Descreva o que aconteceu..."
+                                placeholder={t('bugReport.descriptionPlaceholder')}
                                 className="w-full bg-gray-50 dark:bg-slate-800/50 border border-gray-200 dark:border-slate-700 rounded-md p-4 text-sm min-h-[100px] focus:ring-2 focus:ring-primary-light/500/20 focus:outline-none dark:text-white"
                             />
                         </div>
@@ -205,14 +207,14 @@ export default function FloatingReportButton() {
                             onClick={() => setIsOpen(false)}
                             className="px-6 py-2.5 rounded-md font-bold text-sm text-gray-500 hover:bg-gray-200 dark:text-gray-400 dark:hover:bg-slate-800"
                         >
-                            Cancelar
+                            {t('bugReport.cancel')}
                         </button>
                         <button
                             onClick={handleSubmit}
                             disabled={loading}
                             className="px-6 py-2.5 rounded-md font-bold text-sm bg-red-500 hover:bg-red-600 text-white shadow-lg shadow-red-500/20 flex items-center gap-2 disabled:opacity-50"
                         >
-                            {loading ? <Loader2 className="w-4 h-4 animate-spin" /> : 'Enviar Relatório'}
+                            {loading ? <Loader2 className="w-4 h-4 animate-spin" /> : t('bugReport.submit')}
                         </button>
                     </div>
                 </div>
@@ -231,7 +233,7 @@ export default function FloatingReportButton() {
                     ? 'bg-red-500 text-white border-red-600 shadow-red-500/40 animate-pulse'
                     : 'bg-white dark:bg-slate-800 text-red-500 hover:text-red-600 border-gray-200 dark:border-slate-700'
                 }`}
-            title={isExpanded ? "Clique para Reportar Erro" : "Expandir Botão de Erro"}
+            title={isExpanded ? t('bugReport.clickToReportTitle') : t('bugReport.expandTitle')}
         >
             {loading ? <Loader2 className="w-6 h-6 animate-spin shrink-0" /> : <Bug className="w-6 h-6 shrink-0" />}
 
@@ -245,7 +247,7 @@ export default function FloatingReportButton() {
             {/* Tooltip explicativo quando expandido */}
             {isExpanded && (
                 <span className="text-xs font-bold whitespace-nowrap pr-1 animate-in fade-in duration-200">
-                    Reportar Erro
+                    {t('bugReport.buttonLabel')}
                 </span>
             )}
         </button>

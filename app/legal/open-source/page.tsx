@@ -2,6 +2,7 @@
 
 import Link from 'next/link';
 import { useState } from 'react';
+import { useTranslation } from '@/app/context/I18nContext';
 import {
     Github,
     Scale,
@@ -26,6 +27,7 @@ import {
 } from '@/lib/open-source-licenses';
 
 function LicenseCard({ dep }: { dep: ThirdPartyDependency }) {
+    const { t } = useTranslation();
     const [isOpen, setIsOpen] = useState(false);
     const [showPortuguese, setShowPortuguese] = useState(false);
     const licenseDef = getLicenseDefinition(dep.licenseId);
@@ -55,7 +57,7 @@ function LicenseCard({ dep }: { dep: ThirdPartyDependency }) {
                     onClick={() => setIsOpen(!isOpen)}
                     className="text-primary hover:text-primary-dark text-xs font-bold uppercase tracking-wider flex items-center gap-1 transition-colors shrink-0"
                 >
-                    {isOpen ? 'Ocultar Licença' : 'Ver Licença'}
+                    {isOpen ? t('legal.openSource.hideLicense') : t('legal.openSource.viewLicense')}
                     {isOpen ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}
                 </button>
             </div>
@@ -69,14 +71,14 @@ function LicenseCard({ dep }: { dep: ThirdPartyDependency }) {
                                 onClick={() => setShowPortuguese(false)}
                                 className={`px-2.5 py-1 rounded-md text-[11px] font-bold transition-colors ${!showPortuguese ? 'bg-primary text-white' : 'text-muted hover:text-main'}`}
                             >
-                                Original (Inglês — oficial)
+                                {t('legal.openSource.originalEnglish')}
                             </button>
                             <button
                                 type="button"
                                 onClick={() => setShowPortuguese(true)}
                                 className={`px-2.5 py-1 rounded-md text-[11px] font-bold transition-colors ${showPortuguese ? 'bg-primary text-white' : 'text-muted hover:text-main'}`}
                             >
-                                Tradução (Português)
+                                {t('legal.openSource.translationPt')}
                             </button>
                         </div>
 
@@ -86,7 +88,7 @@ function LicenseCard({ dep }: { dep: ThirdPartyDependency }) {
                             rel="noopener noreferrer"
                             className="inline-flex items-center gap-1 text-[11px] font-bold text-primary hover:underline"
                         >
-                            Texto oficial ({licenseDef.label})
+                            {t('legal.openSource.officialText', { label: licenseDef.label })}
                             <ExternalLink className="w-3 h-3" />
                         </a>
                     </div>
@@ -95,7 +97,7 @@ function LicenseCard({ dep }: { dep: ThirdPartyDependency }) {
                         <div className="flex items-start gap-2 p-3 bg-yellow-50 dark:bg-yellow-900/20 text-yellow-800 dark:text-yellow-200 rounded-xl border border-yellow-200 dark:border-yellow-900/50 text-[11px] font-medium leading-relaxed">
                             <AlertTriangle className="w-4 h-4 shrink-0 mt-0.5" />
                             <span>
-                                <strong>Aviso:</strong> Esta é uma tradução livre para fins informativos. A versão original em inglês é a que possui validade jurídica.
+                                <strong>{t('legal.openSource.translationWarningLabel')}</strong> {t('legal.openSource.translationWarningText')}
                             </span>
                         </div>
                     )}
@@ -105,7 +107,7 @@ function LicenseCard({ dep }: { dep: ThirdPartyDependency }) {
                     </pre>
 
                     <div className="pt-3 border-t border-surface-border/50 text-[11px] text-muted italic">
-                        Este componente é fornecido sob a Licença {licenseDef.label}.
+                        {t('legal.openSource.componentLicenseNote', { label: licenseDef.label })}
                     </div>
                 </div>
             )}
@@ -114,6 +116,7 @@ function LicenseCard({ dep }: { dep: ThirdPartyDependency }) {
 }
 
 export default function OpenSourceLicensePage() {
+    const { t } = useTranslation();
     const [showProjectPortuguese, setShowProjectPortuguese] = useState(false);
     const mitLicense = LICENSE_TEXTS.MIT;
 
@@ -124,7 +127,7 @@ export default function OpenSourceLicensePage() {
                 <div className="p-3 bg-primary-light/50 dark:bg-primary-dark/30 rounded-xl">
                     <Scale className="w-8 h-8 text-primary" />
                 </div>
-                <h1 className="text-3xl font-bold tracking-tight text-main">Licenças de Código Aberto</h1>
+                <h1 className="text-3xl font-bold tracking-tight text-main">{t('legal.openSource.title')}</h1>
             </div>
 
             {/* Introduction & Project License */}
@@ -132,28 +135,28 @@ export default function OpenSourceLicensePage() {
                 <section className="space-y-4">
                     <h2 className="text-2xl font-bold tracking-tight flex items-center gap-2 text-main">
                         <span className="w-1.5 h-6 rounded-full bg-primary inline-block" />
-                        O que significa Open Source?
+                        {t('legal.openSource.whatIsTitle')}
                     </h2>
                     <div className="text-base leading-relaxed text-muted space-y-4">
                         <p>
-                            Este projeto é <strong className="text-main">Open Source</strong> (Código Aberto), o que significa que seu código-fonte está disponível para ser estudado, modificado e distribuído por qualquer pessoa, para qualquer finalidade.
+                            {t('legal.openSource.whatIsP1Start')} <strong className="text-main">{t('legal.openSource.whatIsP1Bold')}</strong> {t('legal.openSource.whatIsP1End')}
                         </p>
                         <p>
-                            Acreditamos na colaboração e transparência. Ao abrir o código, permitimos que a comunidade ajude a melhorar a ferramenta, corrigir erros mais rapidamente e garantir que ela continue evoluindo para atender às necessidades de todos.
+                            {t('legal.openSource.whatIsP2')}
                         </p>
                     </div>
                 </section>
 
                 <section className="space-y-4">
                     <div className="flex flex-wrap items-center justify-between gap-2 px-1">
-                        <h3 className="text-xl font-bold text-main">Licença do Projeto (MIT)</h3>
+                        <h3 className="text-xl font-bold text-main">{t('legal.openSource.projectLicenseTitle')}</h3>
                         <a
                             href={PROJECT_LICENSE_URL}
                             target="_blank"
                             rel="noopener noreferrer"
                             className="inline-flex items-center gap-1 text-xs font-bold text-primary hover:underline"
                         >
-                            Ver arquivo LICENSE no GitHub
+                            {t('legal.openSource.viewLicenseOnGithub')}
                             <ExternalLink className="w-3.5 h-3.5" />
                         </a>
                     </div>
@@ -166,14 +169,14 @@ export default function OpenSourceLicensePage() {
                                     onClick={() => setShowProjectPortuguese(false)}
                                     className={`px-3 py-1 rounded-md text-xs font-bold transition-colors ${!showProjectPortuguese ? 'bg-primary text-white' : 'text-muted hover:text-main'}`}
                                 >
-                                    Original (Inglês — oficial)
+                                    {t('legal.openSource.originalEnglish')}
                                 </button>
                                 <button
                                     type="button"
                                     onClick={() => setShowProjectPortuguese(true)}
                                     className={`px-3 py-1 rounded-md text-xs font-bold transition-colors ${showProjectPortuguese ? 'bg-primary text-white' : 'text-muted hover:text-main'}`}
                                 >
-                                    Tradução (Português)
+                                    {t('legal.openSource.translationPt')}
                                 </button>
                             </div>
                         </div>
@@ -182,7 +185,7 @@ export default function OpenSourceLicensePage() {
                             <div className="font-sans flex items-start gap-2 p-3 bg-yellow-50 dark:bg-yellow-900/20 text-yellow-800 dark:text-yellow-200 rounded-xl border border-yellow-200 dark:border-yellow-900/50 text-xs font-medium leading-relaxed">
                                 <AlertTriangle className="w-4 h-4 shrink-0 mt-0.5" />
                                 <span>
-                                    <strong>Aviso:</strong> Esta é uma tradução livre para fins informativos. A versão original em inglês é a que possui validade jurídica.
+                                    <strong>{t('legal.openSource.translationWarningLabel')}</strong> {t('legal.openSource.translationWarningText')}
                                 </span>
                             </div>
                         )}
@@ -194,28 +197,28 @@ export default function OpenSourceLicensePage() {
                     </div>
 
                     <p className="text-xs text-muted px-2">
-                        De forma simples: você pode usar este projeto livremente, inclusive para fins comerciais e para qualquer finalidade lícita, desde que mantenha o aviso de copyright e o texto da Licença MIT em todas as cópias ou partes substanciais do software.
+                        {t('legal.openSource.projectLicenseSimple')}
                     </p>
                     <p className="text-xs text-muted px-2 mt-2 border-t border-surface-border pt-2">
-                        <strong>Nota:</strong> O código-fonte do projeto é licenciado sob a Licença MIT. O uso do aplicativo final é regido pelos{' '}
+                        <strong>{t('legal.openSource.projectNoteLabel')}</strong> {t('legal.openSource.projectNoteStart')}{' '}
                         <Link prefetch={false} href="/legal/terms" className="underline hover:text-primary">
-                            Termos de Uso
+                            {t('legal.openSource.projectNoteLink')}
                         </Link>{' '}
-                        disponíveis nesta plataforma.
+                        {t('legal.openSource.projectNoteEnd')}
                     </p>
                 </section>
 
                 <section className="space-y-6">
-                    <h3 className="text-xl font-bold text-main px-1">Como Contribuir?</h3>
+                    <h3 className="text-xl font-bold text-main px-1">{t('legal.openSource.howToContributeTitle')}</h3>
 
                     <div className="grid gap-4 md:grid-cols-2">
                         <div className="p-5 rounded-3xl border border-surface-border hover:border-primary/30 transition-colors bg-white dark:bg-slate-900">
                             <div className="w-10 h-10 bg-blue-100 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400 rounded-xl flex items-center justify-center mb-4">
                                 <GitFork className="w-5 h-5" />
                             </div>
-                            <h4 className="font-bold text-main mb-2">Fork & Pull Request</h4>
+                            <h4 className="font-bold text-main mb-2">{t('legal.openSource.forkTitle')}</h4>
                             <p className="text-sm text-muted">
-                                Faça uma cópia do projeto (Fork), implemente sua melhoria ou correção e envie um Pull Request para revisão.
+                                {t('legal.openSource.forkDesc')}
                             </p>
                         </div>
 
@@ -223,9 +226,9 @@ export default function OpenSourceLicensePage() {
                             <div className="w-10 h-10 bg-purple-100 dark:bg-purple-900/30 text-purple-600 dark:text-purple-400 rounded-xl flex items-center justify-center mb-4">
                                 <MessageSquare className="w-5 h-5" />
                             </div>
-                            <h4 className="font-bold text-main mb-2">Relate Problemas</h4>
+                            <h4 className="font-bold text-main mb-2">{t('legal.openSource.reportTitle')}</h4>
                             <p className="text-sm text-muted">
-                                Encontrou um bug ou tem uma ideia? Abra uma Issue no nosso repositório para discutirmos.
+                                {t('legal.openSource.reportDesc')}
                             </p>
                         </div>
                     </div>
@@ -234,9 +237,9 @@ export default function OpenSourceLicensePage() {
                         <div className="inline-flex p-4 bg-background rounded-full shadow-sm mb-2">
                             <Github className="w-8 h-8 text-main" />
                         </div>
-                        <h3 className="text-2xl font-bold text-main">Junte-se a nós no GitHub</h3>
+                        <h3 className="text-2xl font-bold text-main">{t('legal.openSource.githubCtaTitle')}</h3>
                         <p className="text-muted max-w-md mx-auto">
-                            O desenvolvimento acontece lá. Dê uma estrela no projeto para apoiar!
+                            {t('legal.openSource.githubCtaDesc')}
                         </p>
                         <a
                             href={PROJECT_REPO_URL}
@@ -245,7 +248,7 @@ export default function OpenSourceLicensePage() {
                             className="inline-flex items-center gap-2 bg-primary hover:bg-primary-dark text-white font-bold py-3 px-8 rounded-xl shadow-lg shadow-primary-light/30 transition-all hover:scale-105 active:scale-95"
                         >
                             <Github className="w-5 h-5" />
-                            Acessar Repositório
+                            {t('legal.openSource.githubCtaButton')}
                         </a>
                     </div>
                 </section>
@@ -260,9 +263,9 @@ export default function OpenSourceLicensePage() {
                         <Package className="w-8 h-8" />
                     </div>
                     <div>
-                        <h2 className="text-2xl font-bold tracking-tight text-main">Bibliotecas e Créditos</h2>
+                        <h2 className="text-2xl font-bold tracking-tight text-main">{t('legal.openSource.thirdPartyTitle')}</h2>
                         <p className="text-sm text-muted font-normal mt-1">
-                            Software de terceiros utilizado neste aplicativo.
+                            {t('legal.openSource.thirdPartySubtitle')}
                         </p>
                     </div>
                 </div>
@@ -281,8 +284,8 @@ export default function OpenSourceLicensePage() {
                         <MapIcon className="w-7 h-7" />
                     </div>
                     <div>
-                        <h3 className="text-xl font-bold tracking-tight text-main">Dados Geográficos e Mapas</h3>
-                        <p className="text-sm text-muted">Atribuições de mapas e geocodificação.</p>
+                        <h3 className="text-xl font-bold tracking-tight text-main">{t('legal.openSource.mapDataTitle')}</h3>
+                        <p className="text-sm text-muted">{t('legal.openSource.mapDataSubtitle')}</p>
                     </div>
                 </div>
 

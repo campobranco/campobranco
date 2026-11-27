@@ -1,6 +1,11 @@
+'use client';
+
 import { Info, Heart, Code2, Home, Map, Store, BarChart3, Settings } from 'lucide-react';
+import { useTranslation } from '@/app/context/I18nContext';
 
 export default function AboutPage() {
+    const { t } = useTranslation();
+
     return (
         <article className="prose prose-slate dark:prose-invert max-w-none">
             <div className="flex items-center gap-3 mb-8">
@@ -8,14 +13,14 @@ export default function AboutPage() {
                     <Info className="w-6 h-6" />
                 </div>
                 <div>
-                    <h1 className="text-2xl font-black text-gray-900 dark:text-white m-0 leading-tight">O que é o Campo Branco</h1>
-                    <p className="text-sm text-gray-500 dark:text-gray-400 m-0">A missão e o propósito por trás da ferramenta.</p>
+                    <h1 className="text-2xl font-black text-gray-900 dark:text-white m-0 leading-tight">{t('legal.about.title')}</h1>
+                    <p className="text-sm text-gray-500 dark:text-gray-400 m-0">{t('legal.about.subtitle')}</p>
                 </div>
             </div>
 
             <section className="space-y-6 text-gray-600 dark:text-gray-300">
                 <p className="text-lg leading-relaxed">
-                    O <strong>Campo Branco</strong> é uma solução digital Open Source desenvolvida para auxiliar congregações na organização, gestão e distribuição de territórios para atividades religiosas e pastorais.
+                    {t('legal.about.introStart') ? `${t('legal.about.introStart')} ` : ''}<strong>Campo Branco</strong> {t('legal.about.introEnd')}
                 </p>
 
                 <div className="grid md:grid-cols-2 gap-6 my-8 not-prose">
@@ -23,9 +28,9 @@ export default function AboutPage() {
                         <div className="w-10 h-10 bg-white dark:bg-slate-700 rounded-lg shadow-sm flex items-center justify-center text-red-500 dark:text-red-400 mb-4">
                             <Heart className="w-5 h-5" />
                         </div>
-                        <h3 className="font-bold text-gray-900 dark:text-white mb-2">Propósito</h3>
+                        <h3 className="font-bold text-gray-900 dark:text-white mb-2">{t('legal.about.purposeTitle')}</h3>
                         <p className="text-sm text-gray-600 dark:text-gray-400">
-                            Simplificar o trabalho administrativo para que os voluntários possam focar no que realmente importa: a atividade pastoral e o cuidado com as pessoas.
+                            {t('legal.about.purposeDesc')}
                         </p>
                     </div>
 
@@ -33,29 +38,29 @@ export default function AboutPage() {
                         <div className="w-10 h-10 bg-white dark:bg-slate-700 rounded-lg shadow-sm flex items-center justify-center text-slate-700 dark:text-slate-300 mb-4">
                             <Code2 className="w-5 h-5" />
                         </div>
-                        <h3 className="font-bold text-gray-900 dark:text-white mb-2">Transparência</h3>
+                        <h3 className="font-bold text-gray-900 dark:text-white mb-2">{t('legal.about.transparencyTitle')}</h3>
                         <p className="text-sm text-gray-600 dark:text-gray-400">
-                            Todo o código é aberto e auditável. Não há caixas pretas. O projeto é construído com foco em privacidade, segurança e simplicidade.
+                            {t('legal.about.transparencyDesc')}
                         </p>
                     </div>
                 </div>
 
-                <h3>Filosofia do Projeto</h3>
+                <h3>{t('legal.about.philosophyTitle')}</h3>
                 <p>
-                    O nome &quot;Campo Branco&quot; é uma referência às palavras de Jesus em João 4:35: <em>&quot;Ergam os olhos e observem os campos, que estão brancos para a colheita.&quot;</em>
+                    {t('legal.about.philosophyP1Start')} <em>{t('legal.about.philosophyQuote')}</em>
                 </p>
                 <p>
-                    Acreditamos que a tecnologia deve servir como uma facilitadora discreta e eficiente, respeitando sempre a natureza voluntária e sagrada do trabalho que ela apoia.
+                    {t('legal.about.philosophyP2')}
                 </p>
 
                 <hr className="my-8 border-gray-200 dark:border-slate-700" />
 
-                <h3>Aviso Importante</h3>
+                <h3>{t('legal.about.importantNoticeTitle')}</h3>
                 <p className="text-sm text-gray-500 dark:text-gray-400">
-                    Este aplicativo é uma iniciativa independente e colaborativa. Ele <strong>não</strong> é uma ferramenta oficial da organização religiosa das Testemunhas de Jeová, embora seja projetado especificamente para ser útil e compatível com suas atividades locais.
+                    {t('legal.about.importantNoticeStart')} <strong>{t('legal.about.importantNoticeBold')}</strong> {t('legal.about.importantNoticeEnd')}
                 </p>
 
-                <h3>O que você pode fazer</h3>
+                <h3>{t('legal.about.whatYouCanDoTitle')}</h3>
 
                 <div className="not-prose grid gap-6 md:grid-cols-2">
                     {/* Início */}
@@ -64,21 +69,21 @@ export default function AboutPage() {
                             <div className="w-10 h-10 rounded-lg bg-blue-50 dark:bg-blue-900/20 flex items-center justify-center text-blue-600 dark:text-blue-400">
                                 <Home className="w-5 h-5" />
                             </div>
-                            <h4 className="font-bold text-gray-900 dark:text-white m-0 text-lg">Início</h4>
+                            <h4 className="font-bold text-gray-900 dark:text-white m-0 text-lg">{t('legal.about.homeTitle')}</h4>
                         </div>
-                        <p className="text-xs font-bold text-gray-400 dark:text-gray-500 uppercase tracking-wider mb-3">Visão Geral</p>
+                        <p className="text-xs font-bold text-gray-400 dark:text-gray-500 uppercase tracking-wider mb-3">{t('legal.about.homeSubtitle')}</p>
                         <ul className="space-y-2 text-sm text-gray-600 dark:text-gray-300">
                             <li className="flex items-start gap-2">
                                 <span className="w-1 h-1 rounded-full bg-blue-400 mt-2"></span>
-                                Resumo de designações pessoais.
+                                {t('legal.about.homeItem1')}
                             </li>
                             <li className="flex items-start gap-2">
                                 <span className="w-1 h-1 rounded-full bg-blue-400 mt-2"></span>
-                                Acesso rápido a cartões compartilhados.
+                                {t('legal.about.homeItem2')}
                             </li>
                             <li className="flex items-start gap-2">
                                 <span className="w-1 h-1 rounded-full bg-blue-400 mt-2"></span>
-                                Quadro de avisos da congregação.
+                                {t('legal.about.homeItem3')}
                             </li>
                         </ul>
                     </div>
@@ -89,25 +94,25 @@ export default function AboutPage() {
                             <div className="w-10 h-10 rounded-lg bg-emerald-50 dark:bg-emerald-900/20 flex items-center justify-center text-emerald-600 dark:text-emerald-400">
                                 <Map className="w-5 h-5" />
                             </div>
-                            <h4 className="font-bold text-gray-900 dark:text-white m-0 text-lg">Mapas</h4>
+                            <h4 className="font-bold text-gray-900 dark:text-white m-0 text-lg">{t('legal.about.mapsTitle')}</h4>
                         </div>
-                        <p className="text-xs font-bold text-gray-400 dark:text-gray-500 uppercase tracking-wider mb-3">Territórios e Endereços</p>
+                        <p className="text-xs font-bold text-gray-400 dark:text-gray-500 uppercase tracking-wider mb-3">{t('legal.about.mapsSubtitle')}</p>
                         <ul className="space-y-2 text-sm text-gray-600 dark:text-gray-300">
                             <li className="flex items-start gap-2">
                                 <span className="w-1 h-1 rounded-full bg-emerald-400 mt-2"></span>
-                                Visualização de Pinpoints no mapa.
+                                {t('legal.about.mapsItem1')}
                             </li>
                             <li className="flex items-start gap-2">
                                 <span className="w-1 h-1 rounded-full bg-emerald-400 mt-2"></span>
-                                Navegação GPS (Google Maps/Waze).
+                                {t('legal.about.mapsItem2')}
                             </li>
                             <li className="flex items-start gap-2">
                                 <span className="w-1 h-1 rounded-full bg-emerald-400 mt-2"></span>
-                                Geração de Links (Cartões Digitais).
+                                {t('legal.about.mapsItem3')}
                             </li>
                             <li className="flex items-start gap-2">
                                 <span className="w-1 h-1 rounded-full bg-emerald-400 mt-2"></span>
-                                Histórico e Status de visitas.
+                                {t('legal.about.mapsItem4')}
                             </li>
                         </ul>
                     </div>
@@ -118,17 +123,17 @@ export default function AboutPage() {
                             <div className="w-10 h-10 rounded-lg bg-orange-50 dark:bg-orange-900/20 flex items-center justify-center text-orange-600 dark:text-orange-400">
                                 <Store className="w-5 h-5" />
                             </div>
-                            <h4 className="font-bold text-gray-900 dark:text-white m-0 text-lg">T. Público</h4>
+                            <h4 className="font-bold text-gray-900 dark:text-white m-0 text-lg">{t('legal.about.witnessingTitle')}</h4>
                         </div>
-                        <p className="text-xs font-bold text-gray-400 dark:text-gray-500 uppercase tracking-wider mb-3">Testemunho Público</p>
+                        <p className="text-xs font-bold text-gray-400 dark:text-gray-500 uppercase tracking-wider mb-3">{t('legal.about.witnessingSubtitle')}</p>
                         <ul className="space-y-2 text-sm text-gray-600 dark:text-gray-300">
                             <li className="flex items-start gap-2">
                                 <span className="w-1 h-1 rounded-full bg-orange-400 mt-2"></span>
-                                Gestão de Pontos Fixos (Carrinhos/Mesas).
+                                {t('legal.about.witnessingItem1')}
                             </li>
                             <li className="flex items-start gap-2">
                                 <span className="w-1 h-1 rounded-full bg-orange-400 mt-2"></span>
-                                Visualização de locais aprovados.
+                                {t('legal.about.witnessingItem2')}
                             </li>
                         </ul>
                     </div>
@@ -139,21 +144,21 @@ export default function AboutPage() {
                             <div className="w-10 h-10 rounded-lg bg-purple-50 dark:bg-purple-900/20 flex items-center justify-center text-purple-600 dark:text-purple-400">
                                 <BarChart3 className="w-5 h-5" />
                             </div>
-                            <h4 className="font-bold text-gray-900 dark:text-white m-0 text-lg">Relatórios</h4>
+                            <h4 className="font-bold text-gray-900 dark:text-white m-0 text-lg">{t('legal.about.reportsTitle')}</h4>
                         </div>
-                        <p className="text-xs font-bold text-gray-400 dark:text-gray-500 uppercase tracking-wider mb-3">Totais e Cobertura</p>
+                        <p className="text-xs font-bold text-gray-400 dark:text-gray-500 uppercase tracking-wider mb-3">{t('legal.about.reportsSubtitle')}</p>
                         <ul className="space-y-2 text-sm text-gray-600 dark:text-gray-300">
                             <li className="flex items-start gap-2">
                                 <span className="w-1 h-1 rounded-full bg-purple-400 mt-2"></span>
-                                Gráficos de progresso e cobertura.
+                                {t('legal.about.reportsItem1')}
                             </li>
                             <li className="flex items-start gap-2">
                                 <span className="w-1 h-1 rounded-full bg-purple-400 mt-2"></span>
-                                Estatísticas de endereços e surdos.
+                                {t('legal.about.reportsItem2')}
                             </li>
                             <li className="flex items-start gap-2">
                                 <span className="w-1 h-1 rounded-full bg-purple-400 mt-2"></span>
-                                Controle exclusivo para servos/anciãos.
+                                {t('legal.about.reportsItem3')}
                             </li>
                         </ul>
                     </div>
@@ -165,17 +170,17 @@ export default function AboutPage() {
                         <Settings className="w-6 h-6" />
                     </div>
                     <div className="flex-1">
-                        <h4 className="font-bold text-gray-900 dark:text-white m-0 text-lg">Configurações</h4>
+                        <h4 className="font-bold text-gray-900 dark:text-white m-0 text-lg">{t('legal.about.settingsTitle')}</h4>
                         <p className="text-sm text-gray-600 dark:text-gray-300 mt-1">
-                            Personalize sua experiência no aplicativo, ajustando temas (Claro/Escuro), tamanho de fonte e editando suas informações de perfil.
+                            {t('legal.about.settingsDesc')}
                         </p>
                     </div>
                     <div className="flex gap-2">
                         <span className="px-3 py-1 bg-gray-100 dark:bg-slate-700 text-gray-500 dark:text-gray-300 rounded-lg text-xs font-bold border border-gray-200 dark:border-slate-600">
-                            App Nativo (PWA)
+                            {t('legal.about.badgePwa')}
                         </span>
                         <span className="px-3 py-1 bg-gray-100 dark:bg-slate-700 text-gray-500 dark:text-gray-300 rounded-lg text-xs font-bold border border-gray-200 dark:border-slate-600">
-                            Privacidade LGPD
+                            {t('legal.about.badgeLgpd')}
                         </span>
                     </div>
                 </div>

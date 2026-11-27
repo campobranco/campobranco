@@ -9,6 +9,7 @@ import { createPortal } from 'react-dom';
 import { db } from '@/lib/firebase';
 import { collection, query, where, orderBy, limit, getDocs, doc, getDoc, documentId } from 'firebase/firestore';
 import { useAuth } from '@/app/context/AuthContext';
+import { useTranslation } from '@/app/context/I18nContext';
 import {
     X,
     ThumbsUp,
@@ -46,6 +47,7 @@ export default function VisitHistoryModal({
     const [visits, setVisits] = useState<any[]>([]);
     const [accessState, setAccessState] = useState<'ok' | 'unauthenticated' | 'permission-denied' | 'error'>('ok');
     const { user, congregationId } = useAuth();
+    const { t } = useTranslation();
     const [isMounted, setIsMounted] = useState(false);
 
     useEffect(() => {
@@ -229,11 +231,11 @@ export default function VisitHistoryModal({
 
     const getStatusLabel = (status: string) => {
         switch (status) {
-            case 'contacted': return congregationType === 'TRADITIONAL' ? 'Concluído' : 'Contatado';
-            case 'partial': return 'Parcial';
-            case 'notContacted': return 'Não Contatado';
-            case 'moved': return 'Mudou-se';
-            case 'doNotVisit': return 'Não Visitar';
+            case 'contacted': return congregationType === 'TRADITIONAL' ? t('visitHistory.completed') : t('visitHistory.contacted');
+            case 'partial': return t('visitHistory.partial');
+            case 'notContacted': return t('visitHistory.notContacted');
+            case 'moved': return t('visitHistory.moved');
+            case 'doNotVisit': return t('visitHistory.doNotVisit');
             default: return status;
         }
     };
@@ -245,7 +247,7 @@ export default function VisitHistoryModal({
             <div className="bg-surface rounded-lg w-full max-w-sm p-6 shadow-2xl animate-in zoom-in-95 duration-200 flex flex-col max-h-[80vh]">
                 <div className="flex justify-between items-center mb-6 shrink-0">
                     <div>
-                        <h2 className="text-xl font-bold text-gray-900 dark:text-white">Histórico</h2>
+                        <h2 className="text-xl font-bold text-gray-900 dark:text-white">{t('visitHistory.title')}</h2>
                         {address && <p className="text-xs text-gray-500 dark:text-gray-400 font-medium truncate max-w-[200px]">{address}</p>}
                     </div>
                     <button onClick={onClose} className="p-2 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-full transition-colors">
@@ -260,9 +262,9 @@ export default function VisitHistoryModal({
                         <div className="text-center py-6 space-y-4">
                             <Lock className="w-12 h-12 mx-auto text-gray-400 dark:text-gray-500" />
                             <div className="space-y-1">
-                                <p className="text-gray-900 dark:text-white font-bold">Acesso restrito</p>
+                                <p className="text-gray-900 dark:text-white font-bold">{t('visitHistory.restrictedAccess')}</p>
                                 <p className="text-sm text-gray-500 dark:text-gray-400">
-                                    Faça login para visualizar o histórico de visitas deste endereço.
+                                    {t('visitHistory.loginPrompt')}
                                 </p>
                             </div>
                             <button
@@ -273,27 +275,27 @@ export default function VisitHistoryModal({
                                 className="w-full bg-primary hover:bg-primary-dark active:scale-95 text-white py-3 rounded-lg font-bold text-sm flex items-center justify-center gap-2 transition-all"
                             >
                                 <LogIn className="w-4 h-4" />
-                                Fazer Login
+                                {t('visitHistory.loginButton')}
                             </button>
                         </div>
                     ) : accessState === 'permission-denied' ? (
                         <div className="text-center py-8 space-y-2">
                             <Lock className="w-12 h-12 mx-auto text-gray-400 dark:text-gray-500" />
                             <p className="text-gray-700 dark:text-gray-300 font-medium">
-                                Você não tem permissão para visualizar o histórico deste endereço.
+                                {t('visitHistory.permissionDenied')}
                             </p>
                         </div>
                     ) : accessState === 'error' ? (
                         <div className="text-center py-8 space-y-2">
                             <AlertTriangle className="w-12 h-12 mx-auto text-orange-400" />
                             <p className="text-gray-700 dark:text-gray-300 font-medium">
-                                Não foi possível carregar o histórico de visitas. Tente novamente.
+                                {t('visitHistory.loadError')}
                             </p>
                         </div>
                     ) : visits.length === 0 ? (
                         <div className="text-center py-8 opacity-50">
                             <Calendar className="w-12 h-12 mx-auto mb-3 text-gray-400 dark:text-gray-600" />
-                            <p className="text-gray-500 dark:text-gray-400 font-medium">Nenhum registro encontrado.</p>
+                            <p className="text-gray-500 dark:text-gray-400 font-medium">{t('visitHistory.noRecords')}</p>
                         </div>
                     ) : (
                         visits.map((visit) => (
@@ -306,7 +308,7 @@ export default function VisitHistoryModal({
                                         <div>
                                             <p className="font-bold text-gray-900 dark:text-white text-sm">{getStatusLabel(visit.status)}</p>
                                             <p className="text-xs text-gray-500 dark:text-gray-400 mt-0.5">
-                                                {visit.visitDate ? new Date(visit.visitDate).toLocaleDateString() : 'Data desconhecida'}
+                                                {visit.visitDate ? new Date(visit.visitDate).toLocaleDateString() : t('visitHistory.unknownDate')}
                                             </p>
                                         </div>
                                     </div>

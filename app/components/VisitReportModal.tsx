@@ -22,6 +22,7 @@ import {
     User
 } from 'lucide-react';
 import { useAuth } from '@/app/context/AuthContext';
+import { useTranslation } from '@/app/context/I18nContext';
 import { db } from '@/lib/firebase';
 import { doc, getDoc } from 'firebase/firestore';
 import { toast } from 'sonner';
@@ -57,6 +58,7 @@ export default function VisitReportModal({
     forcedCongregationType
 }: VisitReportModalProps) {
     const { congregationType: authType, profileName, user } = useAuth();
+    const { t } = useTranslation();
     const [fetchedCategory, setFetchedCategory] = useState<'TRADITIONAL' | 'SIGN_LANGUAGE' | 'FOREIGN_LANGUAGE' | null>(null);
 
     // 1. Busca direta da congregação do endereço no Firestore usando address.congregationId
@@ -120,7 +122,7 @@ export default function VisitReportModal({
 
         const SpeechRecognition = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
         if (!SpeechRecognition) {
-            toast.error("Seu navegador não suporta reconhecimento de voz.");
+            toast.error(t('visitReport.speechNotSupported'));
             return;
         }
 
@@ -133,12 +135,12 @@ export default function VisitReportModal({
         recognition.onend = () => setIsListening(false);
         recognition.onerror = (event: any) => {
             if (event.error === 'no-speech') {
-                toast.error("Nenhuma voz detectada. Tente falar novamente.");
+                toast.error(t('visitReport.noSpeechDetected'));
             } else if (event.error === 'not-allowed') {
-                toast.error("Permissão de microfone negada. Ative o acesso nas configurações do navegador.");
+                toast.error(t('visitReport.micPermissionDenied'));
             } else {
                 console.warn("Erro no reconhecimento de voz:", event.error);
-                toast.error("Erro ao acessar microfone.");
+                toast.error(t('visitReport.micError'));
             }
             setIsListening(false);
         };
@@ -159,7 +161,7 @@ export default function VisitReportModal({
             onClose();
         } catch (error) {
             console.error(error);
-            toast.error("Erro ao remover visita.");
+            toast.error(t('visitReport.deleteError'));
         } finally {
             setLoading(false);
         }
@@ -170,12 +172,12 @@ export default function VisitReportModal({
         const finalStatus = status || address.visitStatus;
 
         if (!finalStatus) {
-            toast.error("Selecione um resultado para a visita.");
+            toast.error(t('visitReport.selectResultError'));
             return;
         }
 
         if (status === 'contested' && !observations.trim()) {
-            toast.warning("Para contestar a inatividade, é necessário informar o motivo nas observações.");
+            toast.warning(t('visitReport.contestReasonWarning'));
             return;
         }
 
@@ -189,7 +191,7 @@ export default function VisitReportModal({
             onClose();
         } catch (error) {
             console.error(error);
-            toast.error("Erro ao salvar visita.");
+            toast.error(t('visitReport.saveError'));
         } finally {
             setLoading(false);
         }
@@ -202,7 +204,7 @@ export default function VisitReportModal({
             <div className="flex min-h-full items-center justify-center p-4">
                 <div className="bg-surface rounded-lg w-full max-w-sm p-6 shadow-2xl animate-in zoom-in-95 duration-200">
                     <div className="flex justify-between items-center mb-6">
-                        <h2 className="text-xl font-bold text-gray-900 dark:text-white">Registrar Visita</h2>
+                        <h2 className="text-xl font-bold text-gray-900 dark:text-white">{t('visitReport.title')}</h2>
                         <button onClick={onClose} className="p-2 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-full transition-colors">
                             <X className="w-5 h-5 text-gray-500 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white" />
                         </button>
@@ -239,8 +241,8 @@ export default function VisitReportModal({
                                 >
                                     <CheckCircle2 className={`w-10 h-10 ${status === 'contacted' ? 'animate-in zoom-in duration-300' : 'text-gray-200 dark:text-slate-700'}`} />
                                     <div className="flex flex-col items-center">
-                                        <span className="text-sm font-black uppercase tracking-wider">Concluída</span>
-                                        <span className={`text-[10px] font-medium ${status === 'contacted' ? 'text-green-50' : 'opacity-60'}`}>100% da rua</span>
+                                        <span className="text-sm font-black uppercase tracking-wider">{t('visitReport.completedLabel')}</span>
+                                        <span className={`text-[10px] font-medium ${status === 'contacted' ? 'text-green-50' : 'opacity-60'}`}>{t('visitReport.completedSub')}</span>
                                     </div>
                                 </button>
                                 
@@ -253,8 +255,8 @@ export default function VisitReportModal({
                                 >
                                     <AlertTriangle className={`w-10 h-10 ${status === 'partial' ? 'animate-in zoom-in duration-300' : 'text-gray-200 dark:text-slate-700'}`} />
                                     <div className="flex flex-col items-center">
-                                        <span className="text-sm font-black uppercase tracking-wider">Parcial</span>
-                                        <span className={`text-[10px] font-medium ${status === 'partial' ? 'text-yellow-50' : 'opacity-60'}`}>Faltou uma parte</span>
+                                        <span className="text-sm font-black uppercase tracking-wider">{t('visitReport.partialLabel')}</span>
+                                        <span className={`text-[10px] font-medium ${status === 'partial' ? 'text-yellow-50' : 'opacity-60'}`}>{t('visitReport.partialSub')}</span>
                                     </div>
                                 </button>
                             </div>
@@ -268,8 +270,8 @@ export default function VisitReportModal({
                                         ${status === 'contacted' ? 'bg-green-50 dark:bg-green-900/30 border-green-500 dark:border-green-600 text-green-700 dark:text-green-400' : 'bg-white dark:bg-slate-800 border-gray-200 dark:border-slate-700 hover:border-green-200 dark:hover:border-green-800 text-gray-500 dark:text-gray-400'}`}
                                     >
                                         <ThumbsUp className={`w-8 h-8 ${status === 'contacted' ? 'fill-green-500' : ''}`} />
-                                        <span className="text-xs font-bold uppercase">Contestar Inatividade</span>
-                                        <span className="text-[10px] normal-case text-gray-500 dark:text-gray-400">Consegui entrar em contato com esse morador</span>
+                                        <span className="text-xs font-bold uppercase">{t('visitReport.contestInactivity')}</span>
+                                        <span className="text-[10px] normal-case text-gray-500 dark:text-gray-400">{t('visitReport.contestInactivitySub')}</span>
                                     </button>
                                 ) : (
                                     <>
@@ -279,7 +281,7 @@ export default function VisitReportModal({
                                             ${status === 'contacted' ? 'bg-green-50 dark:bg-green-900/30 border-green-500 dark:border-green-600 text-green-700 dark:text-green-400' : 'bg-white dark:bg-slate-800 border-gray-200 dark:border-slate-700 hover:border-blue-200 dark:hover:border-blue-800 text-gray-500 dark:text-gray-400'}`}
                                         >
                                             <ThumbsUp className={`w-8 h-8 ${status === 'contacted' ? 'fill-green-500' : ''}`} />
-                                            <span className="text-xs font-bold uppercase">Contatado</span>
+                                            <span className="text-xs font-bold uppercase">{t('visitReport.contacted')}</span>
                                         </button>
 
                                         <button
@@ -288,7 +290,7 @@ export default function VisitReportModal({
                                             ${status === 'notContacted' ? 'bg-orange-50 dark:bg-orange-900/30 border-orange-500 dark:border-orange-600 text-orange-700 dark:text-orange-400' : 'bg-white dark:bg-slate-800 border-gray-200 dark:border-slate-700 hover:border-blue-200 dark:hover:border-blue-800 text-gray-500 dark:text-gray-400'}`}
                                         >
                                             <ThumbsDown className={`w-8 h-8 ${status === 'notContacted' ? 'fill-orange-500' : ''}`} />
-                                            <span className="text-xs font-bold uppercase">Não Contatado</span>
+                                            <span className="text-xs font-bold uppercase">{t('visitReport.notContacted')}</span>
                                         </button>
 
                                         <button
@@ -297,7 +299,7 @@ export default function VisitReportModal({
                                             ${status === 'moved' ? 'bg-blue-50 dark:bg-blue-900/30 border-blue-500 dark:border-blue-600 text-blue-700 dark:text-blue-400' : 'bg-white dark:bg-slate-800 border-gray-200 dark:border-slate-700 hover:border-blue-200 dark:hover:border-blue-800 text-gray-500 dark:text-gray-400'}`}
                                         >
                                             <Home className={`w-8 h-8 ${status === 'moved' ? 'fill-blue-500' : ''}`} />
-                                            <span className="text-xs font-bold uppercase">Mudou-se</span>
+                                            <span className="text-xs font-bold uppercase">{t('visitReport.moved')}</span>
                                         </button>
 
                                         <button
@@ -306,7 +308,7 @@ export default function VisitReportModal({
                                             ${status === 'doNotVisit' ? 'bg-red-50 dark:bg-red-900/30 border-red-500 dark:border-red-600 text-red-700 dark:text-red-400' : 'bg-white dark:bg-slate-800 border-gray-200 dark:border-slate-700 hover:border-blue-200 dark:hover:border-blue-800 text-gray-500 dark:text-gray-400'}`}
                                         >
                                             <Hand className={`w-8 h-8 ${status === 'doNotVisit' ? 'fill-red-500' : ''}`} />
-                                            <span className="text-xs font-bold uppercase">Não Visitar</span>
+                                            <span className="text-xs font-bold uppercase">{t('visitReport.doNotVisit')}</span>
                                         </button>
                                     </>
                                 )}
@@ -320,11 +322,11 @@ export default function VisitReportModal({
                         {/* Notes */}
                         <div>
                             <div className="flex justify-between items-center mb-2">
-                                <label className="text-xs font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wider block">Observações {status === 'contested' && <span className="text-red-500">*</span>}</label>
+                                <label className="text-xs font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wider block">{t('visitReport.observationsLabel')} {status === 'contested' && <span className="text-red-500">*</span>}</label>
                                 <button
                                     onClick={toggleListening}
                                     className={`p-1.5 rounded-full transition-all ${isListening ? 'bg-red-100 text-red-600 animate-pulse' : 'bg-gray-100 hover:bg-gray-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-gray-500 dark:text-gray-400'}`}
-                                    title={isListening ? "Parar ditado" : "Ditar observação"}
+                                    title={isListening ? t('visitReport.stopDictation') : t('visitReport.startDictation')}
                                 >
                                     {isListening ? <MicOff className="w-4 h-4" /> : <Mic className="w-4 h-4" />}
                                 </button>
@@ -333,7 +335,7 @@ export default function VisitReportModal({
                                 value={observations}
                                 onChange={(e) => setObservations(e.target.value)}
                                 className={`w-full bg-white dark:bg-slate-900 border border-gray-200 dark:border-slate-700 text-gray-900 dark:text-white rounded-lg p-3 text-sm focus:ring-2 focus:ring-blue-500/20 focus:outline-none min-h-[80px] ${(status === 'contested' || status === 'partial') && !observations.trim() ? 'ring-2 ring-orange-200 bg-orange-50 dark:bg-orange-900/20' : ''}`}
-                                placeholder={status === 'contested' ? "Por que este endereço deve ser considerado ativo?" : status === 'partial' ? "Opcional: O que faltou concluir? (Ex: lado das chácaras)" : isListening ? "Ouvindo..." : "Alguma observação importante?"}
+                                placeholder={status === 'contested' ? t('visitReport.placeholderContested') : status === 'partial' ? t('visitReport.placeholderPartial') : isListening ? t('visitReport.placeholderListening') : t('visitReport.placeholderDefault')}
                             />
                         </div>
 
@@ -341,14 +343,14 @@ export default function VisitReportModal({
                         <div className="space-y-2">
                             <label className="text-[10px] font-bold text-gray-400 uppercase tracking-wider flex items-center gap-1.5">
                                 <User className="w-3 h-3" />
-                                Publicador(a)
+                                {t('visitReport.publisherLabel')}
                             </label>
                             <input
                                 type="text"
                                 value={publisherName}
                                 onChange={(e) => setPublisherName(e.target.value)}
                                 className="w-full bg-white dark:bg-slate-900 border border-gray-200 dark:border-slate-700 text-gray-900 dark:text-white rounded-lg p-3 text-sm focus:ring-2 focus:ring-blue-500/20 focus:outline-none"
-                                placeholder="Nome de quem fez a visita"
+                                placeholder={t('visitReport.publisherPlaceholder')}
                             />
                         </div>
 
@@ -357,7 +359,7 @@ export default function VisitReportModal({
                             <button
                                 onClick={onViewHistory}
                                 className="bg-white hover:bg-gray-100 dark:bg-slate-800 dark:hover:bg-slate-700 text-gray-500 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white py-3.5 px-3 rounded-lg font-bold text-sm flex items-center justify-center gap-2 transition-colors border border-gray-200 dark:border-slate-700"
-                                title="Ver Histórico"
+                                title={t('visitReport.viewHistoryTitle')}
                             >
                                 <History className="w-5 h-5" />
                             </button>
@@ -369,7 +371,7 @@ export default function VisitReportModal({
                                     className="flex-1 bg-white hover:bg-gray-100 dark:bg-slate-800 dark:hover:bg-slate-700 text-gray-900 dark:text-white py-3.5 rounded-lg font-bold text-sm flex items-center justify-center gap-2 transition-colors border border-gray-200 dark:border-slate-700"
                                 >
                                     <Navigation className="w-4 h-4" />
-                                    Ir para
+                                    {t('visitReport.navigateTo')}
                                 </button>
                             )}
                             <button
@@ -377,7 +379,7 @@ export default function VisitReportModal({
                                 disabled={loading}
                                 className="flex-[2] bg-blue-600 hover:bg-blue-700 active:scale-95 text-white py-3.5 rounded-lg font-bold text-sm flex items-center justify-center gap-2 transition-all disabled:opacity-50 disabled:cursor-not-allowed shadow-lg shadow-blue-500/20"
                             >
-                                {loading ? <Loader2 className="w-4 h-4 animate-spin" /> : "Concluir"}
+                                {loading ? <Loader2 className="w-4 h-4 animate-spin" /> : t('visitReport.finish')}
                             </button>
                         </div>
 
@@ -388,9 +390,9 @@ export default function VisitReportModal({
                                         <div className="flex items-start gap-3 mb-4">
                                             <AlertTriangle className="w-5 h-5 text-red-500 shrink-0 mt-0.5" />
                                             <div>
-                                                <p className="text-sm font-bold text-red-800 dark:text-red-400">Tem certeza?</p>
+                                                <p className="text-sm font-bold text-red-800 dark:text-red-400">{t('visitReport.confirmDeleteTitle')}</p>
                                                 <p className="text-[10px] text-red-600 dark:text-red-500 font-medium leading-relaxed">
-                                                    Isso removerá esta resposta desta lista. Se optar por continuar, este endereço voltará a ser exibido como pendente para todos que usarem este link.
+                                                    {t('visitReport.confirmDeleteDesc')}
                                                 </p>
                                             </div>
                                         </div>
@@ -399,14 +401,14 @@ export default function VisitReportModal({
                                                 onClick={() => setShowDeleteConfirm(false)}
                                                 className="flex-1 py-2 text-[10px] font-bold uppercase bg-white dark:bg-slate-800 text-gray-500 rounded-lg border border-gray-200 dark:border-slate-700 transition-colors"
                                             >
-                                                Cancelar
+                                                {t('visitReport.cancel')}
                                             </button>
                                             <button
                                                 onClick={handleDelete}
                                                 disabled={loading}
                                                 className="flex-1 py-2 text-[10px] font-bold uppercase bg-red-600 text-white rounded-lg shadow-lg shadow-red-500/10 transition-colors flex items-center justify-center gap-2"
                                             >
-                                                {loading ? <Loader2 className="w-3 h-3 animate-spin" /> : "Confirmar Remoção"}
+                                                {loading ? <Loader2 className="w-3 h-3 animate-spin" /> : t('visitReport.confirmRemove')}
                                             </button>
                                         </div>
                                     </div>
@@ -415,7 +417,7 @@ export default function VisitReportModal({
                                         onClick={() => setShowDeleteConfirm(true)}
                                         className="w-full py-3 text-red-500 text-[10px] font-bold uppercase tracking-wider hover:bg-red-50 dark:hover:bg-red-900/10 rounded-lg transition-colors"
                                     >
-                                        Remover Resposta
+                                        {t('visitReport.removeResponse')}
                                     </button>
                                 )}
                             </div>

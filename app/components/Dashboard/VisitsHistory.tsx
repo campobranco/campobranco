@@ -35,7 +35,9 @@ import { toast } from "sonner";
 import ConfirmationModal from "@/app/components/ConfirmationModal";
 import DropDownItem from "@/app/components/DropDownItem";
 import { VisitsHistoryCardSkeleton } from "@/app/components/Skeleton";
+import { useTranslation } from "@/app/context/I18nContext";
 export default function VisitsHistory({ scope = 'all', showViewAll = true }: { scope?: 'mine' | 'all', showViewAll?: boolean }) {
+    const { t } = useTranslation();
     const { user, congregationId, role, isElder, isServant, profileName, loading: authLoading, congregationType } = useAuth();
     const [visits, setVisits] = useState<any[]>([]);
     const [loading, setLoading] = useState(true);
@@ -115,7 +117,7 @@ export default function VisitsHistory({ scope = 'all', showViewAll = true }: { s
 
             // Fetch users
             if (user?.uid) {
-                userMap[user.uid] = profileName || "Você";
+                userMap[user.uid] = profileName || t('dashboard.youLabel');
             }
             if (userIds.length > 0 && (isElder || isServant || role === 'ADMIN')) {
                 const chunkedUserIds = [];
@@ -146,7 +148,7 @@ export default function VisitsHistory({ scope = 'all', showViewAll = true }: { s
 
                 return {
                     ...v,
-                    addressStreet: addressMap[addressId] || 'Localização não identificada',
+                    addressStreet: addressMap[addressId] || t('dashboard.visitsHistory.unknownLocation'),
                     displayName: v.publisherName || v.userName || userMap[userId] || '',
                     sortDate: visitDate?.toDate ? visitDate.toDate() : (visitDate ? new Date(visitDate) : new Date(0)),
                     observations: v.notes || ''
@@ -210,8 +212,8 @@ export default function VisitsHistory({ scope = 'all', showViewAll = true }: { s
     const handleDelete = async (visit: any) => {
         setConfirmModal({
             isOpen: true,
-            title: "Excluir Registro",
-            message: "Tem certeza que deseja excluir este registro de visita?",
+            title: t('dashboard.visitsHistory.deleteConfirmTitle'),
+            message: t('dashboard.visitsHistory.deleteConfirmMessage'),
             variant: 'danger',
             onConfirm: async () => {
                 setConfirmModal(prev => ({ ...prev, isOpen: false }));
@@ -221,10 +223,10 @@ export default function VisitsHistory({ scope = 'all', showViewAll = true }: { s
 
                     // Remove from state
                     setVisits(prev => prev.filter(v => v.id !== visit.id));
-                    toast.success("Visita excluída com sucesso.");
+                    toast.success(t('dashboard.visitsHistory.deleteSuccess'));
                 } catch (error) {
                     console.error("Error deleting visit:", error);
-                    toast.error("Erro ao excluir visita.");
+                    toast.error(t('dashboard.visitsHistory.deleteError'));
                 }
             }
         });
@@ -263,12 +265,12 @@ export default function VisitsHistory({ scope = 'all', showViewAll = true }: { s
             setEditingId(null);
         } catch (error) {
             console.error("Error updating visit:", error);
-            toast.error("Erro ao atualizar visita.");
+            toast.error(t('dashboard.visitsHistory.updateError'));
         }
     };
 
     const formatDate = (date: Date) => {
-        if (!date || isNaN(date.getTime())) return 'Data Inválida';
+        if (!date || isNaN(date.getTime())) return t('dashboard.visitsHistory.invalidDate');
         return new Intl.DateTimeFormat('pt-BR', {
             day: '2-digit',
             month: '2-digit',
@@ -280,10 +282,11 @@ export default function VisitsHistory({ scope = 'all', showViewAll = true }: { s
     const getStatusLabel = (status: string) => {
         const isTraditional = congregationType === 'TRADITIONAL';
         switch (status) {
-            case 'contacted': return { label: isTraditional ? 'Concluído' : 'Encontrado', color: 'bg-green-50 text-green-700 border border-green-500 dark:bg-green-900/20 dark:border-green-600 dark:text-green-400' };
-            case 'notContacted': return { label: 'Não Enc.', color: 'bg-orange-50 text-orange-600 border border-orange-500 dark:bg-orange-900/20 dark:border-orange-600 dark:text-orange-400' };
-            case 'moved': return { label: 'Mudou-se', color: 'bg-blue-50 text-blue-600 border border-blue-500 dark:bg-blue-900/20 dark:border-blue-600 dark:text-blue-400' };
-            case 'doNotVisit': return { label: 'Não Visitar', color: 'bg-red-50 text-red-600 border border-red-500 dark:bg-red-900/20 dark:border-red-600 dark:text-red-400' };
+            case 'contacted': return { label: isTraditional ? t('dashboard.visitsHistory.statusCompleted') : t('dashboard.visitsHistory.statusContacted'), color: 'bg-green-50 text-green-700 border border-green-500 dark:bg-green-900/20 dark:border-green-600 dark:text-green-400' };
+            case 'notContacted': return { label: t('dashboard.visitsHistory.statusNotContactedShort'), color: 'bg-orange-50 text-orange-600 border border-orange-500 dark:bg-orange-900/20 dark:border-orange-600 dark:text-orange-400' };
+            case 'moved': return { label: t('dashboard.visitsHistory.statusMoved'), color: 'bg-blue-50 text-blue-600 border border-blue-500 dark:bg-blue-900/20 dark:border-blue-600 dark:text-blue-400' };
+            case 'doNotVisit': return { label: t('dashboard.visitsHistory.statusDoNotVisit'), color: 'bg-red-50 text-red-600 border border-red-500 dark:bg-red-900/20 dark:border-red-600 dark:text-red-400' };
+            case 'partial': return { label: t('dashboard.visitsHistory.statusPartial'), color: 'bg-gray-50 text-gray-600 border border-gray-300 dark:bg-gray-800 dark:border-gray-600 dark:text-gray-400' };
             default: return { label: status, color: 'bg-gray-50 text-gray-600 border border-gray-300 dark:bg-gray-800 dark:border-gray-600 dark:text-gray-400' };
         }
     };
@@ -293,8 +296,8 @@ export default function VisitsHistory({ scope = 'all', showViewAll = true }: { s
     if (hasError) return (
         <div className="bg-surface p-6 rounded-lg shadow-sm border border-surface-border h-46 flex flex-col items-center justify-center text-center">
             <AlertCircle className="w-8 h-8 text-orange-400 mb-2" />
-            <p className="text-sm font-bold text-main">O carregamento está demorando muito.</p>
-            <p className="text-[10px] text-muted mb-4 px-4">Isso pode ser devido à sua conexão. Deseja tentar novamente?</p>
+            <p className="text-sm font-bold text-main">{t('dashboard.visitsHistory.loadingSlow')}</p>
+            <p className="text-[10px] text-muted mb-4 px-4">{t('dashboard.visitsHistory.connectionHint')}</p>
             <button
                 onClick={() => {
                     setHasError(false);
@@ -303,7 +306,7 @@ export default function VisitsHistory({ scope = 'all', showViewAll = true }: { s
                 }}
                 className="bg-primary hover:bg-primary-dark text-white text-xs font-bold py-2 px-6 rounded-full transition-colors flex items-center gap-2"
             >
-                Tentar Novamente
+                {t('dashboard.visitsHistory.tryAgain')}
             </button>
         </div>
     );
@@ -315,18 +318,18 @@ export default function VisitsHistory({ scope = 'all', showViewAll = true }: { s
             <div className="flex items-center justify-between mb-6">
                 <div className="flex items-center gap-2">
                     <History className="w-5 h-5 text-purple-600 dark:text-purple-400" />
-                    <h3 className="font-bold text-main">Histórico Recente</h3>
+                    <h3 className="font-bold text-main">{t('dashboard.visitsHistory.title')}</h3>
                 </div>
                 <div className="flex items-center gap-4">
                     {visits.length > 0 && showViewAll && (
-                        <span className="text-[10px] font-bold text-gray-400 uppercase tracking-widest">Últimas 4</span>
+                        <span className="text-[10px] font-bold text-gray-400 uppercase tracking-widest">{t('dashboard.visitsHistory.last4')}</span>
                     )}
                     {showViewAll && (
                         <Link
                             href={`/dashboard/history?scope=${scope}`}
                             className="text-[10px] font-extrabold text-purple-600 uppercase tracking-widest hover:text-purple-700 transition-colors bg-purple-50 px-3 py-1.5 rounded-full"
                         >
-                            Ver Tudo
+                            {t('dashboard.visitsHistory.viewAll')}
                         </Link>
                     )}
                 </div>
@@ -335,10 +338,10 @@ export default function VisitsHistory({ scope = 'all', showViewAll = true }: { s
             {visits.length === 0 ? (
                 <div className="text-center py-6 opacity-50">
                     <p className="text-sm text-gray-400">
-                        {loading ? "Carregando histórico..." : "Nenhuma visita realizada recentemente."}
+                        {loading ? t('dashboard.visitsHistory.loadingHistory') : t('dashboard.visitsHistory.empty')}
                     </p>
                     {(role === 'ADMIN' || isElder) && !loading && (
-                        <p className="text-[10px] text-gray-300 mt-2 uppercase">Verifique se as visitas possuem congregação vinculada</p>
+                        <p className="text-[10px] text-gray-300 mt-2 uppercase">{t('dashboard.visitsHistory.checkCongregationHint')}</p>
                     )}
                 </div>
             ) : (
@@ -350,28 +353,28 @@ export default function VisitsHistory({ scope = 'all', showViewAll = true }: { s
                                 // EDIT MODE
                                 <div className="space-y-3">
                                     <div className="flex items-center justify-between">
-                                        <h4 className="font-bold text-main text-sm">Editar Visita</h4>
+                                        <h4 className="font-bold text-main text-sm">{t('dashboard.visitsHistory.editVisitTitle')}</h4>
                                         <button onClick={cancelEdit} className="p-1 rounded-full hover:bg-gray-200 dark:hover:bg-gray-700">
                                             <X className="w-4 h-4 text-muted" />
                                         </button>
                                     </div>
 
                                     <div>
-                                        <label className="text-[10px] font-bold text-muted uppercase">Resultado</label>
+                                        <label className="text-[10px] font-bold text-muted uppercase">{t('dashboard.visitsHistory.resultLabel')}</label>
                                         <select
                                             className="w-full mt-1 p-2 rounded-lg border border-surface-border text-sm bg-surface text-main"
                                             value={editForm.status}
                                             onChange={e => setEditForm({ ...editForm, status: e.target.value })}
                                         >
-                                            <option value="contacted">Encontrado</option>
-                                            <option value="notContacted">Não Encontrado</option>
-                                            <option value="moved">Mudou-se</option>
-                                            <option value="doNotVisit">Não Visitar</option>
+                                            <option value="contacted">{t('dashboard.visitsHistory.statusContacted')}</option>
+                                            <option value="notContacted">{t('dashboard.visitsHistory.statusNotContacted')}</option>
+                                            <option value="moved">{t('dashboard.visitsHistory.statusMoved')}</option>
+                                            <option value="doNotVisit">{t('dashboard.visitsHistory.statusDoNotVisit')}</option>
                                         </select>
                                     </div>
 
                                     <div>
-                                        <label className="text-[10px] font-bold text-muted uppercase">Observações</label>
+                                        <label className="text-[10px] font-bold text-muted uppercase">{t('dashboard.visitsHistory.observationsLabel')}</label>
                                         <input
                                             type="text"
                                             className="w-full mt-1 p-2 rounded-lg border border-surface-border text-sm bg-surface text-main"
@@ -385,7 +388,7 @@ export default function VisitsHistory({ scope = 'all', showViewAll = true }: { s
                                         className="w-full bg-purple-600 text-white font-bold text-xs py-2 rounded-lg flex items-center justify-center gap-2"
                                     >
                                         <Check className="w-3 h-3" />
-                                        Salvar Alterações
+                                        {t('dashboard.visitsHistory.saveChanges')}
                                     </button>
                                 </div>
                             ) : (
@@ -429,7 +432,7 @@ export default function VisitsHistory({ scope = 'all', showViewAll = true }: { s
                                                     <div className="fixed w-48 bg-surface rounded-xl shadow-2xl border border-surface-border p-1 z-[200] animate-in fade-in zoom-in-95 duration-200 origin-top-right" style={{ top: menuPosition.top, right: menuPosition.right }}>
                                                         <DropDownItem
                                                             icon={Pencil}
-                                                            label="Editar Registro"
+                                                            label={t('dashboard.visitsHistory.editRecord')}
                                                             variant="primary"
                                                             onClick={() => {
                                                                 startEdit(visit);
@@ -438,7 +441,7 @@ export default function VisitsHistory({ scope = 'all', showViewAll = true }: { s
                                                         />
                                                         <DropDownItem
                                                             icon={Trash2}
-                                                            label="Excluir Registro"
+                                                            label={t('dashboard.visitsHistory.deleteRecord')}
                                                             variant="danger"
                                                             onClick={() => {
                                                                 handleDelete(visit);

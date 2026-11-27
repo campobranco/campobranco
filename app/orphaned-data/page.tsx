@@ -8,6 +8,7 @@ import { db } from '@/lib/firebase';
 // eslint-disable-next-line no-restricted-imports
 import { collection, getDocs, query, where, doc, getDoc, updateDoc } from 'firebase/firestore';
 import { useAuth } from '@/app/context/AuthContext';
+import { useTranslation } from '@/app/context/I18nContext';
 import { useRouter } from 'next/navigation';
 import { ArrowLeft, Database, Trash2, Link as LinkIcon, AlertTriangle, Check, Loader2, Pencil } from 'lucide-react';
 import { ListPageSkeleton, Skeleton } from '@/app/components/Skeleton';
@@ -31,6 +32,7 @@ interface OrphanedItem {
 }
 
 export default function OrphanedDataPage() {
+    const { t } = useTranslation();
     const { isAdminRoleGlobal, loading: authLoading } = useAuth();
     const router = useRouter();
     const [loading, setLoading] = useState(true);
@@ -99,14 +101,14 @@ export default function OrphanedDataPage() {
                 const cityId = data.cityId;
                 const tId = data.territoryId;
 
-                if (!cId) missing.push('Congregação');
-                else if (!validCongIds.has(cId)) missing.push('Congregação Inválida');
+                if (!cId) missing.push('congregation');
+                else if (!validCongIds.has(cId)) missing.push('invalidCongregation');
 
-                if (!cityId) missing.push('Cidade');
-                else if (!validCityIds.has(cityId)) missing.push('Cidade Inválida');
+                if (!cityId) missing.push('city');
+                else if (!validCityIds.has(cityId)) missing.push('invalidCity');
 
-                if (!tId) missing.push('Território');
-                else if (!validTerritoryIds.has(tId)) missing.push('Território Inválido');
+                if (!tId) missing.push('territory');
+                else if (!validTerritoryIds.has(tId)) missing.push('invalidTerritory');
 
                 if (missing.length > 0) {
                     newOrphans.push({
@@ -128,10 +130,10 @@ export default function OrphanedDataPage() {
                 const cityId = data.cityId;
                 const cId = data.congregationId;
 
-                if (!cityId) missing.push('Cidade');
-                else if (!validCityIds.has(cityId)) missing.push('Cidade Inválida');
+                if (!cityId) missing.push('city');
+                else if (!validCityIds.has(cityId)) missing.push('invalidCity');
 
-                if (cId && !validCongIds.has(cId)) missing.push('Congregação Inválida');
+                if (cId && !validCongIds.has(cId)) missing.push('invalidCongregation');
 
                 if (missing.length > 0) {
                     newOrphans.push({
@@ -154,11 +156,11 @@ export default function OrphanedDataPage() {
                 const cId = data.congregationId;
                 const cityId = data.cityId;
 
-                if (!cId) missing.push('Congregação');
-                else if (!validCongIds.has(cId)) missing.push('Congregação Inválida');
+                if (!cId) missing.push('congregation');
+                else if (!validCongIds.has(cId)) missing.push('invalidCongregation');
 
-                if (!cityId) missing.push('Cidade');
-                else if (!validCityIds.has(cityId)) missing.push('Cidade Inválida');
+                if (!cityId) missing.push('city');
+                else if (!validCityIds.has(cityId)) missing.push('invalidCity');
 
                 if (missing.length > 0) {
                     newOrphans.push({
@@ -179,8 +181,8 @@ export default function OrphanedDataPage() {
                 const missing = [];
                 const cId = data.congregationId;
 
-                if (!cId) missing.push('Congregação');
-                else if (!validCongIds.has(cId)) missing.push('Congregação Inválida');
+                if (!cId) missing.push('congregation');
+                else if (!validCongIds.has(cId)) missing.push('invalidCongregation');
 
                 if (missing.length > 0) {
                     newOrphans.push({
@@ -204,18 +206,18 @@ export default function OrphanedDataPage() {
                 const aId = data.addressId;
 
                 if (cId && !validCongIds.has(cId)) {
-                    missing.push('Congregação Inválida');
+                    missing.push('invalidCongregation');
                 }
                 if (aId && !validAddressIds.has(aId)) {
-                    missing.push('Endereço Pai Excluído');
+                    missing.push('deletedParentAddress');
                 }
 
                 if (missing.length > 0) {
                     newOrphans.push({
                         id,
                         type: 'visit',
-                        name: 'Visita de ' + (data.userName || 'Desconhecido'),
-                        details: data.date ? (data.date.toDate ? data.date.toDate().toLocaleDateString() : new Date(data.date).toLocaleDateString()) : 'Sem Data',
+                        name: t('admin.orphanedData.visitBy', { name: data.userName || t('admin.orphanedData.unknown') }),
+                        details: data.date ? (data.date.toDate ? data.date.toDate().toLocaleDateString() : new Date(data.date).toLocaleDateString()) : t('admin.orphanedData.noDate'),
                         missing,
                         data
                     });
@@ -243,9 +245,9 @@ export default function OrphanedDataPage() {
             });
 
             // Pre-fill if exists (only if not marked as invalid)
-            const isCongInvalid = fixingItem.missing.some(m => m.includes('Congregação'));
-            const isCityInvalid = fixingItem.missing.some(m => m.includes('Cidade'));
-            const isTerrInvalid = fixingItem.missing.some(m => m.includes('Território'));
+            const isCongInvalid = fixingItem.missing.some(m => m === 'congregation' || m === 'invalidCongregation');
+            const isCityInvalid = fixingItem.missing.some(m => m === 'city' || m === 'invalidCity');
+            const isTerrInvalid = fixingItem.missing.some(m => m === 'territory' || m === 'invalidTerritory');
 
             setSelCong(isCongInvalid ? '' : (fixingItem.data.congregationId || ''));
             setSelCity(isCityInvalid ? '' : (fixingItem.data.cityId || ''));
@@ -456,16 +458,16 @@ export default function OrphanedDataPage() {
                 <div className="flex-1">
                     <h1 className="text-xl font-bold tracking-tight flex items-center gap-2 text-main">
                         <Database className="w-5 h-5 text-orange-500" />
-                        Dados Órfãos
+                        {t('admin.orphanedData.title')}
                     </h1>
-                    <p className="text-xs text-muted">Itens sem vínculo detectados</p>
+                    <p className="text-xs text-muted">{t('admin.orphanedData.subtitle')}</p>
                 </div>
             </header>
 
             <main className="px-6 py-8 max-w-2xl mx-auto">
                 {loading ? (
                     <div className="space-y-3" role="status" aria-busy="true">
-                        <span className="sr-only">Carregando...</span>
+                        <span className="sr-only">{t('common.loading')}</span>
                         {Array.from({ length: 4 }).map((_, idx) => (
                             <div key={idx} className="bg-surface rounded-lg p-4 border border-surface-border space-y-2">
                                 <Skeleton className="h-4 w-1/2" />
@@ -476,8 +478,8 @@ export default function OrphanedDataPage() {
                 ) : orphans.length === 0 ? (
                     <div className="text-center py-20 bg-surface rounded-xl border-2 border-dashed border-surface-border">
                         <Check className="w-12 h-12 text-green-500 mx-auto mb-4" />
-                        <h3 className="text-lg font-bold text-main">Tudo limpo!</h3>
-                        <p className="text-muted">Nenhum dado órfão encontrado.</p>
+                        <h3 className="text-lg font-bold text-main">{t('admin.orphanedData.allCleanTitle')}</h3>
+                        <p className="text-muted">{t('admin.orphanedData.allCleanSubtitle')}</p>
                     </div>
                 ) : (
                     <div className="space-y-4">
@@ -485,7 +487,7 @@ export default function OrphanedDataPage() {
                             <div className="flex items-center justify-between">
                                 <div className="flex items-center gap-2 p-4 bg-orange-50 dark:bg-orange-900/20 text-orange-800 dark:text-orange-200 rounded-lg text-sm border border-orange-100 dark:border-orange-800 flex-1">
                                     <AlertTriangle className="w-5 h-5 shrink-0" />
-                                    <p>Foram encontrados <b>{orphans.length}</b> itens com vínculos quebrados.</p>
+                                    <p>{t('admin.orphanedData.foundBanner', { count: orphans.length })}</p>
                                 </div>
 
                                 <label className="flex items-center gap-2 px-4 cursor-pointer hover:bg-surface rounded-lg transition-colors py-2 border border-surface-border ml-3 bg-surface shadow-sm active:scale-95 group">
@@ -496,7 +498,7 @@ export default function OrphanedDataPage() {
                                         onChange={toggleSelectAll}
                                     />
                                     <span className="text-xs font-bold text-muted group-hover:text-main">
-                                        {selectedIds.size === orphans.length ? 'Desmarcar Tudo' : 'Selecionar Tudo'}
+                                        {selectedIds.size === orphans.length ? t('admin.orphanedData.deselectAll') : t('admin.orphanedData.selectAll')}
                                     </span>
                                 </label>
                             </div>
@@ -504,14 +506,14 @@ export default function OrphanedDataPage() {
                             {selectedIds.size > 0 && (
                                 <div className="bg-surface border border-red-100 dark:border-red-900/30 p-4 rounded-xl flex items-center justify-between shadow-lg shadow-red-500/5 animate-in slide-in-from-top-2">
                                     <p className="text-sm font-bold text-main">
-                                        <b>{selectedIds.size}</b> itens selecionados
+                                        {t('admin.orphanedData.selectedCount', { count: selectedIds.size })}
                                     </p>
                                     <button
                                         onClick={handleBulkDelete}
                                         className="flex items-center gap-2 bg-red-600 hover:bg-red-700 text-white px-4 py-2 rounded-lg text-xs font-bold shadow-md shadow-red-500/20 transition-all active:scale-95"
                                     >
                                         <Trash2 className="w-4 h-4" />
-                                        Excluir Selecionados
+                                        {t('admin.orphanedData.deleteSelected')}
                                     </button>
                                 </div>
                             )}
@@ -537,10 +539,10 @@ export default function OrphanedDataPage() {
                                                             item.type === 'witnessing' ? 'bg-yellow-100 dark:bg-yellow-900/30 text-yellow-700 dark:text-yellow-300' :
                                                                 item.type === 'visit' ? 'bg-indigo-100 dark:bg-indigo-900/30 text-indigo-700 dark:text-indigo-300' : 'bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-300'}
                                                 `}>
-                                                    {item.type === 'address' ? 'Endereço' : item.type === 'territory' ? 'Mapa' : item.type === 'witnessing' ? 'T. Público' : item.type === 'visit' ? 'Visita' : 'Cidade'}
+                                                    {t(`admin.orphanedData.types.${item.type}`)}
                                                 </span>
                                                 <span className="text-xs text-red-500 dark:text-red-400 font-bold bg-red-50 dark:bg-red-900/20 px-2 py-0.5 rounded-full">
-                                                    Falta: {item.missing.join(', ')}
+                                                    {t('admin.orphanedData.missingPrefix')}: {item.missing.map(m => t(`admin.orphanedData.missing.${m}`)).join(', ')}
                                                 </span>
                                             </div>
                                             <h3 className="font-bold text-main text-lg">{item.name}</h3>
@@ -554,14 +556,14 @@ export default function OrphanedDataPage() {
                                                 setTimeout(handleBulkDelete, 0);
                                             }}
                                             className="p-2 text-red-600 hover:text-red-500 bg-red-50 hover:bg-red-100 dark:bg-red-900/20 dark:hover:bg-red-900/40 rounded-lg transition-colors"
-                                            title="Excluir"
+                                            title={t('admin.congregations.actions.delete')}
                                         >
                                             <Trash2 className="w-5 h-5" />
                                         </button>
                                         <button
                                             onClick={() => setFixItem(item)}
                                             className="p-2 text-primary hover:text-primary-light/500 bg-primary-light/50 hover:bg-primary-light dark:bg-blue-900/20 dark:hover:bg-blue-900/40 rounded-lg transition-colors"
-                                            title="Editar/Vincular"
+                                            title={t('admin.orphanedData.editLinkTitle')}
                                         >
                                             <Pencil className="w-5 h-5" />
                                         </button>
@@ -580,32 +582,32 @@ export default function OrphanedDataPage() {
                         <div className="bg-surface rounded-xl w-full max-w-md p-6 shadow-2xl animate-in zoom-in-95 duration-300 border border-surface-border">
                             <h2 className="text-xl font-bold text-main mb-6 flex items-center gap-2">
                                 <LinkIcon className="w-6 h-6 text-primary" />
-                                Vincular Dados
+                                {t('admin.orphanedData.modal.title')}
                             </h2>
 
                             <div className="space-y-4">
                                 <div className="space-y-1">
-                                    <label className="text-xs font-bold text-muted uppercase">Congregação</label>
+                                    <label className="text-xs font-bold text-muted uppercase">{t('admin.users.createModal.congregationLabel')}</label>
                                     <select
                                         className="w-full bg-background border border-surface-border text-main rounded-md p-3 font-bold text-sm focus:border-primary-light/500 transition-colors"
                                         value={selCong}
                                         onChange={(e) => setSelCong(e.target.value)}
                                     >
-                                        <option value="">Selecione...</option>
+                                        <option value="">{t('admin.orphanedData.modal.selectPlaceholder')}</option>
                                         {congs.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
                                     </select>
                                 </div>
 
                                 {(fixingItem.type === 'address' || fixingItem.type === 'territory' || fixingItem.type === 'witnessing') && (
                                     <div className="space-y-1">
-                                        <label className="text-xs font-bold text-muted uppercase">Cidade ou Bairro</label>
+                                        <label className="text-xs font-bold text-muted uppercase">{t('admin.orphanedData.modal.cityOrNeighborhood')}</label>
                                         <select
                                             className="w-full bg-background border border-surface-border text-main rounded-md p-3 font-bold text-sm focus:border-primary-light/500 transition-colors"
                                             value={selCity}
                                             onChange={(e) => setSelCity(e.target.value)}
                                             disabled={!selCong && cities.length === 0}
                                         >
-                                            <option value="">Selecione...</option>
+                                            <option value="">{t('admin.orphanedData.modal.selectPlaceholder')}</option>
                                             {cities.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
                                         </select>
                                     </div>
@@ -613,14 +615,14 @@ export default function OrphanedDataPage() {
 
                                 {fixingItem.type === 'address' && (
                                     <div className="space-y-1">
-                                        <label className="text-xs font-bold text-muted uppercase">Território (Mapa)</label>
+                                        <label className="text-xs font-bold text-muted uppercase">{t('admin.orphanedData.modal.territoryMap')}</label>
                                         <select
                                             className="w-full bg-background border border-surface-border text-main rounded-md p-3 font-bold text-sm focus:border-primary-light/500 transition-colors"
                                             value={selTerr}
                                             onChange={(e) => setSelTerr(e.target.value)}
                                             disabled={!selCity && territories.length === 0}
                                         >
-                                            <option value="">Selecione...</option>
+                                            <option value="">{t('admin.orphanedData.modal.selectPlaceholder')}</option>
                                             {territories.map(t => <option key={t.id} value={t.id}>{t.name}</option>)}
                                         </select>
                                     </div>
@@ -629,8 +631,8 @@ export default function OrphanedDataPage() {
                                 <div className="border-t border-surface-border pt-4 mt-4 space-y-4">
                                     <div className="space-y-1">
                                         <label className="text-xs font-bold text-muted uppercase tracking-wider">
-                                            {fixingItem.type === 'address' ? 'Rua / Logradouro' :
-                                                fixingItem.type === 'territory' ? 'Número do Mapa' : 'Nome'}
+                                            {fixingItem.type === 'address' ? t('admin.orphanedData.modal.streetLabel') :
+                                                fixingItem.type === 'territory' ? t('admin.orphanedData.modal.mapNumberLabel') : t('admin.congregations.modal.nameLabel')}
                                         </label>
                                         <input
                                             type="text"
@@ -643,22 +645,22 @@ export default function OrphanedDataPage() {
                                     {fixingItem.type === 'witnessing' && (
                                         <div className="space-y-4">
                                             <div className="space-y-1">
-                                                <label className="text-xs font-bold text-muted uppercase">Endereço Completo</label>
+                                                <label className="text-xs font-bold text-muted uppercase">{t('admin.orphanedData.modal.fullAddressLabel')}</label>
                                                 <textarea
                                                     className="w-full bg-background border border-surface-border text-main rounded-md p-3 font-bold text-sm focus:border-primary-light/500 transition-colors min-h-[80px]"
                                                     value={editDetails}
                                                     onChange={(e) => setEditDetails(e.target.value)}
-                                                    placeholder="Rua, número, bairro..."
+                                                    placeholder={t('admin.orphanedData.modal.fullAddressPlaceholder')}
                                                 />
                                             </div>
                                             <div className="space-y-1">
-                                                <label className="text-xs font-bold text-muted uppercase">Horário (Opcional)</label>
+                                                <label className="text-xs font-bold text-muted uppercase">{t('admin.orphanedData.modal.scheduleLabel')}</label>
                                                 <input
                                                     type="text"
                                                     className="w-full bg-background border border-surface-border text-main rounded-md p-3 font-bold text-sm focus:border-primary-light/500 transition-colors"
                                                     value={editSchedule}
                                                     onChange={(e) => setEditSchedule(e.target.value)}
-                                                    placeholder="Ex: Segundas, 08:00 - 12:00"
+                                                    placeholder={t('admin.orphanedData.modal.schedulePlaceholder')}
                                                 />
                                             </div>
                                         </div>
@@ -667,7 +669,7 @@ export default function OrphanedDataPage() {
                                     {(fixingItem.type === 'address' || fixingItem.type === 'territory') && (
                                         <div className="space-y-1">
                                             <label className="text-xs font-bold text-muted uppercase">
-                                                {fixingItem.type === 'territory' ? 'Descrição' : 'Observações'}
+                                                {fixingItem.type === 'territory' ? t('admin.orphanedData.modal.descriptionLabel') : t('admin.orphanedData.modal.observationsLabel')}
                                             </label>
                                             <textarea
                                                 className="w-full bg-background border border-surface-border text-main rounded-md p-3 font-bold text-sm focus:border-primary-light/500 transition-colors min-h-[80px]"
@@ -684,13 +686,13 @@ export default function OrphanedDataPage() {
                                     onClick={() => setFixItem(null)}
                                     className="flex-1 py-3 bg-background border border-surface-border rounded-md font-bold text-muted hover:text-main hover:bg-surface-highlight"
                                 >
-                                    Cancelar
+                                    {t('common.cancel')}
                                 </button>
                                 <button
                                     onClick={handleSaveFix}
                                     className="flex-1 py-3 bg-primary text-white rounded-md font-bold shadow-lg shadow-primary-light/500/30 hover:bg-primary-dark"
                                 >
-                                    Salvar
+                                    {t('common.save')}
                                 </button>
                             </div>
                         </div>

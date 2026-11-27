@@ -58,6 +58,7 @@ import Link from 'next/link';
 import { useAuth } from '@/app/context/AuthContext';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { formatRelativeDate } from '@/lib/dateUtils';
+import { useTranslation } from '@/app/context/I18nContext';
 import { getServiceYearRange, getServiceYear } from '@/lib/serviceYearUtils';
 // TODO(mutations): migrate to mutation layer - legacy module (admin/report/dashboard)
 // eslint-disable-next-line no-restricted-imports
@@ -80,6 +81,7 @@ interface Territory {
 }
 
 function TerritoryListContent() {
+    const { t } = useTranslation();
     const searchParams = useSearchParams();
     const congregationId = searchParams.get('congregationId');
     const cityId = searchParams.get('cityId');
@@ -481,7 +483,7 @@ function TerritoryListContent() {
     }
 
     if (!congregationId || !cityId) {
-        return <div className="min-h-screen flex items-center justify-center bg-background text-muted">Informações incompletas.</div>;
+        return <div className="min-h-screen flex items-center justify-center bg-background text-muted">{t('myMaps.territory.incompleteInfo')}</div>;
     }
 
     // View state
@@ -491,12 +493,12 @@ function TerritoryListContent() {
             {/* ... Header ... */}
             <header className="bg-surface sticky top-0 z-30 px-6 py-4 border-b border-surface-border flex justify-between items-center shadow-sm dark:shadow-none transition-colors">
                 <div className="flex items-center gap-3">
-                    <Link href={`/my-maps/city?congregationId=${congregationId}`} className="bg-gray-100 dark:bg-gray-800 p-2 rounded-lg text-gray-600 dark:text-gray-400 hover:bg-gray-200 dark:hover:bg-gray-700 transition-colors" title={`Voltar para ${localTermType === 'neighborhood' ? 'Bairros' : 'Cidades'}`}>
+                    <Link href={`/my-maps/city?congregationId=${congregationId}`} className="bg-gray-100 dark:bg-gray-800 p-2 rounded-lg text-gray-600 dark:text-gray-400 hover:bg-gray-200 dark:hover:bg-gray-700 transition-colors" title={t('myMaps.territory.backTo', { target: localTermType === 'neighborhood' ? t('myMaps.city.neighborhoods') : t('myMaps.city.cities') })}>
                         <ArrowRight className="w-5 h-5 rotate-180" />
                     </Link>
                     <div className="flex flex-col">
                         <span className="font-bold text-lg text-main tracking-tight leading-none">{cityName}</span>
-                        <span className="text-[10px] text-muted font-bold uppercase tracking-wider">{localTermType === 'neighborhood' ? 'Bairro' : 'Cidade'}</span>
+                        <span className="text-[10px] text-muted font-bold uppercase tracking-wider">{localTermType === 'neighborhood' ? t('myMaps.territory.neighborhood') : t('myMaps.territory.city')}</span>
                     </div>
                 </div>
                 <div className="flex items-center gap-2">
@@ -559,7 +561,7 @@ function TerritoryListContent() {
                     <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-muted w-5 h-5 group-focus-within:text-primary transition-colors" />
                     <input
                         type="text"
-                        placeholder="Buscar território..."
+                        placeholder={t('myMaps.territory.searchTerritory')}
                         value={searchTerm}
                         onChange={(e) => setSearchTerm(e.target.value)}
                         className="w-full bg-surface border border-transparent dark:border-surface-border text-main text-sm font-medium rounded-lg py-4 pl-12 pr-36 shadow-sm dark:shadow-none focus:ring-2 focus:ring-primary/20 focus:outline-none transition-all placeholder:text-muted"
@@ -572,14 +574,14 @@ function TerritoryListContent() {
                                 onChange={(e) => setSearchInItems(e.target.checked)}
                                 className="w-4 h-4 rounded border-gray-300 dark:border-gray-600 bg-surface dark:bg-surface text-primary hover:text-primary-dark transition-colors"
                             />
-                            <span className="text-xs font-bold text-gray-400 dark:text-gray-500 select-none hover:text-primary transition-colors">Buscar itens</span>
+                            <span className="text-xs font-bold text-gray-400 dark:text-gray-500 select-none hover:text-primary transition-colors">{t('myMaps.territory.searchItems')}</span>
                         </label>
                     </div>
                 </div>
 
                 {loading ? (
                     <div className="grid grid-cols-1 lg:grid-cols-2 2xl:grid-cols-3 gap-4" role="status" aria-busy="true">
-                        <span className="sr-only">Carregando...</span>
+                        <span className="sr-only">{t('myMaps.territory.loading')}</span>
                         {Array.from({ length: 4 }).map((_, idx) => (
                             <div key={idx} className="bg-surface border border-surface-border rounded-lg p-4 space-y-2.5">
                                 <Skeleton className="h-4 w-1/2" />
@@ -590,7 +592,7 @@ function TerritoryListContent() {
                 ) : filteredTerritories.length === 0 ? (
                     <div className="text-center py-12 opacity-50">
                         <MapIcon className="w-12 h-12 mx-auto mb-3 text-gray-300" />
-                        <p className="text-gray-400 font-medium">Nenhum território encontrado</p>
+                        <p className="text-gray-400 font-medium">{t('myMaps.territory.noTerritoryFound')}</p>
                     </div>
                 ) : currentView === 'table' ? (
                     <div className="w-full overflow-x-auto pb-4">
@@ -598,9 +600,9 @@ function TerritoryListContent() {
                             <table className="w-full text-left text-sm">
                                 <thead className="bg-surface-highlight border-b border-surface-border text-muted uppercase tracking-wider text-[10px] font-bold">
                                     <tr>
-                                        <th className="px-6 py-4 w-[100px] text-left">Opções</th>
-                                        <th className="px-6 py-4 text-left">Nome</th>
-                                        <th className="px-6 py-4 text-left">Status</th>
+                                        <th className="px-6 py-4 w-[100px] text-left">{t('myMaps.territory.optionsCol')}</th>
+                                        <th className="px-6 py-4 text-left">{t('myMaps.territory.nameCol')}</th>
+                                        <th className="px-6 py-4 text-left">{t('myMaps.territory.statusCol')}</th>
                                     </tr>
                                 </thead>
                                 <tbody className="divide-y divide-surface-border">
@@ -825,16 +827,16 @@ function TerritoryListContent() {
                     </div>
                 ) : (
                     <div className="grid grid-cols-1 lg:grid-cols-2 2xl:grid-cols-3 gap-4">
-                        {filteredTerritories.map(t => {
-                            const isSelected = selectedIds.has(t.id);
-                            const assignments = territoryAssignments[t.id] || [];
-                            const hasSharing = sharingStatusMap[t.id];
-                            // const historyDate = lastCompletionDates[t.id];
+                        {filteredTerritories.map(terr => {
+                            const isSelected = selectedIds.has(terr.id);
+                            const assignments = territoryAssignments[terr.id] || [];
+                            const hasSharing = sharingStatusMap[terr.id];
+                            // const historyDate = lastCompletionDates[terr.id];
                             // const isOutdated = historyDate && historyDate < getServiceYearRange(getServiceYear()).start;
 
                             return (
                                                                 <div
-                                    key={t.id}
+                                    key={terr.id}
                                     className={`group bg-surface rounded-lg p-3 border border-surface-border shadow-sm hover:shadow-md transition-all relative ${isSelected ? 'ring-2 ring-primary bg-primary-light/10' : ''}`}
                                 >
                                     <div className="flex items-start gap-3">
@@ -843,29 +845,31 @@ function TerritoryListContent() {
                                                 <input
                                                     type="checkbox"
                                                     checked={isSelected}
-                                                    onChange={() => toggleSelection(t.id)}
+                                                    onChange={() => toggleSelection(terr.id)}
                                                     className="w-5 h-5 rounded-md border-gray-300 dark:border-gray-600 bg-surface dark:bg-surface text-primary focus:ring-primary transition-all cursor-pointer"
                                                 />
                                             </div>
                                         )}
 
                                         <Link
-                                            href={`/my-maps/address?congregationId=${congregationId}&cityId=${cityId}&territoryId=${t.id}`}
+                                            href={`/my-maps/address?congregationId=${congregationId}&cityId=${cityId}&territoryId=${terr.id}`}
                                             className="flex-1 min-w-0 flex flex-col gap-1.5 pb-1"
                                         >
                                             <div className="flex items-start gap-3">
-                                                <div className={`w-9 h-9 rounded-lg flex items-center justify-center shrink-0 ${t.status === 'OCUPADO' ? 'bg-primary-light/50 dark:bg-primary-dark/20 text-primary dark:text-primary-light' : 'bg-gray-50 dark:bg-gray-800 text-gray-400 dark:text-gray-500'}`}>
+                                                <div className={`w-9 h-9 rounded-lg flex items-center justify-center shrink-0 ${terr.status === 'OCUPADO' ? 'bg-primary-light/50 dark:bg-primary-dark/20 text-primary dark:text-primary-light' : 'bg-gray-50 dark:bg-gray-800 text-gray-400 dark:text-gray-500'}`}>
                                                     <MapIcon className="w-4.5 h-4.5" />
                                                 </div>
                                                 <div className="min-w-0 flex-1 pt-0.5">
-                                                    <h3 className="font-bold text-main text-base leading-tight truncate pr-1">{t.name}</h3>
-                                                    <p className="text-xs text-muted font-medium line-clamp-2 mt-0.5 leading-snug">{t.notes || t.description || 'Sem descrição'}</p>
+                                                    <h3 className="font-bold text-main text-base leading-tight truncate pr-1">{terr.name}</h3>
+                                                    <p className="text-xs text-muted font-medium line-clamp-2 mt-0.5 leading-snug">{terr.notes || terr.description || t('myMaps.territory.noDescription')}</p>
                                                 </div>
                                             </div>
 
                                             <div className="flex flex-wrap items-center gap-2 pl-0.5">
-                                                <span className={`text-[10px] font-bold px-1.5 py-0.5 rounded-md whitespace-nowrap ${!addressCounts[t.id] ? 'text-red-600 bg-red-50 dark:bg-red-900/30 dark:text-red-400' : 'text-primary bg-primary-light/50 dark:bg-primary-dark/30 dark:text-primary-light'}`}>
-                                                    {addressCounts[t.id] || 0} {(addressCounts[t.id] || 0) === 1 ? 'Endereço' : 'Endereços'}
+                                                <span className={`text-[10px] font-bold px-1.5 py-0.5 rounded-md whitespace-nowrap ${!addressCounts[terr.id] ? 'text-red-600 bg-red-50 dark:bg-red-900/30 dark:text-red-400' : 'text-primary bg-primary-light/50 dark:bg-primary-dark/30 dark:text-primary-light'}`}>
+                                                    {(addressCounts[terr.id] || 0) === 1
+                                                        ? t('myMaps.territory.addressSingular', { count: addressCounts[terr.id] || 0 })
+                                                        : t('myMaps.territory.addressPlural', { count: addressCounts[terr.id] || 0 })}
                                                 </span>
                                             </div>
                                         </Link>
@@ -882,37 +886,37 @@ function TerritoryListContent() {
                                                             const spaceBelow = window.innerHeight - rect.bottom - BOTTOM_NAV_HEIGHT;
                                                             const top = spaceBelow >= MENU_HEIGHT ? rect.bottom + 4 : rect.top - MENU_HEIGHT - 4;
                                                             setMenuPosition({ top, right: window.innerWidth - rect.right });
-                                                            setActiveMenu(activeMenu === t.id ? null : t.id);
+                                                            setActiveMenu(activeMenu === terr.id ? null : terr.id);
                                                         }} 
-                                                        className={`p-1.5 rounded-lg transition-colors ${activeMenu === t.id ? 'bg-primary-100 text-primary-600 dark:bg-primary-900/50' : 'text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-800'}`}
+                                                        className={`p-1.5 rounded-lg transition-colors ${activeMenu === terr.id ? 'bg-primary-100 text-primary-600 dark:bg-primary-900/50' : 'text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-800'}`}
                                                     >
                                                         <MoreVertical className="w-4.5 h-4.5" />
                                                     </button>
-                                                    {activeMenu === t.id && menuPosition && (
+                                                    {activeMenu === terr.id && menuPosition && (
                                                         <>
                                                             <div className="fixed inset-0 z-[199]" onClick={() => setActiveMenu(null)} />
                                                             <div className="fixed w-52 bg-surface rounded-xl shadow-2xl border border-surface-border p-1 z-[200] animate-in fade-in zoom-in-95 duration-200" style={{ top: menuPosition.top, right: menuPosition.right }}>
                                                                 <DropDownItem 
                                                                     icon={ArrowRight} 
-                                                                    label="Abrir Território" 
+                                                                    label={t('myMaps.territory.openTerritory')} 
                                                                     variant="primary" 
-                                                                    onClick={() => router.push(`/my-maps/address?congregationId=${congregationId}&cityId=${cityId}&territoryId=${t.id}`)} 
+                                                                    onClick={() => router.push(`/my-maps/address?congregationId=${congregationId}&cityId=${cityId}&territoryId=${terr.id}`)} 
                                                                 />
                                                                 <DropDownItem 
                                                                     icon={History} 
-                                                                    label="Ver Histórico" 
+                                                                    label={t('myMaps.territory.viewHistory')} 
                                                                     variant="indigo" 
-                                                                    onClick={() => { setSelectedTerritoryForHistory({ id: t.id, name: t.name }); setActiveMenu(null); }} 
+                                                                    onClick={() => { setSelectedTerritoryForHistory({ id: terr.id, name: terr.name }); setActiveMenu(null); }} 
                                                                 />
                                                                 {canEditMaps && (
                                                                     <DropDownItem 
                                                                         icon={Pencil} 
-                                                                        label="Editar Configurações" 
+                                                                        label={t('myMaps.territory.editSettings')} 
                                                                         variant="neutral" 
                                                                         onClick={() => {
-                                                                            setEditingTerritory(t);
-                                                                            setEditName(t.name);
-                                                                            setEditDescription(t.notes || t.description || '');
+                                                                            setEditingTerritory(terr);
+                                                                            setEditName(terr.name);
+                                                                            setEditDescription(terr.notes || terr.description || '');
                                                                             setIsEditModalOpen(true);
                                                                             setActiveMenu(null);
                                                                         }} 
@@ -921,9 +925,9 @@ function TerritoryListContent() {
                                                                 {canDeleteMaps && (
                                                                     <DropDownItem 
                                                                         icon={Trash2} 
-                                                                        label="Excluir Território" 
+                                                                        label={t('myMaps.territory.deleteTerritory')} 
                                                                         variant="danger" 
-                                                                        onClick={() => { handleDeleteTerritory(t.id, t.name); setActiveMenu(null); }} 
+                                                                        onClick={() => { handleDeleteTerritory(terr.id, terr.name); setActiveMenu(null); }} 
                                                                     />
                                                                 )}
                                                             </div>
@@ -933,8 +937,8 @@ function TerritoryListContent() {
                                             )}
 
                                             <div onClick={e => e.stopPropagation()}>
-                                                {t.status === 'OCUPADO' || assignments.length > 0 ? (
-                                                    <button onClick={() => assignments.length > 0 && setSelectedTerritoryForAssignments({ id: t.id, name: t.name, assignments })} className="flex flex-col items-end">
+                                                {terr.status === 'OCUPADO' || assignments.length > 0 ? (
+                                                    <button onClick={() => assignments.length > 0 && setSelectedTerritoryForAssignments({ id: terr.id, name: terr.name, assignments })} className="flex flex-col items-end">
                                                         <div className="text-[10px] font-bold text-primary-600 bg-primary-50 border border-primary-100 dark:bg-primary-900/30 dark:border-primary-800 dark:text-primary-400 px-2 py-1 rounded-lg uppercase tracking-wider whitespace-nowrap hover:bg-primary-100 dark:hover:bg-primary-900/50 transition-colors flex items-center gap-1">
                                                             {assignments.length > 0 ? (
                                                                 <>
@@ -942,14 +946,14 @@ function TerritoryListContent() {
                                                                     {assignments.length > 1 && <span className="ml-0.5 bg-primary-200 dark:bg-primary-800 text-primary-800 dark:text-primary-200 px-1 rounded-full text-[9px]">+{assignments.length - 1}</span>}
                                                                 </>
                                                             ) : (
-                                                                <span>Ocupado</span>
+                                                                <span>{t('myMaps.territory.occupied')}</span>
                                                             )}
                                                         </div>
                                                     </button>
                                                 ) : hasSharing ? (
-                                                    <span className="text-[10px] font-bold text-orange-600 bg-orange-50 border border-orange-100 dark:bg-orange-900/30 dark:border-orange-800 dark:text-orange-400 px-2 py-1 rounded-lg uppercase tracking-wider whitespace-nowrap">Compartilhado</span>
+                                                    <span className="text-[10px] font-bold text-orange-600 bg-orange-50 border border-orange-100 dark:bg-orange-900/30 dark:border-orange-800 dark:text-orange-400 px-2 py-1 rounded-lg uppercase tracking-wider whitespace-nowrap">{t('myMaps.territory.shared')}</span>
                                                 ) : (
-                                                    <span className="text-[10px] font-bold text-green-600 bg-green-50 border border-green-100 dark:bg-green-900/30 dark:border-green-800 dark:text-green-400 px-2 py-1 rounded-lg uppercase tracking-wider whitespace-nowrap">Livre</span>
+                                                    <span className="text-[10px] font-bold text-green-600 bg-green-50 border border-green-100 dark:bg-green-900/30 dark:border-green-800 dark:text-green-400 px-2 py-1 rounded-lg uppercase tracking-wider whitespace-nowrap">{t('myMaps.territory.free')}</span>
                                                 )}
                                             </div>
                                         </div>
@@ -965,7 +969,7 @@ function TerritoryListContent() {
                     <div className="fixed bottom-24 left-6 right-6 z-40 bg-gray-900 text-white rounded-lg p-4 flex items-center justify-between shadow-lg">
                         <div className="flex items-center gap-3">
                             <span className="bg-primary px-3 py-1 rounded-lg text-xs font-bold">{selectedIds.size}</span>
-                            <span className="text-sm">selecionados</span>
+                            <span className="text-sm">{t('myMaps.territory.selectedCount')}</span>
                         </div>
                         <div className="flex gap-2">
                             <button
@@ -988,33 +992,33 @@ function TerritoryListContent() {
                         <div className="bg-white dark:bg-slate-900 rounded-lg w-full max-w-sm p-6 shadow-2xl animate-in zoom-in-95 duration-300 border border-transparent dark:border-slate-800">
                             <h2 className="text-xl font-bold text-gray-900 dark:text-white mb-6 flex items-center gap-2">
                                 <Plus className="w-6 h-6 text-primary" />
-                                Novo Território
+                                {t('myMaps.territory.newTerritoryTitle')}
                             </h2>
                             <form onSubmit={handleCreateTerritory} className="space-y-4">
                                 <div>
-                                    <label className="block text-xs font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wider mb-2">Número do Mapa</label>
+                                    <label className="block text-xs font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wider mb-2">{t('myMaps.territory.mapNumberLabel')}</label>
                                     <input
                                         type="text"
                                         value={newTerritoryName}
                                         onChange={(e) => setNewTerritoryName(e.target.value)}
                                         className="w-full bg-gray-50 dark:bg-slate-800 border border-gray-200 dark:border-slate-700 rounded-lg p-4 font-bold text-lg text-gray-900 dark:text-white focus:ring-2 focus:ring-primary/20 outline-none placeholder:text-gray-400"
-                                        placeholder="Ex: 01"
+                                        placeholder={t('myMaps.territory.mapNumberPlaceholder')}
                                         autoFocus
                                     />
                                 </div>
                                 <div>
-                                    <label className="block text-xs font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wider mb-2">Descrição</label>
+                                    <label className="block text-xs font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wider mb-2">{t('myMaps.territory.descriptionLabel')}</label>
                                     <textarea
                                         rows={3}
                                         value={newTerritoryDesc}
                                         onChange={(e) => setNewTerritoryDesc(e.target.value)}
                                         className="w-full bg-gray-50 dark:bg-slate-800 border border-gray-200 dark:border-slate-700 rounded-lg p-4 font-medium text-gray-900 dark:text-white focus:ring-2 focus:ring-primary/20 outline-none resize-none placeholder:text-gray-400"
-                                        placeholder="Ex: Centro, perto da praça..."
+                                        placeholder={t('myMaps.territory.descriptionPlaceholder')}
                                     />
                                 </div>
                                 <div className="flex gap-3 pt-2">
-                                    <button type="button" onClick={() => setIsCreateModalOpen(false)} className="flex-1 py-3 bg-gray-100 dark:bg-slate-700 rounded-lg font-bold text-gray-600 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-slate-600 transition-colors">Cancelar</button>
-                                    <button type="submit" className="flex-1 py-3 bg-primary text-white rounded-lg font-bold shadow-lg shadow-emerald-500/20 hover:bg-primary-dark transition-colors">Criar</button>
+                                    <button type="button" onClick={() => setIsCreateModalOpen(false)} className="flex-1 py-3 bg-gray-100 dark:bg-slate-700 rounded-lg font-bold text-gray-600 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-slate-600 transition-colors">{t('myMaps.territory.cancel')}</button>
+                                    <button type="submit" className="flex-1 py-3 bg-primary text-white rounded-lg font-bold shadow-lg shadow-emerald-500/20 hover:bg-primary-dark transition-colors">{t('myMaps.territory.create')}</button>
                                 </div>
                             </form>
                         </div>
@@ -1029,33 +1033,33 @@ function TerritoryListContent() {
                         <div className="bg-white dark:bg-slate-900 rounded-lg w-full max-w-sm p-6 shadow-2xl animate-in zoom-in-95 duration-300 border border-transparent dark:border-slate-800">
                             <h2 className="text-xl font-bold text-gray-900 dark:text-white mb-6 flex items-center gap-2">
                                 <List className="w-6 h-6 text-primary" />
-                                Editar Território
+                                {t('myMaps.territory.editTerritoryTitle')}
                             </h2>
                             <form onSubmit={handleUpdateTerritory} className="space-y-4">
                                 <div>
-                                    <label className="block text-xs font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wider mb-2">Número do Mapa</label>
+                                    <label className="block text-xs font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wider mb-2">{t('myMaps.territory.mapNumberLabel')}</label>
                                     <input
                                         type="text"
                                         value={editName}
                                         onChange={(e) => setEditName(e.target.value)}
                                         className="w-full bg-gray-50 dark:bg-slate-800 border border-gray-200 dark:border-slate-700 rounded-lg p-4 font-bold text-lg text-gray-900 dark:text-white focus:ring-2 focus:ring-primary/20 outline-none placeholder:text-gray-400"
-                                        placeholder="Ex: 01"
+                                        placeholder={t('myMaps.territory.mapNumberPlaceholder')}
                                         autoFocus
                                     />
                                 </div>
                                 <div>
-                                    <label className="block text-xs font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wider mb-2">Descrição</label>
+                                    <label className="block text-xs font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wider mb-2">{t('myMaps.territory.descriptionLabel')}</label>
                                     <textarea
                                         rows={3}
                                         value={editDescription}
                                         onChange={(e) => setEditDescription(e.target.value)}
                                         className="w-full bg-gray-50 dark:bg-slate-800 border border-gray-200 dark:border-slate-700 rounded-lg p-4 font-medium text-gray-900 dark:text-white focus:ring-2 focus:ring-primary/20 outline-none resize-none placeholder:text-gray-400"
-                                        placeholder="Ex: Centro, perto da praça..."
+                                        placeholder={t('myMaps.territory.descriptionPlaceholder')}
                                     />
                                 </div>
                                 <div className="flex gap-3 pt-2">
-                                    <button type="button" onClick={() => setIsEditModalOpen(false)} className="flex-1 py-3 bg-gray-100 dark:bg-slate-700 rounded-lg font-bold text-gray-600 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-slate-600 transition-colors">Cancelar</button>
-                                    <button type="submit" className="flex-1 py-3 bg-primary text-white rounded-lg font-bold shadow-lg shadow-emerald-500/20 hover:bg-primary-dark transition-colors">Salvar</button>
+                                    <button type="button" onClick={() => setIsEditModalOpen(false)} className="flex-1 py-3 bg-gray-100 dark:bg-slate-700 rounded-lg font-bold text-gray-600 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-slate-600 transition-colors">{t('myMaps.territory.cancel')}</button>
+                                    <button type="submit" className="flex-1 py-3 bg-primary text-white rounded-lg font-bold shadow-lg shadow-emerald-500/20 hover:bg-primary-dark transition-colors">{t('myMaps.territory.save')}</button>
                                 </div>
                             </form>
                         </div>
@@ -1068,11 +1072,11 @@ function TerritoryListContent() {
                 <div className="fixed inset-0 z-[1100] flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm animate-in fade-in duration-200">
                     <div className="bg-white dark:bg-slate-900 rounded-2xl p-6 w-full max-w-sm shadow-2xl relative animate-in zoom-in-95 duration-200 border border-transparent dark:border-slate-800">
                         <div className="mb-6">
-                            <h3 className="text-xl font-bold text-main tracking-tight">Excluir Território {territoryToDelete.name}</h3>
+                            <h3 className="text-xl font-bold text-main tracking-tight">{t('myMaps.territory.deleteTerritoryTitle', { name: territoryToDelete.name })}</h3>
                             <div className="mt-3 p-3 bg-red-50 dark:bg-red-900/10 rounded-xl border border-red-100 dark:border-red-900/30 flex gap-3">
                                 <AlertCircle className="w-5 h-5 text-red-500 shrink-0 mt-0.5" />
                                 <p className="text-xs text-red-700 dark:text-red-400 font-medium leading-relaxed">
-                                    <span className="font-bold">Atenção:</span> A exclusão do território apagará definitivamente também todos os endereços vinculados a ele.
+                                    <span className="font-bold">{t('myMaps.territory.attention')}</span> {t('myMaps.territory.deleteTerritoryWarning')}
                                 </p>
                             </div>
                         </div>
@@ -1082,13 +1086,13 @@ function TerritoryListContent() {
                                 onClick={() => setIsDeleteDialogOpen(false)}
                                 className="flex-1 bg-gray-100 dark:bg-gray-800 text-gray-500 dark:text-gray-400 font-bold py-3.5 rounded-xl hover:bg-gray-200 dark:hover:bg-gray-700 transition-colors text-sm"
                             >
-                                Cancelar
+                                {t('myMaps.territory.cancel')}
                             </button>
                             <button
                                 onClick={confirmDeleteTerritory}
                                 className="flex-1 font-bold py-3.5 rounded-xl transition-all shadow-lg active:scale-95 text-sm text-white bg-red-500 hover:bg-red-600 shadow-red-500/20"
                             >
-                                Excluir Definitivamente
+                                {t('myMaps.territory.deletePermanently')}
                             </button>
                         </div>
                     </div>

@@ -789,8 +789,8 @@ const [uploading, setUploading] = useState(false);
                             <Settings className="w-5 h-5" />
                         </div>
                         <div>
-                            <h1 className="text-xl font-bold text-main tracking-tight">Configurações</h1>
-                            <p className="text-xs text-muted font-medium">Gerencie sua conta e o sistema</p>
+                            <h1 className="text-xl font-bold text-main tracking-tight">{t('settings.header.title')}</h1>
+                            <p className="text-xs text-muted font-medium">{t('settings.header.subtitle')}</p>
                         </div>
                     </div>
                 </div>
@@ -800,7 +800,7 @@ const [uploading, setUploading] = useState(false);
 
                 {/* General Section (All Users) */}
                 <section className="space-y-4">
-                    <h2 className="text-sm font-bold text-gray-400 uppercase tracking-widest pl-1">Minha Conta</h2>
+                    <h2 className="text-sm font-bold text-gray-400 uppercase tracking-widest pl-1">{t('settings.account.title')}</h2>
                     <div className="bg-surface p-6 rounded-lg shadow-sm border border-surface-border flex flex-col md:flex-row items-start md:items-center justify-between gap-6">
                         <div className="flex items-center gap-4">
                             <div className="w-16 h-16 bg-background dark:bg-surface-highlight rounded-full flex items-center justify-center text-muted text-xl font-bold border-2 border-surface dark:border-surface shadow-sm ring-1 ring-surface-border cursor-pointer" onClick={() => document.getElementById('avatarInput')?.click()}>
@@ -820,7 +820,7 @@ const [uploading, setUploading] = useState(false);
                                 }
                             }} />
                             <div>
-                                <h3 className="text-lg font-bold text-main">{profileName || user.displayName || 'Usuário'}</h3>
+                                <h3 className="text-lg font-bold text-main">{profileName || user.displayName || t('settings.account.defaultUser')}</h3>
                                 <p className="text-muted text-sm">{user.email}</p>
                                 {actualCongName && (
                                     <div className="mt-1 flex items-center gap-1.5 text-xs font-semibold text-primary">
@@ -832,10 +832,10 @@ const [uploading, setUploading] = useState(false);
                                     <Shield className="w-3 h-3" />
                                     {(() => {
                                         switch (role) {
-                                            case 'ADMIN': return 'Admin';
-                                            case 'ANCIAO': return 'Superintendente de Serviço';
-                                            case 'SERVO': return 'Servo de Territórios';
-                                            default: return 'Publicador';
+                                            case 'ADMIN': return t('settings.account.roles.admin');
+                                            case 'ANCIAO': return t('settings.account.roles.elder');
+                                            case 'SERVO': return t('settings.account.roles.servant');
+                                            default: return t('settings.account.roles.publisher');
                                         }
                                     })()}
                                 </div>
@@ -851,14 +851,14 @@ const [uploading, setUploading] = useState(false);
                                 className="bg-surface hover:bg-background text-main border border-surface-border font-bold py-3 px-6 rounded-lg flex items-center gap-2 transition-colors justify-center"
                             >
                                 <Pencil className="w-5 h-5" />
-                                Editar Perfil
+                                {t('settings.account.editProfile')}
                             </button>
                             <button
                                 onClick={handleSignOut}
                                 className="bg-red-50 hover:bg-red-100 text-red-600 dark:bg-red-900/20 dark:hover:bg-red-900/40 dark:text-red-400 font-bold py-3 px-6 rounded-lg flex items-center gap-2 transition-colors justify-center"
                             >
                                 <LogOut className="w-5 h-5" />
-                                Sair da Conta
+                                {t('settings.account.signOut')}
                             </button>
                         </div>
                     </div>
@@ -879,8 +879,8 @@ const [uploading, setUploading] = useState(false);
                                                 <Smartphone className="w-6 h-6" />}
                                 </div>
                                 <div>
-                                    <h3 className="font-bold text-main">Tema do Sistema</h3>
-                                    <p className="text-sm text-muted">Claro, Escuro, Automático (Horário) ou Sistema.</p>
+                                    <h3 className="font-bold text-main">{t('settings.theme.title')}</h3>
+                                    <p className="text-sm text-muted">{t('settings.theme.description')}</p>
                                 </div>
                             </div>
                             <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 bg-background rounded-lg p-1 w-full sm:w-auto">
@@ -890,7 +890,7 @@ const [uploading, setUploading] = useState(false);
                                     className={`px-3 py-2 rounded-lg text-xs font-bold transition-all flex items-center justify-center gap-2 ${themeMode === 'light' ? 'bg-surface text-main shadow-sm' : 'text-muted hover:text-main'}`}
                                 >
                                     <Sun className="w-4 h-4" />
-                                    Claro
+                                    {t('settings.theme.light')}
                                 </button>
                                 <button
                                     type="button"
@@ -898,7 +898,7 @@ const [uploading, setUploading] = useState(false);
                                     className={`px-3 py-2 rounded-lg text-xs font-bold transition-all flex items-center justify-center gap-2 ${themeMode === 'dark' ? 'bg-surface text-main shadow-sm' : 'text-muted hover:text-main'}`}
                                 >
                                     <Moon className="w-4 h-4" />
-                                    <span>Escuro</span>
+                                    <span>{t('settings.theme.dark')}</span>
                                 </button>
                                 <button
                                     type="button"
@@ -906,7 +906,7 @@ const [uploading, setUploading] = useState(false);
                                     className={`px-3 py-2 rounded-lg text-xs font-bold transition-all flex items-center justify-center gap-2 ${themeMode === 'auto' ? 'bg-surface text-main shadow-sm' : 'text-muted hover:text-main'}`}
                                 >
                                     <Clock className="w-4 h-4" />
-                                    <span>Auto</span>
+                                    <span>{t('settings.theme.auto')}</span>
                                 </button>
                                 <button
                                     type="button"
@@ -914,7 +914,7 @@ const [uploading, setUploading] = useState(false);
                                     className={`px-3 py-2 rounded-lg text-xs font-bold transition-all flex items-center justify-center gap-2 ${themeMode === 'system' ? 'bg-surface text-main shadow-sm' : 'text-muted hover:text-main'}`}
                                 >
                                     <Smartphone className="w-4 h-4" />
-                                    <span>Sistema</span>
+                                    <span>{t('settings.theme.system')}</span>
                                 </button>
                             </div>
                         </div>
@@ -958,14 +958,14 @@ const [uploading, setUploading] = useState(false);
                                     <Type className="w-6 h-6" />
                                 </div>
                                 <div>
-                                    <h3 className="font-bold text-main">Tamanho do Texto</h3>
-                                    <p className="text-sm text-muted">Ajuste o tamanho da fonte (12px - 24px).</p>
+                                    <h3 className="font-bold text-main">{t('settings.textSize.title')}</h3>
+                                    <p className="text-sm text-muted">{t('settings.textSize.description')}</p>
                                 </div>
                             </div>
                             <div className="flex items-center gap-3 bg-background rounded-xl p-1 self-end sm:self-auto">
-                                <button onClick={() => changeTextSize(-1)} className="p-2 hover:bg-surface rounded-lg shadow-sm transition-all text-muted hover:text-main" title="Diminuir"><Minus className="w-4 h-4" /></button>
+                                <button onClick={() => changeTextSize(-1)} className="p-2 hover:bg-surface rounded-lg shadow-sm transition-all text-muted hover:text-main" title={t('settings.textSize.decrease')}><Minus className="w-4 h-4" /></button>
                                 <span className="font-bold w-12 text-center select-none text-main">{textSize}px</span>
-                                <button onClick={() => changeTextSize(1)} className="p-2 hover:bg-surface rounded-lg shadow-sm transition-all text-muted hover:text-main" title="Aumentar"><Plus className="w-4 h-4" /></button>
+                                <button onClick={() => changeTextSize(1)} className="p-2 hover:bg-surface rounded-lg shadow-sm transition-all text-muted hover:text-main" title={t('settings.textSize.increase')}><Plus className="w-4 h-4" /></button>
                             </div>
                         </div>
 
@@ -978,14 +978,14 @@ const [uploading, setUploading] = useState(false);
                                     <Monitor className="w-6 h-6" />
                                 </div>
                                 <div>
-                                    <h3 className="font-bold text-main">Escala da Tela</h3>
-                                    <p className="text-sm text-muted">Aumente ou diminua o zoom geral.</p>
+                                    <h3 className="font-bold text-main">{t('settings.displayScale.title')}</h3>
+                                    <p className="text-sm text-muted">{t('settings.displayScale.description')}</p>
                                 </div>
                             </div>
                             <div className="flex items-center gap-3 bg-background rounded-xl p-1 self-end sm:self-auto">
-                                <button onClick={() => changeScale(-0.05)} className="p-2 hover:bg-surface rounded-lg shadow-sm transition-all text-muted hover:text-main" title="Diminuir"><Minus className="w-4 h-4" /></button>
+                                <button onClick={() => changeScale(-0.05)} className="p-2 hover:bg-surface rounded-lg shadow-sm transition-all text-muted hover:text-main" title={t('settings.textSize.decrease')}><Minus className="w-4 h-4" /></button>
                                 <span className="font-bold w-14 text-center select-none text-main">{Math.round(displayScale * 100)}%</span>
-                                <button onClick={() => changeScale(0.05)} className="p-2 hover:bg-surface rounded-lg shadow-sm transition-all text-muted hover:text-main" title="Aumentar"><Plus className="w-4 h-4" /></button>
+                                <button onClick={() => changeScale(0.05)} className="p-2 hover:bg-surface rounded-lg shadow-sm transition-all text-muted hover:text-main" title={t('settings.textSize.increase')}><Plus className="w-4 h-4" /></button>
                             </div>
                         </div>
                     </div>
@@ -999,8 +999,8 @@ const [uploading, setUploading] = useState(false);
                             <div className="bg-surface border border-surface-border rounded-3xl w-full max-w-sm p-6 shadow-2xl animate-in zoom-in-95 duration-200 text-center my-8">
                                 <div className="flex justify-between items-start mb-6">
                                     <div>
-                                        <h2 className="text-2xl font-bold text-main tracking-tight">Editar Perfil</h2>
-                                        <p className="text-sm text-muted font-medium tracking-tight">Atualize suas informações pessoais.</p>
+                                        <h2 className="text-2xl font-bold text-main tracking-tight">{t('settings.account.editModal.title')}</h2>
+                                        <p className="text-sm text-muted font-medium tracking-tight">{t('settings.account.editModal.subtitle')}</p>
                                     </div>
                                     <button onClick={() => setShowEditModal(false)} className="p-2 hover:bg-background rounded-full transition-colors">
                                         <X className="w-6 h-6 text-muted" />
@@ -1009,13 +1009,13 @@ const [uploading, setUploading] = useState(false);
 
                                 <div className="space-y-6">
                                     <div className="space-y-1.5">
-                                        <label className="text-[10px] font-bold text-muted uppercase tracking-widest ml-1">Nome de Exibição</label>
+                                        <label className="text-[10px] font-bold text-muted uppercase tracking-widest ml-1">{t('settings.account.editModal.displayNameLabel')}</label>
                                         <input
                                             type="text"
                                             value={editName}
                                             onChange={(e) => setEditName(e.target.value)}
                                             className="w-full bg-background border border-surface-border rounded-lg py-3 px-4 text-sm font-bold focus:ring-2 focus:ring-primary/20 focus:border-primary text-main transition-all"
-                                            placeholder="Seu nome"
+                                            placeholder={t('settings.account.editModal.displayNamePlaceholder')}
                                         />
                                     </div>
 
@@ -1024,7 +1024,7 @@ const [uploading, setUploading] = useState(false);
                                         disabled={saving}
                                         className="w-full bg-primary hover:bg-primary-dark text-white font-bold py-4 rounded-lg shadow-xl shadow-primary-light/30 transition-all active:scale-95 disabled:opacity-50 flex items-center justify-center gap-2"
                                     >
-                                        {saving ? <Loader2 className="w-5 h-5 animate-spin" /> : 'Salvar Alterações'}
+                                        {saving ? <Loader2 className="w-5 h-5 animate-spin" /> : t('settings.account.editModal.saveChanges')}
                                     </button>
                                 </div>
                             </div>
@@ -1041,7 +1041,7 @@ const [uploading, setUploading] = useState(false);
                         <section className="space-y-4 animate-in slide-in-from-bottom-5 fade-in duration-500">
                             <div className="flex items-center gap-2 text-primary dark:text-primary-light mb-2">
                                 <FileText className="w-5 h-5" />
-                                <h2 className="text-sm font-bold uppercase tracking-widest">Registros</h2>
+                                <h2 className="text-sm font-bold uppercase tracking-widest">{t('settings.registry.title')}</h2>
                             </div>
 
 
@@ -1055,8 +1055,8 @@ const [uploading, setUploading] = useState(false);
                                         <Users className="w-5 h-5" />
                                     </div>
                                     <div>
-                                        <h3 className="font-bold text-main">Convidar Publicadores</h3>
-                                        <p className="text-xs text-muted">Envie este link para novos irmãos entrarem na congregação.</p>
+                                        <h3 className="font-bold text-main">{t('settings.registry.inviteTitle')}</h3>
+                                        <p className="text-xs text-muted">{t('settings.registry.inviteDescription')}</p>
                                     </div>
                                 </div>
                                 <div className="flex gap-2">
@@ -1066,11 +1066,11 @@ const [uploading, setUploading] = useState(false);
                                     <button
                                         onClick={() => {
                                             navigator.clipboard.writeText(inviteLink);
-                                            toast.success("Link copiado!");
+                                            toast.success(t('settings.registry.copiedToast'));
                                         }}
                                         className="bg-primary hover:bg-primary-dark text-white font-bold px-4 rounded-lg text-xs uppercase tracking-wider transition-colors shadow-lg shadow-primary-light/20"
                                     >
-                                        Copiar
+                                        {t('settings.registry.copy')}
                                     </button>
                                 </div>
                                 {canManageMembers && (
@@ -1081,7 +1081,7 @@ const [uploading, setUploading] = useState(false);
                                             className="text-[10px] text-red-500 hover:text-red-600 font-bold uppercase tracking-wider flex items-center gap-1"
                                         >
                                             {generatingToken ? <Loader2 className="w-3 h-3 animate-spin" /> : <Shield className="w-3 h-3" />}
-                                            Gerar Nova Chave
+                                            {t('settings.registry.generateNewKey')}
                                         </button>
                                     </div>
                                 )}
@@ -1099,28 +1099,28 @@ const [uploading, setUploading] = useState(false);
                             <div className="flex items-center gap-2 text-primary dark:text-primary-light mb-2">
                                 <Building2 className="w-5 h-5 shrink-0" />
                                 <h2 className="text-sm font-bold uppercase tracking-widest">
-                                    Configurações da Congregação
+                                    {t('settings.congregation.title')}
                                 </h2>
                             </div>
 
                             <form onSubmit={handleSaveCongregationSettings} className="bg-surface p-6 rounded-lg shadow-sm border border-surface-border space-y-4">
                                 <div>
                                     <label htmlFor="cong-name-input" className="block text-xs font-bold text-muted uppercase tracking-wider mb-1.5">
-                                        Nome da Congregação
+                                        {t('settings.congregation.nameLabel')}
                                     </label>
                                     <input
                                         id="cong-name-input"
                                         type="text"
                                         value={congNameInput}
                                         onChange={(e) => setCongNameInput(e.target.value)}
-                                        placeholder="Nome da congregação"
+                                        placeholder={t('settings.congregation.namePlaceholder')}
                                         className="w-full bg-background border border-surface-border rounded-lg px-3.5 py-2.5 text-sm text-main focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary"
                                     />
                                 </div>
 
                                 <div>
                                     <label htmlFor="cong-slug-input" className="block text-xs font-bold text-muted uppercase tracking-wider mb-1.5">
-                                        Slug / Identificador
+                                        {t('settings.congregation.slugLabel')}
                                     </label>
                                     <input
                                         id="cong-slug-input"
@@ -1131,13 +1131,13 @@ const [uploading, setUploading] = useState(false);
                                         className="w-full bg-background/60 border border-surface-border rounded-lg px-3.5 py-2.5 text-sm font-mono text-muted cursor-not-allowed opacity-75"
                                     />
                                     <p className="text-[11px] text-muted mt-1">
-                                        O slug da congregação não pode ser alterado.
+                                        {t('settings.congregation.slugHint')}
                                     </p>
                                 </div>
 
                                 <div>
                                     <label htmlFor="cong-category-select" className="block text-xs font-bold text-muted uppercase tracking-wider mb-1.5">
-                                        Tipo de Congregação
+                                        {t('settings.congregation.typeLabel')}
                                     </label>
                                     <select
                                         id="cong-category-select"
@@ -1145,15 +1145,15 @@ const [uploading, setUploading] = useState(false);
                                         onChange={(e) => setCongCategoryInput(e.target.value as 'TRADITIONAL' | 'SIGN_LANGUAGE' | 'FOREIGN_LANGUAGE')}
                                         className="w-full bg-background border border-surface-border rounded-lg px-3.5 py-2.5 text-sm text-main focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary"
                                     >
-                                        <option value="TRADITIONAL">Tradicional</option>
-                                        <option value="SIGN_LANGUAGE">Língua de sinais</option>
-                                        <option value="FOREIGN_LANGUAGE">Estrangeiro</option>
+                                        <option value="TRADITIONAL">{t('settings.congregation.types.traditional')}</option>
+                                        <option value="SIGN_LANGUAGE">{t('settings.congregation.types.signLanguage')}</option>
+                                        <option value="FOREIGN_LANGUAGE">{t('settings.congregation.types.foreignLanguage')}</option>
                                     </select>
                                 </div>
 
                                 <div>
                                     <label htmlFor="cong-term-type-select" className="block text-xs font-bold text-muted uppercase tracking-wider mb-1.5">
-                                        Agrupamento de Territórios (Cidade ou Bairro)
+                                        {t('settings.congregation.groupingLabel')}
                                     </label>
                                     <select
                                         id="cong-term-type-select"
@@ -1161,8 +1161,8 @@ const [uploading, setUploading] = useState(false);
                                         onChange={(e) => setCongTermTypeInput(e.target.value as 'city' | 'neighborhood')}
                                         className="w-full bg-background border border-surface-border rounded-lg px-3.5 py-2.5 text-sm text-main focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary"
                                     >
-                                        <option value="city">Cidades</option>
-                                        <option value="neighborhood">Bairros</option>
+                                        <option value="city">{t('settings.congregation.grouping.cities')}</option>
+                                        <option value="neighborhood">{t('settings.congregation.grouping.neighborhoods')}</option>
                                     </select>
                                 </div>
 
@@ -1173,7 +1173,7 @@ const [uploading, setUploading] = useState(false);
                                         className="bg-primary hover:bg-primary-dark disabled:opacity-50 disabled:cursor-not-allowed text-white font-bold px-5 py-2.5 rounded-lg text-xs uppercase tracking-wider transition-colors flex items-center gap-2 shadow-lg shadow-primary-light/20"
                                     >
                                         {savingCongSettings ? <Loader2 className="w-4 h-4 animate-spin" /> : <Save className="w-4 h-4" />}
-                                        Salvar
+                                        {t('common.save')}
                                     </button>
                                 </div>
                             </form>
@@ -1191,7 +1191,7 @@ const [uploading, setUploading] = useState(false);
                                 <div className="flex items-center gap-2">
                                     <Shield className="w-5 h-5 shrink-0" />
                                     <h2 className="text-sm font-bold uppercase tracking-widest">
-                                        Painel do Administrador
+                                        {t('settings.admin.title')}
                                     </h2>
                                 </div>
                                 {actualCongName && (
@@ -1213,9 +1213,11 @@ const [uploading, setUploading] = useState(false);
                                             <Shield className="w-5 h-5" />
                                         </div>
                                         <div>
-                                            <h3 className="font-bold text-main">Gestão de Membros</h3>
+                                            <h3 className="font-bold text-main">{t('settings.admin.membersTitle')}</h3>
                                             <p className="text-xs text-muted">
-                                                {members.length} {members.length === 1 ? 'membro' : 'membros'} na congregação
+                                                {members.length === 1
+                                                    ? t('settings.admin.memberCountSingular', { count: members.length })
+                                                    : t('settings.admin.memberCountPlural', { count: members.length })}
                                             </p>
                                         </div>
                                     </div>
@@ -1247,7 +1249,7 @@ const [uploading, setUploading] = useState(false);
                                                                 member.role === 'SERVO' ? 'bg-primary-light/50 text-primary-dark dark:bg-primary-dark/50 dark:text-primary-light' :
                                                                     'bg-surface-border text-muted dark:bg-surface-border'
                                                                 }`}>
-                                                                {member.role || 'PUBLICADOR'}
+                                                                {t(`settings.admin.roleBadges.${member.role || 'PUBLICADOR'}`)}
                                                             </span>
                                                             <span className="text-[10px] text-muted truncate max-w-[150px] sm:max-w-none">{member.email}</span>
                                                         </div>
@@ -1276,7 +1278,7 @@ const [uploading, setUploading] = useState(false);
                                                                         className="flex items-center gap-2 px-3 py-2.5 text-sm font-bold text-main hover:bg-background rounded-lg transition-colors w-full text-left"
                                                                     >
                                                                         <Key className="w-4 h-4 text-primary" />
-                                                                        Permissões
+                                                                        {t('settings.admin.actions.permissions')}
                                                                     </button>
                                                                 )}
 
@@ -1286,9 +1288,9 @@ const [uploading, setUploading] = useState(false);
                                                                     className={`flex items-center gap-2 px-3 py-2.5 text-sm font-bold rounded-lg transition-colors w-full text-left ${(!member.role || member.role === 'PUBLICADOR') ? 'border-t border-surface-border ' : ''}${member.role === 'SERVO' ? 'text-orange-600 hover:bg-orange-50 dark:hover:bg-orange-900/20' : 'text-primary hover:bg-primary-light/50 dark:hover:bg-primary-dark/30'}`}
                                                                 >
                                                                     <Shield className="w-4 h-4" />
-                                                                    {member.role === 'ANCIAO' ? "Rebaixar a Servo" :
-                                                                        member.role === 'SERVO' ? "Rebaixar a Publicador" :
-                                                                            "Promover a Servo"}
+                                                                    {member.role === 'ANCIAO' ? t('settings.admin.actions.demoteToServant') :
+                                                                        member.role === 'SERVO' ? t('settings.admin.actions.demoteToPublisher') :
+                                                                            t('settings.admin.actions.promoteToServant')}
                                                                 </button>
 
                                                                 {/* Promover a Ancião (estritamente Admin global) */}
@@ -1301,7 +1303,7 @@ const [uploading, setUploading] = useState(false);
                                                                         className="flex items-center gap-2 px-3 py-2.5 text-sm font-bold text-amber-600 hover:bg-amber-50 dark:hover:bg-amber-900/20 rounded-lg transition-colors w-full text-left border-t border-surface-border"
                                                                     >
                                                                         <Shield className="w-4 h-4" />
-                                                                        Promover a Ancião
+                                                                        {t('settings.admin.actions.promoteToElder')}
                                                                     </button>
                                                                 )}
 
@@ -1311,7 +1313,7 @@ const [uploading, setUploading] = useState(false);
                                                                     className="flex items-center gap-2 px-3 py-2.5 text-sm font-bold text-red-600 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-lg transition-colors w-full text-left border-t border-surface-border"
                                                                 >
                                                                     <UserMinus className="w-4 h-4" />
-                                                                    Remover da Congregação
+                                                                    {t('settings.admin.actions.removeFromCongregation')}
                                                                 </button>
                                                             </div>
                                                         )}
@@ -1321,7 +1323,7 @@ const [uploading, setUploading] = useState(false);
                                         );
                                     })}
                                     {members.length === 0 && !membersLoading && (
-                                        <div className="text-center py-4 text-muted text-sm">Nenhum membro encontrado.</div>
+                                        <div className="text-center py-4 text-muted text-sm">{t('settings.admin.noMembers')}</div>
                                     )}
                                 </div>
                             </div>
@@ -1337,46 +1339,46 @@ const [uploading, setUploading] = useState(false);
                                             <Shield className="w-5 h-5" />
                                         </div>
                                         <div>
-                                            <h3 className="font-bold text-main">Gestão Global</h3>
-                                            <p className="text-xs text-muted">Admin (Acesso Total)</p>
+                                            <h3 className="font-bold text-main">{t('settings.admin.global.title')}</h3>
+                                            <p className="text-xs text-muted">{t('settings.admin.global.subtitle')}</p>
                                         </div>
                                     </div>
-                                    <p className="text-sm text-muted mb-4">Você tem permissão para gerenciar todas as congregações e usuários do sistema.</p>
+                                    <p className="text-sm text-muted mb-4">{t('settings.admin.global.description')}</p>
                                     <div className="flex flex-wrap gap-3">
                                         <Link
                                             href="/admin/congregations"
                                             className="inline-block bg-primary hover:bg-primary-dark text-white font-bold py-2 px-4 rounded-lg transition-colors shadow-lg shadow-primary-light/20 flex items-center gap-2"
                                         >
                                             <Building2 className="w-4 h-4" />
-                                            Congregações
+                                            {t('settings.admin.global.congregations')}
                                         </Link>
                                         <Link
                                             href="/admin/users"
                                             className="inline-block bg-background hover:bg-primary-light/50 dark:hover:bg-primary-dark/30 text-primary border border-surface-border font-bold py-2 px-4 rounded-lg transition-colors shadow-sm flex items-center gap-2"
                                         >
                                             <Users className="w-4 h-4" />
-                                            Membros
+                                            {t('settings.admin.global.members')}
                                         </Link>
                                         <Link
                                             href="/orphaned-data"
                                             className="inline-block bg-background hover:bg-primary-light/50 dark:hover:bg-primary-dark/30 text-primary border border-surface-border font-bold py-2 px-4 rounded-lg transition-colors shadow-sm flex items-center gap-2"
                                         >
                                             <Database className="w-4 h-4" />
-                                            Dados Órfãos
+                                            {t('settings.admin.global.orphanedData')}
                                         </Link>
                                         <Link
                                             href="/admin/bugs"
                                             className="inline-block bg-background hover:bg-orange-50 dark:hover:bg-orange-950/20 text-orange-600 border border-orange-200 dark:border-orange-900/30 font-bold py-2 px-4 rounded-lg transition-colors shadow-sm flex items-center gap-2"
                                         >
                                             <Bug className="w-4 h-4" />
-                                            Bug Reports
+                                            {t('settings.admin.global.bugReports')}
                                         </Link>
                                         <Link
                                             href="/admin/logs"
                                             className="inline-block bg-background hover:bg-blue-50 dark:hover:bg-blue-950/20 text-blue-600 border border-blue-200 dark:border-blue-900/30 font-bold py-2 px-4 rounded-lg transition-colors shadow-sm flex items-center gap-2"
                                         >
                                             <Terminal className="w-4 h-4" />
-                                            Logs do Sistema
+                                            {t('settings.admin.global.systemLogs')}
                                         </Link>
                                     </div>
 
@@ -1388,14 +1390,14 @@ const [uploading, setUploading] = useState(false);
 
                 {/* About & Legal Section */}
                 <section className="space-y-4">
-                    <h2 className="text-sm font-bold text-muted uppercase tracking-widest pl-1">Sobre & Legal</h2>
+                    <h2 className="text-sm font-bold text-muted uppercase tracking-widest pl-1">{t('settings.legal.title')}</h2>
                     <div className="bg-surface p-2 rounded-lg shadow-sm border border-surface-border">
                         <Link prefetch={false} href="/legal/terms" className="flex items-center justify-between p-4 hover:bg-background rounded-lg transition-colors group">
                             <div className="flex items-center gap-3">
                                 <div className="p-2 bg-gray-100 dark:bg-gray-800 rounded-lg text-gray-500">
                                     <FileText className="w-5 h-5" />
                                 </div>
-                                <span className="font-bold text-sm text-main">Termos de Uso</span>
+                                <span className="font-bold text-sm text-main">{t('settings.legal.terms')}</span>
                             </div>
                             <Eye className="w-4 h-4 text-muted group-hover:text-primary transition-colors" />
                         </Link>
@@ -1405,7 +1407,7 @@ const [uploading, setUploading] = useState(false);
                                 <div className="p-2 bg-gray-100 dark:bg-gray-800 rounded-lg text-gray-500">
                                     <Database className="w-5 h-5" />
                                 </div>
-                                <span className="font-bold text-sm text-main">Uso de Dados</span>
+                                <span className="font-bold text-sm text-main">{t('settings.legal.dataUsage')}</span>
                             </div>
                             <Eye className="w-4 h-4 text-muted group-hover:text-primary transition-colors" />
                         </Link>
@@ -1414,7 +1416,7 @@ const [uploading, setUploading] = useState(false);
                                 <div className="p-2 bg-gray-100 dark:bg-gray-800 rounded-lg text-gray-500">
                                     <User className="w-5 h-5" />
                                 </div>
-                                <span className="font-bold text-sm text-main">Compromisso do Usuário</span>
+                                <span className="font-bold text-sm text-main">{t('settings.legal.userCommitment')}</span>
                             </div>
                             <Eye className="w-4 h-4 text-muted group-hover:text-primary transition-colors" />
                         </Link>
@@ -1423,7 +1425,7 @@ const [uploading, setUploading] = useState(false);
                                 <div className="p-2 bg-gray-100 dark:bg-gray-800 rounded-lg text-gray-500">
                                     <Shield className="w-5 h-5" />
                                 </div>
-                                <span className="font-bold text-sm text-main">Política de Privacidade</span>
+                                <span className="font-bold text-sm text-main">{t('settings.legal.privacy')}</span>
                             </div>
                             <Eye className="w-4 h-4 text-muted group-hover:text-primary transition-colors" />
                         </Link>
@@ -1432,7 +1434,7 @@ const [uploading, setUploading] = useState(false);
                                 <div className="p-2 bg-gray-100 dark:bg-gray-800 rounded-lg text-gray-500">
                                     <Mail className="w-5 h-5" />
                                 </div>
-                                <span className="font-bold text-sm text-main">Falar com o DPO</span>
+                                <span className="font-bold text-sm text-main">{t('settings.legal.contactDpo')}</span>
                             </div>
                             <Eye className="w-4 h-4 text-muted group-hover:text-primary transition-colors" />
                         </a>
@@ -1444,7 +1446,7 @@ const [uploading, setUploading] = useState(false);
                                 <div className="p-2 bg-gray-100 dark:bg-gray-800 rounded-lg text-gray-500">
                                     <Scale className="w-5 h-5" />
                                 </div>
-                                <span className="font-bold text-sm text-main">Licença Open-source</span>
+                                <span className="font-bold text-sm text-main">{t('settings.legal.openSource')}</span>
                             </div>
                             <Eye className="w-4 h-4 text-muted group-hover:text-primary transition-colors" />
                         </Link>
@@ -1454,7 +1456,7 @@ const [uploading, setUploading] = useState(false);
                                 <div className="p-2 bg-gray-100 dark:bg-gray-800 rounded-lg text-gray-500">
                                     <Info className="w-5 h-5" />
                                 </div>
-                                <span className="font-bold text-sm text-main">O que é o Campo Branco</span>
+                                <span className="font-bold text-sm text-main">{t('settings.legal.about')}</span>
                             </div>
                             <Eye className="w-4 h-4 text-muted group-hover:text-primary transition-colors" />
                         </Link>
@@ -1463,7 +1465,7 @@ const [uploading, setUploading] = useState(false);
                                 <div className="p-2 bg-gray-100 dark:bg-gray-800 rounded-lg text-gray-500">
                                     <Mail className="w-5 h-5" />
                                 </div>
-                                <span className="font-bold text-sm text-main">Contato e Suporte</span>
+                                <span className="font-bold text-sm text-main">{t('settings.legal.contactSupport')}</span>
                             </div>
                             <Eye className="w-4 h-4 text-muted group-hover:text-primary transition-colors" />
                         </Link>
@@ -1476,7 +1478,7 @@ const [uploading, setUploading] = useState(false);
                         onClick={() => setShowDangerZone(!showDangerZone)}
                         className="w-full flex items-center justify-between text-sm font-bold text-red-500 uppercase tracking-widest pl-1 hover:opacity-80 transition-all"
                     >
-                        <span>Zona de Perigo</span>
+                        <span>{t('settings.dangerZone.title')}</span>
                         <ChevronDown className={`w-4 h-4 transition-transform duration-300 ${showDangerZone ? 'rotate-180' : ''}`} />
                     </button>
 
@@ -1484,10 +1486,9 @@ const [uploading, setUploading] = useState(false);
                         <div className="bg-red-50 dark:bg-red-900/10 p-6 rounded-lg shadow-sm border border-red-100 dark:border-red-900/30 animate-in slide-in-from-top-2 duration-300">
                             <div className="flex flex-col sm:flex-row items-start sm:items-center gap-4 justify-between">
                                 <div className="space-y-1">
-                                    <h3 className="font-bold text-red-700 dark:text-red-400">Excluir Conta</h3>
+                                    <h3 className="font-bold text-red-700 dark:text-red-400">{t('settings.dangerZone.deleteTitle')}</h3>
                                     <p className="text-xs text-red-600/70 dark:text-red-400/70 max-w-sm">
-                                        Essa ação é irreversível. Seus dados de perfil serão apagados permanentemente.
-                                        Se você for o único administrador de uma congregação, entre em contato com o suporte antes.
+                                        {t('settings.dangerZone.deleteDescription')}
                                     </p>
                                 </div>
                                 <button
@@ -1499,7 +1500,7 @@ const [uploading, setUploading] = useState(false);
                                     className="bg-red-600 hover:bg-red-700 text-white font-bold py-3 px-6 rounded-lg flex items-center gap-2 transition-colors shadow-lg shadow-red-600/20 whitespace-nowrap"
                                 >
                                     <Trash2 className="w-4 h-4" />
-                                    Excluir Minha Conta
+                                    {t('settings.dangerZone.deleteButton')}
                                 </button>
                             </div>
                         </div>
@@ -1515,7 +1516,7 @@ const [uploading, setUploading] = useState(false);
                     >
                         <div className="flex items-center gap-1.5 text-main">
                             <Github className="w-4 h-4" />
-                            <span className="text-xs font-semibold">Projeto Open Source <span className="text-[10px] opacity-60 font-normal">(MIT)</span></span>
+                            <span className="text-xs font-semibold">{t('settings.footer.openSourceProject')} <span className="text-[10px] opacity-60 font-normal">(MIT)</span></span>
                         </div>
 
                         <img

@@ -10,6 +10,7 @@ import { db } from '@/lib/firebase';
 // eslint-disable-next-line no-restricted-imports
 import { collection, getDocs, query, orderBy, doc, updateDoc, getDoc } from 'firebase/firestore';
 import { useAuth } from '@/app/context/AuthContext';
+import { useTranslation } from '@/app/context/I18nContext';
 import { ListPageSkeleton } from '@/app/components/Skeleton';
 import {
     Bug,
@@ -31,7 +32,7 @@ import Link from 'next/link';
 import { toast } from 'sonner';
 import BottomNav from '@/app/components/BottomNav';
 import { format } from 'date-fns';
-import { ptBR } from 'date-fns/locale';
+import { ptBR, enUS, es } from 'date-fns/locale';
 
 type BugStatus = 'NEW' | 'VIEWED' | 'DEFERRED' | 'ACCEPTED' | 'RESOLVED';
 
@@ -60,7 +61,10 @@ const STATUS_CONFIG: Record<BugStatus, { label: string, color: string, icon: any
 };
 
 export default function BugReportsAdminPage() {
+    const { t, locale } = useTranslation();
     const { isAdminRoleGlobal, loading: authLoading } = useAuth();
+    const dateLocale = locale === 'en' ? enUS : locale === 'es' ? es : ptBR;
+    const dateTimePattern = locale === 'en' ? "MMM dd 'at' HH:mm" : locale === 'es' ? "dd 'de' MMMM 'a las' HH:mm" : "dd 'de' MMMM 'às' HH:mm";
     const [reports, setReports] = useState<BugReport[]>([]);
     const [loading, setLoading] = useState(true);
     const [filterStatus, setFilterStatus] = useState<BugStatus | 'ALL'>('ALL');
@@ -173,8 +177,8 @@ export default function BugReportsAdminPage() {
                                 <Bug className="w-5 h-5" />
                             </div>
                             <div>
-                                <h1 className="text-xl font-bold text-main tracking-tight">Bug Reports</h1>
-                                <p className="text-xs text-muted font-medium">Gestão de erros relatados pelos usuários</p>
+                                <h1 className="text-xl font-bold text-main tracking-tight">{t('admin.bugs.title')}</h1>
+                                <p className="text-xs text-muted font-medium">{t('admin.bugs.subtitle')}</p>
                             </div>
                         </div>
                     </div>
@@ -189,7 +193,7 @@ export default function BugReportsAdminPage() {
                             <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted" />
                             <input
                                 type="text"
-                                placeholder="Buscar nos relatos..."
+                                placeholder={t('admin.bugs.searchPlaceholder')}
                                 value={searchTerm}
                                 onChange={(e) => setSearchTerm(e.target.value)}
                                 className="w-full bg-surface border border-surface-border rounded-xl py-3 pl-10 pr-4 text-sm focus:ring-2 focus:ring-primary/20 outline-none transition-all"
@@ -201,7 +205,7 @@ export default function BugReportsAdminPage() {
                                 onClick={() => setFilterStatus('ALL')}
                                 className={`px-4 py-2 rounded-lg text-xs font-bold whitespace-nowrap transition-all border ${filterStatus === 'ALL' ? 'bg-primary text-white border-primary' : 'bg-surface text-muted border-surface-border hover:border-primary/50'}`}
                             >
-                                Todos
+                                {t('admin.bugs.allStatuses')}
                             </button>
                             {(Object.keys(STATUS_CONFIG) as BugStatus[]).map(status => (
                                 <button
@@ -209,7 +213,7 @@ export default function BugReportsAdminPage() {
                                     onClick={() => setFilterStatus(status)}
                                     className={`px-4 py-2 rounded-lg text-xs font-bold whitespace-nowrap transition-all border ${filterStatus === status ? 'bg-primary text-white border-primary' : 'bg-surface text-muted border-surface-border hover:border-primary/50'}`}
                                 >
-                                    {STATUS_CONFIG[status].label}
+                                    {t(`admin.bugs.statuses.${status}`)}
                                 </button>
                             ))}
                         </div>
@@ -222,7 +226,7 @@ export default function BugReportsAdminPage() {
                             ) : filteredReports.length === 0 ? (
                                 <div className="text-center py-12 bg-surface rounded-xl border border-dashed border-surface-border">
                                     <Bug className="w-10 h-10 mx-auto mb-2 text-muted opacity-20" />
-                                    <p className="text-sm text-muted">Nenhum bug encontrado</p>
+                                    <p className="text-sm text-muted">{t('admin.bugs.empty')}</p>
                                 </div>
                             ) : (
                                 filteredReports.map(report => {
@@ -240,7 +244,7 @@ export default function BugReportsAdminPage() {
                                             <div className="flex justify-between items-start mb-2">
                                                 <span className={`text-[9px] font-bold px-1.5 py-0.5 rounded uppercase flex items-center gap-1 ${STATUS_CONFIG[report.status].color}`}>
                                                     <StatusIcon className="w-2.5 h-2.5" />
-                                                    {STATUS_CONFIG[report.status].label}
+                                                    {t(`admin.bugs.statuses.${report.status}`)}
                                                 </span>
                                                 <span className="text-[10px] text-muted flex items-center gap-1">
                                                     <Calendar className="w-3 h-3" />
@@ -267,13 +271,13 @@ export default function BugReportsAdminPage() {
                                             <div className="flex flex-wrap items-center gap-4 text-xs text-muted font-medium">
                                                 <div className="flex items-center gap-1.5 bg-background px-2 py-1 rounded-md border border-surface-border">
                                                     <UserIcon className="w-3.5 h-3.5 text-primary" />
-                                                    {selectedReport.user?.name || 'Sistema'}
+                                                    {selectedReport.user?.name || t('admin.bugs.systemUser')}
                                                     <span className="opacity-50">•</span>
                                                     {selectedReport.user?.email}
                                                 </div>
                                                 <div className="flex items-center gap-1.5 bg-background px-2 py-1 rounded-md border border-surface-border">
                                                     <Clock className="w-3.5 h-3.5 text-primary/60" />
-                                                    {format(selectedReport.createdAt?.toDate ? selectedReport.createdAt.toDate() : new Date(selectedReport.createdAt), "dd 'de' MMMM 'às' HH:mm", { locale: ptBR })}
+                                                    {format(selectedReport.createdAt?.toDate ? selectedReport.createdAt.toDate() : new Date(selectedReport.createdAt), dateTimePattern, { locale: dateLocale })}
                                                 </div>
                                             </div>
                                         </div>
@@ -286,7 +290,7 @@ export default function BugReportsAdminPage() {
                                             >
                                                 {(Object.keys(STATUS_CONFIG) as BugStatus[]).map(status => (
                                                     <option key={status} value={status} className="bg-surface text-main">
-                                                        Mudar para: {STATUS_CONFIG[status].label}
+                                                        {t('admin.bugs.changeStatusPrefix')}: {t(`admin.bugs.statuses.${status}`)}
                                                     </option>
                                                 ))}
                                             </select>
@@ -296,7 +300,7 @@ export default function BugReportsAdminPage() {
                                     <div className="bg-background rounded-xl p-5 border border-surface-border">
                                         <div className="flex items-center gap-2 mb-3 text-primary">
                                             <MessageSquare className="w-4 h-4" />
-                                            <h3 className="text-xs font-bold uppercase tracking-widest">Descrição do Problema</h3>
+                                            <h3 className="text-xs font-bold uppercase tracking-widest">{t('admin.bugs.problemDescription')}</h3>
                                         </div>
                                         <p className="text-sm text-main leading-relaxed whitespace-pre-wrap">
                                             {selectedReport.description}
@@ -311,7 +315,7 @@ export default function BugReportsAdminPage() {
                                                 <div className="bg-background/50 p-4 rounded-xl border border-surface-border">
                                                     <div className="flex items-center gap-2 mb-3 text-muted">
                                                         <Monitor className="w-4 h-4" />
-                                                        <h3 className="text-[10px] font-bold uppercase tracking-widest">Informações do Dispositivo</h3>
+                                                        <h3 className="text-[10px] font-bold uppercase tracking-widest">{t('admin.bugs.deviceInfo')}</h3>
                                                     </div>
                                                     <div className="grid grid-cols-2 gap-y-2 gap-x-3">
                                                         {Object.entries(selectedReport.deviceInfo).map(([key, value]: [string, any]) => {
@@ -329,12 +333,12 @@ export default function BugReportsAdminPage() {
                                                 <div className="bg-background/50 p-4 rounded-xl border border-surface-border">
                                                     <div className="flex items-center gap-2 mb-3 text-muted">
                                                         <ArrowRight className="w-4 h-4" />
-                                                        <h3 className="text-[10px] font-bold uppercase tracking-widest">Notas do Administrador</h3>
+                                                        <h3 className="text-[10px] font-bold uppercase tracking-widest">{t('admin.bugs.adminNotes')}</h3>
                                                     </div>
                                                     <textarea
                                                         value={adminNotes}
                                                         onChange={(e) => setAdminNotes(e.target.value)}
-                                                        placeholder="Adicionar observações técnicas, causas ou soluções..."
+                                                        placeholder={t('admin.bugs.adminNotesPlaceholder')}
                                                         className="w-full bg-surface border border-surface-border rounded-lg p-3 text-xs min-h-[100px] outline-none focus:ring-2 focus:ring-primary/20 transition-all text-main"
                                                     />
                                                     <button
@@ -342,7 +346,7 @@ export default function BugReportsAdminPage() {
                                                         disabled={updating || adminNotes === (selectedReport.adminNotes || '')}
                                                         className="mt-3 w-full bg-primary hover:bg-primary-dark text-white text-[10px] font-bold uppercase py-2 rounded-lg transition-all disabled:opacity-50"
                                                     >
-                                                        {updating ? 'Salvando...' : 'Salvar Notas'}
+                                                        {updating ? t('admin.bugs.savingNotes') : t('admin.bugs.saveNotes')}
                                                     </button>
                                                 </div>
                                             </div>
@@ -351,7 +355,7 @@ export default function BugReportsAdminPage() {
                                                 <div className="bg-background/50 p-4 rounded-xl border border-surface-border">
                                                     <div className="flex items-center gap-2 mb-3 text-muted">
                                                         <MessageSquare className="w-4 h-4" />
-                                                        <h3 className="text-[10px] font-bold uppercase tracking-widest">Conteúdo do Console (Últimos 50 logs)</h3>
+                                                        <h3 className="text-[10px] font-bold uppercase tracking-widest">{t('admin.bugs.consoleLogs')}</h3>
                                                     </div>
                                                     <div className="bg-zinc-950 p-4 rounded-lg overflow-x-auto max-h-[300px] custom-scrollbar">
                                                         <pre className="text-[10px] font-mono leading-relaxed text-zinc-300 whitespace-pre-wrap break-all">
@@ -365,7 +369,7 @@ export default function BugReportsAdminPage() {
                                                 <div className="bg-background/50 p-4 rounded-xl border border-surface-border">
                                                     <div className="flex items-center gap-2 mb-3 text-muted">
                                                         <Monitor className="w-4 h-4" />
-                                                        <h3 className="text-[10px] font-bold uppercase tracking-widest">Captura de Tela (Screenshot)</h3>
+                                                        <h3 className="text-[10px] font-bold uppercase tracking-widest">{t('admin.bugs.screenshot')}</h3>
                                                     </div>
                                                     <div className="rounded-xl overflow-hidden border border-surface-border bg-black group relative cursor-zoom-in">
                                                         <img
@@ -375,7 +379,7 @@ export default function BugReportsAdminPage() {
                                                             onClick={() => setLightboxImage(selectedReport.deviceInfo.screenshot)}
                                                         />
                                                         <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center pointer-events-none">
-                                                            <p className="text-white text-xs font-bold bg-black/60 px-4 py-2 rounded-full">Clique para ampliar</p>
+                                                            <p className="text-white text-xs font-bold bg-black/60 px-4 py-2 rounded-full">{t('admin.bugs.clickToZoom')}</p>
                                                         </div>
                                                     </div>
                                                 </div>
@@ -387,8 +391,8 @@ export default function BugReportsAdminPage() {
                         ) : (
                             <div className="h-full flex flex-col items-center justify-center text-center opacity-30 select-none py-20">
                                 <Bug className="w-20 h-20 mb-4 text-muted" />
-                                <h3 className="text-xl font-bold text-muted">Selecione um relato</h3>
-                                <p className="text-sm text-muted">Clique em um item da lista para ver os detalhes</p>
+                                <h3 className="text-xl font-bold text-muted">{t('admin.bugs.selectPromptTitle')}</h3>
+                                <p className="text-sm text-muted">{t('admin.bugs.selectPromptSubtitle')}</p>
                             </div>
                         )}
                     </div>

@@ -1,6 +1,11 @@
-import { Shield, Server, Share2, Database, Lock, Scale } from 'lucide-react';
+'use client';
+
+import { Shield, Database, Lock, Scale } from 'lucide-react';
+import { useTranslation } from '@/app/context/I18nContext';
 
 export default function DataUsagePage() {
+    const { t } = useTranslation();
+
     return (
         <article className="prose prose-slate dark:prose-invert max-w-none">
             <div className="flex items-center gap-3 mb-8">
@@ -8,8 +13,8 @@ export default function DataUsagePage() {
                     <Database className="w-6 h-6" />
                 </div>
                 <div>
-                    <h1 className="text-2xl font-black text-gray-900 dark:text-white m-0 leading-tight">Como Utilizamos seus Dados</h1>
-                    <p className="text-sm text-gray-500 dark:text-gray-400 m-0">Transparência jurídica e técnica sobre o tratamento de informações.</p>
+                    <h1 className="text-2xl font-black text-gray-900 dark:text-white m-0 leading-tight">{t('legal.dataUsage.title')}</h1>
+                    <p className="text-sm text-gray-500 dark:text-gray-400 m-0">{t('legal.dataUsage.subtitle')}</p>
                 </div>
             </div>
 
@@ -18,15 +23,15 @@ export default function DataUsagePage() {
                     <div className="w-10 h-10 bg-white dark:bg-slate-700 rounded-lg shadow-sm flex items-center justify-center text-indigo-600 dark:text-indigo-400 mb-4">
                         <Scale className="w-5 h-5" />
                     </div>
-                    <h3 className="font-bold text-gray-900 dark:text-white mb-2">Papéis na LGPD</h3>
+                    <h3 className="font-bold text-gray-900 dark:text-white mb-2">{t('legal.dataUsage.lgpdRolesTitle')}</h3>
                     <p className="text-sm text-gray-600 dark:text-gray-300 mb-2">
-                        O Campo Branco atua exclusivamente como <strong>OPERADOR DE DADOS</strong>, nos termos do Art. 5º, VII, da Lei Geral de Proteção de Dados (Lei nº 13.709/2018 – LGPD).
+                        {t('legal.dataUsage.lgpdRolesP1Start')} <strong>{t('legal.dataUsage.lgpdRolesP1Bold')}</strong>{t('legal.dataUsage.lgpdRolesP1End')}
                     </p>
                     <p className="text-sm text-gray-600 dark:text-gray-300 mb-2">
-                        O <strong>CONTROLADOR DOS DADOS</strong> é a congregação local usuária da plataforma, por meio de seus representantes responsáveis (anciãos e servos designados), que definem as finalidades, o uso, a manutenção e a exclusão das informações.
+                        {t('legal.dataUsage.lgpdRolesP2Start')} <strong>{t('legal.dataUsage.lgpdRolesP2Bold')}</strong> {t('legal.dataUsage.lgpdRolesP2End')}
                     </p>
                     <p className="text-sm text-gray-600 dark:text-gray-300">
-                        O Campo Branco não define finalidades, não decide sobre o conteúdo inserido e não utiliza os dados para fins próprios.
+                        {t('legal.dataUsage.lgpdRolesP3')}
                     </p>
                 </div>
 
@@ -34,117 +39,105 @@ export default function DataUsagePage() {
                     <div className="w-10 h-10 bg-white dark:bg-slate-700 rounded-lg shadow-sm flex items-center justify-center text-indigo-600 dark:text-indigo-400 mb-4">
                         <Lock className="w-5 h-5" />
                     </div>
-                    <h3 className="font-bold text-gray-900 dark:text-white mb-2">Segurança da Informação</h3>
+                    <h3 className="font-bold text-gray-900 dark:text-white mb-2">{t('legal.dataUsage.securityTitle')}</h3>
                     <p className="text-sm text-gray-600 dark:text-gray-300">
-                        São adotadas medidas técnicas e organizacionais adequadas, compatíveis com o estado da técnica e com os riscos envolvidos, conforme o Art. 46 da LGPD, com o objetivo de proteger os dados pessoais contra acessos não autorizados, vazamentos, perdas ou usos indevidos.
+                        {t('legal.dataUsage.securityDesc')}
                     </p>
                 </div>
             </div>
 
             <section className="space-y-6 text-gray-600 dark:text-gray-300">
 
-                <h3>1. Base Legal e Finalidade do Tratamento</h3>
-                <p>O tratamento de dados pessoais ocorre com fundamento no:</p>
+                <h3>{t('legal.dataUsage.s1Title')}</h3>
+                <p>{t('legal.dataUsage.s1Lead')}</p>
                 <ul className="list-disc pl-5 space-y-2 marker:text-indigo-500">
-                    <li>legítimo interesse</li>
-                    <li>exercício regular de atividade religiosa</li>
-                    <li>assistência e cuidado pastoral</li>
+                    <li>{t('legal.dataUsage.s1Item1')}</li>
+                    <li>{t('legal.dataUsage.s1Item2')}</li>
+                    <li>{t('legal.dataUsage.s1Item3')}</li>
                 </ul>
-                <p>conforme os Arts. 7º, IX, e 11, II, “f”, da LGPD.</p>
-                <p>
-                    A finalidade do tratamento é estritamente organizacional e pastoral, visando apoiar a eficiência do trabalho voluntário e a condução respeitosa das atividades religiosas, sem qualquer viés comercial, publicitário ou econômico.
-                </p>
+                <p>{t('legal.dataUsage.s1LegalRef')}</p>
+                <p>{t('legal.dataUsage.s1Purpose')}</p>
 
-                <h3>2. Inventário e Natureza dos Dados</h3>
+                <h3>{t('legal.dataUsage.s2Title')}</h3>
 
                 <div className="my-6 space-y-6">
                     <div className="bg-blue-50 dark:bg-blue-900/20 p-5 rounded-xl border border-blue-100 dark:border-blue-800">
-                        <h4 className="font-bold text-blue-800 dark:text-blue-300 mb-2 mt-0">A. Dados Pessoais Comuns</h4>
-                        <p className="text-sm font-bold text-blue-900 dark:text-blue-200 mt-2">Moradores (quando informados):</p>
+                        <h4 className="font-bold text-blue-800 dark:text-blue-300 mb-2 mt-0">{t('legal.dataUsage.s2ATitle')}</h4>
+                        <p className="text-sm font-bold text-blue-900 dark:text-blue-200 mt-2">{t('legal.dataUsage.s2AResidents')}</p>
                         <ul className="list-disc pl-5 m-0 text-sm text-blue-900 dark:text-blue-200 space-y-1">
-                            <li>Nome</li>
-                            <li>Endereço</li>
-                            <li>Gênero (utilizado apenas para orientar uma abordagem respeitosa)</li>
+                            <li>{t('legal.dataUsage.s2AResidentItem1')}</li>
+                            <li>{t('legal.dataUsage.s2AResidentItem2')}</li>
+                            <li>{t('legal.dataUsage.s2AResidentItem3')}</li>
                         </ul>
 
-                        <p className="text-sm font-bold text-blue-900 dark:text-blue-200 mt-4">Usuários do sistema:</p>
+                        <p className="text-sm font-bold text-blue-900 dark:text-blue-200 mt-4">{t('legal.dataUsage.s2AUsers')}</p>
                         <ul className="list-disc pl-5 m-0 text-sm text-blue-900 dark:text-blue-200 space-y-1">
-                            <li>Credenciais de acesso</li>
-                            <li>Registros técnicos mínimos para controle, auditoria e segurança</li>
+                            <li>{t('legal.dataUsage.s2AUserItem1')}</li>
+                            <li>{t('legal.dataUsage.s2AUserItem2')}</li>
                         </ul>
                     </div>
 
                     <div className="bg-red-50 dark:bg-red-900/20 p-5 rounded-xl border border-red-100 dark:border-red-800">
                         <h4 className="font-bold text-red-800 dark:text-red-300 mb-2 mt-0 flex items-center gap-2">
                             <Shield className="w-4 h-4" />
-                            B. Dados Pessoais Sensíveis (Opcionais)
+                            {t('legal.dataUsage.s2BTitle')}
                         </h4>
                         <p className="text-sm text-red-900 dark:text-red-200 mb-2">
-                            O sistema não exige o cadastro de dados sensíveis. Eventuais marcações (ex.: “Surdo”, “Língua de Sinais”) são:
+                            {t('legal.dataUsage.s2BDesc')}
                         </p>
                         <ul className="list-disc pl-5 m-0 text-sm text-red-900 dark:text-red-200 space-y-1">
-                            <li><strong>Opcionais:</strong> inseridas manualmente por decisão do usuário</li>
-                            <li><strong>Contextuais:</strong> utilizadas apenas quando estritamente necessárias para acessibilidade</li>
-                            <li><strong>Protegidas:</strong> tratadas sob sigilo religioso e pastoral</li>
+                            <li><strong>{t('legal.dataUsage.s2BItem1Label')}</strong> {t('legal.dataUsage.s2BItem1Desc')}</li>
+                            <li><strong>{t('legal.dataUsage.s2BItem2Label')}</strong> {t('legal.dataUsage.s2BItem2Desc')}</li>
+                            <li><strong>{t('legal.dataUsage.s2BItem3Label')}</strong> {t('legal.dataUsage.s2BItem3Desc')}</li>
                         </ul>
                     </div>
                 </div>
 
-                <h3>3. Proteção de Crianças e Adolescentes</h3>
-                <p>
-                    A eventual marcação relacionada a menores de idade não implica coleta ativa de dados pessoais da criança, nem criação de perfis ou práticas de profiling.
-                </p>
-                <p>
-                    Essas marcações funcionam exclusivamente como alertas de conduta responsável para os voluntários (ex.: evitar abordagem direta a menores desacompanhados), observando o melhor interesse da criança e do adolescente, conforme o Art. 14 da LGPD.
-                </p>
+                <h3>{t('legal.dataUsage.s3Title')}</h3>
+                <p>{t('legal.dataUsage.s3P1')}</p>
+                <p>{t('legal.dataUsage.s3P2')}</p>
 
-                <h3>4. Infraestrutura e Open Source</h3>
-                <p>É fundamental distinguir o software dos dados tratados:</p>
+                <h3>{t('legal.dataUsage.s4Title')}</h3>
+                <p>{t('legal.dataUsage.s4Lead')}</p>
                 <ul className="list-disc pl-5 space-y-2">
-                    <li>O código-fonte do Campo Branco é open source, licenciado sob a Licença MIT.</li>
-                    <li>A natureza open source não se estende:
+                    <li>{t('legal.dataUsage.s4Item1')}</li>
+                    <li>{t('legal.dataUsage.s4Item2')}
                         <ul className="list-disc pl-5 mt-1 space-y-1">
-                            <li>ao banco de dados oficial</li>
-                            <li>à infraestrutura de produção</li>
-                            <li>aos dados pessoais armazenados</li>
+                            <li>{t('legal.dataUsage.s4SubItem1')}</li>
+                            <li>{t('legal.dataUsage.s4SubItem2')}</li>
+                            <li>{t('legal.dataUsage.s4SubItem3')}</li>
                         </ul>
                     </li>
                 </ul>
-                <p>Esses elementos são privados, fechados e protegidos.</p>
-                <p>
-                    Qualquer cópia, bifurcação (fork) ou auto-hospedagem do software deve operar com banco de dados totalmente independente, sem qualquer acesso ou integração com a base oficial.
-                </p>
+                <p>{t('legal.dataUsage.s4Note')}</p>
+                <p>{t('legal.dataUsage.s4Fork')}</p>
 
-                <h3>5. Retenção e Ciclo de Vida dos Dados</h3>
+                <h3>{t('legal.dataUsage.s5Title')}</h3>
                 <ol className="list-decimal pl-5 space-y-4 marker:text-indigo-600 marker:dark:text-indigo-400 marker:font-bold">
                     <li>
-                        <strong>Isolamento:</strong> os dados de uma congregação são inacessíveis a outras.
+                        <strong>{t('legal.dataUsage.s5Item1Label')}</strong> {t('legal.dataUsage.s5Item1Desc')}
                     </li>
                     <li>
-                        <strong>Autonomia:</strong> a definição de prazos de retenção e a exclusão definitiva dos dados são de responsabilidade exclusiva do controlador (congregação local).
+                        <strong>{t('legal.dataUsage.s5Item2Label')}</strong> {t('legal.dataUsage.s5Item2Desc')}
                     </li>
                 </ol>
-                <p>A exclusão é realizada manualmente por usuários autorizados, conforme a necessidade pastoral e organizacional.</p>
+                <p>{t('legal.dataUsage.s5Note')}</p>
 
-                <h3>6. Direitos do Titular</h3>
-                <p>
-                    A plataforma disponibiliza ferramentas para edição e exclusão de dados.
-                </p>
-                <p>
-                    Contudo, as solicitações formais relacionadas aos direitos do titular (acesso, correção, exclusão, etc.) devem ser direcionadas à congregação local responsável, na condição de controladora dos dados específicos.
-                </p>
+                <h3>{t('legal.dataUsage.s6Title')}</h3>
+                <p>{t('legal.dataUsage.s6P1')}</p>
+                <p>{t('legal.dataUsage.s6P2')}</p>
 
                 <div className="bg-yellow-50 dark:bg-yellow-900/20 border-l-4 border-yellow-400 dark:border-yellow-600 p-4 rounded-r-xl mt-8">
                     <h4 className="text-yellow-800 dark:text-yellow-300 font-bold text-sm mb-1 uppercase tracking-wide flex items-center gap-2">
                         <Shield className="w-4 h-4" />
-                        Compromisso de Não Comercialização
+                        {t('legal.dataUsage.nonCommercialTitle')}
                     </h4>
                     <p className="text-yellow-700 dark:text-yellow-200 text-sm m-0 mb-2">
-                        Reafirmamos nosso compromisso com a privacidade:
+                        {t('legal.dataUsage.nonCommercialLead')}
                     </p>
                     <ul className="list-disc pl-5 m-0 text-sm text-yellow-700 dark:text-yellow-200 space-y-1">
-                        <li>O Campo Branco não vende, não aluga, não monetiza e não compartilha dados pessoais.</li>
-                        <li>A plataforma é 100% livre de publicidade, rastreadores comerciais ou exploração econômica de informações.</li>
+                        <li>{t('legal.dataUsage.nonCommercialItem1')}</li>
+                        <li>{t('legal.dataUsage.nonCommercialItem2')}</li>
                     </ul>
                 </div>
             </section>

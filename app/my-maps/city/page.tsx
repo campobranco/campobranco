@@ -2,6 +2,7 @@
 
 import { useState, useEffect, Suspense } from 'react';
 import { toast } from 'sonner';
+import { useTranslation } from '@/app/context/I18nContext';
 import RoleBasedSwitcher from '@/app/components/RoleBasedSwitcher';
 import { ListPageSkeleton, Skeleton } from '@/app/components/Skeleton';
 import {
@@ -76,6 +77,7 @@ interface City {
 }
 
 function CityListContent() {
+    const { t } = useTranslation();
     const searchParams = useSearchParams();
     const congregationId = searchParams.get('congregationId');
     const currentView = searchParams.get('view') || 'grid';
@@ -457,9 +459,9 @@ function CityListContent() {
                     </div>
                     <div>
                         <span className="font-bold text-lg text-main tracking-tight block leading-tight">
-                            {localTermType === 'neighborhood' ? 'Bairros' : 'Cidades'}
+                            {localTermType === 'neighborhood' ? t('myMaps.city.neighborhoods') : t('myMaps.city.cities')}
                         </span>
-                        <span className="text-[10px] text-muted font-bold uppercase tracking-widest hidden sm:inline-block">Territórios</span>
+                        <span className="text-[10px] text-muted font-bold uppercase tracking-widest hidden sm:inline-block">{t('myMaps.city.territoriesLabel')}</span>
                     </div>
                 </div>
 
@@ -539,7 +541,7 @@ function CityListContent() {
 
                             <input
                                 type="text"
-                                placeholder={localTermType === 'neighborhood' ? 'Buscar bairro...' : 'Buscar cidade...'}
+                                placeholder={localTermType === 'neighborhood' ? t('myMaps.city.searchNeighborhood') : t('myMaps.city.searchCity')}
                                 value={searchTerm}
                                 onChange={(e) => setSearchTerm(e.target.value)}
                                 className="w-full bg-surface border border-transparent dark:border-surface-border text-main text-sm font-medium rounded-lg py-4 pl-12 pr-4 shadow-[0_4px_30px_rgba(0,0,0,0.03)] dark:shadow-none dark:bg-background focus:ring-2 focus:ring-primary/20 focus:outline-none transition-all placeholder:text-muted"
@@ -552,7 +554,7 @@ function CityListContent() {
                     <main className="px-6 py-4">
                         {loading ? (
                             <div className="grid grid-cols-1 lg:grid-cols-2 2xl:grid-cols-3 gap-4" role="status" aria-busy="true">
-                                <span className="sr-only">Carregando...</span>
+                                <span className="sr-only">{t('myMaps.city.loading')}</span>
                                 {Array.from({ length: 4 }).map((_, idx) => (
                                     <div key={idx} className="bg-background rounded-lg p-4 border border-surface-border flex items-center gap-4">
                                         <Skeleton className="w-10 h-10 rounded-lg shrink-0" />
@@ -566,7 +568,7 @@ function CityListContent() {
                         ) : filteredCities.length === 0 ? (
                             <div className="text-center py-12 opacity-50">
                                 <MapPin className="w-16 h-16 mx-auto mb-4 text-muted" />
-                                <p className="text-muted font-medium">Nenhum(a) {localTermType === 'neighborhood' ? 'bairro' : 'cidade'} encontrado(a).</p>
+                                <p className="text-muted font-medium">{localTermType === 'neighborhood' ? t('myMaps.city.noNeighborhoodFound') : t('myMaps.city.noCityFound')}</p>
                             </div>
                         ) : (
                             <div className="grid grid-cols-1 lg:grid-cols-2 2xl:grid-cols-3 gap-4">
@@ -640,17 +642,17 @@ function CityListContent() {
                                                         )}
                                                     </div>
                                                     <div className="flex items-center gap-2 mb-2">
-                                                        <p className="text-[10px] font-bold text-muted uppercase tracking-wider">VER MAPAS</p>
+                                                        <p className="text-[10px] font-bold text-muted uppercase tracking-wider">{t('myMaps.city.viewMaps')}</p>
                                                     </div>
 
                                                     {/* Mobile-only Progress Bar */}
                                                     <div className="md:hidden space-y-2">
-                                                        <div className={`w-full ${displayPercent === 0 ? 'bg-gray-200 dark:bg-gray-700' : 'bg-emerald-50 dark:bg-emerald-900/10'} rounded-full h-1.5 overflow-hidden flex relative border border-transparent ${displayPercent === 0 ? 'dark:border-gray-600' : ''}`} title="Verde: Concluído | Cinza: Pendente">
+                                                        <div className={`w-full ${displayPercent === 0 ? 'bg-gray-200 dark:bg-gray-700' : 'bg-emerald-50 dark:bg-emerald-900/10'} rounded-full h-1.5 overflow-hidden flex relative border border-transparent ${displayPercent === 0 ? 'dark:border-gray-600' : ''}`}>
                                                             <div className="h-full bg-emerald-500 transition-all duration-500 rounded-full shadow-[0_0_10px_rgba(16,185,129,0.3)]" style={{ width: `${coveragePercent}%` }} />
                                                         </div>
                                                         <div className="flex justify-between items-center px-0.5">
                                                             <span className="text-[9px] text-muted">
-                                                                {stats?.completedUnique || 0}/{stats?.total || 0} mapas
+                                                                {t('myMaps.city.mapsProgress', { done: stats?.completedUnique || 0, total: stats?.total || 0 })}
                                                             </span>
                                                             {stats?.completedVolume > stats?.completedUnique && (
                                                                 <span className="text-[9px] text-green-600 font-bold">
@@ -665,7 +667,7 @@ function CityListContent() {
                                             {/* Desktop-only Coverage Stats */}
                                             <div className="flex-1 flex flex-col justify-center gap-1.5 ml-4 mr-4 max-w-[200px] hidden md:flex">
                                                 <div className="flex justify-between items-end">
-                                                    <span className="text-[10px] font-bold text-muted uppercase tracking-wider">Cobertura</span>
+                                                    <span className="text-[10px] font-bold text-muted uppercase tracking-wider">{t('myMaps.city.coverage')}</span>
                                                     <span className={`text-[10px] font-bold ${displayPercent === 0 ? 'text-gray-400' : 'text-emerald-600 dark:text-emerald-400'}`}>
                                                         {coverageLabel}
                                                     </span>
@@ -674,8 +676,8 @@ function CityListContent() {
                                                     <div className="h-full bg-emerald-500 transition-all duration-500 rounded-full shadow-[0_0_10px_rgba(16,185,129,0.3)]" style={{ width: `${coveragePercent}%` }} />
                                                 </div>
                                                 <span className="text-[9px] text-muted text-right">
-                                                    {stats?.completedUnique || 0}/{stats?.total || 0} mapas
-                                                    {stats?.completedVolume > stats?.completedUnique && ` (+${stats.completedVolume - stats.completedUnique} repetições)`}
+                                                    {t('myMaps.city.mapsProgress', { done: stats?.completedUnique || 0, total: stats?.total || 0 })}
+                                                    {stats?.completedVolume > stats?.completedUnique && ` ${t('myMaps.city.repetitions', { count: stats.completedVolume - stats.completedUnique })}`}
                                                 </span>
                                             </div>
 
@@ -704,14 +706,14 @@ function CityListContent() {
                                                                 <div className="absolute right-0 mt-2 w-48 bg-surface rounded-xl shadow-2xl border border-surface-border p-1 z-20 animate-in fade-in zoom-in-95 duration-200">
                                                                     <DropDownItem 
                                                                         icon={ArrowRight} 
-                                                                        label="Gerenciar Mapas" 
+                                                                        label={t('myMaps.city.manageMaps')} 
                                                                         variant="primary" 
                                                                         onClick={() => router.push(`/my-maps/territory?congregationId=${congregationId}&cityId=${city.id}`)} 
                                                                     />
                                                                     {canEditMaps && (
                                                                         <DropDownItem 
                                                                             icon={Pencil} 
-                                                                            label="Editar" 
+                                                                            label={t('myMaps.city.edit')} 
                                                                             variant="neutral" 
                                                                             onClick={(e) => {
                                                                                 e.stopPropagation();
@@ -724,7 +726,7 @@ function CityListContent() {
                                                                     {canDeleteMaps && (
                                                                         <DropDownItem 
                                                                             icon={Trash2} 
-                                                                            label="Excluir" 
+                                                                            label={t('myMaps.city.delete')} 
                                                                             variant="danger" 
                                                                             onClick={(e) => {
                                                                                 e.stopPropagation();
@@ -812,53 +814,53 @@ function CityListContent() {
 
                             <div className="mb-6">
                                 <h1 className="text-xl font-bold text-main tracking-tight">
-                                    {localTermType === 'neighborhood' ? 'Bairros' : 'Cidades'}
+                                    {localTermType === 'neighborhood' ? t('myMaps.city.neighborhoods') : t('myMaps.city.cities')}
                                 </h1>
-                                <p className="text-xs text-muted font-medium">Mapas do território</p>
+                                <p className="text-xs text-muted font-medium">{t('myMaps.city.territoryMapsSubtitle')}</p>
                             </div>
 
                             <form onSubmit={handleCreateCity} className="space-y-4">
                                 <div className="space-y-1.5">
-                                    <label className="text-[10px] font-bold text-muted uppercase tracking-widest ml-1">{localTermType === 'neighborhood' ? 'Nome do Bairro' : 'Nome da Cidade'}</label>
+                                    <label className="text-[10px] font-bold text-muted uppercase tracking-widest ml-1">{localTermType === 'neighborhood' ? t('myMaps.city.neighborhoodNameLabel') : t('myMaps.city.cityNameLabel')}</label>
                                     <input
                                         required
                                         type="text"
                                         value={newCityName}
                                         onChange={(e) => setNewCityName(e.target.value)}
                                         className="w-full bg-background border border-surface-border rounded-lg py-3 px-4 text-sm font-bold focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all text-main placeholder-muted"
-                                        placeholder={localTermType === 'neighborhood' ? 'Ex: Jardim Paulista' : 'Ex: São Paulo'}
+                                        placeholder={localTermType === 'neighborhood' ? t('myMaps.city.neighborhoodPlaceholder') : t('myMaps.city.cityPlaceholder')}
                                         autoFocus
                                     />
                                 </div>
 
                                 {localTermType === 'neighborhood' && (
                                     <div className="space-y-1.5">
-                                        <label className="text-[10px] font-bold text-muted uppercase tracking-widest ml-1">Cidade do Bairro</label>
+                                        <label className="text-[10px] font-bold text-muted uppercase tracking-widest ml-1">{t('myMaps.city.parentCityLabel')}</label>
                                         <input
                                             required
                                             type="text"
                                             value={newParentCity}
                                             onChange={(e) => setNewParentCity(e.target.value)}
                                             className="w-full bg-background border border-surface-border rounded-lg py-3 px-4 text-sm font-bold focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all text-main placeholder-muted"
-                                            placeholder="Ex: São Paulo"
+                                            placeholder={t('myMaps.city.cityPlaceholder')}
                                         />
                                     </div>
                                 )}
                                 <div className="space-y-2">
-                                    <label className="text-xs font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wider">UF</label>
+                                    <label className="text-xs font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wider">{t('myMaps.city.ufLabel')}</label>
                                     <input
                                         type="text"
                                         value={newCityUF}
                                         onChange={e => setNewCityUF(e.target.value.toUpperCase())}
                                         className="w-full bg-gray-50 dark:bg-slate-800 border border-gray-200 dark:border-slate-700 rounded-xl p-3 text-gray-900 dark:text-white font-bold focus:ring-2 focus:ring-primary/20 outline-none placeholder:text-gray-400"
-                                        placeholder="UF"
+                                        placeholder={t('myMaps.city.ufLabel')}
                                         maxLength={2}
                                         required
                                     />
                                 </div>
 
                                 <div className="space-y-2">
-                                    <label className="text-xs font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wider">Localização</label>
+                                    <label className="text-xs font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wider">{t('myMaps.city.locationLabel')}</label>
                                     <button
                                         type="button"
                                         onClick={() => setIsMapPickerOpen(true)}
@@ -869,7 +871,7 @@ function CityListContent() {
                                     >
                                         <div className="flex items-center gap-2">
                                             <MapIcon className="w-4 h-4" />
-                                            <span>{newCityLat && newCityLng ? 'Localização Definida' : 'Selecionar no Mapa'}</span>
+                                            <span>{newCityLat && newCityLng ? t('myMaps.city.locationDefined') : t('myMaps.city.selectOnMap')}</span>
                                         </div>
                                         {newCityLat && newCityLng && <div className="text-[10px] opacity-70">{parseFloat(newCityLat).toFixed(4)}, {parseFloat(newCityLng).toFixed(4)}</div>}
                                     </button>
@@ -880,7 +882,7 @@ function CityListContent() {
                                     className="w-full bg-primary hover:bg-primary-dark text-white font-bold py-3.5 rounded-xl flex items-center justify-center gap-2 shadow-lg shadow-emerald-500/20 transition-colors mt-2"
                                 >
                                     <Plus className="w-4 h-4" />
-                                    {localTermType === 'neighborhood' ? 'Novo Bairro' : 'Nova Cidade'}
+                                    {localTermType === 'neighborhood' ? t('myMaps.city.newNeighborhoodBtn') : t('myMaps.city.newCityBtn')}
                                 </button>
                             </form>
                         </div>
@@ -902,55 +904,55 @@ function CityListContent() {
 
                             <div className="mb-6">
                                 <h2 className="text-xl font-bold text-gray-900 dark:text-white">
-                                    {localTermType === 'neighborhood' ? 'Editar Bairro' : 'Editar Cidade'}
+                                    {localTermType === 'neighborhood' ? t('myMaps.city.editNeighborhoodTitle') : t('myMaps.city.editCityTitle')}
                                 </h2>
                                 <p className="text-sm text-gray-500 dark:text-gray-400">
-                                    {localTermType === 'neighborhood' ? 'Atualize as informações do bairro.' : 'Atualize as informações da cidade.'}
+                                    {localTermType === 'neighborhood' ? t('myMaps.city.editNeighborhoodSubtitle') : t('myMaps.city.editCitySubtitle')}
                                 </p>
                             </div>
 
                             <form onSubmit={handleUpdateCity} className="space-y-4">
                                 <div className="space-y-2">
                                     <label className="text-xs font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wider">
-                                        {localTermType === 'neighborhood' ? 'Nome do Bairro' : 'Nome da Cidade'}
+                                        {localTermType === 'neighborhood' ? t('myMaps.city.neighborhoodNameLabel') : t('myMaps.city.cityNameLabel')}
                                     </label>
                                     <input
                                         type="text"
                                         value={editingCity.name || ''}
                                         onChange={e => setEditingCity({ ...editingCity, name: e.target.value })}
                                         className="w-full bg-gray-50 dark:bg-slate-800 border border-gray-200 dark:border-slate-700 rounded-xl p-3 text-gray-900 dark:text-white font-bold focus:ring-2 focus:ring-primary/20 outline-none placeholder:text-gray-400"
-                                        placeholder="Nome"
+                                        placeholder={t('myMaps.city.namePlaceholder')}
                                         required
                                         autoFocus
                                     />
                                 </div>
                                 {localTermType === 'neighborhood' && (
                                     <div className="space-y-2">
-                                        <label className="text-xs font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wider">Cidade do Bairro</label>
+                                        <label className="text-xs font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wider">{t('myMaps.city.parentCityLabel')}</label>
                                         <input
                                             type="text"
                                             value={editingCity.parentCity || ''}
                                             onChange={e => setEditingCity({ ...editingCity, parentCity: e.target.value })}
                                             className="w-full bg-gray-50 dark:bg-slate-800 border border-gray-200 dark:border-slate-700 rounded-lg p-3 text-gray-900 dark:text-white font-bold focus:ring-2 focus:ring-primary/20 outline-none placeholder:text-gray-400"
-                                            placeholder="Cidade"
+                                            placeholder={t('myMaps.city.cityInputPlaceholder')}
                                             required
                                         />
                                     </div>
                                 )}
                                 <div className="space-y-2">
-                                    <label className="text-xs font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wider">UF</label>
+                                    <label className="text-xs font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wider">{t('myMaps.city.ufLabel')}</label>
                                     <input
                                         type="text"
                                         value={editingCity.uf || ''}
                                         onChange={e => setEditingCity({ ...editingCity, uf: e.target.value.toUpperCase() })}
                                         className="w-full bg-gray-50 dark:bg-slate-800 border border-gray-200 dark:border-slate-700 rounded-xl p-3 text-gray-900 dark:text-white font-bold focus:ring-2 focus:ring-primary/20 outline-none placeholder:text-gray-400"
-                                        placeholder="UF"
+                                        placeholder={t('myMaps.city.ufLabel')}
                                         maxLength={2}
                                         required
                                     />
                                 </div>
                                 <div className="space-y-2">
-                                    <label className="text-xs font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wider">Localização</label>
+                                    <label className="text-xs font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wider">{t('myMaps.city.locationLabel')}</label>
                                     <button
                                         type="button"
                                         onClick={() => setIsMapPickerOpen(true)}
@@ -961,7 +963,7 @@ function CityListContent() {
                                     >
                                         <div className="flex items-center gap-2">
                                             <MapIcon className="w-4 h-4" />
-                                            <span>{editingCity.lat && editingCity.lng ? 'Localização Definida' : 'Selecionar no Mapa'}</span>
+                                            <span>{editingCity.lat && editingCity.lng ? t('myMaps.city.locationDefined') : t('myMaps.city.selectOnMap')}</span>
                                         </div>
                                         {editingCity.lat && editingCity.lng && <div className="text-[10px] opacity-70">{parseFloat(editingCity.lat.toString()).toFixed(4)}, {parseFloat(editingCity.lng.toString()).toFixed(4)}</div>}
                                     </button>
@@ -972,7 +974,7 @@ function CityListContent() {
                                     className="w-full bg-primary hover:bg-primary-dark text-white font-bold py-3.5 rounded-xl flex items-center justify-center gap-2 shadow-lg shadow-emerald-500/20 transition-colors mt-2"
                                 >
                                     <CheckCircle className="w-4 h-4" />
-                                    Salvar Alterações
+                                    {t('myMaps.city.saveChanges')}
                                 </button>
                             </form>
                         </div>
@@ -986,9 +988,9 @@ function CityListContent() {
                     <div className="bg-surface p-4 flex flex-col gap-4 shadow-lg relative z-10 shrink-0">
                         <div className="flex justify-between items-center">
                             <div>
-                                <h2 className="text-lg font-bold text-main">Selecionar Localização</h2>
+                                <h2 className="text-lg font-bold text-main">{t('myMaps.city.selectLocationTitle')}</h2>
                                 <p className="text-xs text-muted font-medium">
-                                    {isSelectionMode ? 'Clique no mapa para marcar a localização' : 'Busque o endereço ou mude para o Modo Seleção para marcar'}
+                                    {isSelectionMode ? t('myMaps.city.selectLocationClickHint') : t('myMaps.city.selectLocationSearchHint')}
                                 </p>
                             </div>
                             <div className="flex gap-2">
@@ -1009,7 +1011,7 @@ function CityListContent() {
                                     className="bg-primary text-white px-4 py-2 rounded-xl text-sm font-bold shadow-lg shadow-primary/30 disabled:opacity-50 disabled:cursor-not-allowed"
                                     disabled={!tempCoords}
                                 >
-                                    Confirmar
+                                    {t('myMaps.city.confirm')}
                                 </button>
                                 <button
                                     onClick={() => {
@@ -1018,7 +1020,7 @@ function CityListContent() {
                                     }}
                                     className="bg-gray-100 dark:bg-slate-800 text-gray-600 dark:text-gray-300 px-4 py-2 rounded-xl text-sm font-bold hover:bg-gray-200 dark:hover:bg-slate-700 transition-colors"
                                 >
-                                    Cancelar
+                                    {t('myMaps.city.cancel')}
                                 </button>
                             </div>
                         </div>
@@ -1031,7 +1033,7 @@ function CityListContent() {
                                     type="text"
                                     value={searchQuery}
                                     onChange={(e) => setSearchQuery(e.target.value)}
-                                    placeholder="Digite o endereço para buscar..."
+                                    placeholder={t('myMaps.city.searchAddressPlaceholder')}
                                     className="w-full bg-gray-50 dark:bg-slate-800 border border-gray-200 dark:border-slate-700 rounded-xl py-2.5 pl-10 pr-4 text-sm font-medium focus:ring-2 focus:ring-primary/20 outline-none"
                                 />
                             </div>
@@ -1041,7 +1043,7 @@ function CityListContent() {
                                 className="bg-slate-800 dark:bg-slate-700 text-white px-6 py-2.5 rounded-xl text-sm font-bold hover:bg-slate-900 transition-all flex items-center gap-2 disabled:opacity-50"
                             >
                                 {isSearching ? <Loader2 className="w-4 h-4 animate-spin" /> : <MapIcon className="w-4 h-4" />}
-                                Buscar
+                                {t('myMaps.city.searchBtn')}
                             </button>
                         </form>
                     </div>
@@ -1053,7 +1055,7 @@ function CityListContent() {
                                 type="button"
                                 onClick={() => setIsSelectionMode(true)}
                                 className={`p-3 rounded-2xl shadow-xl transition-all active:scale-95 ${isSelectionMode ? 'bg-primary text-white scale-110' : 'bg-surface text-muted hover:text-main border border-surface-border'}`}
-                                title="Modo Seleção"
+                                title={t('myMaps.city.selectionModeTitle')}
                             >
                                 <MousePointer2 className="w-6 h-6" />
                             </button>
@@ -1061,7 +1063,7 @@ function CityListContent() {
                                 type="button"
                                 onClick={() => setIsSelectionMode(false)}
                                 className={`p-3 rounded-2xl shadow-xl transition-all active:scale-95 ${!isSelectionMode ? 'bg-primary text-white scale-110' : 'bg-surface text-muted hover:text-main border border-surface-border'}`}
-                                title="Modo Navegação"
+                                title={t('myMaps.city.navigationModeTitle')}
                             >
                                 <Navigation className="w-6 h-6" />
                             </button>
@@ -1072,13 +1074,13 @@ function CityListContent() {
                                 id: 'temp-marker',
                                 lat: tempCoords.lat,
                                 lng: tempCoords.lng,
-                                title: 'Nova Localização',
+                                title: t('myMaps.city.newLocationMarker'),
                                 status: 'PENDENTE'
                             }] : (editingCity?.lat && editingCity?.lng) ? [{
                                 id: 'existing-marker',
                                 lat: parseFloat(editingCity.lat.toString()),
                                 lng: parseFloat(editingCity.lng.toString()),
-                                title: 'Localização Atual',
+                                title: t('myMaps.city.currentLocationMarker'),
                                 status: 'LIVRE'
                             }] : []}
                             onMapClick={(lat, lng) => {
@@ -1103,10 +1105,10 @@ function CityListContent() {
                         {/* Center Marker Help */}
                         <div className="absolute top-4 left-1/2 -translate-x-1/2 bg-black/60 backdrop-blur-md text-white px-4 py-2 rounded-full text-xs font-bold pointer-events-none shadow-xl border border-white/10 z-10 whitespace-nowrap">
                             {tempCoords 
-                                ? 'Arraste o marcador ou clique em Confirmar.' 
+                                ? t('myMaps.city.dragOrConfirmHint')
                                 : isSelectionMode 
-                                    ? 'Clique no mapa para marcar a localização.' 
-                                    : 'Navegue no mapa e ative o Modo Seleção para marcar.'}
+                                    ? t('myMaps.city.clickToMarkHint')
+                                    : t('myMaps.city.navigateAndSelectHint')}
                         </div>
                     </div>
                 </div>

@@ -23,6 +23,7 @@ import {
     resolveNavigationLinks,
 } from '@/lib/map-links';
 import dynamic from 'next/dynamic';
+import { useTranslation } from '@/app/context/I18nContext';
 
 const MapView = dynamic(() => import('@/app/components/MapView'), {
     ssr: false,
@@ -53,6 +54,7 @@ interface EditPointModalProps {
 }
 
 export default function EditPointModal({ isOpen, onClose, point, cityName, onSuccess }: EditPointModalProps) {
+    const { t } = useTranslation();
     const [name, setName] = useState('');
     const [address, setAddress] = useState('');
     const [googleMapsLink, setGoogleMapsLink] = useState('');
@@ -93,13 +95,13 @@ export default function EditPointModal({ isOpen, onClose, point, cityName, onSuc
                 const newCoords = { lat: parseFloat(lat), lng: parseFloat(lon) };
                 setPickerTempCoords(newCoords);
                 setIsMapSelectionMode(true);
-                toast.success("Localização encontrada!");
+                toast.success(t('witnessing.pointModal.locationFound'));
             } else {
-                toast.error("Endereço não encontrado");
+                toast.error(t('witnessing.pointModal.addressNotFound'));
             }
         } catch (error) {
             console.error("Error geocoding in picker:", error);
-            toast.error("Erro ao pesquisar endereço");
+            toast.error(t('witnessing.pointModal.searchAddressError'));
         } finally {
             setIsGeocodingMap(false);
         }
@@ -139,12 +141,12 @@ export default function EditPointModal({ isOpen, onClose, point, cityName, onSuc
 
             if (!result.success) throw new Error(result.error);
 
-            toast.success("Ponto atualizado com sucesso!");
+            toast.success(t('witnessing.pointModal.updateSuccess'));
             if (onSuccess) onSuccess();
             onClose();
         } catch (error: any) {
             console.error("Erro ao atualizar ponto:", error);
-            toast.error("Erro ao atualizar ponto. Tente novamente.");
+            toast.error(t('witnessing.pointModal.updateError'));
         } finally {
             setLoading(false);
         }
@@ -158,7 +160,7 @@ export default function EditPointModal({ isOpen, onClose, point, cityName, onSuc
                 <div className="flex justify-between items-center mb-6">
                     <h2 className="text-xl font-bold text-main flex items-center gap-2">
                         <Pencil className="w-6 h-6 text-primary" />
-                        Editar Ponto
+                        {t('witnessing.pointModal.editTitle')}
                     </h2>
                     <button onClick={onClose} className="p-1 hover:bg-background rounded-lg transition-colors">
                         <X className="w-5 h-5 text-muted hover:text-main" />
@@ -167,23 +169,23 @@ export default function EditPointModal({ isOpen, onClose, point, cityName, onSuc
 
                 <form onSubmit={handleUpdatePoint} className="space-y-4">
                     <div>
-                        <label className="block text-xs font-bold text-muted uppercase tracking-wider mb-2">Nome do Local</label>
+                        <label className="block text-xs font-bold text-muted uppercase tracking-wider mb-2">{t('witnessing.pointModal.placeNameLabel')}</label>
                         <input
                             type="text"
                             value={name}
                             onChange={(e) => setName(e.target.value)}
                             className="w-full bg-background border border-surface-border rounded-xl p-4 font-bold text-main focus:ring-2 focus:ring-primary/20 outline-none transition-all placeholder:text-muted"
-                            placeholder="Ex: Praça Central"
+                            placeholder={t('witnessing.pointModal.placeNamePlaceholder')}
                         />
                     </div>
                     <div>
-                        <label className="block text-xs font-bold text-muted uppercase tracking-wider mb-2">Endereço</label>
+                        <label className="block text-xs font-bold text-muted uppercase tracking-wider mb-2">{t('witnessing.pointModal.addressLabel')}</label>
                         <input
                             type="text"
                             value={address}
                             onChange={(e) => setAddress(e.target.value)}
                             className="w-full bg-background border border-surface-border rounded-xl p-4 font-medium text-main focus:ring-2 focus:ring-primary/20 outline-none transition-all placeholder:text-muted"
-                            placeholder="Rua..."
+                            placeholder={t('witnessing.pointModal.addressPlaceholder')}
                         />
                     </div>
 
@@ -201,11 +203,11 @@ export default function EditPointModal({ isOpen, onClose, point, cityName, onSuc
                                         if (coords && (lat !== coords.lat || lng !== coords.lng)) {
                                             setLat(coords.lat);
                                             setLng(coords.lng);
-                                            toast.success("Coordenadas do pino extraídas do link!");
+                                            toast.success(t('myMaps.address.coordsExtractedToast'));
                                         }
                                     }}
                                     className="w-full bg-background border border-surface-border rounded-xl p-3 pr-10 text-xs font-medium text-main focus:ring-2 focus:ring-primary/20 outline-none transition-all placeholder:text-muted"
-                                    placeholder="Link..."
+                                    placeholder={t('witnessing.pointModal.linkPlaceholder')}
                                 />
                                 <img
                                     src="/icons/google-maps.svg"
@@ -227,11 +229,11 @@ export default function EditPointModal({ isOpen, onClose, point, cityName, onSuc
                                         if (coords && (lat !== coords.lat || lng !== coords.lng)) {
                                             setLat(coords.lat);
                                             setLng(coords.lng);
-                                            toast.success("Coordenadas do pino extraídas do link!");
+                                            toast.success(t('myMaps.address.coordsExtractedToast'));
                                         }
                                     }}
                                     className="w-full bg-background border border-surface-border rounded-xl p-3 pr-10 text-xs font-medium text-main focus:ring-2 focus:ring-primary/20 outline-none transition-all placeholder:text-muted"
-                                    placeholder="Link..."
+                                    placeholder={t('witnessing.pointModal.linkPlaceholder')}
                                 />
                                 <img
                                     src="/icons/waze.svg"
@@ -242,13 +244,13 @@ export default function EditPointModal({ isOpen, onClose, point, cityName, onSuc
                         </div>
                     </div>
                     <div>
-                        <label className="block text-xs font-bold text-muted uppercase tracking-wider mb-2">Horário (Opcional)</label>
+                        <label className="block text-xs font-bold text-muted uppercase tracking-wider mb-2">{t('witnessing.pointModal.scheduleLabel')}</label>
                         <input
                             type="text"
                             value={schedule}
                             onChange={(e) => setSchedule(e.target.value)}
                             className="w-full bg-background border border-surface-border rounded-xl p-4 font-medium text-main focus:ring-2 focus:ring-primary/20 outline-none transition-all placeholder:text-muted"
-                            placeholder="Ex: Segundas, 08:00 - 12:00"
+                            placeholder={t('witnessing.pointModal.schedulePlaceholder')}
                         />
                     </div>
                     <div className="flex flex-col gap-2 mt-4">
@@ -259,16 +261,16 @@ export default function EditPointModal({ isOpen, onClose, point, cityName, onSuc
                                 const nextGoogle = buildGoogleMapsLink({ lat, lng, address: targetAddress, cityName });
                                 const nextWaze = buildWazeLink({ lat, lng, address: targetAddress, cityName });
                                 if (!nextGoogle && !nextWaze) {
-                                    toast.error("Informe o nome, endereço ou selecione um pino no mapa.");
+                                    toast.error(t('witnessing.pointModal.nameAddressOrPinRequired'));
                                     return;
                                 }
                                 setGoogleMapsLink(nextGoogle);
                                 setWazeLink(nextWaze);
-                                toast.success("Links do Google Maps e Waze gerados!");
+                                toast.success(t('myMaps.address.linksGeneratedToast'));
                             }}
                             className="w-full py-2 bg-background border border-surface-border text-main rounded-xl font-bold text-xs uppercase tracking-wider hover:bg-surface transition-colors"
                         >
-                            Gerar links automaticamente
+                            {t('myMaps.address.generateLinksBtn')}
                         </button>
                         <button
                             type="button"
@@ -278,12 +280,12 @@ export default function EditPointModal({ isOpen, onClose, point, cityName, onSuc
                             }}
                             className="w-full py-2.5 bg-blue-500/10 text-blue-500 dark:text-blue-400 rounded-xl font-bold text-xs uppercase tracking-wider hover:bg-blue-500/20 transition-colors flex items-center justify-center gap-2 border border-blue-500/20"
                         >
-                            <MapPin className="w-4 h-4" /> Selecionar Pino no Mapa
+                            <MapPin className="w-4 h-4" /> {t('myMaps.address.selectPinOnMapBtn')}
                         </button>
                     </div>
 
                     <button type="submit" className="w-full py-3.5 bg-primary hover:bg-primary-dark text-white rounded-xl font-bold shadow-lg shadow-primary/20 mt-2 flex items-center justify-center gap-2 transition-all active:scale-95">
-                        {loading ? <Loader2 className="w-5 h-5 animate-spin" /> : 'Salvar Alterações'}
+                        {loading ? <Loader2 className="w-5 h-5 animate-spin" /> : t('witnessing.pointModal.saveBtn')}
                     </button>
                 </form>
             </div>
@@ -293,9 +295,9 @@ export default function EditPointModal({ isOpen, onClose, point, cityName, onSuc
                 <div className="fixed inset-0 z-[2000] bg-background flex flex-col animate-in fade-in duration-300">
                     <header className="bg-surface border-b border-surface-border px-6 py-4 flex items-center justify-between">
                         <div>
-                            <h2 className="text-xl font-bold text-main tracking-tight">Selecionar Localização</h2>
+                            <h2 className="text-xl font-bold text-main tracking-tight">{t('myMaps.address.selectLocationTitle')}</h2>
                             <p className="text-xs text-muted font-bold uppercase tracking-widest">
-                                {isMapSelectionMode ? 'Clique para marcar o ponto' : 'Arraste para navegar'}
+                                {isMapSelectionMode ? t('myMaps.address.clickToMark') : t('myMaps.address.dragToNavigate')}
                             </p>
                         </div>
                         <button
@@ -313,7 +315,7 @@ export default function EditPointModal({ isOpen, onClose, point, cityName, onSuc
                                 <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-muted w-4 h-4" />
                                 <input
                                     type="text"
-                                    placeholder="Pesquisar endereço para o pino..."
+                                    placeholder={t('witnessing.pointModal.pinSearchPlaceholder')}
                                     className="w-full bg-background border border-surface-border rounded-lg py-2 pl-9 pr-4 text-sm font-medium focus:ring-2 focus:ring-blue-500/20 outline-none transition-all"
                                     value={mapSearchQuery}
                                     onChange={(e) => setMapSearchQuery(e.target.value)}
@@ -326,7 +328,7 @@ export default function EditPointModal({ isOpen, onClose, point, cityName, onSuc
                                 className="bg-blue-600 text-white px-4 py-2 rounded-lg text-xs font-bold uppercase tracking-wider hover:bg-blue-700 disabled:bg-gray-400 transition-colors flex items-center gap-2"
                             >
                                 {isGeocodingMap ? <Loader2 className="w-3 h-3 animate-spin" /> : <Search className="w-3 h-3" />}
-                                {isGeocodingMap ? 'Buscando...' : 'Buscar'}
+                                {isGeocodingMap ? t('myMaps.address.searching') : t('myMaps.address.search')}
                             </button>
                         </form>
                     </div>
@@ -336,14 +338,14 @@ export default function EditPointModal({ isOpen, onClose, point, cityName, onSuc
                             <button
                                 onClick={() => setIsMapSelectionMode(true)}
                                 className={`p-3 rounded-2xl shadow-xl transition-all ${isMapSelectionMode ? 'bg-blue-600 text-white scale-110' : 'bg-surface text-muted hover:text-main border border-surface-border'}`}
-                                title="Modo Seleção"
+                                title={t('myMaps.city.selectionModeTitle')}
                             >
                                 <MousePointer2 className="w-6 h-6" />
                             </button>
                             <button
                                 onClick={() => setIsMapSelectionMode(false)}
                                 className={`p-3 rounded-2xl shadow-xl transition-all ${!isMapSelectionMode ? 'bg-blue-600 text-white scale-110' : 'bg-surface text-muted hover:text-main border border-surface-border'}`}
-                                title="Modo Navegação"
+                                title={t('myMaps.city.navigationModeTitle')}
                             >
                                 <Navigation className="w-6 h-6" />
                             </button>

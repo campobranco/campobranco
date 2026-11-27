@@ -10,6 +10,7 @@ import MapAppSelectModal from './MapAppSelectModal';
 // TODO(mutations): migrate to mutation layer - legacy module (admin/report/dashboard)
 // eslint-disable-next-line no-restricted-imports
 import { geocodeAddress } from '@/lib/services/geocoding';
+import { useTranslation } from '@/app/context/I18nContext';
 
 // Interface defined by user requirements (adapted to match existing usage patterns)
 export interface MapItem {
@@ -99,6 +100,7 @@ const extractCoordsFromUrl = (url?: string): { lat: number, lng: number } | null
 };
 
 export default function MapView({ items, center = defaultCenter, zoom = 15, onGeocodeSuccess, onMapClick, onMarkerDragEnd, onMarkerClick, showLegend = true, disableGeocoding = false, disableInteractionLock = false, isTraditional = true, showVisitStatusIcons = false, referencePoints = [], hideMapLinkIfEmpty = false }: MapViewProps) {
+    const { t } = useTranslation();
     const mapContainerRef = useRef<HTMLDivElement>(null);
     const mapInstanceRef = useRef<any>(null);
     const markersRef = useRef<any[]>([]); // Keep track of Leaflet markers
@@ -770,33 +772,42 @@ export default function MapView({ items, center = defaultCenter, zoom = 15, onGe
                         <>
                             <div className="flex flex-col items-center gap-1">
                                 <div className="w-3 h-3 rounded-full shadow-sm" style={{ backgroundColor: STATUS_CONFIG['OCUPADO'].color }} />
-                                <span className="text-[10px] font-bold text-gray-500 uppercase tracking-wide whitespace-nowrap">Concluído</span>
+                                <span className="text-[10px] font-bold text-gray-500 uppercase tracking-wide whitespace-nowrap">{t('mapLegend.completed')}</span>
                             </div>
                             <div className="flex flex-col items-center gap-1">
                                 <div className="w-3 h-3 rounded-full shadow-sm" style={{ backgroundColor: STATUS_CONFIG['partial'].color }} />
-                                <span className="text-[10px] font-bold text-gray-500 uppercase tracking-wide whitespace-nowrap">Parcial</span>
+                                <span className="text-[10px] font-bold text-gray-500 uppercase tracking-wide whitespace-nowrap">{t('mapLegend.partial')}</span>
                             </div>
                             <div className="flex flex-col items-center gap-1">
                                 <div className="w-3 h-3 rounded-full shadow-sm" style={{ backgroundColor: STATUS_CONFIG['AGUARDANDO'].color }} />
-                                <span className="text-[10px] font-bold text-gray-500 uppercase tracking-wide whitespace-nowrap">Pendente</span>
+                                <span className="text-[10px] font-bold text-gray-500 uppercase tracking-wide whitespace-nowrap">{t('mapLegend.pending')}</span>
                             </div>
                             <div className="flex flex-col items-center gap-1">
                                 <div className="w-3 h-3 rounded-full shadow-sm" style={{ backgroundColor: STATUS_CONFIG['NAO_VISITAR'].color }} />
-                                <span className="text-[10px] font-bold text-gray-500 uppercase tracking-wide whitespace-nowrap">Não Visitar</span>
+                                <span className="text-[10px] font-bold text-gray-500 uppercase tracking-wide whitespace-nowrap">{t('mapLegend.doNotVisit')}</span>
                             </div>
                         </>
                     ) : (
                         Object.entries(STATUS_CONFIG)
                             .filter(([key]) => key !== 'LIVRE' && key !== 'PENDENTE' && key !== 'partial' && key !== 'PARCIAL')
-                            .map(([key, config]) => (
-                                <div key={key} className="flex flex-col items-center gap-1">
-                                    <div
-                                        className="w-3 h-3 rounded-full shadow-sm"
-                                        style={{ backgroundColor: config.color }}
-                                    />
-                                    <span className="text-[10px] font-bold text-gray-500 uppercase tracking-wide whitespace-nowrap">{config.label}</span>
-                                </div>
-                            ))
+                            .map(([key, config]) => {
+                                const legendKeyMap: Record<string, string> = {
+                                    OCUPADO: 'mapLegend.contacted',
+                                    AGUARDANDO: 'mapLegend.waiting',
+                                    NAO_CONTATADO: 'mapLegend.notFound',
+                                    NAO_VISITAR: 'mapLegend.doNotVisit',
+                                    MUDOU: 'mapLegend.moved'
+                                };
+                                return (
+                                    <div key={key} className="flex flex-col items-center gap-1">
+                                        <div
+                                            className="w-3 h-3 rounded-full shadow-sm"
+                                            style={{ backgroundColor: config.color }}
+                                        />
+                                        <span className="text-[10px] font-bold text-gray-500 uppercase tracking-wide whitespace-nowrap">{legendKeyMap[key] ? t(legendKeyMap[key]) : config.label}</span>
+                                    </div>
+                                );
+                            })
                     )}
                     {/* Adding "Aguardando" manually for clarity if needed, or filter LIVRE differently */}
                 </div>
@@ -813,10 +824,10 @@ export default function MapView({ items, center = defaultCenter, zoom = 15, onGe
                     }}
                     type="button"
                     className="flex flex-col items-center justify-center bg-white dark:bg-gray-800 text-gray-600 dark:text-gray-300 w-14 h-14 rounded-xl shadow-lg border border-gray-100 dark:border-gray-700 active:scale-95 transition-all"
-                    title="Minha Localização"
+                    title={t('mapControls.myLocationTitle')}
                 >
                     <Navigation className="w-4 h-4 text-gray-700 dark:text-gray-200" />
-                    <span className="text-[9px] font-bold uppercase tracking-wider text-gray-500 dark:text-gray-400 mt-1">Focar</span>
+                    <span className="text-[9px] font-bold uppercase tracking-wider text-gray-500 dark:text-gray-400 mt-1">{t('mapControls.focus')}</span>
                 </button>
 
                 {/* Interaction Lock Button - Hide if lock is disabled by prop */}
@@ -828,17 +839,17 @@ export default function MapView({ items, center = defaultCenter, zoom = 15, onGe
                             ? 'bg-emerald-600 text-white border-emerald-700 shadow-emerald-500/20'
                             : 'bg-white dark:bg-gray-800 text-gray-600 dark:text-gray-300 border-gray-100 dark:border-gray-700 hover:bg-emerald-50/50 dark:hover:bg-emerald-950/20'
                             }`}
-                        title={isInteractionEnabled ? "Travar Mapa" : "Destravar Mapa"}
+                        title={isInteractionEnabled ? t('mapControls.lockMapTitle') : t('mapControls.unlockMapTitle')}
                     >
                         {isInteractionEnabled ? (
                             <>
                                 <Unlock className="w-4 h-4 fill-current text-white" />
-                                <span className="text-[9px] font-bold uppercase tracking-wider text-emerald-100 mt-1">Travar</span>
+                                <span className="text-[9px] font-bold uppercase tracking-wider text-emerald-100 mt-1">{t('mapControls.lock')}</span>
                             </>
                         ) : (
                             <>
                                 <Lock className="w-4 h-4 text-gray-700 dark:text-gray-200" />
-                                <span className="text-[9px] font-bold uppercase tracking-wider text-gray-500 dark:text-gray-400 mt-1">Mover</span>
+                                <span className="text-[9px] font-bold uppercase tracking-wider text-gray-500 dark:text-gray-400 mt-1">{t('mapControls.move')}</span>
                             </>
                         )}
                     </button>
@@ -849,17 +860,17 @@ export default function MapView({ items, center = defaultCenter, zoom = 15, onGe
                     onClick={toggleFullscreen}
                     type="button"
                     className="flex flex-col items-center justify-center bg-white dark:bg-gray-800 text-gray-600 dark:text-gray-300 w-14 h-14 rounded-xl shadow-lg border border-gray-100 dark:border-gray-700 active:scale-95 transition-all"
-                    title={isFullscreen ? "Sair da Tela Cheia" : "Tela Cheia"}
+                    title={isFullscreen ? t('mapControls.exitFullscreenTitle') : t('mapControls.fullscreenTitle')}
                 >
                     {isFullscreen ? (
                         <>
                             <Minimize2 className="w-4 h-4 text-gray-700 dark:text-gray-200" />
-                            <span className="text-[9px] font-bold uppercase tracking-wider text-gray-500 dark:text-gray-400 mt-1">Sair</span>
+                            <span className="text-[9px] font-bold uppercase tracking-wider text-gray-500 dark:text-gray-400 mt-1">{t('mapControls.exit')}</span>
                         </>
                     ) : (
                         <>
                             <Maximize2 className="w-4 h-4 text-gray-700 dark:text-gray-200" />
-                            <span className="text-[9px] font-bold uppercase tracking-wider text-gray-500 dark:text-gray-400 mt-1">Expandir</span>
+                            <span className="text-[9px] font-bold uppercase tracking-wider text-gray-500 dark:text-gray-400 mt-1">{t('mapControls.expand')}</span>
                         </>
                     )}
                 </button>

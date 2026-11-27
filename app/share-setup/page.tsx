@@ -29,6 +29,7 @@ import {
     X
 } from 'lucide-react';
 import { useAuth } from '@/app/context/AuthContext';
+import { useTranslation } from '@/app/context/I18nContext';
 import { toast } from 'sonner';
 import { AuthReadyGate } from '@/app/components/AuthReadyGate';
 import { ShareSetupPageSkeleton } from '@/app/components/Skeleton';
@@ -45,6 +46,7 @@ function ShareSetupContent() {
     const router = useRouter();
     const searchParams = useSearchParams();
     const { user, profileName, congregationId: authCongregationId, loading: authLoading, isServant } = useAuth();
+    const { t } = useTranslation();
 
     // Redirect if not Elder/Servant
     useEffect(() => {
@@ -85,14 +87,14 @@ function ShareSetupContent() {
             if (!user) return; // Hook above handles redirect
 
             if (!territoryIdsParam) {
-                setLoadError("Nenhum território selecionado.");
+                setLoadError(t('shareSetup.noTerritorySelected'));
                 setLoading(false);
                 return;
             }
 
             const ids = territoryIdsParam.split(',').filter(Boolean);
             if (ids.length === 0) {
-                setLoadError("IDs inválidos.");
+                setLoadError(t('shareSetup.invalidIds'));
                 setLoading(false);
                 return;
             }
@@ -102,14 +104,14 @@ function ShareSetupContent() {
                 const resData = await getTerritoriesDetails(ids);
 
                 if (!resData.success) {
-                    throw new Error(resData.error || 'Erro ao carregar territórios');
+                    throw new Error(resData.error || t('shareSetup.loadTerritoriesError'));
                 }
 
                 const fetched = resData.territories || [];
 
                 if (fetched.length === 0) {
                     console.warn("Nenhum território retornado pela API para os IDs:", ids);
-                    setLoadError("Territórios não encontrados ou você não tem permissão para acessá-los.");
+                    setLoadError(t('shareSetup.notFoundOrNoPermission'));
                 } else {
                     console.log(`${fetched.length} territórios carregados com sucesso.`);
                     setTerritories(fetched);
@@ -126,7 +128,7 @@ function ShareSetupContent() {
                 }
             } catch (err: any) {
                 console.error("Erro ao carregar detalhes dos territórios:", err);
-                setLoadError(err.message || "Erro ao carregar detalhes dos territórios.");
+                setLoadError(err.message || t('shareSetup.loadDetailsError'));
             } finally {
                 setLoading(false);
             }
@@ -144,7 +146,7 @@ function ShareSetupContent() {
             if (user) {
                 fetchedUsers.push({
                     id: user.uid,
-                    name: profileName || user.displayName || user.email || 'Eu mesmo',
+                    name: profileName || user.displayName || user.email || t('shareSetup.meFallback'),
                     email: user.email,
                     avatarUrl: user.photoURL || null
                 });
@@ -183,7 +185,7 @@ function ShareSetupContent() {
     const getOrCreateLink = async () => {
         if (generatedLink) return generatedLink;
         if (territories.length === 0) {
-            toast.error("Nenhum território carregado para gerar o link.");
+            toast.error(t('shareSetup.noTerritoryLoaded'));
             return null;
         }
 
@@ -201,17 +203,17 @@ function ShareSetupContent() {
                 case 'never': expiresAt = null; break;
             }
 
-            let title = "Territórios Compartilhados";
+            let title = t('shareSetup.sharedTerritoriesTitle');
             if (territories.length === 1) {
-                title = `${territories[0].name} - ${cityName || territories[0].city || 'Mapa'}`;
+                title = `${territories[0].name} - ${cityName || territories[0].city || t('shareSetup.mapFallback')}`;
             } else {
-                title = `${territories.length} Territórios - ${cityName || territories[0].city || 'Vários'}`;
+                title = t('shareSetup.territoriesCountTitle', { count: territories.length, city: cityName || territories[0].city || t('shareSetup.variousFallback') });
             }
 
             const resData = await assignTerritoryMutation({
                 title: title,
                 type: 'territory',
-                items: territories.map(t => t.id),
+                items: territories.map(terr => terr.id),
                 congregationId: authCongregationId || '',
                 assignedTo: selectedUser ? selectedUser.id : '',
                 assignedName: selectedUser ? selectedUser.name : '',
@@ -220,8 +222,8 @@ function ShareSetupContent() {
             });
 
             if (!resData.success) {
-                setLoadError(resData.message || 'Erro ao criar a lista compartilhada');
-                toast.error(resData.message || 'Erro ao criar a lista compartilhada');
+                setLoadError(resData.message || t('shareSetup.createListError'));
+                toast.error(resData.message || t('shareSetup.createListError'));
                 return null;
             }
 
@@ -231,7 +233,7 @@ function ShareSetupContent() {
             return link;
         } catch (error: any) {
             console.error("Error generating link:", error);
-            toast.error(error.message || "Erro inesperado ao gerar link.");
+            toast.error(error.message || t('shareSetup.unexpectedLinkError'));
             return null;
         } finally {
             setGenerating(false);
@@ -251,7 +253,7 @@ function ShareSetupContent() {
         if (link) {
             try {
                 await navigator.clipboard.writeText(link);
-                toast.success("Link copiado!");
+                toast.success(t('shareSetup.linkCopied'));
             } catch (err) {
                 console.warn("Clipboard API failed, using fallback:", err);
                 // Fallback for non-secure contexts or old browsers
@@ -261,10 +263,10 @@ function ShareSetupContent() {
                 input.select();
                 try {
                     document.execCommand('copy');
-                    toast.success("Link copiado!");
+                    toast.success(t('shareSetup.linkCopied'));
                 } catch (copyErr) {
                     console.error("Fallback copy failed:", copyErr);
-                    toast.error("Erro ao copiar link.");
+                    toast.error(t('shareSetup.copyLinkError'));
                 }
                 document.body.removeChild(input);
             }
@@ -277,8 +279,8 @@ function ShareSetupContent() {
             if (navigator.share) {
                 try {
                     await navigator.share({
-                        title: 'Território para Trabalhar',
-                        text: 'Acesse o link para visualizar o território designado:',
+                        title: t('shareSetup.shareTitle'),
+                        text: t('shareSetup.shareText'),
                         url: link
                     });
                 } catch (err) {
@@ -298,10 +300,10 @@ function ShareSetupContent() {
         return (
             <div className="min-h-screen flex flex-col items-center justify-center bg-background p-6 text-center space-y-4">
                 <AlertCircle className="w-12 h-12 text-red-500" />
-                <h1 className="text-xl font-bold text-main">Erro</h1>
+                <h1 className="text-xl font-bold text-main">{t('shareSetup.errorTitle')}</h1>
                 <p className="text-muted">{loadError}</p>
                 <button onClick={() => router.push(returnUrl)} className="text-primary hover:underline">
-                    Voltar
+                    {t('shareSetup.backBtn')}
                 </button>
             </div>
         );
@@ -314,23 +316,23 @@ function ShareSetupContent() {
                 <button onClick={() => router.back()} className="p-1.5 -ml-1.5 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-full transition-colors">
                     <ArrowLeft className="w-5 h-5 sm:w-6 sm:h-6 text-muted" />
                 </button>
-                <h1 className="font-bold text-base sm:text-lg text-main">Configurar Link</h1>
+                <h1 className="font-bold text-base sm:text-lg text-main">{t('shareSetup.headerTitle')}</h1>
             </header>
 
             <main className="max-w-xl mx-auto px-4 sm:px-6 py-6 sm:py-8 space-y-6 sm:space-y-8">
 
                 {/* Summary Section */}
                 <section className="space-y-4">
-                    <h2 className="text-sm font-bold text-muted uppercase tracking-wider">Resumo da Seleção</h2>
+                    <h2 className="text-sm font-bold text-muted uppercase tracking-wider">{t('shareSetup.selectionSummary')}</h2>
                     <div className="bg-surface rounded-2xl border border-surface-border overflow-hidden">
-                        {territories.map((t, index) => (
-                            <div key={t.id} className={`p-4 flex items-center gap-4 ${index !== territories.length - 1 ? 'border-b border-surface-border' : ''}`}>
+                        {territories.map((terr, index) => (
+                            <div key={terr.id} className={`p-4 flex items-center gap-4 ${index !== territories.length - 1 ? 'border-b border-surface-border' : ''}`}>
                                 <div className="w-10 h-10 bg-primary-light/50 dark:bg-blue-900/20 rounded-xl flex items-center justify-center shrink-0">
                                     <MapIcon className="w-5 h-5 text-primary dark:text-blue-400" />
                                 </div>
                                 <div className="min-w-0">
-                                    <h3 className="font-bold text-main truncate">{t.name}</h3>
-                                    <p className="text-xs text-muted truncate">{t.description || (cityName || t.city ? (cityName || t.city) : 'Sem descrição')}</p>
+                                    <h3 className="font-bold text-main truncate">{terr.name}</h3>
+                                    <p className="text-xs text-muted truncate">{terr.description || (cityName || terr.city ? (cityName || terr.city) : t('shareSetup.noDescription'))}</p>
                                 </div>
                             </div>
                         ))}
@@ -341,27 +343,27 @@ function ShareSetupContent() {
                 <section className="space-y-6">
                     <div className="space-y-2">
                         <label className="text-sm font-bold text-muted uppercase tracking-wider flex items-center gap-2">
-                            <Calendar className="w-4 h-4" /> Validade do Link
+                            <Calendar className="w-4 h-4" /> {t('shareSetup.linkExpiration')}
                         </label>
-                        <p className="text-xs text-muted">Defina por quanto tempo este link ficará acessível.</p>
+                        <p className="text-xs text-muted">{t('shareSetup.linkExpirationDesc')}</p>
                         <select
                             value={expiration}
                             onChange={(e) => setExpiration(e.target.value)}
                             disabled={!!generatedLink} // Disable changes after link is created to avoid confusion
                             className="w-full bg-surface border border-surface-border rounded-xl p-4 text-main font-semibold focus:ring-2 focus:ring-primary-light/500/20 outline-none transition-all disabled:opacity-50 disabled:bg-gray-100 dark:disabled:bg-gray-800"
                         >
-                            <option value="7d">7 Dias</option>
-                            <option value="14d">14 Dias</option>
-                            <option value="30d">30 Dias</option>
-                            <option value="never">Nunca Expira (Padrão)</option>
+                            <option value="7d">{t('shareSetup.exp7d')}</option>
+                            <option value="14d">{t('shareSetup.exp14d')}</option>
+                            <option value="30d">{t('shareSetup.exp30d')}</option>
+                            <option value="never">{t('shareSetup.expNever')}</option>
                         </select>
                     </div>
 
                     <div className="space-y-2 relative">
                         <label className="text-sm font-bold text-muted uppercase tracking-wider flex items-center gap-2">
-                            <User className="w-4 h-4" /> Designar Para (Opcional)
+                            <User className="w-4 h-4" /> {t('shareSetup.assignToOptional')}
                         </label>
-                        <p className="text-xs text-muted">Selecione um membro da congregação para vincular a este link.</p>
+                        <p className="text-xs text-muted">{t('shareSetup.assignToDesc')}</p>
 
                         <div className="relative">
                             <button
@@ -402,7 +404,7 @@ function ShareSetupContent() {
                                     </>
                                 ) : (
                                     <>
-                                        <span className="text-muted">Nenhum membro selecionado</span>
+                                        <span className="text-muted">{t('shareSetup.noMemberSelected')}</span>
                                         <ChevronDown className={`w-5 h-5 text-muted transition-transform ${isUserDropdownOpen ? 'rotate-180' : ''}`} />
                                     </>
                                 )}
@@ -415,7 +417,7 @@ function ShareSetupContent() {
                                             <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted" />
                                             <input
                                                 type="text"
-                                                placeholder="Buscar membro..."
+                                                placeholder={t('shareSetup.searchMemberPlaceholder')}
                                                 value={searchUserTerm}
                                                 onChange={(e) => setSearchUserTerm(e.target.value)}
                                                 className="w-full bg-gray-50 dark:bg-gray-800 border-none rounded-lg py-2 pl-9 pr-4 text-sm font-medium text-main focus:ring-2 focus:ring-primary/20 outline-none"
@@ -432,14 +434,14 @@ function ShareSetupContent() {
                                             });
 
                                             if (filtered.length === 0) {
-                                                return <div className="p-4 text-center text-sm text-muted">Nenhum membro encontrado.</div>;
+                                                return <div className="p-4 text-center text-sm text-muted">{t('shareSetup.noMemberFound')}</div>;
                                             }
 
                                             return filtered.slice(0, 5).map(u => (
                                                 <button
                                                     key={u.id}
                                                     onClick={() => {
-                                                        setSelectedUser({ id: u.id, name: u.name || 'Sem Nome', avatarUrl: u.avatarUrl });
+                                                        setSelectedUser({ id: u.id, name: u.name || t('shareSetup.unnamed'), avatarUrl: u.avatarUrl });
                                                         setIsUserDropdownOpen(false);
                                                         setSearchUserTerm('');
                                                     }}
@@ -479,7 +481,7 @@ function ShareSetupContent() {
                             className={`w-full bg-surface border-2 ${generatedLink ? 'border-green-500 bg-green-50 dark:bg-green-900/10 dark:border-green-800' : 'border-surface-border'} hover:bg-gray-50 dark:hover:bg-gray-800 text-main font-bold py-4 rounded-xl flex items-center justify-center gap-3 transition-colors`}
                         >
                             {generating ? <Loader2 className="w-5 h-5 animate-spin text-primary" /> : <ExternalLink className={`w-5 h-5 ${generatedLink ? 'text-green-600' : 'text-primary'}`} />}
-                            {generatedLink ? 'Link Aberto (Reabrir)' : 'Abrir Link'}
+                            {generatedLink ? t('shareSetup.reopenLink') : t('shareSetup.openLink')}
                         </button>
 
                         {/* Copy Button */}
@@ -489,7 +491,7 @@ function ShareSetupContent() {
                             className={`w-full bg-surface border-2 ${generatedLink ? 'border-green-500 bg-green-50 dark:bg-green-900/10 dark:border-green-800' : 'border-surface-border'} hover:bg-gray-50 dark:hover:bg-gray-800 text-main font-bold py-4 rounded-xl flex items-center justify-center gap-3 transition-colors`}
                         >
                             <Copy className={`w-5 h-5 ${generatedLink ? 'text-green-600' : 'text-orange-500'}`} />
-                            {generatedLink ? 'Link Copiado (Copiar Novamente)' : 'Copiar Link'}
+                            {generatedLink ? t('shareSetup.copyAgainLink') : t('shareSetup.copyLink')}
                         </button>
 
                         {/* Share Button */}
@@ -499,14 +501,14 @@ function ShareSetupContent() {
                             className={`w-full bg-surface border-2 ${generatedLink ? 'border-green-500 bg-green-50 dark:bg-green-900/10 dark:border-green-800' : 'border-surface-border'} hover:bg-gray-50 dark:hover:bg-gray-800 text-main font-bold py-4 rounded-xl flex items-center justify-center gap-3 transition-colors`}
                         >
                             <Share2 className={`w-5 h-5 ${generatedLink ? 'text-green-600' : 'text-purple-600'}`} />
-                            Compartilhar
+                            {t('shareSetup.shareBtn')}
                         </button>
                     </div>
 
                     {generatedLink && (
                         <div className="text-center animate-in fade-in duration-300">
                             <div className="inline-flex items-center gap-2 px-4 py-2 bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-400 rounded-full font-bold text-sm">
-                                <CheckCircle2 className="w-4 h-4" /> Link Gerado
+                                <CheckCircle2 className="w-4 h-4" /> {t('shareSetup.linkGeneratedBadge')}
                             </div>
                         </div>
                     )}
@@ -516,7 +518,7 @@ function ShareSetupContent() {
                     onClick={() => router.push(returnUrl)}
                     className="w-full text-muted hover:text-main text-sm font-medium py-2"
                 >
-                    Voltar sem gerar novo link
+                    {t('shareSetup.backWithoutLink')}
                 </button>
 
             </main>

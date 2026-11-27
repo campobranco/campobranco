@@ -22,6 +22,7 @@ import ConfirmationModal from '@/app/components/ConfirmationModal';
 import { getLatestTerritoryCycleVisits, resolveAddressStatusForLatestCycle } from '@/lib/services/shared_lists';
 import { AddressPageSkeleton, MapSkeleton, Skeleton } from '@/app/components/Skeleton';
 import { sanitizeUrl } from '@/lib/validation';
+import { useTranslation } from '@/app/context/I18nContext';
 
 const MapView = dynamic(() => import('@/app/components/MapView'), {
     loading: () => <MapSkeleton />,
@@ -111,6 +112,7 @@ interface Address {
 }
 
 function AddressListContent() {
+    const { t } = useTranslation();
     const router = useRouter();
     const searchParams = useSearchParams();
     const congregationId = searchParams.get('congregationId') || '';
@@ -1234,7 +1236,7 @@ function AddressListContent() {
                                     {((addr.googleMapsLink && addr.googleMapsLink.trim() !== '' && addr.googleMapsLink !== 'undefined') || (addr.wazeLink && addr.wazeLink.trim() !== '' && addr.wazeLink !== 'undefined')) && (
                                         <DropDownItem 
                                             icon="/icons/google-maps.svg" 
-                                            label="Abrir no Mapa" 
+                                            label={t('myMaps.address.openOnMap')} 
                                             variant="primary" 
                                             onClick={(e) => { e.stopPropagation(); handleOpenMap(addr); setOpenMenuId(null); }} 
                                         />
@@ -1242,7 +1244,7 @@ function AddressListContent() {
 
                                     <DropDownItem 
                                         icon={HistoryIcon} 
-                                        label="Abrir Histórico" 
+                                        label={t('myMaps.address.openHistory')} 
                                         variant="indigo" 
                                         onClick={() => { setHistoryAddressId(addr.id); setOpenMenuId(null); }} 
                                     />
@@ -1250,7 +1252,7 @@ function AddressListContent() {
                                     {isServant && (
                                         <DropDownItem 
                                             icon={Pencil} 
-                                            label="Editar Dados" 
+                                            label={t('myMaps.address.editData')} 
                                             variant="neutral" 
                                             onClick={() => { handleEditAddress(addr); setOpenMenuId(null); }} 
                                         />
@@ -1259,18 +1261,18 @@ function AddressListContent() {
                                     {(isElder || isServant) && (
                                         <DropDownItem 
                                             icon={addr.isActive === false ? CheckCircle : X} 
-                                            label={addr.isActive === false ? 'Ativar Cartão' : 'Desativar Cartão'} 
+                                            label={addr.isActive === false ? t('myMaps.address.activateCard') : t('myMaps.address.deactivateCard')} 
                                             variant={addr.isActive === false ? 'success' : 'orange'} 
                                             onClick={() => {
                                                 setConfirmModal({
                                                     isOpen: true,
-                                                    title: addr.isActive === false ? "Reativar Endereço" : "Desativar Endereço",
+                                                    title: addr.isActive === false ? t('myMaps.address.reactivateAddressTitle') : t('myMaps.address.deactivateAddressTitle'),
                                                     message: addr.isActive === false
-                                                        ? "Deseja reativar este endereço para que ele volte a aparecer nos links?"
-                                                        : "Deseja desativar este endereço temporariamente?",
+                                                        ? t('myMaps.address.reactivateAddressConfirm')
+                                                        : t('myMaps.address.deactivateAddressConfirm'),
                                                     variant: addr.isActive === false ? 'info' : 'danger',
-                                                    confirmText: addr.isActive === false ? "Reativar" : "Desativar",
-                                                    cancelText: "Cancelar",
+                                                    confirmText: addr.isActive === false ? t('myMaps.address.reactivateBtn') : t('myMaps.address.deactivateBtn'),
+                                                    cancelText: t('myMaps.address.cancelBtn'),
                                                     onConfirm: () => {
                                                         setConfirmModal(prev => ({ ...prev, isOpen: false }));
                                                         handleToggleActive(addr);
@@ -1285,7 +1287,7 @@ function AddressListContent() {
                                     {(isElder || isServant) && (
                                         <DropDownItem 
                                             icon={Trash2} 
-                                            label="Excluir Definitivo" 
+                                            label={t('myMaps.address.deletePermanent')} 
                                             variant="danger" 
                                             onClick={() => {
                                                 handleDeleteAddress(addr.id);
@@ -1312,17 +1314,17 @@ function AddressListContent() {
                     <Link
                         href={effectiveCongregationId && effectiveCityId ? `/my-maps/territory?congregationId=${effectiveCongregationId}&cityId=${effectiveCityId}&territoryId=${territoryId}` : `/my-maps`}
                         className="p-2 bg-gray-100 dark:bg-gray-800 rounded-lg text-gray-600 dark:text-gray-400 hover:bg-gray-200 dark:hover:bg-gray-700 transition-colors"
-                        title="Voltar"
+                        title={t('myMaps.address.backTitle')}
                     >
                         <ArrowLeft className="w-5 h-5" />
                     </Link>
                     <div className="flex flex-col">
                         <span className="font-bold text-lg text-main tracking-tight leading-none">{contextNames.territory}</span>
                         <div className="flex items-center gap-1.5 mt-0.5">
-                            <span className="text-[10px] text-muted font-bold uppercase tracking-wider">{localTermType === 'neighborhood' ? 'Bairro' : 'Cidade'}: {contextNames.city}</span>
+                            <span className="text-[10px] text-muted font-bold uppercase tracking-wider">{localTermType === 'neighborhood' ? t('myMaps.address.neighborhoodLabel') : t('myMaps.address.cityLabel')}: {contextNames.city}</span>
                             {parentCity && (
                                 <>
-                                    <span className="text-[8px] text-gray-300 dark:text-gray-600">â€¢</span>
+                                    <span className="text-[8px] text-gray-300 dark:text-gray-600">•</span>
                                     <span className="text-[10px] text-blue-500 font-black tracking-tight uppercase">{parentCity}</span>
                                 </>
                             )}
@@ -1358,7 +1360,7 @@ function AddressListContent() {
                             <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-muted w-5 h-5 group-focus-within:text-blue-500 transition-colors" />
                             <input
                                 type="text"
-                                placeholder="Buscar rua ou número..."
+                                placeholder={t('myMaps.address.searchPlaceholder')}
                                 value={searchTerm}
                                 onChange={(e) => setSearchTerm(e.target.value)}
                                 className="w-full bg-surface border-0 text-main text-sm font-medium rounded-lg py-4 pl-12 pr-4 shadow-sm focus:ring-2 focus:ring-blue-500/20 focus:outline-none transition-all placeholder:text-muted"
@@ -1368,7 +1370,7 @@ function AddressListContent() {
 
                     {loading ? (
                         <div className="px-6 pb-6 space-y-3 max-w-6xl mx-auto" role="status" aria-busy="true">
-                            <span className="sr-only">Carregando...</span>
+                            <span className="sr-only">{t('myMaps.address.loading')}</span>
                             {Array.from({ length: 4 }).map((_, idx) => (
                                 <div key={idx} className="bg-surface rounded-lg p-4 border border-surface-border space-y-2.5">
                                     <Skeleton className="h-4 w-2/3" />
@@ -1379,7 +1381,7 @@ function AddressListContent() {
                     ) : filteredAddresses.length === 0 ? (
                         <div className="text-center py-12 opacity-50">
                             <Home className="w-12 h-12 mx-auto mb-3 text-gray-300" />
-                            <p className="text-gray-400 font-medium">Nenhum endereço cadastrado</p>
+                            <p className="text-gray-400 font-medium">{t('myMaps.address.empty')}</p>
                         </div>
                     ) : (
                         <div className="px-6 pb-6 space-y-3 max-w-6xl mx-auto">
@@ -1393,7 +1395,7 @@ function AddressListContent() {
                                     >
                                         <div className="h-px bg-gray-200 flex-1 group-hover:bg-gray-300 transition-colors"></div>
                                         <div className="flex items-center gap-2 text-gray-400 group-hover:text-gray-600 transition-colors">
-                                            <span className="text-xs font-bold uppercase tracking-widest">Desativados ({inactiveAddresses.length})</span>
+                                            <span className="text-xs font-bold uppercase tracking-widest">{t('myMaps.address.inactiveSection', { count: inactiveAddresses.length })}</span>
                                             {isInactiveExpanded ? <ChevronUp className="w-3 h-3" /> : <ChevronDown className="w-3 h-3" />}
                                         </div>
                                         <div className="h-px bg-gray-200 flex-1 group-hover:bg-gray-300 transition-colors"></div>
@@ -1502,12 +1504,12 @@ function AddressListContent() {
                         <div className="bg-white dark:bg-slate-900 rounded-xl w-full max-w-sm p-6 shadow-2xl animate-in zoom-in-95 duration-300 border border-transparent dark:border-slate-800 my-8">
                             <h2 className="text-xl font-bold text-gray-900 dark:text-white mb-6 flex items-center gap-2">
                                 {editingId ? <Pencil className="w-6 h-6 text-blue-600" /> : <Plus className="w-6 h-6 text-blue-600" />}
-                                {editingId ? 'Editar Endereço' : 'Novo Endereço'}
+                                {editingId ? t('myMaps.address.editAddressTitle') : t('myMaps.address.newAddressTitle')}
                             </h2>
                             <form onSubmit={handleCreateAddress} className="space-y-4">
                                 {/* Status Header */}
                                 <div className="flex items-center justify-between bg-gray-50 dark:bg-gray-800 p-4 rounded-lg border border-gray-100 dark:border-gray-700">
-                                    <span className="font-bold text-sm text-gray-700 dark:text-gray-300">Status do Endereço</span>
+                                    <span className="font-bold text-sm text-gray-700 dark:text-gray-300">{t('myMaps.address.addressStatus')}</span>
                                     <button
                                         type="button"
                                         onClick={() => setIsActive(!isActive)}
@@ -1520,28 +1522,28 @@ function AddressListContent() {
                                 {/* Context Info (Read Only) */}
                                 <div className="bg-gray-50 dark:bg-gray-800 rounded-lg p-4 space-y-3 border border-gray-100 dark:border-gray-700">
                                     <div className="flex justify-between items-center border-b border-gray-200 dark:border-gray-700 pb-2">
-                                        <span className="text-xs font-bold text-muted uppercase tracking-wider">Congregação</span>
+                                        <span className="text-xs font-bold text-muted uppercase tracking-wider">{t('myMaps.address.congregationLabel')}</span>
                                         <span className="text-sm font-bold text-main text-right max-w-[60%] truncate" title={contextNames.congregation}>{contextNames.congregation}</span>
                                     </div>
                                     <div className="flex justify-between items-center border-b border-gray-200 dark:border-gray-700 pb-2">
-                                        <span className="text-xs font-bold text-muted uppercase tracking-wider">{localTermType === 'neighborhood' ? 'Bairro' : 'Cidade'}</span>
+                                        <span className="text-xs font-bold text-muted uppercase tracking-wider">{localTermType === 'neighborhood' ? t('myMaps.address.neighborhoodLabel') : t('myMaps.address.cityLabel')}</span>
                                         <span className="text-sm font-bold text-main text-right max-w-[60%] truncate" title={contextNames.city}>{contextNames.city}</span>
                                     </div>
                                     <div className="flex justify-between items-center">
-                                        <span className="text-xs font-bold text-muted uppercase tracking-wider">Território</span>
+                                        <span className="text-xs font-bold text-muted uppercase tracking-wider">{t('myMaps.address.territoryLabel')}</span>
                                         <span className="text-sm font-bold text-main text-right max-w-[60%] truncate" title={contextNames.territory}>{contextNames.territory}</span>
                                     </div>
                                 </div>
 
                                 <div className="space-y-4">
                                     <div>
-                                        <label className="block text-xs font-bold text-muted uppercase tracking-wider mb-2">Endereço Completo</label>
+                                        <label className="block text-xs font-bold text-muted uppercase tracking-wider mb-2">{t('myMaps.address.fullAddressLabel')}</label>
                                         <textarea
                                             className="w-full bg-gray-50 dark:bg-gray-800 border border-gray-100 dark:border-gray-700 rounded-lg p-3 font-bold text-sm text-main mb-2 focus:ring-2 focus:ring-blue-500/20 focus:outline-none resize-none"
                                             rows={2}
                                             value={combinedAddress}
                                             onChange={e => setCombinedAddress(e.target.value)}
-                                            placeholder="Ex: Rua das Flores, 123"
+                                            placeholder={t('myMaps.address.fullAddressPlaceholder')}
                                             required
                                         />
                                     </div>
@@ -1550,7 +1552,7 @@ function AddressListContent() {
                                     <div className="space-y-4">
                                         <div>
                                             <label className="block text-xs font-bold text-muted uppercase tracking-wider mb-2">
-                                                Link Google Maps
+                                                {t('myMaps.address.googleMapsLinkLabel')}
                                             </label>
                                             <div className="relative">
                                                 <input
@@ -1563,7 +1565,7 @@ function AddressListContent() {
                                                         if (coords && (lat !== coords.lat.toString() || lng !== coords.lng.toString())) {
                                                             setLat(coords.lat.toString());
                                                             setLng(coords.lng.toString());
-                                                            toast.success("Coordenadas do pino extraídas do link!");
+                                                            toast.success(t('myMaps.address.coordsExtractedToast'));
                                                         }
                                                     }}
                                                     placeholder="https://maps.google.com..."
@@ -1579,7 +1581,7 @@ function AddressListContent() {
                                         {/* Waze Link */}
                                         <div>
                                             <label className="block text-xs font-bold text-muted uppercase tracking-wider mb-2">
-                                                Link Waze
+                                                {t('myMaps.address.wazeLinkLabel')}
                                             </label>
                                             <div className="relative">
                                                 <input
@@ -1592,7 +1594,7 @@ function AddressListContent() {
                                                         if (coords && (lat !== coords.lat.toString() || lng !== coords.lng.toString())) {
                                                             setLat(coords.lat.toString());
                                                             setLng(coords.lng.toString());
-                                                            toast.success("Coordenadas do pino extraídas do link!");
+                                                            toast.success(t('myMaps.address.coordsExtractedToast'));
                                                         }
                                                     }}
                                                     placeholder="https://waze.com/ul..."
@@ -1613,16 +1615,16 @@ function AddressListContent() {
                                                 const nextGoogle = buildGoogleMapsLink({ lat, lng, address: combinedAddress, cityName: contextNames.city });
                                                 const nextWaze = buildWazeLink({ lat, lng, address: combinedAddress, cityName: contextNames.city });
                                                 if (!nextGoogle && !nextWaze) {
-                                                    toast.error("Informe o endereço ou selecione um pino no mapa.");
+                                                    toast.error(t('myMaps.address.addressOrPinRequired'));
                                                     return;
                                                 }
                                                 setGoogleMapsLink(nextGoogle);
                                                 setWazeLink(nextWaze);
-                                                toast.success("Links do Google Maps e Waze gerados!");
+                                                toast.success(t('myMaps.address.linksGeneratedToast'));
                                             }}
                                             className="w-full py-2 bg-gray-100 dark:bg-gray-800 text-main rounded-lg font-bold text-xs uppercase tracking-wider hover:bg-gray-200 dark:hover:bg-gray-700 transition-colors"
                                         >
-                                            Gerar links automaticamente
+                                            {t('myMaps.address.generateLinksBtn')}
                                         </button>
                                         <button
                                             type="button"
@@ -1636,7 +1638,7 @@ function AddressListContent() {
                                             }}
                                             className="w-full py-2 bg-blue-50 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400 rounded-lg font-bold text-xs uppercase tracking-wider hover:bg-blue-100 dark:hover:bg-blue-900/50 transition-colors flex items-center justify-center gap-2"
                                         >
-                                            <MapPin className="w-4 h-4" /> Selecionar Pino no Mapa
+                                            <MapPin className="w-4 h-4" /> {t('myMaps.address.selectPinOnMapBtn')}
                                         </button>
                                     </div>
                                     {/* Debug/Verify Coords */}
@@ -1651,12 +1653,12 @@ function AddressListContent() {
 
                                 {!isTraditional && (
                                     <div>
-                                        <label className="block text-xs font-bold text-muted uppercase tracking-wider mb-2">Gênero (Opcional)</label>
+                                        <label className="block text-xs font-bold text-muted uppercase tracking-wider mb-2">{t('myMaps.address.genderOptionalLabel')}</label>
                                         <div className="flex gap-2">
                                             {[
-                                                { id: 'HOMEM' as const, label: 'Homem', activeClass: 'border-blue-500 bg-blue-50 dark:bg-blue-900/30 text-blue-700 dark:text-blue-400' },
-                                                { id: 'MULHER' as const, label: 'Mulher', activeClass: 'border-pink-500 bg-pink-50 dark:bg-pink-900/30 text-pink-700 dark:text-pink-400' },
-                                                { id: 'CASAL' as const, label: 'Casal', activeClass: 'border-purple-500 bg-purple-50 dark:bg-purple-900/30 text-purple-700 dark:text-purple-400' },
+                                                { id: 'HOMEM' as const, label: t('myMaps.address.genderMan'), activeClass: 'border-blue-500 bg-blue-50 dark:bg-blue-900/30 text-blue-700 dark:text-blue-400' },
+                                                { id: 'MULHER' as const, label: t('myMaps.address.genderWoman'), activeClass: 'border-pink-500 bg-pink-50 dark:bg-pink-900/30 text-pink-700 dark:text-pink-400' },
+                                                { id: 'CASAL' as const, label: t('myMaps.address.genderCouple'), activeClass: 'border-purple-500 bg-purple-50 dark:bg-purple-900/30 text-purple-700 dark:text-purple-400' },
                                             ].map(opt => {
                                                 const isSelected = gender === opt.id;
                                                 return (
@@ -1675,15 +1677,15 @@ function AddressListContent() {
                                 )}
 
                                 <div>
-                                    <label className="block text-xs font-bold text-muted uppercase tracking-wider mb-2">Notas de Acesso / Ponto de Referência</label>
+                                    <label className="block text-xs font-bold text-muted uppercase tracking-wider mb-2">{t('myMaps.address.accessNotesLabel')}</label>
                                     <textarea
                                         className="w-full bg-gray-50 dark:bg-gray-800 border-gray-100 dark:border-gray-700 rounded-lg p-3 font-medium text-sm min-h-[80px] text-main"
                                         value={observations}
                                         onChange={e => setObservations(e.target.value)}
-                                        placeholder="Ex: portão azul, campainha quebrada, cão no quintal..."
+                                        placeholder={t('myMaps.address.accessNotesPlaceholder')}
                                     />
                                     <p className="text-[11px] text-muted mt-1">
-                                        Apenas notas de acesso físico ao imóvel. Proibido inserir nomes ou dados pessoais de moradores.
+                                        {t('myMaps.address.accessNotesPrivacyHint')}
                                     </p>
                                 </div>
 
@@ -1691,15 +1693,15 @@ function AddressListContent() {
                                     <label className="flex items-center gap-3 cursor-pointer p-2 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors">
                                         <input type="checkbox" checked={isDoNotVisit} onChange={(e) => setIsDoNotVisit(e.target.checked)} className="w-5 h-5 rounded text-red-500 border-gray-300 dark:border-gray-600 focus:ring-red-500 dark:bg-gray-700" />
                                         <div className="flex flex-col">
-                                            <span className="font-bold text-sm text-gray-700 dark:text-gray-300">Marcar endereço como "Não visitar"</span>
+                                            <span className="font-bold text-sm text-gray-700 dark:text-gray-300">{t('myMaps.address.markDoNotVisit')}</span>
                                         </div>
                                     </label>
                                 </div>
 
                                 <div className="flex gap-3 pt-4 border-t border-gray-100 dark:border-gray-700">
-                                    <button type="button" onClick={resetForm} className="flex-1 py-3 bg-gray-100 dark:bg-gray-700 rounded-lg font-bold text-gray-600 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600 transition-colors">Cancelar</button>
+                                    <button type="button" onClick={resetForm} className="flex-1 py-3 bg-gray-100 dark:bg-gray-700 rounded-lg font-bold text-gray-600 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600 transition-colors">{t('myMaps.address.cancel')}</button>
                                     <button type="submit" className="flex-1 py-3 bg-blue-600 text-white rounded-lg font-bold shadow-lg shadow-blue-500/30 hover:bg-blue-700 transition-colors">
-                                        {editingId ? 'Salvar Endereço' : 'Salvar Endereço'}
+                                        {t('myMaps.address.saveAddress')}
                                     </button>
                                 </div>
                             </form>
@@ -1713,9 +1715,9 @@ function AddressListContent() {
                 <div className="fixed inset-0 z-[2000] bg-background flex flex-col animate-in fade-in duration-300">
                     <header className="bg-surface border-b border-surface-border px-6 py-4 flex items-center justify-between">
                         <div>
-                            <h2 className="text-xl font-bold text-main tracking-tight">Selecionar Localização</h2>
+                            <h2 className="text-xl font-bold text-main tracking-tight">{t('myMaps.address.selectLocationTitle')}</h2>
                             <p className="text-xs text-muted font-bold uppercase tracking-widest">
-                                {isMapSelectionMode ? 'Clique para marcar o ponto' : 'Arraste para navegar'}
+                                {isMapSelectionMode ? t('myMaps.address.clickToMark') : t('myMaps.address.dragToNavigate')}
                             </p>
                         </div>
                         <button
@@ -1733,7 +1735,7 @@ function AddressListContent() {
                                 <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-muted w-4 h-4" />
                                 <input
                                     type="text"
-                                    placeholder="Pesquisar rua, CEP ou colar coordenada..."
+                                    placeholder={t('myMaps.address.mapSearchPlaceholder')}
                                     className="w-full bg-background border border-surface-border rounded-lg py-2 pl-9 pr-4 text-sm font-medium focus:ring-2 focus:ring-blue-500/20 outline-none transition-all"
                                     value={mapSearchQuery}
                                     onChange={(e) => setMapSearchQuery(e.target.value)}
@@ -1745,7 +1747,7 @@ function AddressListContent() {
                                 className="bg-blue-600 text-white px-4 py-2 rounded-lg text-xs font-bold uppercase tracking-wider hover:bg-blue-700 disabled:bg-gray-400 transition-colors flex items-center gap-2"
                             >
                                 {isGeocodingMap ? <Loader2 className="w-3 h-3 animate-spin" /> : <Search className="w-3 h-3" />}
-                                {isGeocodingMap ? 'Buscando...' : 'Buscar'}
+                                {isGeocodingMap ? t('myMaps.address.searching') : t('myMaps.address.search')}
                             </button>
                         </form>
                         {mapSearchResults.length > 1 && (

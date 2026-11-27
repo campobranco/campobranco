@@ -15,6 +15,7 @@ import { updateTerritory } from '@/lib/services/territories';
 // eslint-disable-next-line no-restricted-imports
 import { getAddresses } from '@/lib/services/addresses';
 import { toast } from 'sonner';
+import { useTranslation } from '@/app/context/I18nContext';
 
 type MapCardMode = 'manual-image' | 'address-pins' | 'polygons';
 
@@ -104,6 +105,7 @@ function parseAddressCoords(addr: any): { lat: number; lng: number } | null {
 
 // Componente de Mapa por Pinos de Endereço (Modo 2 - Leaflet com auto-fitBounds)
 function AddressPinsMap({ pins }: { pins: AddressPinItem[] }) {
+    const { t } = useTranslation();
     const mapContainerRef = useRef<HTMLDivElement>(null);
     const mapInstanceRef = useRef<any>(null);
 
@@ -176,9 +178,9 @@ function AddressPinsMap({ pins }: { pins: AddressPinItem[] }) {
         return (
             <div className="absolute inset-0 bg-slate-50 border border-dashed border-slate-300 flex flex-col items-center justify-center p-3 text-center">
                 <MapPin className="w-6 h-6 text-amber-500 mb-1 opacity-70" />
-                <p className="font-sans font-bold text-[11px] text-slate-700">Nenhum pino de endereço configurado</p>
+                <p className="font-sans font-bold text-[11px] text-slate-700">{t('mapCard.noPinsTitle')}</p>
                 <p className="font-sans text-[9.5px] text-slate-500 mt-0.5 max-w-[200px]">
-                    Cadastre coordenadas (lat/lng) nos endereços deste território para gerar o mapa automático.
+                    {t('mapCard.noPinsDesc')}
                 </p>
             </div>
         );
@@ -275,6 +277,7 @@ function AutoFitText({ text, maxFontSize = 12, minFontSize = 7.5 }: { text: stri
 }
 
 export default function MapCardPage() {
+    const { t } = useTranslation();
     const { congregationId, loading: authLoading, canManageS12 } = useAuth();
     const router = useRouter();
 
@@ -339,11 +342,11 @@ export default function MapCardPage() {
             setTerritories(terrs);
         } catch (err: any) {
             console.error("Erro ao carregar dados do formulário S-12:", err);
-            toast.error("Erro ao carregar cartões de mapa.");
+            toast.error(t('mapCard.loadError'));
         } finally {
             setPageLoading(false);
         }
-    }, [congregationId]);
+    }, [congregationId, t]);
 
     const loadAddressPins = useCallback(async (congId: string) => {
         try {
@@ -461,14 +464,14 @@ export default function MapCardPage() {
             if (printLayoutMode === 'a6') {
                 const total = filteredTerritories.length;
                 if (total === 0) return;
-                setExportProgress({ current: 0, total, stepName: 'Iniciando compilação do PDF A6...' });
+                setExportProgress({ current: 0, total, stepName: t('mapCard.pdfA6Starting') });
 
                 const pdf = new jsPDF({ orientation: 'landscape', unit: 'mm', format: [148.5, 105] });
 
                 for (let i = 0; i < total; i++) {
-                    const t = filteredTerritories[i];
-                    setExportProgress({ current: i + 1, total, stepName: `Processando Território ${formatTerritoryNumber(t.name)}...` });
-                    const canvas = await renderCanvasFromId(`card-export-a6-${t.id}`, 2.5);
+                    const terr = filteredTerritories[i];
+                    setExportProgress({ current: i + 1, total, stepName: t('mapCard.processingTerritory', { number: formatTerritoryNumber(terr.name) }) });
+                    const canvas = await renderCanvasFromId(`card-export-a6-${terr.id}`, 2.5);
                     if (canvas) {
                         const imgData = canvas.toDataURL('image/png');
                         if (i > 0) pdf.addPage([148.5, 105], 'landscape');
@@ -476,16 +479,16 @@ export default function MapCardPage() {
                     }
                 }
                 pdf.save(`Cartoes_Territorio_A6_Todos_${new Date().toISOString().slice(0, 10)}.pdf`);
-                toast.success("PDF A6 baixado com sucesso!");
+                toast.success(t('mapCard.pdfA6Success'));
             } else {
                 const total = a4Groups.length;
                 if (total === 0) return;
-                setExportProgress({ current: 0, total, stepName: 'Iniciando compilação do PDF A4...' });
+                setExportProgress({ current: 0, total, stepName: t('mapCard.pdfA4Starting') });
 
                 const pdf = new jsPDF({ orientation: 'landscape', unit: 'mm', format: [297, 210] });
 
                 for (let i = 0; i < total; i++) {
-                    setExportProgress({ current: i + 1, total, stepName: `Processando página ${i + 1} de ${total}...` });
+                    setExportProgress({ current: i + 1, total, stepName: t('mapCard.processingPage', { current: i + 1, total }) });
                     const canvas = await renderCanvasFromId(`card-export-a4-${i}`, 2.5);
                     if (canvas) {
                         const imgData = canvas.toDataURL('image/png');
@@ -494,11 +497,11 @@ export default function MapCardPage() {
                     }
                 }
                 pdf.save(`Cartoes_Territorio_A4_Todos_${new Date().toISOString().slice(0, 10)}.pdf`);
-                toast.success("PDF A4 baixado com sucesso!");
+                toast.success(t('mapCard.pdfA4Success'));
             }
         } catch (err: any) {
             console.error("Erro ao exportar PDF:", err);
-            toast.error("Falha ao gerar o arquivo PDF. Tente novamente.");
+            toast.error(t('mapCard.pdfError'));
         } finally {
             setExporting(false);
             setIsExportModalOpen(false);
@@ -510,29 +513,29 @@ export default function MapCardPage() {
         try {
             const total = filteredTerritories.length;
             if (total === 0) return;
-            setExportProgress({ current: 0, total, stepName: 'Iniciando download de PDFs individuais...' });
+            setExportProgress({ current: 0, total, stepName: t('mapCard.individualPdfsStarting') });
 
             for (let i = 0; i < total; i++) {
-                const t = filteredTerritories[i];
-                setExportProgress({ current: i + 1, total, stepName: `Gerando PDF do Território ${formatTerritoryNumber(t.name)}...` });
+                const terr = filteredTerritories[i];
+                setExportProgress({ current: i + 1, total, stepName: t('mapCard.generatingTerritoryPdf', { number: formatTerritoryNumber(terr.name) }) });
                 
-                const elementId = printLayoutMode === 'a6' ? `card-export-a6-${t.id}` : `card-export-a4-0`;
-                const canvas = await renderCanvasFromId(elementId, 2.5) || await renderCanvasFromId(`card-export-a6-${t.id}`, 2.5);
+                const elementId = printLayoutMode === 'a6' ? `card-export-a6-${terr.id}` : `card-export-a4-0`;
+                const canvas = await renderCanvasFromId(elementId, 2.5) || await renderCanvasFromId(`card-export-a6-${terr.id}`, 2.5);
                 
                 if (canvas) {
                     const imgData = canvas.toDataURL('image/png');
                     const pdf = new jsPDF({ orientation: 'landscape', unit: 'mm', format: printLayoutMode === 'a6' ? [148.5, 105] : [297, 210] });
                     pdf.addImage(imgData, 'PNG', 0, 0, printLayoutMode === 'a6' ? 148.5 : 297, printLayoutMode === 'a6' ? 105 : 210);
                     
-                    const cleanCity = (t.cityName || '').replace(/[^a-zA-Z0-9]/g, '_');
-                    pdf.save(`Cartao_Territorio_${formatTerritoryNumber(t.name)}${cleanCity ? `_${cleanCity}` : ''}.pdf`);
+                    const cleanCity = (terr.cityName || '').replace(/[^a-zA-Z0-9]/g, '_');
+                    pdf.save(`Cartao_Territorio_${formatTerritoryNumber(terr.name)}${cleanCity ? `_${cleanCity}` : ''}.pdf`);
                     await new Promise(r => setTimeout(r, 400));
                 }
             }
-            toast.success("Todos os arquivos PDF individuais foram baixados!");
+            toast.success(t('mapCard.individualPdfsSuccess'));
         } catch (err: any) {
             console.error("Erro ao exportar PDFs individuais:", err);
-            toast.error("Falha ao baixar arquivos PDF individuais.");
+            toast.error(t('mapCard.individualPdfsError'));
         } finally {
             setExporting(false);
             setIsExportModalOpen(false);
@@ -544,27 +547,27 @@ export default function MapCardPage() {
         try {
             const total = filteredTerritories.length;
             if (total === 0) return;
-            setExportProgress({ current: 0, total, stepName: 'Iniciando download de imagens...' });
+            setExportProgress({ current: 0, total, stepName: t('mapCard.individualPngsStarting') });
 
             for (let i = 0; i < total; i++) {
-                const t = filteredTerritories[i];
-                setExportProgress({ current: i + 1, total, stepName: `Gerando imagem HD do Território ${formatTerritoryNumber(t.name)}...` });
+                const terr = filteredTerritories[i];
+                setExportProgress({ current: i + 1, total, stepName: t('mapCard.generatingTerritoryPng', { number: formatTerritoryNumber(terr.name) }) });
                 
-                const canvas = await renderCanvasFromId(`card-export-a6-${t.id}`, 3);
+                const canvas = await renderCanvasFromId(`card-export-a6-${terr.id}`, 3);
                 
                 if (canvas) {
                     const link = document.createElement('a');
-                    const cleanCity = (t.cityName || '').replace(/[^a-zA-Z0-9]/g, '_');
-                    link.download = `Cartao_Territorio_${formatTerritoryNumber(t.name)}${cleanCity ? `_${cleanCity}` : ''}.png`;
+                    const cleanCity = (terr.cityName || '').replace(/[^a-zA-Z0-9]/g, '_');
+                    link.download = `Cartao_Territorio_${formatTerritoryNumber(terr.name)}${cleanCity ? `_${cleanCity}` : ''}.png`;
                     link.href = canvas.toDataURL('image/png');
                     link.click();
                     await new Promise(r => setTimeout(r, 400));
                 }
             }
-            toast.success("Todas as imagens individuais foram baixadas!");
+            toast.success(t('mapCard.individualPngsSuccess'));
         } catch (err: any) {
             console.error("Erro ao exportar imagens:", err);
-            toast.error("Falha ao baixar imagens individuais.");
+            toast.error(t('mapCard.individualPngsError'));
         } finally {
             setExporting(false);
             setIsExportModalOpen(false);
@@ -612,7 +615,7 @@ export default function MapCardPage() {
         if (!file || !tId) return;
 
         if (!file.type.startsWith('image/')) {
-            toast.error("Por favor, selecione um arquivo de imagem válido.");
+            toast.error(t('mapCard.invalidImage'));
             return;
         }
 
@@ -624,11 +627,11 @@ export default function MapCardPage() {
             const res = await updateTerritory(tId, { imageUrl: compressedUrl });
             if (!res.success) throw new Error(res.error || "Erro ao salvar no banco");
 
-            setTerritories(prev => prev.map(t => t.id === tId ? { ...t, imageUrl: compressedUrl } : t));
-            toast.success("Imagem do mapa salva com sucesso no banco de dados!");
+            setTerritories(prev => prev.map(terr => terr.id === tId ? { ...terr, imageUrl: compressedUrl } : terr));
+            toast.success(t('mapCard.imageSaved'));
         } catch (err: any) {
             console.error("Erro ao salvar imagem no banco:", err);
-            toast.error(`Erro ao salvar imagem: ${err.message || 'Falha no salvamento'}`);
+            toast.error(t('mapCard.imageSaveError', { msg: err.message || '' }));
         } finally {
             setUploadingTerritoryId(null);
             setActiveUploadTerritoryId(null);
@@ -640,12 +643,12 @@ export default function MapCardPage() {
         e.stopPropagation();
         if (cardMode !== 'manual-image') return;
 
-        setTerritories(prev => prev.map(t => t.id === tId ? { ...t, imageUrl: '' } : t));
-        toast.success("Imagem removida!");
+        setTerritories(prev => prev.map(terr => terr.id === tId ? { ...terr, imageUrl: '' } : terr));
+        toast.success(t('mapCard.imageRemoved'));
 
         updateTerritory(tId, { imageUrl: '' }).catch(err => {
             console.error("Erro ao remover imagem no banco:", err);
-            toast.error("Erro ao sincronizar remoção de imagem.");
+            toast.error(t('mapCard.imageRemoveSyncError'));
         });
     };
 
@@ -710,9 +713,9 @@ export default function MapCardPage() {
                         <div className="min-w-0">
                             <h1 className="text-base sm:text-xl font-bold text-main flex items-center gap-2 truncate">
                                 <MapPin className="w-4 h-4 sm:w-5 sm:h-5 text-amber-500 shrink-0" />
-                                <span className="truncate">Cartão de Mapa de Território</span>
+                                <span className="truncate">{t('mapCard.title')}</span>
                             </h1>
-                            <p className="text-[11px] sm:text-xs text-muted truncate">Formulário S-12-T 6/72</p>
+                            <p className="text-[11px] sm:text-xs text-muted truncate">{t('mapCard.subtitle')}</p>
                         </div>
                     </div>
                 </div>
@@ -730,7 +733,7 @@ export default function MapCardPage() {
                             }`}
                         >
                             <LayoutGrid className="w-3.5 h-3.5" />
-                            4 por página (A4)
+                            {t('mapCard.layoutA4')}
                         </button>
                         <button
                             onClick={() => setPrintLayoutMode('a6')}
@@ -741,7 +744,7 @@ export default function MapCardPage() {
                             }`}
                         >
                             <FileText className="w-3.5 h-3.5" />
-                            Individual (A6)
+                            {t('mapCard.layoutA6')}
                         </button>
                     </div>
 
@@ -751,7 +754,7 @@ export default function MapCardPage() {
                         <div className="flex items-center justify-between sm:justify-start gap-1.5 bg-background border border-surface-border rounded-xl px-2.5 py-1.5 text-xs font-semibold min-w-0">
                             <div className="flex items-center gap-1 shrink-0">
                                 <Filter className="w-3.5 h-3.5 text-muted" />
-                                <span className="text-muted hidden xs:inline">Cidade:</span>
+                                <span className="text-muted hidden xs:inline">{t('mapCard.cityLabel')}</span>
                             </div>
                             <select
                                 value={selectedCityId}
@@ -761,7 +764,7 @@ export default function MapCardPage() {
                                 }}
                                 className="bg-transparent text-main font-bold outline-none cursor-pointer truncate max-w-full"
                             >
-                                <option value="ALL" className="bg-surface text-main">Todas as Cidades</option>
+                                <option value="ALL" className="bg-surface text-main">{t('mapCard.allCities')}</option>
                                 {cities.map(c => (
                                     <option key={c.id} value={c.id} className="bg-surface text-main">{c.name}</option>
                                 ))}
@@ -770,18 +773,18 @@ export default function MapCardPage() {
 
                         {/* Filtro de Território */}
                         <div className="flex items-center justify-between sm:justify-start gap-1.5 bg-background border border-surface-border rounded-xl px-2.5 py-1.5 text-xs font-semibold min-w-0">
-                            <span className="text-muted shrink-0 hidden xs:inline">Território:</span>
+                            <span className="text-muted shrink-0 hidden xs:inline">{t('mapCard.territoryLabel')}</span>
                             <select
                                 value={selectedTerritoryId}
                                 onChange={(e) => setSelectedTerritoryId(e.target.value)}
                                 className="bg-transparent text-main font-bold outline-none cursor-pointer truncate max-w-full"
                             >
-                                <option value="ALL" className="bg-surface text-main">Todos ({filteredTerritories.length})</option>
+                                <option value="ALL" className="bg-surface text-main">{t('mapCard.allTerritories', { count: filteredTerritories.length })}</option>
                                 {territories
-                                    .filter(t => selectedCityId === 'ALL' || t.cityId === selectedCityId)
-                                    .map(t => (
-                                        <option key={t.id} value={t.id} className="bg-surface text-main">
-                                            Terr. {formatTerritoryNumber(t.name)} {t.cityName ? `(${t.cityName})` : ''}
+                                    .filter(terr => selectedCityId === 'ALL' || terr.cityId === selectedCityId)
+                                    .map(terr => (
+                                        <option key={terr.id} value={terr.id} className="bg-surface text-main">
+                                            {t('mapCard.terrPrefix')} {formatTerritoryNumber(terr.name)} {terr.cityName ? `(${terr.cityName})` : ''}
                                         </option>
                                     ))}
                             </select>
@@ -794,7 +797,7 @@ export default function MapCardPage() {
                         className="w-full sm:w-auto bg-primary hover:bg-primary-dark text-white font-bold py-2.5 px-4 rounded-xl flex items-center justify-center gap-2 transition-all shadow-md shadow-primary/20 text-xs uppercase tracking-wider disabled:opacity-50"
                     >
                         <Download className="w-4 h-4" />
-                        Imprimir / Baixar
+                        {t('mapCard.printDownloadBtn')}
                     </button>
                 </div>
             </header>
@@ -803,7 +806,7 @@ export default function MapCardPage() {
             <main className="w-full max-w-[1250px] mx-auto p-2 sm:p-4 md:p-8 print:p-0 print:max-w-none font-serif overflow-hidden">
                 {pageLoading || authLoading ? (
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4 font-sans" role="status" aria-busy="true">
-                        <span className="sr-only">Carregando...</span>
+                        <span className="sr-only">{t('mapCard.loading')}</span>
                         {Array.from({ length: 4 }).map((_, idx) => (
                             <div key={idx} className="bg-surface border border-surface-border rounded-xl p-6 space-y-4">
                                 <div className="flex items-center justify-between">
@@ -818,9 +821,9 @@ export default function MapCardPage() {
                 ) : filteredTerritories.length === 0 ? (
                     <div className="text-center py-20 bg-surface border border-surface-border rounded-2xl shadow-sm font-sans">
                         <Building2 className="w-10 h-10 text-muted mx-auto mb-3" />
-                        <h3 className="text-lg font-bold text-main mb-1">Nenhum território encontrado</h3>
+                        <h3 className="text-lg font-bold text-main mb-1">{t('mapCard.emptyTitle')}</h3>
                         <p className="text-muted max-w-xs mx-auto text-xs">
-                            Selecione outra cidade ou verifique os territórios cadastrados.
+                            {t('mapCard.emptyDesc')}
                         </p>
                     </div>
                 ) : printLayoutMode === 'a4-grid' ? (
@@ -832,26 +835,26 @@ export default function MapCardPage() {
                                     id={`card-export-a4-${pageIndex}`}
                                     className="bg-white text-black border border-gray-300 print:border-none shadow-xl print:shadow-none w-[297mm] h-[210mm] mx-auto grid grid-cols-2 grid-rows-2 break-after-page select-none s12-font box-border overflow-hidden"
                                 >
-                                {group.map((t) => {
-                                    const localidadeText = formatLocalidade(t.description, t.cityName);
-                                    const isUploadingThis = uploadingTerritoryId === t.id;
-                                    const pins = cardMode === 'address-pins' ? (territoryPinsMap.get(t.id) || []) : [];
+                                {group.map((terr) => {
+                                    const localidadeText = formatLocalidade(terr.description, terr.cityName);
+                                    const isUploadingThis = uploadingTerritoryId === terr.id;
+                                    const pins = cardMode === 'address-pins' ? (territoryPinsMap.get(terr.id) || []) : [];
 
                                     return (
                                         <div
-                                            key={t.id}
+                                            key={terr.id}
                                             className="w-[148.5mm] h-[105mm] border border-gray-300 print:border-black px-7 py-4 flex flex-col justify-between box-border overflow-hidden bg-white relative group"
                                         >
                                             <div className="flex-1 flex flex-col justify-between">
                                                 <div>
                                                     <h2 className="text-center font-serif text-[21px] font-bold tracking-normal text-black mb-3">
-                                                        Cartão de Mapa de Território
+                                                        {t('mapCard.cardTitle')}
                                                     </h2>
 
                                                     <div className="flex items-baseline justify-between font-serif text-[12px] font-bold text-black mb-2">
                                                         {/* Localidade */}
                                                         <div className="flex items-baseline flex-1 min-w-0 mr-4">
-                                                            <span className="shrink-0 font-bold mr-1.5 text-black">Localidade</span>
+                                                            <span className="shrink-0 font-bold mr-1.5 text-black">{t('mapCard.locality')}</span>
                                                             <div data-field-dotted className="flex-1 border-b-[1.5px] border-dotted border-black flex items-end justify-center pb-[0px] -mb-[1px]">
                                                                 <AutoFitText text={localidadeText} />
                                                             </div>
@@ -859,10 +862,10 @@ export default function MapCardPage() {
 
                                                         {/* Terr. N.º */}
                                                         <div className="flex items-baseline shrink-0 w-28 ml-1">
-                                                            <span className="shrink-0 font-bold mr-1 text-black">Terr. N.º</span>
+                                                            <span className="shrink-0 font-bold mr-1 text-black">{t('mapCard.terrNo')}</span>
                                                             <div data-field-dotted className="flex-1 border-b-[1.5px] border-dotted border-black flex items-end justify-center pb-[0px] -mb-[1px]">
                                                                 <span className="font-bold text-black whitespace-nowrap leading-tight">
-                                                                    {formatTerritoryNumber(t.name)}
+                                                                    {formatTerritoryNumber(terr.name)}
                                                                 </span>
                                                             </div>
                                                         </div>
@@ -871,7 +874,7 @@ export default function MapCardPage() {
 
                                                 {/* Área do Mapa Estritamente ISOLADA por Modo */}
                                                 <div
-                                                    onClick={() => cardMode === 'manual-image' && !isUploadingThis && handleTriggerImageUpload(t.id)}
+                                                    onClick={() => cardMode === 'manual-image' && !isUploadingThis && handleTriggerImageUpload(terr.id)}
                                                     className={`relative flex-1 min-h-[36mm] my-1 flex flex-col justify-end items-center overflow-hidden group/map ${
                                                         cardMode === 'manual-image' ? 'cursor-pointer' : 'cursor-default'
                                                     }`}
@@ -881,20 +884,20 @@ export default function MapCardPage() {
                                                         isUploadingThis ? (
                                                             <div className="absolute inset-0 bg-white/90 flex flex-col items-center justify-center gap-2 font-sans text-xs font-bold text-primary z-20">
                                                                 <Loader2 className="w-6 h-6 animate-spin text-primary" />
-                                                                <span>Processando mapa HD...</span>
+                                                                <span>{t('mapCard.processingMap')}</span>
                                                             </div>
-                                                        ) : t.imageUrl ? (
+                                                        ) : terr.imageUrl ? (
                                                             <>
                                                                 <img
-                                                                    src={t.imageUrl}
-                                                                    alt={`Mapa do Território ${t.name}`}
+                                                                    src={terr.imageUrl}
+                                                                    alt={`Mapa do Território ${terr.name}`}
                                                                     className="absolute inset-0 w-full h-full object-cover object-center"
                                                                 />
                                                                 <div className="no-print absolute top-1.5 right-1.5 z-20 opacity-0 group-hover/map:opacity-100 transition-opacity">
                                                                     <button
-                                                                        onClick={(e) => handleRemoveImage(t.id, e)}
+                                                                        onClick={(e) => handleRemoveImage(terr.id, e)}
                                                                         className="bg-rose-600/90 hover:bg-rose-700 text-white p-1.5 rounded-lg shadow-md transition-colors"
-                                                                        title="Remover Imagem do Mapa"
+                                                                        title={t('mapCard.removeImageTitle')}
                                                                     >
                                                                         <Trash2 className="w-3.5 h-3.5" />
                                                                     </button>
@@ -908,7 +911,7 @@ export default function MapCardPage() {
                                                                     </div>
                                                                 </div>
                                                                 <p className="font-serif font-bold text-[9.5px] text-black text-center relative z-10 bg-white px-2 py-0.5 mb-0 leading-normal">
-                                                                    (Cole o mapa acima ou desenhe o território)
+                                                                    {t('mapCard.pasteOrDraw')}
                                                                 </p>
                                                             </>
                                                         )
@@ -919,28 +922,30 @@ export default function MapCardPage() {
                                                         /* MODO 3: POLÍGONOS (EM BREVE) */
                                                         <div className="absolute inset-0 bg-slate-50 border border-dashed border-slate-300 flex flex-col items-center justify-center p-3 text-center">
                                                             <Hexagon className="w-6 h-6 text-purple-500 mb-1 opacity-70" />
-                                                            <p className="font-sans font-bold text-[11px] text-slate-700">Modo 3: Desenho por Polígonos</p>
-                                                            <p className="font-sans text-[9.5px] text-slate-500 mt-0.5">Em desenvolvimento futuro.</p>
+                                                            <p className="font-sans font-bold text-[11px] text-slate-700">{t('mapCard.polygonsModeTitle')}</p>
+                                                            <p className="font-sans text-[9.5px] text-slate-500 mt-0.5">{t('mapCard.polygonsModeDesc')}</p>
                                                         </div>
                                                     )}
                                                 </div>
                                             </div>
 
-                                            {/* Rodapé Oficial S-12-T */}
+                                            {/* Rodapé Oficial S-12 */}
                                             <div className="w-full font-serif font-bold text-[10.5px] leading-[1.3] text-black mb-1 select-none">
                                                 <span className="block text-justify [text-align-last:justify] w-full">
-                                                    Guarde este cartão no envelope. Tome cuidado para não o manchar, marcar
+                                                    {t('mapCard.footerLine1')}
                                                 </span>
                                                 <span className="block text-justify [text-align-last:justify] w-full">
-                                                    ou dobrar. Cada vez que o território for coberto, queira informar disso o irmão
+                                                    {t('mapCard.footerLine2')}
                                                 </span>
-                                                <span className="block text-left w-full">
-                                                    que cuida do arquivo de territórios.
-                                                </span>
+                                                {t('mapCard.footerLine3') && (
+                                                    <span className="block text-left w-full">
+                                                        {t('mapCard.footerLine3')}
+                                                    </span>
+                                                )}
 
                                                 <div className="w-full flex items-center justify-between font-serif text-[9px] font-normal text-black mt-2">
-                                                    <span>S-12-T &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; 6/72</span>
-                                                    <span>Impresso no Brasil</span>
+                                                    <span>{t('mapCard.formCode')} &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; {t('mapCard.formDate')}</span>
+                                                    {t('mapCard.printedIn') && <span>{t('mapCard.printedIn')}</span>}
                                                 </div>
                                             </div>
                                         </div>
@@ -953,27 +958,27 @@ export default function MapCardPage() {
                 ) : (
                     /* MODALIDADE: CARTÃO INDIVIDUAL A6 HORIZONTAL (148mm x 105mm) */
                     <div className="w-full pb-4 pt-1 flex flex-col items-center gap-10 print:gap-0">
-                        {filteredTerritories.map((t) => {
-                            const localidadeText = formatLocalidade(t.description, t.cityName);
-                            const isUploadingThis = uploadingTerritoryId === t.id;
-                            const pins = cardMode === 'address-pins' ? (territoryPinsMap.get(t.id) || []) : [];
+                        {filteredTerritories.map((terr) => {
+                            const localidadeText = formatLocalidade(terr.description, terr.cityName);
+                            const isUploadingThis = uploadingTerritoryId === terr.id;
+                            const pins = cardMode === 'address-pins' ? (territoryPinsMap.get(terr.id) || []) : [];
 
                             return (
-                                <ResponsiveSheet key={t.id} widthMm={148.5} heightMm={105}>
+                                <ResponsiveSheet key={terr.id} widthMm={148.5} heightMm={105}>
                                     <div
-                                        id={`card-export-a6-${t.id}`}
+                                        id={`card-export-a6-${terr.id}`}
                                         className="bg-white text-black border border-gray-300 print:border-black px-7 py-4 shadow-lg print:shadow-none w-[148.5mm] h-[105mm] mx-auto flex flex-col justify-between break-after-page s12-font select-none box-border overflow-hidden group relative"
                                     >
                                     <div className="flex-1 flex flex-col justify-between">
                                         <div>
                                             <h1 className="text-center font-serif text-[21px] font-bold tracking-normal text-black mb-3">
-                                                Cartão de Mapa de Território
+                                                {t('mapCard.cardTitle')}
                                             </h1>
 
                                             <div className="flex items-baseline justify-between font-serif text-[12px] font-bold text-black mb-2">
                                                 {/* Localidade */}
                                                 <div className="flex items-baseline flex-1 min-w-0 mr-4">
-                                                    <span className="shrink-0 font-bold mr-1.5 text-black">Localidade</span>
+                                                    <span className="shrink-0 font-bold mr-1.5 text-black">{t('mapCard.locality')}</span>
                                                     <div data-field-dotted className="flex-1 border-b-[1.5px] border-dotted border-black flex items-end justify-center pb-[0px] -mb-[1px]">
                                                         <AutoFitText text={localidadeText} />
                                                     </div>
@@ -981,10 +986,10 @@ export default function MapCardPage() {
 
                                                 {/* Terr. N.º */}
                                                 <div className="flex items-baseline shrink-0 w-28 ml-1">
-                                                    <span className="shrink-0 font-bold mr-1 text-black">Terr. N.º</span>
+                                                    <span className="shrink-0 font-bold mr-1 text-black">{t('mapCard.terrNo')}</span>
                                                     <div data-field-dotted className="flex-1 border-b-[1.5px] border-dotted border-black flex items-end justify-center pb-[0px] -mb-[1px]">
                                                         <span className="font-bold text-black whitespace-nowrap leading-tight">
-                                                            {formatTerritoryNumber(t.name)}
+                                                            {formatTerritoryNumber(terr.name)}
                                                         </span>
                                                     </div>
                                                 </div>
@@ -993,7 +998,7 @@ export default function MapCardPage() {
 
                                         {/* Área do Mapa Estritamente ISOLADA por Modo */}
                                         <div
-                                            onClick={() => cardMode === 'manual-image' && !isUploadingThis && handleTriggerImageUpload(t.id)}
+                                            onClick={() => cardMode === 'manual-image' && !isUploadingThis && handleTriggerImageUpload(terr.id)}
                                             className={`relative flex-1 min-h-[36mm] my-1 flex flex-col justify-end items-center overflow-hidden group/map ${
                                                 cardMode === 'manual-image' ? 'cursor-pointer' : 'cursor-default'
                                             }`}
@@ -1003,20 +1008,20 @@ export default function MapCardPage() {
                                                 isUploadingThis ? (
                                                     <div className="absolute inset-0 bg-white/90 flex flex-col items-center justify-center gap-2 font-sans text-xs font-bold text-primary z-20">
                                                         <Loader2 className="w-6 h-6 animate-spin text-primary" />
-                                                        <span>Processando mapa HD...</span>
+                                                        <span>{t('mapCard.processingMap')}</span>
                                                     </div>
-                                                ) : t.imageUrl ? (
+                                                ) : terr.imageUrl ? (
                                                     <>
                                                         <img
-                                                            src={t.imageUrl}
-                                                            alt={`Mapa do Território ${t.name}`}
+                                                            src={terr.imageUrl}
+                                                            alt={`Mapa do Território ${terr.name}`}
                                                             className="absolute inset-0 w-full h-full object-cover object-center"
                                                         />
                                                         <div className="no-print absolute top-1.5 right-1.5 z-20 opacity-0 group-hover/map:opacity-100 transition-opacity">
                                                             <button
-                                                                onClick={(e) => handleRemoveImage(t.id, e)}
+                                                                onClick={(e) => handleRemoveImage(terr.id, e)}
                                                                 className="bg-rose-600/90 hover:bg-rose-700 text-white p-1.5 rounded-lg shadow-md transition-colors"
-                                                                title="Remover Imagem do Mapa"
+                                                                title={t('mapCard.removeImageTitle')}
                                                                 >
                                                                 <Trash2 className="w-3.5 h-3.5" />
                                                             </button>
@@ -1030,7 +1035,7 @@ export default function MapCardPage() {
                                                             </div>
                                                         </div>
                                                         <p className="font-serif font-bold text-[9.5px] text-black text-center relative z-10 bg-white px-2 py-0.5 mb-0 leading-normal">
-                                                            (Cole o mapa acima ou desenhe o território)
+                                                            {t('mapCard.pasteOrDraw')}
                                                         </p>
                                                     </>
                                                 )
@@ -1041,28 +1046,30 @@ export default function MapCardPage() {
                                                 /* MODO 3: POLÍGONOS (EM BREVE) */
                                                 <div className="absolute inset-0 bg-slate-50 border border-dashed border-slate-300 flex flex-col items-center justify-center p-3 text-center">
                                                     <Hexagon className="w-6 h-6 text-purple-500 mb-1 opacity-70" />
-                                                    <p className="font-sans font-bold text-[11px] text-slate-700">Modo 3: Desenho por Polígonos</p>
-                                                    <p className="font-sans text-[9.5px] text-slate-500 mt-0.5">Em desenvolvimento futuro.</p>
+                                                    <p className="font-sans font-bold text-[11px] text-slate-700">{t('mapCard.polygonsModeTitle')}</p>
+                                                    <p className="font-sans text-[9.5px] text-slate-500 mt-0.5">{t('mapCard.polygonsModeDesc')}</p>
                                                 </div>
                                             )}
                                         </div>
                                     </div>
 
-                                    {/* Rodapé Oficial S-12-T */}
+                                    {/* Rodapé Oficial S-12 */}
                                     <div className="w-full font-serif font-bold text-[10.5px] leading-[1.3] text-black mb-1 select-none">
                                         <span className="block text-justify [text-align-last:justify] w-full">
-                                            Guarde este cartão no envelope. Tome cuidado para não o manchar, marcar
+                                            {t('mapCard.footerLine1')}
                                         </span>
                                         <span className="block text-justify [text-align-last:justify] w-full">
-                                            ou dobrar. Cada vez que o território for coberto, queira informar disso o irmão
+                                            {t('mapCard.footerLine2')}
                                         </span>
-                                        <span className="block text-left w-full">
-                                            que cuida do arquivo de territórios.
-                                        </span>
+                                        {t('mapCard.footerLine3') && (
+                                            <span className="block text-left w-full">
+                                                {t('mapCard.footerLine3')}
+                                            </span>
+                                        )}
 
                                         <div className="w-full flex items-center justify-between font-serif text-[9px] font-normal text-black mt-2">
-                                            <span>S-12-T &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; 6/72</span>
-                                            <span>Impresso no Brasil</span>
+                                            <span>{t('mapCard.formCode')} &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; {t('mapCard.formDate')}</span>
+                                            {t('mapCard.printedIn') && <span>{t('mapCard.printedIn')}</span>}
                                         </div>
                                     </div>
                                     </div>
@@ -1082,10 +1089,10 @@ export default function MapCardPage() {
                             <div>
                                 <h2 className="text-lg font-bold text-main flex items-center gap-2">
                                     <Download className="w-5 h-5 text-primary" />
-                                    Opções de Impressão e Download
+                                    {t('mapCard.exportModalTitle')}
                                 </h2>
                                 <p className="text-xs text-muted">
-                                    Escolha como deseja salvar ou imprimir os {filteredTerritories.length} cartões
+                                    {t('mapCard.exportModalSubtitle', { count: filteredTerritories.length })}
                                 </p>
                             </div>
                             <button
@@ -1105,7 +1112,7 @@ export default function MapCardPage() {
                                     <div className="space-y-1">
                                         <p className="font-bold text-main text-sm">{exportProgress.stepName}</p>
                                         <p className="text-xs text-muted">
-                                            Progresso: {exportProgress.current} de {exportProgress.total}
+                                            {t('mapCard.progressLabel', { current: exportProgress.current, total: exportProgress.total })}
                                         </p>
                                     </div>
                                     <div className="w-full bg-gray-200 dark:bg-gray-800 h-2 rounded-full overflow-hidden max-w-xs mx-auto">
@@ -1127,11 +1134,11 @@ export default function MapCardPage() {
                                         </div>
                                         <div className="space-y-1 min-w-0">
                                             <h3 className="font-bold text-main text-sm flex items-center gap-2">
-                                                Baixar Todos em um Único PDF
-                                                <span className="text-[10px] bg-primary/10 text-primary px-2 py-0.5 rounded-full font-bold">Recomendado</span>
+                                                {t('mapCard.allInOnePdfTitle')}
+                                                <span className="text-[10px] bg-primary/10 text-primary px-2 py-0.5 rounded-full font-bold">{t('mapCard.recommended')}</span>
                                             </h3>
                                             <p className="text-xs text-muted leading-relaxed">
-                                                Gera um único PDF com todos os cartões juntos ({printLayoutMode === 'a6' ? '1 cartão A6 por página' : '4 por folha A4'}).
+                                                {printLayoutMode === 'a6' ? t('mapCard.allInOnePdfDescA6') : t('mapCard.allInOnePdfDescA4')}
                                             </p>
                                         </div>
                                     </button>
@@ -1146,10 +1153,10 @@ export default function MapCardPage() {
                                         </div>
                                         <div className="space-y-1 min-w-0">
                                             <h3 className="font-bold text-main text-sm">
-                                                Baixar PDFs Separados (Um PDF por Território)
+                                                {t('mapCard.individualPdfsTitle')}
                                             </h3>
                                             <p className="text-xs text-muted leading-relaxed">
-                                                Baixa um arquivo .PDF independente de formato {printLayoutMode.toUpperCase()} para cada cartão de território.
+                                                {t('mapCard.individualPdfsDesc', { format: printLayoutMode.toUpperCase() })}
                                             </p>
                                         </div>
                                     </button>
@@ -1164,10 +1171,10 @@ export default function MapCardPage() {
                                         </div>
                                         <div className="space-y-1 min-w-0">
                                             <h3 className="font-bold text-main text-sm">
-                                                Baixar Imagens PNG Separadas (Uma Imagem por Território)
+                                                {t('mapCard.individualPngsTitle')}
                                             </h3>
                                             <p className="text-xs text-muted leading-relaxed">
-                                                Baixa cada cartão de território como uma imagem HD de alta qualidade (.PNG).
+                                                {t('mapCard.individualPngsDesc')}
                                             </p>
                                         </div>
                                     </button>
@@ -1182,10 +1189,10 @@ export default function MapCardPage() {
                                         </div>
                                         <div className="space-y-1 min-w-0">
                                             <h3 className="font-bold text-main text-sm">
-                                                Imprimir pelo Navegador (Impressora Nativa)
+                                                {t('mapCard.nativePrintTitle')}
                                             </h3>
                                             <p className="text-xs text-muted leading-relaxed">
-                                                Abre a janela de impressão nativa do sistema (recomendado para computadores com impressoras A4 comuns).
+                                                {t('mapCard.nativePrintDesc')}
                                             </p>
                                         </div>
                                     </button>

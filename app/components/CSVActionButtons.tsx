@@ -21,6 +21,7 @@ import { getTerritories } from '@/lib/services/territories';
 // TODO(mutations): migrate to mutation layer - legacy module (admin/report/dashboard)
 // eslint-disable-next-line no-restricted-imports
 import { getCities } from '@/lib/services/cities';
+import { useTranslation } from '@/app/context/I18nContext';
 
 interface CSVActionButtonsProps {
     congregationId: string;
@@ -37,6 +38,7 @@ export default function CSVActionButtons({
     onImportSuccess,
     className = ''
 }: CSVActionButtonsProps) {
+    const { t } = useTranslation();
     const [isMenuOpen, setIsMenuOpen] = useState(false);
     const [isImportModalOpen, setIsImportModalOpen] = useState(false);
 
@@ -50,7 +52,7 @@ export default function CSVActionButtons({
     }, [isMenuOpen]);
 
     const handleExport = async () => {
-        toast.info("Preparando exportação...");
+        toast.info(t('csvActions.preparingExport'));
         try {
             // 1. Buscar dados necessários em paralelo
             const [addrRes, terrRes, cityRes] = await Promise.all([
@@ -63,7 +65,7 @@ export default function CSVActionButtons({
             const addresses = addrRes.addresses || [];
 
             if (addresses.length === 0) {
-                toast.error("Nenhum endereço encontrado para exportar.");
+                toast.error(t('csvActions.noAddressToExport'));
                 return;
             }
 
@@ -122,10 +124,10 @@ export default function CSVActionButtons({
             link.download = fileName;
             link.click();
             
-            toast.success("Dados exportados com sucesso!");
+            toast.success(t('csvActions.exportSuccess'));
         } catch (error: any) {
             console.error("Export error:", error);
-            toast.error("Erro ao exportar dados: " + error.message);
+            toast.error(t('csvActions.exportError', { msg: error.message }));
         }
     };
 
@@ -139,7 +141,7 @@ export default function CSVActionButtons({
         link.href = URL.createObjectURL(blob);
         link.download = `template_importacao_campo_branco.csv`;
         link.click();
-        toast.info("Template baixado.");
+        toast.info(t('csvActions.templateDownloaded'));
     };
 
     return (
@@ -150,7 +152,7 @@ export default function CSVActionButtons({
                     setIsMenuOpen(!isMenuOpen);
                 }}
                 className="p-2.5 bg-surface border border-surface-border text-muted hover:text-primary hover:bg-surface-highlight rounded-xl shadow-sm transition-all flex items-center justify-center group"
-                title="Ações de Dados"
+                title={t('csvActions.buttonTitle')}
             >
                 <MoreHorizontal className="w-5 h-5 group-hover:scale-110 transition-transform" />
             </button>
@@ -161,12 +163,12 @@ export default function CSVActionButtons({
                     onClick={(e) => e.stopPropagation()}
                 >
                     <div className="px-4 py-2">
-                        <p className="text-[10px] font-black text-muted uppercase tracking-widest opacity-50">Manutenção CSV</p>
+                        <p className="text-[10px] font-black text-muted uppercase tracking-widest opacity-50">{t('csvActions.menuHeader')}</p>
                     </div>
 
                     <DropDownItem 
                         icon={Upload} 
-                        label="Importar Dados" 
+                        label={t('csvActions.importData')} 
                         variant="primary" 
                         onClick={() => {
                             setIsImportModalOpen(true);
@@ -176,7 +178,7 @@ export default function CSVActionButtons({
 
                     <DropDownItem 
                         icon={Download} 
-                        label="Exportar Dados" 
+                        label={t('csvActions.exportData')} 
                         variant="indigo" 
                         onClick={() => {
                             handleExport();
@@ -186,7 +188,7 @@ export default function CSVActionButtons({
 
                     <DropDownItem 
                         icon={FileSpreadsheet} 
-                        label="Baixar Template" 
+                        label={t('csvActions.downloadTemplate')} 
                         variant="success" 
                         onClick={() => {
                             downloadTemplate();

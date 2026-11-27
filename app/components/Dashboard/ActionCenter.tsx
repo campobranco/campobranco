@@ -12,6 +12,7 @@ import {
     Hand
 } from 'lucide-react';
 import Link from 'next/link';
+import { useTranslation } from '@/app/context/I18nContext';
 
 export interface IdleTerritory {
     id: string;
@@ -63,6 +64,7 @@ export default function ActionCenter({
     onReviewDoNotVisit,
     limit
 }: ActionCenterProps) {
+    const { t } = useTranslation();
     // Collect all notification items
     const items: React.ReactNode[] = [];
 
@@ -81,7 +83,7 @@ export default function ActionCenter({
                         <div className="flex-1 md:hidden pt-0.5">
                             <h3 className="font-bold text-red-900 dark:text-red-100 flex items-center gap-2 text-sm">
                                 <Hand className="w-3.5 h-3.5 text-red-600" />
-                                Não Visitar: {address.street}{address.number && address.number !== 'S/N' ? `, ${address.number}` : ''}
+                                {t('dashboard.actionCenter.doNotVisitPrefix', { address: `${address.street}${address.number && address.number !== 'S/N' ? `, ${address.number}` : ''}` })}
                             </h3>
                         </div>
                     </div>
@@ -89,17 +91,20 @@ export default function ActionCenter({
                     <div className="flex-1 -mt-1 md:mt-0 pl-9 md:pl-0">
                         <h3 className="hidden md:flex font-bold text-red-900 dark:text-red-100 items-center gap-2 mb-1">
                             <Hand className="w-4 h-4 text-red-600" />
-                            Não Visitar: {address.street}{address.number && address.number !== 'S/N' ? `, ${address.number}` : ''}
+                            {t('dashboard.actionCenter.doNotVisitPrefix', { address: `${address.street}${address.number && address.number !== 'S/N' ? `, ${address.number}` : ''}` })}
                         </h3>
                         <p className="md:hidden text-[9px] font-bold uppercase tracking-wider text-red-600 dark:text-red-400 mb-0.5">
-                            SOLICITAÇÃO PENDENTE DE REVISÃO
+                            {t('dashboard.actionCenter.pendingReviewBadge')}
                         </p>
                         <p className="text-red-800/90 dark:text-red-200/90 text-xs md:text-sm leading-tight md:leading-relaxed">
-                            Morador solicitou não ser visitado{address.territoryName ? ` no Território ${address.territoryName}` : ''}{address.city ? ` (${address.city})` : ''}. Revise para inativar o endereço ou remover a marcação.
+                            {t('dashboard.actionCenter.doNotVisitDesc', {
+                                territory: address.territoryName ? ` (${address.territoryName})` : '',
+                                city: address.city ? ` (${address.city})` : ''
+                            })}
                         </p>
                         {address.observations && (
                             <p className="text-red-700/80 dark:text-red-300/80 text-[11px] md:text-xs italic mt-1 bg-red-100/50 dark:bg-red-900/30 p-1.5 rounded">
-                                Nota: &quot;{address.observations}&quot;
+                                {t('dashboard.actionCenter.noteLabel', { note: address.observations })}
                             </p>
                         )}
                     </div>
@@ -109,7 +114,7 @@ export default function ActionCenter({
                             onClick={() => onReviewDoNotVisit && onReviewDoNotVisit(address)}
                             className="w-full md:w-auto bg-white dark:bg-surface text-red-700 dark:text-red-300 border border-red-300 dark:border-red-800 font-bold text-[10px] md:text-xs py-1.5 md:py-3 px-4 md:px-6 rounded-md flex items-center justify-center gap-2 hover:bg-red-100/50 dark:hover:bg-red-900/40 transition-colors shadow-sm whitespace-nowrap"
                         >
-                            REVISAR <ArrowRight className="w-3 h-3 md:w-3.5 md:h-3.5" />
+                            {t('dashboard.actionCenter.reviewBtn')} <ArrowRight className="w-3 h-3 md:w-3.5 md:h-3.5" />
                         </button>
                     </div>
                 </div>
@@ -128,7 +133,7 @@ export default function ActionCenter({
                     <div className="flex-1 md:hidden pt-0.5">
                         <h3 className="font-bold text-amber-900 dark:text-amber-100 flex items-center gap-2 text-sm">
                             <PenLine className="w-3.5 h-3.5" />
-                            Anotação Pendente
+                            {t('dashboard.actionCenter.pendingAnnotationTitle')}
                         </h3>
                     </div>
                 </div>
@@ -136,16 +141,16 @@ export default function ActionCenter({
                 <div className="flex-1 -mt-1 md:mt-0 pl-9 md:pl-0">
                     <h3 className="hidden md:flex font-bold text-amber-900 dark:text-amber-100 items-center gap-2 mb-1">
                         <PenLine className="w-4 h-4" />
-                        Anotação Pendente
+                        {t('dashboard.actionCenter.pendingAnnotationTitle')}
                     </h3>
                     <p className="text-primary dark:text-primary-light/30 text-xs md:text-sm leading-tight md:leading-relaxed">
-                        Você tem uma visita recente pendente de anotação.
+                        {t('dashboard.actionCenter.pendingAnnotationDesc')}
                     </p>
                 </div>
 
                 <div className="pl-9 md:pl-0 w-full md:w-auto mt-1 md:mt-0">
                     <button className="w-full md:w-auto bg-white dark:bg-surface text-main border border-amber-200 dark:border-amber-800 font-bold text-[10px] md:text-xs py-1.5 md:py-3 px-4 md:px-6 rounded-md flex items-center justify-center gap-2 hover:bg-primary-light dark:hover:bg-primary-dark/40 transition-colors shadow-sm whitespace-nowrap">
-                        ANOTAR <ArrowRight className="w-3 h-3 md:w-3.5 md:h-3.5" />
+                        {t('dashboard.actionCenter.annotateBtn')} <ArrowRight className="w-3 h-3 md:w-3.5 md:h-3.5" />
                     </button>
                 </div>
             </div>
@@ -163,19 +168,19 @@ export default function ActionCenter({
                     <div className="flex-1 md:hidden pt-0.5">
                         <h3 className="font-bold text-green-900 dark:text-green-100 flex items-center gap-2 text-sm">
                             <MapIcon className="w-3.5 h-3.5" />
-                            Mapas Pendentes
+                            {t('dashboard.actionCenter.pendingMapsTitle')}
                         </h3>
                     </div>
                 </div>
                 <div className="flex-1 -mt-1 md:mt-0 pl-9 md:pl-0">
                     <h3 className="hidden md:flex font-bold text-green-900 dark:text-green-100 items-center gap-2 mb-1">
                         <MapIcon className="w-4 h-4" />
-                        {pendingMapsCount === 1 ? 'Mapa Pendente!' : 'Mapas Pendentes!'}
+                        {pendingMapsCount === 1 ? t('dashboard.actionCenter.pendingMapSingularTitle') : t('dashboard.actionCenter.pendingMapsPluralTitle')}
                     </h3>
                     <p className="text-green-800/80 dark:text-green-200/80 text-xs md:text-sm leading-tight md:leading-relaxed">
                         {pendingMapsCount === 1
-                            ? `Você tem 1 mapa designado.`
-                            : `Você tem ${pendingMapsCount} mapas designados.`}
+                            ? t('dashboard.actionCenter.pendingMapSingularDesc')
+                            : t('dashboard.actionCenter.pendingMapsPluralDesc', { count: pendingMapsCount })}
                     </p>
                 </div>
             </div>
@@ -193,17 +198,19 @@ export default function ActionCenter({
                     <div className="flex-1 md:hidden pt-0.5">
                         <h3 className="font-bold text-orange-900 dark:text-orange-100 flex items-center gap-2 text-sm">
                             <AlertCircle className="w-3.5 h-3.5" />
-                            Link vencendo!
+                            {t('dashboard.actionCenter.expiringShortTitle')}
                         </h3>
                     </div>
                 </div>
                 <div className="flex-1 -mt-1 md:mt-0 pl-9 md:pl-0">
                     <h3 className="hidden md:flex font-bold text-orange-900 dark:text-orange-100 items-center gap-2 mb-1">
                         <AlertCircle className="w-4 h-4" />
-                        Link quase vencendo!
+                        {t('dashboard.actionCenter.expiringTitle')}
                     </h3>
                     <p className="text-orange-800/80 dark:text-orange-200/80 text-xs md:text-sm leading-tight md:leading-relaxed">
-                        <strong>{map.title}</strong> vence em {map.daysLeft} {map.daysLeft === 1 ? 'dia' : 'dias'}.
+                        {map.daysLeft === 1
+                            ? t('dashboard.actionCenter.expiringDescSingular', { title: map.title })
+                            : t('dashboard.actionCenter.expiringDescPlural', { title: map.title, days: map.daysLeft })}
                     </p>
                 </div>
             </div>
@@ -221,22 +228,22 @@ export default function ActionCenter({
                     <div className="flex-1 md:hidden pt-0.5">
                         <h3 className="font-bold text-blue-900 dark:text-primary-light/50 flex items-center gap-2 text-sm">
                             <Award className="w-3.5 h-3.5" />
-                            Território 100%
+                            {t('dashboard.actionCenter.territory100Short')}
                         </h3>
                     </div>
                 </div>
                 <div className="flex-1 -mt-1 md:mt-0 pl-9 md:pl-0">
                     <h3 className="hidden md:flex font-bold text-blue-900 dark:text-primary-light/50 items-center gap-2 mb-1">
                         <Award className="w-4 h-4" />
-                        Cidade 100% Percorrida
+                        {t('dashboard.actionCenter.city100Title')}
                     </h3>
                     <p className="text-primary-dark/80 dark:text-primary-light/30 text-xs md:text-sm leading-tight md:leading-relaxed">
-                        {cityCompletion.cityName} foi finalizada!
+                        {t('dashboard.actionCenter.city100Desc', { city: cityCompletion.cityName })}
                     </p>
                 </div>
                 <div className="pl-9 md:pl-0 w-full md:w-auto mt-1 md:mt-0">
                     <button className="w-full md:w-auto bg-white dark:bg-surface text-main border border-primary-light dark:border-primary-dark/50 font-bold text-[10px] md:text-xs py-1.5 md:py-3 px-4 md:px-6 rounded-md flex items-center justify-center gap-2 hover:bg-primary-light/50 dark:hover:bg-primary-dark/40 transition-colors shadow-sm whitespace-nowrap">
-                        VER RELATÓRIO <ArrowRight className="w-3 h-3 md:w-3.5 md:h-3.5" />
+                        {t('dashboard.actionCenter.viewReportBtn')} <ArrowRight className="w-3 h-3 md:w-3.5 md:h-3.5" />
                     </button>
                 </div>
             </div>
@@ -280,15 +287,13 @@ export default function ActionCenter({
                         </h3>
                         {/* Mobile Title Replacement for Desktop Context */}
                         <p className={`md:hidden text-[9px] font-bold uppercase tracking-wider opacity-60 mb-0.5 ${titleColor}`}>
-                            {isWarning ? 'MUITO TEMPO SEM COBRAR' : 'NUNCA VISITADO'}
+                            {isWarning ? t('dashboard.actionCenter.idleWarningBadge') : t('dashboard.actionCenter.idleNeverBadge')}
                         </p>
 
                         <p className={`${textColor} text-xs md:text-sm leading-tight md:leading-relaxed`}>
-                            {territory.lastVisit ? (
-                                <>Esta região de <span className="font-bold">{territory.city}</span> não é visitada desde {new Date(territory.lastVisit).toLocaleDateString()}.</>
-                            ) : (
-                                <>Este território de <span className="font-bold">{territory.city}</span> nunca recebeu uma visita registrada.</>
-                            )}
+                            {territory.lastVisit
+                                ? t('dashboard.actionCenter.idleLastVisitDesc', { city: territory.city, date: new Date(territory.lastVisit).toLocaleDateString() })
+                                : t('dashboard.actionCenter.idleNeverVisitedDesc', { city: territory.city })}
                         </p>
                     </div>
 
@@ -297,7 +302,7 @@ export default function ActionCenter({
                             onClick={() => onAssignTerritory && onAssignTerritory(territory)}
                             className={`w-full md:w-auto bg-white dark:bg-surface text-main border ${buttonBorder} font-bold text-[10px] md:text-xs py-1.5 md:py-3 px-4 md:px-6 rounded-md flex items-center justify-center gap-2 ${buttonHover} transition-colors shadow-sm whitespace-nowrap`}
                         >
-                            DESIGNAR <ArrowRight className="w-3 h-3 md:w-3.5 md:h-3.5" />
+                            {t('dashboard.actionCenter.assignBtn')} <ArrowRight className="w-3 h-3 md:w-3.5 md:h-3.5" />
                         </button>
                     </div>
                 </div>
@@ -315,11 +320,11 @@ export default function ActionCenter({
             <div className="flex justify-between items-center mb-4 px-2">
                 <h2 className="text-xs font-bold text-muted uppercase tracking-widest flex items-center gap-2">
                     <div className="w-2 h-2 rounded-full bg-primary animate-pulse" />
-                    Centro de Ação
+                    {t('dashboard.actionCenter.title')}
                 </h2>
                 {hasMore && (
                     <Link href="/notifications" className="text-[10px] font-bold text-primary hover:text-primary-dark hover:underline">
-                        VER TODAS ({items.length})
+                        {t('dashboard.actionCenter.viewAllCount', { count: items.length })}
                     </Link>
                 )}
             </div>
@@ -331,7 +336,7 @@ export default function ActionCenter({
             {hasMore && (
                 <div className="mt-4 text-center md:hidden">
                     <Link href="/notifications" className="inline-flex items-center gap-2 text-xs font-bold text-primary bg-primary-light dark:bg-primary-dark/20 px-4 py-2 rounded-full">
-                        Ver mais {items.length - limit!} notificações <ArrowRight className="w-3 h-3" />
+                        {t('dashboard.actionCenter.viewMoreCount', { count: items.length - limit! })} <ArrowRight className="w-3 h-3" />
                     </Link>
                 </div>
             )}

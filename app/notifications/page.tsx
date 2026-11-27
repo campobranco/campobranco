@@ -17,8 +17,10 @@ import { ArrowLeft } from "lucide-react";
 import { useRouter } from 'next/navigation';
 import ActionCenter, { IdleTerritory, DoNotVisitAddress } from "@/app/components/Dashboard/ActionCenter";
 import { ActionCenterSkeleton, NotificationsPageSkeleton } from "@/app/components/Skeleton";
+import { useTranslation } from "@/app/context/I18nContext";
 
 export default function NotificationsPage() {
+    const { t } = useTranslation();
     const { user, role, isElder, isServant, congregationId, loading, profileName } = useAuth();
     const router = useRouter();
 
@@ -68,7 +70,7 @@ export default function NotificationsPage() {
                     const diffDays = Math.ceil(diffMs / (1000 * 60 * 60 * 24));
                     return {
                         id: l.id,
-                        title: l.title || "Cartão de Território",
+                        title: l.title || t('dashboard.territoryCardFallback'),
                         daysLeft: diffDays
                     };
                 });
@@ -170,12 +172,12 @@ export default function NotificationsPage() {
 
                         const historyActivity = latestActivityMap.get(t.id) || 0;
                         const lastActivityDate = historyActivity > 0 ? new Date(historyActivity) : null;
-                        const cityName = cityMap[t.cityId] || t.city || 'Cidade Desconhecida';
+                        const cityName = cityMap[t.cityId] || t.city || t('notifications.unknownCity');
 
                         if (!lastActivityDate) {
                             idleList.push({
                                 id: t.id,
-                                name: t.name || 'Sem Nome',
+                                name: t.name || t('notifications.unnamed'),
                                 description: t.notes || '',
                                 city: cityName,
                                 cityId: t.cityId,
@@ -186,7 +188,7 @@ export default function NotificationsPage() {
                         } else if (lastActivityDate < oneYearAgo) {
                             idleList.push({
                                 id: t.id,
-                                name: t.name || 'Sem Nome',
+                                name: t.name || t('notifications.unnamed'),
                                 description: t.notes || '',
                                 city: cityName,
                                 cityId: t.cityId,
@@ -207,7 +209,7 @@ export default function NotificationsPage() {
 
                     const coverageVal = (workedMapIds.size / mapsCount) * 100;
                     if (coverageVal >= 100) {
-                        setCityCompletion({ cityName: "Território Completo", percentage: 100 });
+                        setCityCompletion({ cityName: t('notifications.completeTerritory'), percentage: 100 });
                     }
                 }
 
@@ -228,7 +230,7 @@ export default function NotificationsPage() {
                         const terr = territoryMap[addr.territoryId];
                         return {
                             id: addr.id,
-                            street: addr.street || 'Endereço',
+                            street: addr.street || t('notifications.addressFallback'),
                             number: addr.number || 'S/N',
                             neighborhood: addr.neighborhood || '',
                             territoryId: addr.territoryId || '',
@@ -267,7 +269,7 @@ export default function NotificationsPage() {
                 >
                     <ArrowLeft className="w-6 h-6 text-main" />
                 </button>
-                <h1 className="font-bold text-lg text-main tracking-tight">Todas as Notificações</h1>
+                <h1 className="font-bold text-lg text-main tracking-tight">{t('notifications.title')}</h1>
             </header>
 
             <main className="px-6 py-6 max-w-xl mx-auto">

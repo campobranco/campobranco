@@ -56,6 +56,7 @@ import VisitsHistory from "@/app/components/Dashboard/VisitsHistory";
 import ConfirmationModal from "@/app/components/ConfirmationModal";
 import DropDownItem from "@/app/components/DropDownItem";
 import { ActionCenterSkeleton, DashboardSkeleton, Skeleton } from "@/app/components/Skeleton";
+import { useTranslation } from "@/app/context/I18nContext";
 
 // --- UTILS ---
 
@@ -67,6 +68,7 @@ const formatDate = (dateValue: any) => {
 };
 
 export default function DashboardPage() {
+    const { t } = useTranslation();
     const { user, role, isElder, isServant, congregationId, congregationName, loading, profileName, isAdminRoleGlobal, congregationType, can } = useAuth();
     const router = useRouter();
     const [sharedHistory, setSharedHistory] = useState<any[]>([]);
@@ -161,7 +163,7 @@ export default function DashboardPage() {
                 const processedLists: any[] = [];
                 lists.forEach((data: any) => {
                     if (data.status !== 'completed' && data.status !== 'archived') {
-                        processedLists.push({ ...data, responsibleName: 'Você' });
+                        processedLists.push({ ...data, responsibleName: t('dashboard.youLabel') });
                     }
                 });
                 processedLists.sort((a, b) => {
@@ -221,7 +223,7 @@ export default function DashboardPage() {
             else q = query(listsRef, limit(100));
 
             const usersMap: Record<string, string> = {};
-            if (user?.uid) usersMap[user.uid] = profileName || "Você";
+            if (user?.uid) usersMap[user.uid] = profileName || t('dashboard.youLabel');
             if (isElder || isServant || role === 'ADMIN') {
                 const usersRef = collection(db, 'users');
                 const uQ = congregationId ? query(usersRef, where('congregationId', '==', congregationId)) : query(usersRef, limit(500));
@@ -236,7 +238,7 @@ export default function DashboardPage() {
                 const assignedName = data.assignedName;
                 return {
                     ...data,
-                    responsibleName: (assignedTo && usersMap[assignedTo]) ? usersMap[assignedTo] : (assignedName || 'Não atribuído')
+                    responsibleName: (assignedTo && usersMap[assignedTo]) ? usersMap[assignedTo] : (assignedName || t('dashboard.unassigned'))
                 };
             });
 
@@ -397,20 +399,20 @@ export default function DashboardPage() {
     }, [congregationId, role, isElder, isServant, user?.uid, loading, fetchSharedHistory]);
 
     const handleCopyLink = async (id: string) => {
-        try { await navigator.clipboard.writeText(`${getAppBaseUrl(Capacitor.isNativePlatform())}/share?id=${id}`); toast.success("Link copiado!"); }
-        catch (err) { toast.error("Erro ao copiar."); }
+        try { await navigator.clipboard.writeText(`${getAppBaseUrl(Capacitor.isNativePlatform())}/share?id=${id}`); toast.success(t('dashboard.linkCopied')); }
+        catch (err) { toast.error(t('dashboard.copyError')); }
     };
 
     const handleShareLink = async (id: string, title?: string) => {
         try {
             const url = `${getAppBaseUrl(Capacitor.isNativePlatform())}/share?id=${id}`;
             if (navigator.share) {
-                try { await navigator.share({ title: title || 'Campo Branco', text: 'Acesse o cartão:', url }); }
+                try { await navigator.share({ title: title || 'Campo Branco', text: '', url }); }
                 catch (err) { if ((err as Error).name !== 'AbortError') console.error(err); }
             } else handleCopyLink(id);
         } catch (err) {
             console.error(err);
-            toast.error("Erro ao gerar link.");
+            toast.error(t('dashboard.linkGenerateError'));
         }
     };
 
@@ -419,10 +421,10 @@ export default function DashboardPage() {
         try {
             const res = await deleteSharedList(id);
             if (!res.success) {
-                toast.error(res.error || "Erro ao excluir.");
+                toast.error(res.error || t('dashboard.deleteError'));
                 return;
             }
-            toast.success("Cartão removido.");
+            toast.success(t('dashboard.cardRemoved'));
             setSharedHistory(prev => prev.filter(item => item.id !== id));
             setMyAssignments(prev => {
                 const updated = prev.filter(item => item.id !== id);
@@ -432,7 +434,7 @@ export default function DashboardPage() {
             setExpiringMaps(prev => prev.filter(item => item.id !== id));
         }
         catch (err) {
-            toast.error("Erro ao excluir.");
+            toast.error(t('dashboard.deleteError'));
         }
     };
 
@@ -451,15 +453,14 @@ export default function DashboardPage() {
                 return updated;
             });
             setExpiringMaps(prev => prev.filter(item => item.id !== id));
-            toast.success("Responsável removido.");
+            toast.success(t('dashboard.responsibleRemoved'));
         }
         catch (err) {
-            toast.error("Erro ao remover.");
+            toast.error(t('dashboard.removeError'));
         }
     };
 
-    const SharedHistoryListComponent = ({ title, items, icon: Icon = HistoryIcon, isLoading = false }: { title: string, items: any[], icon?: any, isLoading?: boolean }) => {
-        const isMine = title === 'Meus Cartões';
+    const SharedHistoryListComponent = ({ title, items, icon: Icon = HistoryIcon, isLoading = false, isMine = false }: { title: string, items: any[], icon?: any, isLoading?: boolean, isMine?: boolean }) => {
         const limit = 4;
         const visibleItems = items.slice(0, limit);
         return (
@@ -470,7 +471,7 @@ export default function DashboardPage() {
                         <h3 className="font-bold text-main">{title}</h3>
                     </div>
                     {items.length > limit && (
-                        <Link href={`/dashboard/cards?scope=${isMine ? 'mine' : 'managed'}`} className="text-[10px] font-extrabold text-primary uppercase bg-primary-light/50 dark:bg-primary-dark/30 px-3 py-1.5 rounded-full">Ver Tudo</Link>
+                        <Link href={`/dashboard/cards?scope=${isMine ? 'mine' : 'managed'}`} className="text-[10px] font-extrabold text-primary uppercase bg-primary-light/50 dark:bg-primary-dark/30 px-3 py-1.5 rounded-full">{t('dashboard.viewAll')}</Link>
                     )}
                 </div>
                 <div className="space-y-3">
@@ -484,30 +485,30 @@ export default function DashboardPage() {
                     ) : items.length === 0 ? (
                         <div className="py-12 text-center border-2 border-dashed border-surface-border rounded-xl bg-background/50">
                             <Icon className="w-8 h-8 text-muted/30 mx-auto mb-3" />
-                            <p className="text-xs font-bold text-muted uppercase tracking-widest">Nenhum cartão encontrado</p>
+                            <p className="text-xs font-bold text-muted uppercase tracking-widest">{t('dashboard.noCardsFound')}</p>
                         </div>
                     ) : (
                         visibleItems.map((list) => (
                             <div key={list.id} className="p-4 rounded-lg bg-background border border-surface-border hover:border-primary/30 transition-colors group relative">
                                 <div className="flex items-start justify-between mb-2">
                                     <div className="min-w-0">
-                                        <h4 className="font-bold text-main text-sm truncate">{list.context?.territoryName || list.title || "Cartão de Território"}</h4>
+                                        <h4 className="font-bold text-main text-sm truncate">{list.context?.territoryName || list.title || t('dashboard.territoryCardFallback')}</h4>
                                         <div className="flex items-center gap-1.5 mt-1">
                                             <User className="w-3 h-3 text-muted" />
                                             <span className="text-[10px] font-bold text-muted truncate">{list.responsibleName || list.assignedName}</span>
                                         </div>
                                     </div>
                                     <div className="shrink-0 pt-1 flex items-center gap-2">
-                                        {list.status === 'completed' ? <span className="bg-green-100 text-green-700 text-[9px] font-black px-2 py-0.5 rounded-lg uppercase">Concluído</span> : <span className="bg-primary/20 text-primary text-[9px] font-black px-2 py-0.5 rounded-lg uppercase">Ativo</span>}
+                                        {list.status === 'completed' ? <span className="bg-green-100 text-green-700 text-[9px] font-black px-2 py-0.5 rounded-lg uppercase">{t('dashboard.statusCompleted')}</span> : <span className="bg-primary/20 text-primary text-[9px] font-black px-2 py-0.5 rounded-lg uppercase">{t('dashboard.statusActive')}</span>}
                                     </div>
                                 </div>
                                 <div className="flex items-center justify-between pt-2 border-t border-surface-border">
                                     <div className="flex items-center gap-4">
-                                        <div className="flex items-center gap-1"><Calendar className="w-3 h-3 text-muted" /><span className="text-[10px] text-muted">Início: {formatDate(list.createdAt)}</span></div>
+                                        <div className="flex items-center gap-1"><Calendar className="w-3 h-3 text-muted" /><span className="text-[10px] text-muted">{t('dashboard.startLabel', { date: formatDate(list.createdAt) })}</span></div>
                                         {list.status === 'completed' ? (
                                             <div className="flex items-center gap-1">
                                                 <CheckCircleIcon className="w-3 h-3 text-green-500" />
-                                                <span className="text-[10px] text-muted">Fim: {formatDate(list.updatedAt || list.createdAt)}</span>
+                                                <span className="text-[10px] text-muted">{t('dashboard.endLabel', { date: formatDate(list.updatedAt || list.createdAt) })}</span>
                                             </div>
                                         ) : list.expiresAt && (
                                             <div className="flex items-center gap-1">
@@ -524,29 +525,29 @@ export default function DashboardPage() {
                                                 <div className="absolute right-0 top-full mt-1 w-52 bg-surface rounded-xl shadow-2xl border border-surface-border p-1 z-[200] animate-in fade-in zoom-in-95 duration-200">
                                                     <DropDownItem 
                                                         icon={ExternalLink} 
-                                                        label="Abrir" 
+                                                        label={t('dashboard.open')} 
                                                         variant="primary" 
                                                         onClick={() => { router.push(`/share?id=${list.id}`); setOpenMenuId(null); }} 
                                                     />
                                                     <DropDownItem 
                                                         icon={Copy} 
-                                                        label="Copiar Link" 
+                                                        label={t('dashboard.copyLink')} 
                                                         variant="neutral" 
                                                         onClick={() => { handleCopyLink(list.id); setOpenMenuId(null); }} 
                                                     />
                                                     {(isElder || isServant || role === 'ADMIN') && (
                                                         <DropDownItem 
                                                             icon={UserMinus} 
-                                                            label="Remover Responsável" 
+                                                            label={t('dashboard.removeResponsible')} 
                                                             variant="orange" 
-                                                            onClick={() => { setConfirmModal({ title: 'Remover?', message: 'Deseja remover o responsável?', variant: 'warning', onConfirm: () => handleRemoveResponsible(list.id) }); setOpenMenuId(null); }} 
+                                                            onClick={() => { setConfirmModal({ title: t('dashboard.removeConfirmTitle'), message: t('dashboard.removeConfirmMessage'), variant: 'warning', onConfirm: () => handleRemoveResponsible(list.id) }); setOpenMenuId(null); }} 
                                                         />
                                                     )}
                                                     <DropDownItem 
                                                         icon={Trash2} 
-                                                        label="Excluir Cartão" 
+                                                        label={t('dashboard.deleteCard')} 
                                                         variant="danger" 
-                                                        onClick={() => { setConfirmModal({ title: 'Excluir?', message: 'Deseja excluir o cartão?', variant: 'danger', onConfirm: () => handleDeleteShare(list.id) }); setOpenMenuId(null); }} 
+                                                        onClick={() => { setConfirmModal({ title: t('dashboard.deleteConfirmTitle'), message: t('dashboard.deleteConfirmMessage'), variant: 'danger', onConfirm: () => handleDeleteShare(list.id) }); setOpenMenuId(null); }} 
                                                     />
                                                 </div>
                                             </>
@@ -572,7 +573,7 @@ export default function DashboardPage() {
                     <img src={appIconSrc} alt="Logo" width="36" height="36" className="object-contain shrink-0 sm:w-10 sm:h-10" />
                     <div className="min-w-0">
                         <span className="font-bold text-base sm:text-lg text-main block leading-tight truncate">Campo Branco</span>
-                        <span className="text-[10px] text-muted font-bold uppercase hidden sm:block">Início</span>
+                        <span className="text-[10px] text-muted font-bold uppercase hidden sm:block">{t('dashboard.homeSubtitle')}</span>
                     </div>
                 </div>
                 <div className="flex items-center gap-2 shrink-0">
@@ -591,7 +592,9 @@ export default function DashboardPage() {
 
             <main className="px-6 py-6 max-w-xl mx-auto space-y-10">
                 <div>
-                    <h1 className="text-2xl font-bold text-main tracking-tight">Olá, {(profileName || user?.displayName || user?.email)?.split(' ')[0] || 'Irmão'}</h1>
+                    <h1 className="text-2xl font-bold text-main tracking-tight">
+                        {t('dashboard.greeting', { name: (profileName || user?.displayName || user?.email)?.split(' ')[0] || t('dashboard.brotherFallback') })}
+                    </h1>
                     {congregationName ? (
                         <div className="flex items-center gap-1.5 text-sm font-semibold text-primary mt-0.5">
                             <Building2 className="w-4 h-4 shrink-0" />
@@ -600,8 +603,8 @@ export default function DashboardPage() {
                     ) : (
                         <p className="text-muted text-sm mt-0.5">
                             {role === 'ADMIN' && !congregationId 
-                                ? 'Você está em modo de gestão global (sem congregação vinculada).' 
-                                : 'Aqui está o resumo para sua função.'}
+                                ? t('dashboard.globalModeHint') 
+                                : t('dashboard.roleSummaryHint')}
                         </p>
                     )}
                 </div>
@@ -613,17 +616,17 @@ export default function DashboardPage() {
                                 <Building2 className="w-6 h-6" />
                             </div>
                             <div>
-                                <h3 className="font-bold text-main">Configuração Inicial</h3>
-                                <p className="text-xs text-muted">Como administrador, você pode gerenciar todas as unidades ou escolher uma para trabalhar.</p>
+                                <h3 className="font-bold text-main">{t('dashboard.initialSetupTitle')}</h3>
+                                <p className="text-xs text-muted">{t('dashboard.initialSetupDesc')}</p>
                             </div>
                         </div>
                         <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-2">
                             <Link href="/admin/congregations" className="bg-primary text-white p-4 rounded-xl font-bold text-sm flex items-center justify-between hover:bg-primary-dark transition-all shadow-lg shadow-primary/20">
-                                <span>Selecionar Congregação</span>
+                                <span>{t('dashboard.selectCongregation')}</span>
                                 <ArrowRight className="w-4 h-4" />
                             </Link>
                             <Link href="/orphaned-data" className="bg-surface border border-surface-border p-4 rounded-xl font-bold text-sm flex items-center justify-between hover:bg-background transition-all group">
-                                <span className="text-main">Gerenciar Dados Órfãos</span>
+                                <span className="text-main">{t('dashboard.manageOrphanedData')}</span>
                                 <Database className="w-4 h-4 text-orange-500 group-hover:scale-110 transition-transform" />
                             </Link>
                         </div>
@@ -631,7 +634,7 @@ export default function DashboardPage() {
                 )}
 
                 <section className="space-y-6">
-                    <div className="flex items-center gap-2 px-1"><div className="w-1 h-6 bg-primary rounded-full" /><h2 className="text-lg font-bold text-main uppercase text-[12px]">Ministério</h2></div>
+                    <div className="flex items-center gap-2 px-1"><div className="w-1 h-6 bg-primary rounded-full" /><h2 className="text-lg font-bold text-main uppercase text-[12px]">{t('dashboard.ministrySection')}</h2></div>
                     {(isElder || isServant || role === 'ADMIN') && (
                         statsLoading || assignmentsLoading ? (
                             <ActionCenterSkeleton cards={2} showViewAll={true} />
@@ -661,35 +664,35 @@ export default function DashboardPage() {
                             />
                         )
                     )}
-                    <SharedHistoryListComponent title="Meus Cartões" items={myAssignments} icon={User} isLoading={assignmentsLoading} />
+                    <SharedHistoryListComponent title={t('dashboard.myCards')} items={myAssignments} icon={User} isLoading={assignmentsLoading} isMine={true} />
                     <VisitsHistory scope="mine" />
                 </section>
 
                 {(isElder || isServant || role === 'ADMIN') && (
                     <section className="space-y-6">
-                        <div className="flex items-center gap-2 px-1"><div className="w-1 h-6 bg-purple-600 rounded-full" /><h2 className="text-lg font-bold text-main uppercase text-[12px]">Gestão de Territórios</h2></div>
-                        <SharedHistoryListComponent title="Cartões Enviados" items={sharedHistory.filter(l => l.status !== 'completed' || isElder || isServant).slice(0, 15)} isLoading={historyLoading} />
+                        <div className="flex items-center gap-2 px-1"><div className="w-1 h-6 bg-purple-600 rounded-full" /><h2 className="text-lg font-bold text-main uppercase text-[12px]">{t('dashboard.territoryManagementSection')}</h2></div>
+                        <SharedHistoryListComponent title={t('dashboard.sentCards')} items={sharedHistory.filter(l => l.status !== 'completed' || isElder || isServant).slice(0, 15)} isLoading={historyLoading} />
                         <VisitsHistory scope="all" />
                     </section>
                 )}
 
                 {(isElder || isServant || role === 'ADMIN') && (
                     <section className="space-y-6">
-                        <div className="flex items-center gap-2 px-1"><div className="w-1 h-6 bg-emerald-600 rounded-full" /><h2 className="text-lg font-bold text-main uppercase text-[12px]">A Congregação</h2></div>
+                        <div className="flex items-center gap-2 px-1"><div className="w-1 h-6 bg-emerald-600 rounded-full" /><h2 className="text-lg font-bold text-main uppercase text-[12px]">{t('dashboard.congregationSection')}</h2></div>
                         <div className="grid grid-cols-2 gap-4">
                             {role === 'ADMIN' && !congregationId && (
-                                <div className="col-span-2 bg-surface p-4 rounded-lg shadow-sm border border-surface-border"><p className="text-[10px] font-bold text-muted uppercase">CONGREGAÇÕES</p><p className="text-2xl font-bold text-main">{stats.congregations}</p></div>
+                                <div className="col-span-2 bg-surface p-4 rounded-lg shadow-sm border border-surface-border"><p className="text-[10px] font-bold text-muted uppercase">{t('dashboard.statCongregations')}</p><p className="text-2xl font-bold text-main">{stats.congregations}</p></div>
                             )}
                             <div className="bg-surface p-4 rounded-lg shadow-sm border border-surface-border">
                                 <p className="text-[10px] font-bold text-muted uppercase">
-                                    {congregationType === 'TRADITIONAL' ? 'Bairros' : 'Cidades'}
+                                    {congregationType === 'TRADITIONAL' ? t('dashboard.statNeighborhoods') : t('dashboard.statCities')}
                                 </p>
                                 <p className="text-2xl font-bold text-main">{stats.cities}</p>
                             </div>
-                            <div className="bg-surface p-4 rounded-lg shadow-sm border border-surface-border"><p className="text-[10px] font-bold text-muted uppercase">MAPAS</p><p className="text-2xl font-bold text-main">{stats.maps}</p></div>
-                            <div className="bg-surface p-4 rounded-lg shadow-sm border border-surface-border"><p className="text-[10px] font-bold text-muted uppercase">ENDEREÇOS</p><p className="text-2xl font-bold text-main">{stats.addresses}</p></div>
-                            <div className="bg-surface p-4 rounded-lg shadow-sm border border-surface-border"><p className="text-[10px] font-bold text-muted uppercase">VISITAS</p><p className="text-2xl font-bold text-main">{stats.visits}</p></div>
-                            <div className="bg-surface p-4 rounded-lg shadow-sm border border-surface-border"><p className="text-[10px] font-bold text-muted uppercase">COBERTURA</p><p className="text-2xl font-bold text-main">{stats.coverage}%</p></div>
+                            <div className="bg-surface p-4 rounded-lg shadow-sm border border-surface-border"><p className="text-[10px] font-bold text-muted uppercase">{t('dashboard.statMaps')}</p><p className="text-2xl font-bold text-main">{stats.maps}</p></div>
+                            <div className="bg-surface p-4 rounded-lg shadow-sm border border-surface-border"><p className="text-[10px] font-bold text-muted uppercase">{t('dashboard.statAddresses')}</p><p className="text-2xl font-bold text-main">{stats.addresses}</p></div>
+                            <div className="bg-surface p-4 rounded-lg shadow-sm border border-surface-border"><p className="text-[10px] font-bold text-muted uppercase">{t('dashboard.statVisits')}</p><p className="text-2xl font-bold text-main">{stats.visits}</p></div>
+                            <div className="bg-surface p-4 rounded-lg shadow-sm border border-surface-border"><p className="text-[10px] font-bold text-muted uppercase">{t('dashboard.statCoverage')}</p><p className="text-2xl font-bold text-main">{stats.coverage}%</p></div>
                         </div>
                     </section>
                 )}
